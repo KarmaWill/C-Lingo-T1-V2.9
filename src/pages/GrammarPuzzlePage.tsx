@@ -8,7 +8,6 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Box, Typography, ButtonBase } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -138,7 +137,7 @@ const DEMO_LEVELS: Level[] = [
    ═══════════════════════════════════════════════════════════════════════════════ */
 function HubView({ onNavigate, onBack, completedCount, points, is960 }: { onNavigate: (view: 'level-selection' | 'gallery') => void; onBack: () => void; completedCount: number; points: number; is960: boolean }) {
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#FFF8F0', p: is960 ? 3 : 4, textAlign: 'center', position: 'relative' }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#FFF8F0', p: is960 ? 3 : 4, textAlign: 'center', position: 'relative', fontFamily: "'Google Sans', 'Product Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif" }}>
       {/* Back Button */}
       <Box sx={{ position: 'absolute', top: is960 ? 12 : 16, left: is960 ? 12 : 16 }}>
         <ButtonBase
@@ -154,15 +153,33 @@ function HubView({ onNavigate, onBack, completedCount, points, is960 }: { onNavi
         transition={{ type: 'spring', damping: 12 }}
       >
         <Box sx={{ position: 'relative', display: 'inline-block', mb: 4 }}>
-          <Typography sx={{ fontSize: is960 ? '2.45rem' : '3.25rem', fontWeight: 900, color: '#268BD2', mb: 1, letterSpacing: '-0.02em' }}>
-            SENTENCE SNAP
+          <Typography sx={{ fontSize: is960 ? '2.35rem' : '3.1rem', fontWeight: 900, color: '#268BD2', mb: 1, letterSpacing: '-0.01em' }}>
+            Sentence Snap
           </Typography>
-          <Box sx={{ position: 'absolute', right: -20, top: -16, bgcolor: '#D33682', color: 'white', fontSize: '0.65rem', px: 1.5, py: 0.5, borderRadius: '12px', fontWeight: 900, transform: 'rotate(12deg)' }}>
-            MVP
+          <Box
+            sx={{
+              position: 'absolute',
+              right: is960 ? -8 : -12,
+              top: is960 ? -14 : -18,
+              bgcolor: '#D33682',
+              color: 'white',
+              fontSize: is960 ? '0.6rem' : '0.7rem',
+              px: is960 ? 1.25 : 1.6,
+              py: is960 ? 0.5 : 0.55,
+              borderRadius: '999px',
+              fontWeight: 800,
+              letterSpacing: '0.04em',
+              border: '1px solid rgba(255,255,255,0.55)',
+              boxShadow: '0 6px 16px rgba(211,54,130,0.28)',
+              transform: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Global Debut
           </Box>
         </Box>
         <Typography sx={{ fontSize: is960 ? '1rem' : '1.2rem', fontWeight: 700, color: '#859900', mb: 4 }}>
-          句子拼图：让语序理解更直观
+          Sentence puzzle made intuitive.
         </Typography>
       </motion.div>
 
@@ -201,8 +218,8 @@ function HubView({ onNavigate, onBack, completedCount, points, is960 }: { onNavi
           }}
         >
           <PlayArrowIcon sx={{ fontSize: is960 ? 40 : 50, mb: 1.2 }} />
-          <Typography sx={{ fontSize: is960 ? '1.15rem' : '1.35rem', fontWeight: 900, mb: 0.4, lineHeight: 1.2 }}>开始练习</Typography>
-          <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.9rem', opacity: 0.88 }}>已完成 {completedCount} 关</Typography>
+          <Typography sx={{ fontSize: is960 ? '1.15rem' : '1.35rem', fontWeight: 900, mb: 0.4, lineHeight: 1.2 }}>Start Practice</Typography>
+          <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.9rem', opacity: 0.88 }}>Completed {completedCount} levels</Typography>
         </ButtonBase>
 
         <ButtonBase
@@ -225,8 +242,8 @@ function HubView({ onNavigate, onBack, completedCount, points, is960 }: { onNavi
           }}
         >
           <CollectionsIcon sx={{ fontSize: is960 ? 38 : 48, mb: 1.2 }} />
-          <Typography sx={{ fontSize: is960 ? '1.15rem' : '1.35rem', fontWeight: 900, mb: 0.4, lineHeight: 1.2 }}>我的图鉴</Typography>
-          <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.9rem', opacity: 0.88 }}>已解锁 {completedCount} 张图片</Typography>
+          <Typography sx={{ fontSize: is960 ? '1.15rem' : '1.35rem', fontWeight: 900, mb: 0.4, lineHeight: 1.2 }}>My Gallery</Typography>
+          <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.9rem', opacity: 0.88 }}>Unlocked {completedCount} images</Typography>
         </ButtonBase>
       </Box>
 
@@ -300,7 +317,7 @@ function LevelSelectionView({ onBack, onSelectLevel, completedIds, is960 }: { on
                       }}
                     >
                       {/* Image */}
-                      <Box sx={{ position: 'relative', aspectRatio: '4/3', overflow: 'hidden' }}>
+                      <Box sx={{ position: 'relative', aspectRatio: '16 / 9', overflow: 'hidden' }}>
                         <img
                           src={level.imageUrl}
                           alt={level.theme}
@@ -425,7 +442,7 @@ function GalleryView({ onBack, completedIds, onPlayLevel, is960 }: { onBack: () 
                     opacity: isUnlocked ? 1 : 0.5,
                   }}
                 >
-                  <Box sx={{ position: 'relative', aspectRatio: '4/3', overflow: 'hidden', bgcolor: '#F3F4F6' }}>
+                  <Box sx={{ position: 'relative', aspectRatio: '16 / 9', overflow: 'hidden', bgcolor: '#F3F4F6' }}>
                     <img
                       src={level.imageUrl}
                       alt={level.theme}
@@ -585,10 +602,10 @@ function GameView({ level, onComplete, onBack, is960 }: { level: Level; onComple
         {/* Progress Bar */}
         <Box sx={{ flex: 1 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-            <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: '#2AA198', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              关卡 {level.id}/{DEMO_LEVELS.length}
+            <Typography sx={{ fontSize: is960 ? '0.9rem' : '1rem', fontWeight: 800, color: '#2AA198', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Google Sans', 'Product Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif" }}>
+              Level {level.id}/{DEMO_LEVELS.length}
             </Typography>
-            <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: '#2AA198' }}>{Math.round(progress)}%</Typography>
+            <Typography sx={{ fontSize: is960 ? '0.9rem' : '1rem', fontWeight: 800, color: '#2AA198', fontFamily: "'Google Sans', 'Product Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif" }}>{Math.round(progress)}%</Typography>
           </Box>
           <Box sx={{ height: 12, bgcolor: 'rgba(45,52,54,0.08)', borderRadius: 99, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.06)' }}>
             <motion.div
@@ -604,26 +621,21 @@ function GameView({ level, onComplete, onBack, is960 }: { level: Level; onComple
         <ButtonBase
           onClick={() => setShowPinyin(!showPinyin)}
           sx={{
-            width: 44,
+            width: is960 ? 86 : 96,
             height: 44,
-            borderRadius: '14px',
+            borderRadius: '12px',
             fontWeight: 900,
-            fontSize: '0.9rem',
+            fontSize: is960 ? '0.82rem' : '0.9rem',
             color: showPinyin ? 'white' : '#586E75',
             bgcolor: showPinyin ? '#2AA198' : 'white',
             border: showPinyin ? '2px solid #2AA198' : '2px solid transparent',
             '&:active': { transform: 'scale(0.95)' },
+            fontFamily: "'Google Sans', 'Product Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif",
           }}
         >
-          {showPinyin ? '拼' : 'Aa'}
+          {showPinyin ? 'Pinyin' : 'Text'}
         </ButtonBase>
 
-        <ButtonBase
-          onClick={handleReset}
-          sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: 'rgba(0,0,0,0.05)', color: '#586E75', '&:active': { transform: 'rotate(180deg)', transition: 'all 0.5s' } }}
-        >
-          <RefreshIcon sx={{ fontSize: 20 }} />
-        </ButtonBase>
       </Box>
 
       {/* Main Content */}
@@ -633,10 +645,10 @@ function GameView({ level, onComplete, onBack, is960 }: { level: Level; onComple
           sx={{
             position: 'relative',
             width: '92%',
-            maxWidth: 880,
+            maxWidth: 960,
             mx: 'auto',
-            height: is960 ? '200px' : '260px',
-            minHeight: is960 ? '200px' : '260px',
+            aspectRatio: '16 / 9',
+            minHeight: is960 ? '240px' : '320px',
             bgcolor: 'white',
             borderRadius: '28px',
             overflow: 'hidden',
@@ -717,7 +729,7 @@ function GameView({ level, onComplete, onBack, is960 }: { level: Level; onComple
         </Box>
 
         {/* Slots Area */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 1.25, minHeight: 60 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 1.25, minHeight: is960 ? 96 : 110 }}>
           {placedWords.map((word, i) => (
             <ButtonBase
               key={i}
@@ -760,8 +772,8 @@ function GameView({ level, onComplete, onBack, is960 }: { level: Level; onComple
         </Box>
 
         {/* Available Words Area */}
-        <Box sx={{ bgcolor: '#FFF8F0', borderRadius: '24px', border: '1px solid rgba(0,0,0,0.06)', p: is960 ? 2 : 2.5, boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: is960 ? 1.25 : 1.5 }}>
+        <Box sx={{ bgcolor: '#FFF8F0', borderRadius: '24px', border: '1px solid rgba(0,0,0,0.06)', p: is960 ? 2 : 2.5, boxShadow: '0 2px 12px rgba(0,0,0,0.04)', minHeight: is960 ? 96 : 110, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: is960 ? 1.25 : 1.5, width: '100%' }}>
             <AnimatePresence>
               {availableWords.map((word) => (
                 <motion.div
