@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Box, Typography, ButtonBase, Grid } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import { CURRENT_LESSON } from '../mock/lessonData';
@@ -7,6 +7,10 @@ import { LearningCard } from '../types/lesson';
 export default function StudyReportPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const hskLevelRaw = searchParams.get('hskLevel');
+  const hskReportLevel =
+    hskLevelRaw != null && /^[1-6]$/.test(hskLevelRaw) ? (Number(hskLevelRaw) as 1 | 2 | 3 | 4 | 5 | 6) : null;
   
   // Read screen size from environment variable
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768'
@@ -75,7 +79,7 @@ export default function StudyReportPage() {
         </ButtonBase>
 
         <Typography variant="h5" sx={{ fontWeight: 900, color: '#2D3436', fontSize: is960 ? '1.25rem' : (is1920x1125 ? '2rem' : '1.75rem') }}>
-          Study Report
+          {hskReportLevel != null ? `HSK ${hskReportLevel} · Study Report` : 'Study Report'}
         </Typography>
 
         <Box sx={{ width: is960 ? 40 : (is1920x1125 ? 48 : 48) }} />

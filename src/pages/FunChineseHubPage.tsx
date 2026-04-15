@@ -241,15 +241,42 @@ export default function FunChineseHubPage() {
                         </Typography>
                       </Box>
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      {lesson.status === 'completed' && <TrophyIcon sx={{ fontSize: is960 ? 22 : 26, color: '#FDB022' }} />}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'flex-end',
+                        gap: 1.5,
+                        flexShrink: 0,
+                        minWidth: is960 ? 140 : 156,
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          width: is960 ? 26 : 30,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                        aria-hidden={lesson.status !== 'completed'}
+                      >
+                        {lesson.status === 'completed' ? (
+                          <TrophyIcon sx={{ fontSize: is960 ? 22 : 26, color: '#FDB022' }} />
+                        ) : null}
+                      </Box>
                       <ButtonBase
                         onClick={(e) => {
                           e.stopPropagation();
                           handleStartLesson(lesson.id, lesson.status);
                         }}
                         sx={{
-                          px: is960 ? 2.5 : 3,
+                          flexShrink: 0,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          minWidth: is960 ? 100 : 112,
+                          px: is960 ? 2 : 2.25,
                           py: is960 ? 0.85 : 1,
                           borderRadius: is960 ? '12px' : '14px',
                           bgcolor: lesson.status === 'current' ? orange : '#E2E8F0',

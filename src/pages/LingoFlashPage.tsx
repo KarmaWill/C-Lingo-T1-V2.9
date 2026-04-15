@@ -1069,8 +1069,30 @@ function Dashboard({
         {/* Tab content */}
         <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', p: is960 ? 2 : 3 }}>
           {tab === 'study' && (
-          <Box sx={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'minmax(0,2fr) minmax(0,1fr)' }, gap: is960 ? 2 : 2.5, alignItems: 'stretch' }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 2 : 2.5, minHeight: 0, height: '100%' }}>
+          <Box
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'minmax(0,2fr) minmax(0,1fr)' },
+              gridTemplateRows: { xs: 'auto auto auto auto', md: 'minmax(0, auto) auto' },
+              gap: is960 ? 2 : 2.5,
+              alignItems: 'stretch',
+            }}
+          >
+            {/* Daily + Saved: md 上与 Learning Trend 同列等高，底边对齐 */}
+            <Box
+              sx={{
+                gridColumn: { xs: 1, md: 1 },
+                gridRow: { xs: 1, md: 1 },
+                display: 'flex',
+                flexDirection: 'column',
+                gap: { xs: is960 ? 2 : 2.5, md: 0 },
+                justifyContent: { md: 'space-between' },
+                minHeight: { md: is960 ? 246 : 383 },
+                minWidth: 0,
+              }}
+            >
               <Box sx={{ width: '100%', aspectRatio: '16 / 7', bgcolor: 'white', borderRadius: '28px', p: is960 ? 2.5 : 3.5, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 2.5 }}>
                   <Box>
@@ -1131,8 +1153,9 @@ function Dashboard({
                 </Box>
                 <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.1rem' : '1.25rem', color: '#2563EB', flexShrink: 0 }}>{savedCount}</Typography>
               </ButtonBase>
+            </Box>
 
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: is960 ? 1.5 : 2 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: is960 ? 1.5 : 2, gridColumn: { xs: 1, md: 1 }, gridRow: { xs: 2, md: 2 }, minWidth: 0 }}>
                 <ButtonBase
                   onClick={onStart}
                   sx={{
@@ -1200,16 +1223,17 @@ function Dashboard({
                   </Box>
                 </ButtonBase>
               </Box>
-            </Box>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 2 : 2.5, minHeight: 0, height: '100%' }}>
               <ButtonBase
                 type="button"
                 onClick={() => setShowEbbinghausSettings(true)}
                 sx={{
+                  gridColumn: { xs: 1, md: 2 },
+                  gridRow: { xs: 3, md: 1 },
                   width: '100%',
-                  height: is960 ? 246 : 383,
                   minHeight: is960 ? 246 : 383,
+                  height: { md: '100%' },
+                  alignSelf: 'stretch',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'stretch',
@@ -1249,8 +1273,10 @@ function Dashboard({
               <ButtonBase
                 onClick={() => setTab('library')}
                 sx={{
+                  gridColumn: { xs: 1, md: 2 },
+                  gridRow: { xs: 4, md: 2 },
                   width: '100%',
-                  mt: '1px',
+                  mt: { xs: 0, md: 0 },
                   height: is960 ? 109 : 182,
                   minHeight: is960 ? 109 : 182,
                   maxHeight: is960 ? 109 : 182,
@@ -1312,7 +1338,6 @@ function Dashboard({
                   </Box>
                 </Box>
               </ButtonBase>
-            </Box>
           </Box>
         )}
 

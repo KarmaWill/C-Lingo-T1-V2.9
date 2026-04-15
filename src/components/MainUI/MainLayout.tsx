@@ -53,6 +53,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isGrammarPuzzlePage = location.pathname === '/grammar-puzzle'
   const isSyntaxSnapPage = location.pathname === '/syntax-snap'
   const isHSKPrepTrainingPage = location.pathname === '/hsk-prep-training'
+  const isHSKSkillDrillPage = location.pathname === '/hsk-skill-drill'
+  const isHSKOralReviewPage = location.pathname === '/hsk-oral-review'
   const isLibraryBookSelectionPage = location.pathname === '/library/select-books'
   const isStartingLearningPage = location.pathname === '/starting-learning'
   const isFunChineseHubPage = location.pathname === '/library/hub/fun-chinese'
@@ -74,7 +76,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isQuestionReviewPage ||
     isHSKMockExamPage ||
     isAudioReadingPage ||
-    isCultureVideoRoutePage
+    isCultureVideoRoutePage ||
+    isHSKSkillDrillPage ||
+    isHSKOralReviewPage
   const hideChromeNav = isCoveringMain || isLingoFlashPage || isGrammarPuzzlePage || isSyntaxSnapPage || isHSKPrepTrainingPage || isLibraryBookSelectionPage || isStartingLearningPage || isFunChineseHubPage || isFunChineseLessonPage || isCultureMapPage || isCharacterWritingPage
 
   // 主四 tab + LingoFlash + GrammarPuzzle + SyntaxSnap + HSKPrepTraining + LibraryBookSelection + FunChineseHub + FunChineseLesson + CultureMap + CharacterWriting：显示系统状态栏；其它全屏页不显示
@@ -84,6 +88,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isGrammarPuzzlePage || 
     isSyntaxSnapPage ||
     isHSKPrepTrainingPage ||
+    isHSKSkillDrillPage ||
+    isHSKOralReviewPage ||
     isLibraryBookSelectionPage ||
     isFunChineseHubPage ||
     isFunChineseLessonPage ||

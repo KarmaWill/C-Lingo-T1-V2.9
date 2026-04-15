@@ -35,7 +35,7 @@ export default function HSKGoStudyPlaceholderPage() {
         }}
       >
         <ButtonBase
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/hsk-test')}
           sx={{
             minHeight: 48,
             minWidth: 48,

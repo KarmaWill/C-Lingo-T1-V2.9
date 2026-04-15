@@ -1,0 +1,142 @@
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Box, Typography, ButtonBase } from '@mui/material';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import { getSkillDrillMeta } from '../hsk/hskSkillDrills';
+
+export default function HSKSkillDrillPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const type = searchParams.get('type');
+  const meta = getSkillDrillMeta(type);
+
+  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
+  const is960 = screenSize === '960x540';
+  const is1920x1125 = screenSize === '1920x1125';
+
+  const sectionColor = meta?.section === 'listening' ? '#0369A1' : '#047857';
+  const sectionLabel = meta?.section === 'listening' ? 'Listening' : 'Reading';
+
+  return (
+    <Box
+      sx={{
+        height: '100%',
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: '#FFF8F0',
+        overflow: 'hidden',
+      }}
+    >
+      <Box
+        sx={{
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          gap: is960 ? 1.5 : 2,
+          p: is960 ? 2 : is1920x1125 ? 3 : 2.5,
+          borderBottom: '1px solid rgba(0,0,0,0.06)',
+          bgcolor: 'rgba(255,255,255,0.92)',
+        }}
+      >
+        <ButtonBase
+          onClick={() => navigate('/hsk-test')}
+          sx={{
+            width: is960 ? 44 : 48,
+            height: is960 ? 44 : 48,
+            borderRadius: '50%',
+            bgcolor: 'rgba(0,0,0,0.05)',
+            color: '#374151',
+            flexShrink: 0,
+            '&:active': { bgcolor: 'rgba(0,0,0,0.1)' },
+          }}
+        >
+          <ChevronLeftIcon sx={{ fontSize: is960 ? 22 : 26 }} />
+        </ButtonBase>
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography
+            sx={{
+              fontWeight: 900,
+              fontSize: is960 ? '1.05rem' : is1920x1125 ? '1.65rem' : '1.35rem',
+              color: '#111827',
+              lineHeight: 1.2,
+            }}
+          >
+            {meta ? meta.title : 'Specialized drill'}
+          </Typography>
+          {meta && (
+            <Typography sx={{ fontSize: is960 ? '0.7rem' : '0.8rem', color: '#64748B', mt: 0.35, fontWeight: 600 }}>
+              Typical levels: {meta.levelsHint}
+            </Typography>
+          )}
+        </Box>
+      </Box>
+
+      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', p: is960 ? 2 : 3, boxSizing: 'border-box' }}>
+        {meta ? (
+          <Box
+            sx={{
+              maxWidth: 720,
+              mx: 'auto',
+              bgcolor: '#fff',
+              borderRadius: is960 ? '16px' : '22px',
+              p: is960 ? 2.25 : 3,
+              border: '1px solid rgba(0,0,0,0.06)',
+              boxShadow: '0 8px 28px rgba(0,0,0,0.06)',
+            }}
+          >
+            <Typography
+              component="span"
+              sx={{
+                display: 'inline-block',
+                fontWeight: 800,
+                fontSize: is960 ? '0.58rem' : '0.65rem',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: sectionColor,
+                bgcolor: meta.section === 'listening' ? 'rgba(3, 105, 161, 0.08)' : 'rgba(4, 120, 87, 0.08)',
+                px: 1.25,
+                py: 0.45,
+                borderRadius: '8px',
+                mb: 1.5,
+              }}
+            >
+              {sectionLabel}
+            </Typography>
+            <Typography sx={{ fontSize: is960 ? '0.88rem' : '1rem', color: '#334155', lineHeight: 1.55, fontWeight: 500, mb: 2 }}>
+              {meta.description}
+            </Typography>
+            <Typography sx={{ fontSize: is960 ? '0.75rem' : '0.85rem', color: '#94A3B8', lineHeight: 1.5 }}>
+              Question sets for this format will plug in here (same taxonomy as the HSK mock product spec). For now this
+              screen confirms the correct drill type from the hub.
+            </Typography>
+          </Box>
+        ) : (
+          <Box sx={{ textAlign: 'center', py: 6, px: 2 }}>
+            <Typography sx={{ fontWeight: 800, color: '#1F2937', mb: 1, fontSize: is960 ? '1rem' : '1.2rem' }}>
+              Unknown drill type
+            </Typography>
+            <Typography sx={{ color: '#64748B', mb: 2, fontSize: is960 ? '0.85rem' : '0.95rem' }}>
+              Go back to HSK Test and pick one of the six specialized entrances.
+            </Typography>
+            <ButtonBase
+              onClick={() => navigate('/hsk-test')}
+              sx={{
+                px: 3,
+                py: 1.25,
+                minHeight: 48,
+                borderRadius: '12px',
+                bgcolor: '#0F172A',
+                color: '#fff',
+                fontWeight: 800,
+                fontSize: is960 ? '0.85rem' : '0.95rem',
+                '&:active': { bgcolor: '#1E293B' },
+              }}
+            >
+              Open HSK Test
+            </ButtonBase>
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
+}

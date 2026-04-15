@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AppBar, Toolbar, Typography, Box, Avatar, ButtonBase, MenuItem, Menu } from '@mui/material'
-import { Person, KeyboardArrowDown } from '@mui/icons-material'
+import { KeyboardArrowDown } from '@mui/icons-material'
 import { useNavigate, useLocation } from 'react-router-dom'
 
 const LANGUAGES = [
@@ -93,9 +93,21 @@ export default function TopBanner() {
   const activeLang = LANGUAGES.find(l => l.name === currentLang)
 
   const isHomePage = location.pathname === '/AI' || location.pathname === '/'
+  const isTextbooksPage = location.pathname === '/Home' || location.pathname === '/library'
+  const isHSKPreparationHub = location.pathname === '/hsk-test'
   const showSystemBar = ['/', '/AI', '/Home', '/library', '/specialized', '/apps', '/profile', '/hsk-test'].includes(location.pathname)
   const isProfilePage = location.pathname === '/profile'
   const shouldHideTopBar = isFullScreen || isProfilePage
+  const pageTitle =
+    location.pathname === '/AI' ? 'AI Class Studio' :
+    location.pathname === '/Home' ? 'Chinese Textbooks' :
+    location.pathname === '/library' ? 'Chinese Textbooks' :
+    location.pathname === '/specialized' ? 'Specialized Tracks' :
+    location.pathname === '/camera' ? 'Camera Tools' :
+    location.pathname === '/apps' ? 'Applications' :
+    location.pathname === '/ai-chat' ? 'AI Tutor' :
+    location.pathname === '/hsk-test' ? 'HSK Preparation' :
+    location.pathname.startsWith('/lesson/') ? 'AI Class Studio' : 'NSK 1.0'
 
   const handleCourseSelect = (course: string) => {
     setCurrentCourse(course);
@@ -144,21 +156,72 @@ export default function TopBanner() {
         <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
           {isHomePage ? (
             <>
-              {/* Row 1: App title */}
-              <Typography
-                variant="h6"
-                component="h6"
+              {/* Row 1: App title + Online only (badge on the right) */}
+              <Box
                 sx={{
-                  fontWeight: 900,
-                  fontSize: is960 ? '1.15rem' : (is2000x1200 ? '2rem' : (is1920x1125 ? '1.875rem' : '1.5rem')),
-                  color: '#2D3436',
-                  letterSpacing: '-0.02em',
-                  lineHeight: 1.2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: '100%',
+                  minWidth: 0,
                   mb: is960 ? 0.75 : 1,
                 }}
               >
-                AI Class Studio
-              </Typography>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: is960 ? 0.6 : 0.75,
+                    flexWrap: 'nowrap',
+                    minWidth: 0,
+                  }}
+                >
+                <Typography
+                  variant="h6"
+                  component="h6"
+                  sx={{
+                    fontWeight: 900,
+                    fontSize: is960 ? '1.15rem' : (is2000x1200 ? '2rem' : (is1920x1125 ? '1.875rem' : '1.5rem')),
+                    color: '#2D3436',
+                    letterSpacing: '-0.02em',
+                    lineHeight: 1.2,
+                    flexShrink: 0,
+                  }}
+                >
+                  AI Class Studio
+                </Typography>
+                <Box
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.6,
+                    flexShrink: 0,
+                    px: is960 ? 0.9 : 1.1,
+                    py: is960 ? 0.28 : 0.35,
+                    borderRadius: '999px',
+                    bgcolor: '#ECFDF5',
+                    border: '1px solid #A7F3D0',
+                    color: '#047857',
+                    fontSize: is960 ? '0.58rem' : '0.66rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                    lineHeight: 1.1,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: '50%',
+                      bgcolor: '#10B981',
+                      boxShadow: '0 0 8px rgba(16,185,129,0.8)',
+                      flexShrink: 0,
+                    }}
+                  />
+                  Online only
+                </Box>
+                </Box>
+              </Box>
 
               {/* Row 2: Program track + Level & Unit (one row) */}
               <Box
@@ -307,17 +370,81 @@ export default function TopBanner() {
               </Box>
             </>
           ) : (
-            <Typography variant="h6" sx={{ fontWeight: 900, color: '#1F2937', fontSize: is960 ? '1.15rem' : (is2000x1200 ? '2rem' : (is1920x1125 ? '1.875rem' : '1.5rem')) }}>
-              {location.pathname === '/AI' ? 'AI Class Studio' :
-               location.pathname === '/Home' ? 'Happy Chinese' :
-               location.pathname === '/library' ? 'Happy Chinese' :
-               location.pathname === '/specialized' ? 'Specialized Tracks' :
-               location.pathname === '/camera' ? 'Camera Tools' :
-               location.pathname === '/apps' ? 'Applications' :
-               location.pathname === '/ai-chat' ? 'AI Tutor' :
-               location.pathname === '/hsk-test' ? 'HSK Preparation' :
-               location.pathname.startsWith('/lesson/') ? 'AI Class Studio' : 'NSK 1.0'}
-        </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: is960 ? 0.6 : 0.75,
+                flexWrap: 'wrap',
+                rowGap: 0.75,
+                minWidth: 0,
+              }}
+            >
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 900,
+                  color: '#1F2937',
+                  fontSize: is960 ? '1.15rem' : (is2000x1200 ? '2rem' : (is1920x1125 ? '1.875rem' : '1.5rem')),
+                  lineHeight: 1.2,
+                  flexShrink: 0,
+                }}
+              >
+                {pageTitle}
+              </Typography>
+              {isTextbooksPage && (
+                <Box
+                  sx={{
+                    px: is960 ? 0.9 : 1.1,
+                    py: is960 ? 0.28 : 0.35,
+                    borderRadius: '999px',
+                    bgcolor: '#EEF2FF',
+                    border: '1px solid #C7D2FE',
+                    color: '#4338CA',
+                    fontSize: is960 ? '0.58rem' : '0.66rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                    lineHeight: 1.1,
+                  }}
+                >
+                  Offline
+                </Box>
+              )}
+              {isHSKPreparationHub && (
+                <Box
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.6,
+                    flexShrink: 0,
+                    px: is960 ? 0.9 : 1.1,
+                    py: is960 ? 0.28 : 0.35,
+                    borderRadius: '999px',
+                    bgcolor: '#ECFDF5',
+                    border: '1px solid #A7F3D0',
+                    color: '#047857',
+                    fontSize: is960 ? '0.58rem' : '0.66rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                    lineHeight: 1.1,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: '50%',
+                      bgcolor: '#10B981',
+                      boxShadow: '0 0 8px rgba(16,185,129,0.8)',
+                      flexShrink: 0,
+                    }}
+                  />
+                  Online only
+                </Box>
+              )}
+            </Box>
           )}
         </Box>
 
@@ -372,26 +499,39 @@ export default function TopBanner() {
             )}
           </Box>
 
-          {/* Profile Entrance */}
+          {/* Profile entrance — same fox avatar as Profile sidebar */}
           <Avatar
             onClick={() => navigate('/profile')}
             sx={{
               width: is960 ? 36 : (is2000x1200 ? 60 : (is1920x1125 ? 56 : 44)),
               height: is960 ? 36 : (is2000x1200 ? 60 : (is1920x1125 ? 56 : 44)),
-              bgcolor: '#00B4A010',
-              color: '#00B4A0',
+              bgcolor: 'white',
               cursor: 'pointer',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+              border: '2px solid rgba(255,255,255,0.9)',
               transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-              border: '2px solid transparent',
+              overflow: 'hidden',
               '&:active': {
-                bgcolor: '#00B4A015',
                 transform: 'scale(0.95)',
-                borderColor: '#00B4A030',
-                boxShadow: '0 10px 20px rgba(0,180,160,0.1)'
-              }
+                boxShadow: '0 4px 16px rgba(234, 88, 12, 0.22)',
+              },
             }}
           >
-            <Person sx={{ fontSize: is960 ? 20 : (is2000x1200 ? 36 : (is1920x1125 ? 32 : 24)) }} />
+            <Box
+              sx={{
+                width: '100%',
+                height: '100%',
+                background: 'linear-gradient(145deg, #FB923C 0%, #EA580C 100%)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: is960 ? '1.1rem' : (is2000x1200 ? '1.95rem' : (is1920x1125 ? '1.8rem' : '1.4rem')),
+                lineHeight: 1,
+              }}
+            >
+              🦊
+            </Box>
           </Avatar>
         </Box>
       </Toolbar>

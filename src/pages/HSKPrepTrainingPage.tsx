@@ -3,8 +3,8 @@
  * 从 hsk-mock-exam.zip 还原，适配 iPad 交互
  * HomeScreen → ExamScreen → ResultScreen
  */
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useLayoutEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Box, Typography, ButtonBase } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -77,6 +77,14 @@ const MOCK_PAPER: ExamPaper = {
     },
   ],
 };
+
+function buildPaperForLevel(level: HSKLevel): ExamPaper {
+  return {
+    ...MOCK_PAPER,
+    id: `hsk${level}-mock-01`,
+    level,
+  };
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    HomeScreen — HSK 级别选择
@@ -450,6 +458,7 @@ function ResultScreen({ paper, result, onRestart, onGoHome, is960 }: { paper: Ex
    ═══════════════════════════════════════════════════════════════════════════════ */
 export default function HSKPrepTrainingPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
   const is960 = screenSize === '960x540';
 
@@ -457,19 +466,35 @@ export default function HSKPrepTrainingPage() {
   const [selectedLevel, setSelectedLevel] = useState<HSKLevel | null>(null);
   const [examResult, setExamResult] = useState<ExamResult | null>(null);
 
+  const activePaper = useMemo(
+    () => (selectedLevel ? buildPaperForLevel(selectedLevel) : null),
+    [selectedLevel]
+  );
+
+  useLayoutEffect(() => {
+    const raw = searchParams.get('level');
+    if (raw == null || raw === '') return;
+    const n = Number.parseInt(raw, 10);
+    if (!Number.isFinite(n) || n < 1 || n > 6) return;
+    setSelectedLevel(n as HSKLevel);
+    setCurrentScreen('exam');
+    setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   const handleSelectLevel = (level: HSKLevel) => {
     setSelectedLevel(level);
     setCurrentScreen('exam');
   };
 
   const handleFinishExam = (answers: Record<string, string>) => {
-    const correctCount = MOCK_PAPER.questions.filter(
+    if (!activePaper) return;
+    const correctCount = activePaper.questions.filter(
       q => answers[q.id] === q.correctAnswer
     ).length;
 
     const result: ExamResult = {
-      paperId: MOCK_PAPER.id,
-      score: Math.round((correctCount / MOCK_PAPER.questions.length) * 100),
+      paperId: activePaper.id,
+      score: Math.round((correctCount / activePaper.questions.length) * 100),
       answers,
       completedAt: new Date().toISOString(),
     };
@@ -483,29 +508,28 @@ export default function HSKPrepTrainingPage() {
     setCurrentScreen('exam');
   };
 
-  const handleGoHome = () => {
-    setExamResult(null);
-    setSelectedLevel(null);
-    setCurrentScreen('home');
+  /** Leave prep training entirely — back to HSK Preparation hub (same as mock grid entry). */
+  const handleExitToHub = () => {
+    navigate('/hsk-test');
   };
 
   return (
     <AnimatePresence mode="wait">
       {currentScreen === 'home' && (
         <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ height: '100%' }}>
-          <HomeScreen onSelectLevel={handleSelectLevel} onBack={() => navigate(-1)} is960={is960} />
+          <HomeScreen onSelectLevel={handleSelectLevel} onBack={handleExitToHub} is960={is960} />
         </motion.div>
       )}
 
-      {currentScreen === 'exam' && selectedLevel && (
+      {currentScreen === 'exam' && selectedLevel && activePaper && (
         <motion.div key="exam" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} style={{ height: '100%' }}>
-          <ExamScreen paper={MOCK_PAPER} onFinish={handleFinishExam} onExit={handleGoHome} is960={is960} />
+          <ExamScreen paper={activePaper} onFinish={handleFinishExam} onExit={handleExitToHub} is960={is960} />
         </motion.div>
       )}
 
-      {currentScreen === 'result' && examResult && (
+      {currentScreen === 'result' && examResult && activePaper && (
         <motion.div key="result" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} style={{ height: '100%' }}>
-          <ResultScreen paper={MOCK_PAPER} result={examResult} onRestart={handleRestart} onGoHome={handleGoHome} is960={is960} />
+          <ResultScreen paper={activePaper} result={examResult} onRestart={handleRestart} onGoHome={handleExitToHub} is960={is960} />
         </motion.div>
       )}
     </AnimatePresence>

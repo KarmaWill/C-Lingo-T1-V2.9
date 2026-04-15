@@ -78,11 +78,24 @@ const BOOKS: Book[] = [
   }
 ];
 
+/** Units on the hero card; order matches curriculum progression */
+const CURRICULUM_UNITS = [
+  'Unit 1 · You and I',
+  'Unit 2 · My Family',
+  'Unit 3 · Numbers & Colors',
+  'Unit 4 · Daily Activities',
+  'Unit 5 · Food & Drinks',
+  'Unit 6 · Time & Dates',
+  'Unit 7 · Weather & Seasons',
+  'Unit 8 · Basic Questions',
+];
+
 export default function LibraryPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeCategory, setActiveCategory] = useState('All');
   const [books, setBooks] = useState<Book[]>(BOOKS);
+  const [currentUnitIndex, setCurrentUnitIndex] = useState(0);
 
   // Read screen size from environment variable
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768'
@@ -214,21 +227,27 @@ export default function LibraryPage() {
                 }}
               />
 
-              {/* 顶部左侧：Current Unit 切换条 */}
+              {/* 顶部居中：Current Unit 切换条 */}
               <Box
                 onClick={(e) => e.stopPropagation()}
                 sx={{
                   position: 'absolute',
                   top: is960 ? 12 : 18,
-                  left: is960 ? 12 : 18,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
                   zIndex: 2,
                   bgcolor: 'rgba(255,255,255,0.9)',
                   backdropFilter: 'blur(10px)',
                   borderRadius: '999px',
                   px: is960 ? 1.4 : 1.9,
                   py: is960 ? 0.62 : 0.78,
-                  maxWidth: 'min(90%, 340px)',
+                  maxWidth: 'min(calc(100% - 24px), 340px)',
+                  width: 'max-content',
+                  minWidth: 0,
                   boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'stretch',
                 }}
               >
                 <Typography
@@ -237,29 +256,72 @@ export default function LibraryPage() {
                     fontWeight: 800,
                     color: '#64748B',
                     letterSpacing: '0.02em',
-                    textAlign: 'left',
+                    textAlign: 'center',
+                    width: '100%',
                     mb: 0.28,
                   }}
                 >
                   CURRENT UNIT
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 0.35, minWidth: 0 }}>
-                  <ChevronLeftIcon sx={{ fontSize: is960 ? 19 : 21, color: '#94A3B8', flexShrink: 0 }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.35, minWidth: 0 }}>
+                  <ButtonBase
+                    type="button"
+                    aria-label="Previous unit"
+                    disabled={currentUnitIndex <= 0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentUnitIndex((i) => Math.max(0, i - 1));
+                    }}
+                    sx={{
+                      minWidth: is960 ? 32 : 36,
+                      minHeight: is960 ? 32 : 36,
+                      borderRadius: '50%',
+                      color: currentUnitIndex <= 0 ? '#CBD5E1' : '#94A3B8',
+                      flexShrink: 0,
+                      '&:disabled': { opacity: 0.45 },
+                      '&:active': { transform: currentUnitIndex <= 0 ? 'none' : 'scale(0.92)' },
+                    }}
+                  >
+                    <ChevronLeftIcon sx={{ fontSize: is960 ? 19 : 21 }} />
+                  </ButtonBase>
                   <Typography
                     sx={{
                       fontWeight: 800,
                       fontSize: is960 ? '0.9rem' : '1.04rem',
                       color: '#1E293B',
                       lineHeight: 1.25,
-                      textAlign: 'left',
+                      textAlign: 'center',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
+                      flex: 1,
+                      minWidth: 0,
                     }}
                   >
-                    Unit 1 · You and I
+                    {CURRICULUM_UNITS[currentUnitIndex]}
                   </Typography>
-                  <ChevronRightIcon sx={{ fontSize: is960 ? 19 : 21, color: '#475569', flexShrink: 0 }} />
+                  <ButtonBase
+                    type="button"
+                    aria-label="Next unit"
+                    disabled={currentUnitIndex >= CURRICULUM_UNITS.length - 1}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentUnitIndex((i) => Math.min(CURRICULUM_UNITS.length - 1, i + 1));
+                    }}
+                    sx={{
+                      minWidth: is960 ? 32 : 36,
+                      minHeight: is960 ? 32 : 36,
+                      borderRadius: '50%',
+                      color: currentUnitIndex >= CURRICULUM_UNITS.length - 1 ? '#CBD5E1' : '#475569',
+                      flexShrink: 0,
+                      '&:disabled': { opacity: 0.45 },
+                      '&:active': {
+                        transform: currentUnitIndex >= CURRICULUM_UNITS.length - 1 ? 'none' : 'scale(0.92)',
+                      },
+                    }}
+                  >
+                    <ChevronRightIcon sx={{ fontSize: is960 ? 19 : 21 }} />
+                  </ButtonBase>
                 </Box>
               </Box>
 

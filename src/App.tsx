@@ -23,6 +23,8 @@ import QuestionReviewPage from './pages/QuestionReviewPage'
 import HSKMockExamPage from './pages/HSKMockExamPage'
 import HSKPrepTestIntroPage from './pages/HSKPrepTestIntroPage'
 import HSKPrepTrainingPage from './pages/HSKPrepTrainingPage'
+import HSKSkillDrillPage from './pages/HSKSkillDrillPage'
+import HSKOralReviewPage from './pages/HSKOralReviewPage'
 import FlashcardPage from './pages/FlashcardPage'
 import LingoFlashPage from './pages/LingoFlashPage'
 import GrammarPuzzlePage from './pages/GrammarPuzzlePage'
@@ -116,6 +118,8 @@ function App() {
               <Route path="/culture-video" element={<CultureVideoRoutePage />} />
               <Route path="/hsk-prep-test" element={<HSKPrepTestIntroPage />} />
               <Route path="/hsk-prep-training" element={<HSKPrepTrainingPage />} />
+              <Route path="/hsk-skill-drill" element={<HSKSkillDrillPage />} />
+              <Route path="/hsk-oral-review" element={<HSKOralReviewPage />} />
               <Route path="/flashcards" element={<FlashcardPage />} />
               <Route path="/lingo-flash" element={<LingoFlashPage />} />
               <Route path="/grammar-puzzle" element={<GrammarPuzzlePage />} />

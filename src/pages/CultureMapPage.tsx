@@ -22,38 +22,38 @@ interface CultureSpot {
 const CULTURE_SPOTS: CultureSpot[] = [
   {
     id: 'beijing',
-    name: '北京',
-    nameEn: 'Beijing',
-    province: '北京市',
-    category: '首都',
-    description: '中华人民共和国首都，世界著名古都和现代化国际城市',
+    name: 'Beijing',
+    nameEn: 'Capital of China',
+    province: 'Beijing Municipality',
+    category: 'Capital',
+    description: 'National capital of China—a major historic city and modern global hub.',
     position: { top: '32%', left: '58%' },
   },
   {
     id: 'forbidden-city',
-    name: '故宫',
-    nameEn: 'Forbidden City',
-    province: '北京',
-    category: '古建筑',
-    description: '明清两代的皇家宫殿，世界最大的古代宫殿建筑群',
+    name: 'Forbidden City',
+    nameEn: 'Imperial Palace',
+    province: 'Beijing',
+    category: 'Historic architecture',
+    description: 'Former imperial palace of the Ming and Qing dynasties; one of the world’s largest palace complexes.',
     position: { top: '34%', left: '60%' },
   },
   {
     id: 'great-wall',
-    name: '长城',
-    nameEn: 'Great Wall',
-    province: '北京',
-    category: '历史遗迹',
-    description: '世界七大奇迹之一，中国古代的军事防御工程',
+    name: 'Great Wall',
+    nameEn: 'World Heritage',
+    province: 'Beijing',
+    category: 'Historic site',
+    description: 'Ancient defensive fortifications and a UNESCO World Heritage Site.',
     position: { top: '28%', left: '62%' },
   },
   {
     id: 'terracotta',
-    name: '兵马俑',
-    nameEn: 'Terracotta Army',
-    province: '陕西',
-    category: '历史遗迹',
-    description: '秦始皇陵的陪葬品，世界第八大奇迹',
+    name: 'Terracotta Army',
+    nameEn: 'Qin Mausoleum',
+    province: 'Shaanxi',
+    category: 'Historic site',
+    description: 'Life-size clay warriors guarding the tomb of China’s first emperor—a major archaeological discovery.',
     position: { top: '45%', left: '48%' },
   },
 ];
@@ -108,10 +108,10 @@ export default function CultureMapPage() {
           </ButtonBase>
           <Box>
             <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.25rem' : '1.55rem', color: '#1E293B', letterSpacing: '-0.02em' }}>
-              中国文化地图
+              Chinese Culture Map
             </Typography>
             <Typography sx={{ fontSize: is960 ? '0.75rem' : '0.85rem', color: '#64748B', fontWeight: 600 }}>
-              Explore Chinese Culture
+              Explore Chinese culture
             </Typography>
           </Box>
         </Box>
@@ -171,7 +171,7 @@ export default function CultureMapPage() {
                   letterSpacing: '0.05em',
                 }}
               >
-                中国
+                China
               </Typography>
 
               {/* Culture Spots */}
@@ -215,7 +215,7 @@ export default function CultureMapPage() {
                       fontWeight: 800,
                     }}
                   >
-                    {spot.category === '首都' ? '★' : '●'}
+                    {spot.category === 'Capital' ? '★' : '●'}
                   </Box>
                 </ButtonBase>
               ))}
@@ -247,7 +247,7 @@ export default function CultureMapPage() {
             >
               <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: orange, border: '2px solid white' }} />
               <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.8rem', fontWeight: 700, color: '#64748B' }}>
-                首都
+                Capital
               </Typography>
             </Box>
             <Box
@@ -265,7 +265,7 @@ export default function CultureMapPage() {
             >
               <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: teal, border: '2px solid white' }} />
               <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.8rem', fontWeight: 700, color: '#64748B' }}>
-                文化景点
+                Cultural sites
               </Typography>
             </Box>
           </Box>
@@ -294,7 +294,7 @@ export default function CultureMapPage() {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
               <InfoIcon sx={{ fontSize: is960 ? 20 : 24, color: teal }} />
               <Typography sx={{ fontSize: is960 ? '0.95rem' : '1.08rem', fontWeight: 800, color: '#1E293B' }}>
-                中国概况
+                China at a glance
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -307,10 +307,10 @@ export default function CultureMapPage() {
                 }}
               >
                 <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.75rem', color: '#94A3B8', fontWeight: 700, mb: 0.3 }}>
-                  人口
+                  Population
                 </Typography>
                 <Typography sx={{ fontSize: is960 ? '1.15rem' : '1.35rem', fontWeight: 900, color: '#1E293B' }}>
-                  14亿+
+                  1.4B+
                 </Typography>
               </Box>
               <Box
@@ -322,10 +322,10 @@ export default function CultureMapPage() {
                 }}
               >
                 <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.75rem', color: '#94A3B8', fontWeight: 700, mb: 0.3 }}>
-                  民族
+                  Ethnic groups
                 </Typography>
                 <Typography sx={{ fontSize: is960 ? '0.95rem' : '1.08rem', fontWeight: 800, color: '#1E293B' }}>
-                  56个民族
+                  56 groups
                 </Typography>
               </Box>
               <Box
@@ -337,10 +337,10 @@ export default function CultureMapPage() {
                 }}
               >
                 <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.75rem', color: '#94A3B8', fontWeight: 700, mb: 0.3 }}>
-                  首都
+                  Capital
                 </Typography>
                 <Typography sx={{ fontSize: is960 ? '0.95rem' : '1.08rem', fontWeight: 800, color: '#1E293B' }}>
-                  北京
+                  Beijing
                 </Typography>
               </Box>
             </Box>
@@ -396,7 +396,7 @@ export default function CultureMapPage() {
                 }}
               >
                 <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.75rem', color: '#94A3B8', fontWeight: 700, mb: 0.5 }}>
-                  所在地区
+                  Region
                 </Typography>
                 <Typography sx={{ fontSize: is960 ? '0.92rem' : '1.05rem', fontWeight: 800, color: '#1E293B' }}>
                   {selectedSpot.province}
@@ -453,7 +453,7 @@ export default function CultureMapPage() {
                   },
                 }}
               >
-                了解更多
+                Learn more
               </ButtonBase>
             </Box>
           ) : (
@@ -487,10 +487,10 @@ export default function CultureMapPage() {
                 <Typography sx={{ fontSize: is960 ? '1.8rem' : '2.2rem' }}>🗺️</Typography>
               </Box>
               <Typography sx={{ fontSize: is960 ? '1.05rem' : '1.2rem', fontWeight: 800, color: '#1E293B', mb: 1 }}>
-                探索中国文化
+                Explore Chinese culture
               </Typography>
               <Typography sx={{ fontSize: is960 ? '0.82rem' : '0.92rem', color: '#94A3B8', fontWeight: 600, maxWidth: 240 }}>
-                点击地图上的标记点，了解中国的文化景点
+                Tap a marker on the map to learn about a place.
               </Typography>
             </Box>
           )}

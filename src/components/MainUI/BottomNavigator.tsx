@@ -54,7 +54,10 @@ export default function BottomNavigator() {
       return (
         location.pathname === '/hsk-test' ||
         location.pathname === '/hsk-prep-test' ||
-        location.pathname === '/hsk-mock-exam'
+        location.pathname === '/hsk-mock-exam' ||
+        location.pathname === '/hsk-prep-training' ||
+        location.pathname === '/hsk-skill-drill' ||
+        location.pathname === '/hsk-oral-review'
       )
     }
     return location.pathname === item.value

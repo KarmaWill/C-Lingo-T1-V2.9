@@ -3,7 +3,7 @@
  * 从图书馆书架点击"Choose a Book"进入
  * 显示所有可选书籍供用户选择
  */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, ButtonBase, InputBase } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -111,6 +111,26 @@ const MOCK_BOOKS: Book[] = [
     isDownloaded: true,
   },
 ];
+
+const buildFallbackCover = (title: string) =>
+  `data:image/svg+xml;utf8,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="560">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#E0F2FE"/>
+          <stop offset="100%" stop-color="#DBEAFE"/>
+        </linearGradient>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#g)"/>
+      <rect x="26" y="26" width="348" height="508" rx="22" fill="none" stroke="#93C5FD" stroke-width="4"/>
+      <text x="50%" y="46%" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#1E3A8A">
+        Chinese Textbook
+      </text>
+      <text x="50%" y="54%" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="600" fill="#1D4ED8">
+        ${title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+      </text>
+    </svg>`
+  )}`;
 
 export default function LibraryBookSelectionPage() {
   const navigate = useNavigate();
@@ -293,7 +313,16 @@ export default function LibraryBookSelectionPage() {
                       bgcolor: '#E5E7EB',
                     }}
                   >
-                    <Box component="img" src={book.coverUrl} alt={book.title} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <Box
+                      component="img"
+                      src={book.coverUrl}
+                      alt={book.title}
+                      onError={(e: SyntheticEvent<HTMLImageElement>) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = buildFallbackCover(book.title);
+                      }}
+                      sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
                   </Box>
                   <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
                     <Box>
@@ -391,7 +420,16 @@ export default function LibraryBookSelectionPage() {
                     },
                   }}
                 >
-                  <Box component="img" src={book.coverUrl} alt={book.title} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <Box
+                    component="img"
+                    src={book.coverUrl}
+                    alt={book.title}
+                    onError={(e: SyntheticEvent<HTMLImageElement>) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = buildFallbackCover(book.title);
+                    }}
+                    sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
                   
                   {/* Hover Overlay with Actions */}
                   <Box
@@ -574,7 +612,16 @@ export default function LibraryBookSelectionPage() {
                     bgcolor: '#E5E7EB',
                   }}
                 >
-                  <Box component="img" src={book.coverUrl} alt={book.title} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <Box
+                    component="img"
+                    src={book.coverUrl}
+                    alt={book.title}
+                    onError={(e: SyntheticEvent<HTMLImageElement>) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = buildFallbackCover(book.title);
+                    }}
+                    sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
                 </Box>
                 <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <Box>
