@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "NSK Horizon OS Local Agent Application",
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "vite",
     "dev:lan": "vite --host",
