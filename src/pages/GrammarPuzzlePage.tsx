@@ -154,36 +154,55 @@ function HubView({ onNavigate, onBack, completedCount, points, is960 }: { onNavi
         transition={{ type: 'spring', damping: 12 }}
       >
         <Box sx={{ position: 'relative', display: 'inline-block', mb: 4 }}>
-          <Typography sx={{ fontSize: is960 ? '2.5rem' : '3.5rem', fontWeight: 900, color: '#268BD2', mb: 1, letterSpacing: '-0.02em' }}>
-            SYNTAX SNAP
+          <Typography sx={{ fontSize: is960 ? '2.45rem' : '3.25rem', fontWeight: 900, color: '#268BD2', mb: 1, letterSpacing: '-0.02em' }}>
+            SENTENCE SNAP
           </Typography>
           <Box sx={{ position: 'absolute', right: -20, top: -16, bgcolor: '#D33682', color: 'white', fontSize: '0.65rem', px: 1.5, py: 0.5, borderRadius: '12px', fontWeight: 900, transform: 'rotate(12deg)' }}>
             MVP
           </Box>
         </Box>
-        <Typography sx={{ fontSize: is960 ? '1rem' : '1.25rem', fontWeight: 700, color: '#859900', mb: 6 }}>
-          语境拼图：让语法像拼图一样简单
+        <Typography sx={{ fontSize: is960 ? '1rem' : '1.2rem', fontWeight: 700, color: '#859900', mb: 4 }}>
+          句子拼图：让语序理解更直观
         </Typography>
       </motion.div>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 3, width: '100%', maxWidth: 600, mb: 6 }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+          gap: is960 ? 2 : 2.5,
+          width: '100%',
+          maxWidth: is960 ? 640 : 700,
+          mb: 5,
+          p: is960 ? 1.5 : 2,
+          borderRadius: '28px',
+          bgcolor: 'rgba(255,255,255,0.68)',
+          border: '1px solid rgba(0,0,0,0.06)',
+          boxShadow: '0 10px 28px rgba(7,54,66,0.08)',
+        }}
+      >
         <ButtonBase
           onClick={() => onNavigate('level-selection')}
           sx={{
             position: 'relative',
             bgcolor: '#2AA198',
             color: 'white',
-            p: is960 ? 3.5 : 5,
-            borderRadius: '28px',
+            p: is960 ? 2.5 : 3.25,
+            minHeight: is960 ? 132 : 148,
+            borderRadius: '22px',
             boxShadow: '0 8px 0 rgb(7,54,66)',
             transition: 'all 0.2s',
             '&:hover': { bgcolor: '#268BD2' },
             '&:active': { transform: 'translateY(8px)', boxShadow: 'none' },
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          <PlayArrowIcon sx={{ fontSize: is960 ? 48 : 64, mb: 2 }} />
-          <Typography sx={{ fontSize: is960 ? '1.25rem' : '1.75rem', fontWeight: 900, mb: 0.5 }}>开始练习</Typography>
-          <Typography sx={{ fontSize: is960 ? '0.75rem' : '0.9rem', opacity: 0.8 }}>已完成 {completedCount} 关</Typography>
+          <PlayArrowIcon sx={{ fontSize: is960 ? 40 : 50, mb: 1.2 }} />
+          <Typography sx={{ fontSize: is960 ? '1.15rem' : '1.35rem', fontWeight: 900, mb: 0.4, lineHeight: 1.2 }}>开始练习</Typography>
+          <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.9rem', opacity: 0.88 }}>已完成 {completedCount} 关</Typography>
         </ButtonBase>
 
         <ButtonBase
@@ -192,17 +211,22 @@ function HubView({ onNavigate, onBack, completedCount, points, is960 }: { onNavi
             position: 'relative',
             bgcolor: '#B58900',
             color: 'white',
-            p: is960 ? 3.5 : 5,
-            borderRadius: '28px',
+            p: is960 ? 2.5 : 3.25,
+            minHeight: is960 ? 132 : 148,
+            borderRadius: '22px',
             boxShadow: '0 8px 0 rgb(7,54,66)',
             transition: 'all 0.2s',
             '&:hover': { bgcolor: '#CB4B16' },
             '&:active': { transform: 'translateY(8px)', boxShadow: 'none' },
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          <CollectionsIcon sx={{ fontSize: is960 ? 48 : 64, mb: 2 }} />
-          <Typography sx={{ fontSize: is960 ? '1.25rem' : '1.75rem', fontWeight: 900, mb: 0.5 }}>我的图鉴</Typography>
-          <Typography sx={{ fontSize: is960 ? '0.75rem' : '0.9rem', opacity: 0.8 }}>已解锁 {completedCount} 张图片</Typography>
+          <CollectionsIcon sx={{ fontSize: is960 ? 38 : 48, mb: 1.2 }} />
+          <Typography sx={{ fontSize: is960 ? '1.15rem' : '1.35rem', fontWeight: 900, mb: 0.4, lineHeight: 1.2 }}>我的图鉴</Typography>
+          <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.9rem', opacity: 0.88 }}>已解锁 {completedCount} 张图片</Typography>
         </ButtonBase>
       </Box>
 

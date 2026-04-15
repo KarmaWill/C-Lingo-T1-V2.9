@@ -271,7 +271,7 @@ export default function HomePage() {
             >
               <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: is960 ? 0.85 : 1.25, flex: 1, minWidth: 0 }}>
                 <ExtensionIcon sx={{ fontSize: is960 ? 20 : 30, opacity: 0.95, flexShrink: 0 }} />
-                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.82rem' : '1.2rem', lineHeight: 1.25, minWidth: 0 }}>Grammar Puzzle</Typography>
+                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.82rem' : '1.2rem', lineHeight: 1.25, minWidth: 0 }}>Sentence Snap</Typography>
               </Box>
               <Box
                 sx={{
