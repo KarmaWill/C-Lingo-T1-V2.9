@@ -403,7 +403,7 @@ const VoiceTranslation: React.FC<VoiceTranslationProps> = ({ onResult }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (isRecording) {
       interval = setInterval(() => setTimer(t => t + 1), 1000);
     } else {
@@ -413,7 +413,7 @@ const VoiceTranslation: React.FC<VoiceTranslationProps> = ({ onResult }) => {
   }, [isRecording]);
 
   useEffect(() => {
-    let animationInterval: NodeJS.Timeout;
+    let animationInterval: ReturnType<typeof setInterval>;
     if (isRecording) {
       animationInterval = setInterval(() => {
         setWaveHeights(Array(20).fill(0).map(() => Math.random() * 48 + 16));

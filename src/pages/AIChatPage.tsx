@@ -889,7 +889,7 @@ export default function AIChatPage() {
     const [countdown, setCountdown] = useState<number>(0); // 倒计时（秒）
     const recognition = useRef<SpeechRecognition | null>(null);
     const recordedTextRef = useRef<string>(''); // 用于在 onend 中访问最新的文本
-    const countdownTimerRef = useRef<NodeJS.Timeout | null>(null); // 倒计时定时器
+    const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null); // 倒计时定时器
     
     // 初始化语音识别
     useEffect(() => {
