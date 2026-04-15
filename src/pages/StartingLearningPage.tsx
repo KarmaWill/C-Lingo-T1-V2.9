@@ -1,10 +1,9 @@
-import { Box, Typography, ButtonBase } from '@mui/material'
+import { Box, ButtonBase } from '@mui/material'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import { useNavigate } from 'react-router-dom'
 
 /**
- * Placeholder for the “Starting Learning” flow from Library.
- * Replace content when the prototype is ready.
+ * Blank canvas for upcoming ebook flow design.
  */
 export default function StartingLearningPage() {
   const navigate = useNavigate()
@@ -12,67 +11,27 @@ export default function StartingLearningPage() {
   const is960 = screenSize === '960x540'
 
   return (
-    <Box
-      sx={{
-        height: '100%',
-        minHeight: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        bgcolor: '#F8FAFC',
-        boxSizing: 'border-box',
-      }}
-    >
-      <Box
+    <Box sx={{ width: '100%', height: '100%', minHeight: 0, bgcolor: '#FFFFFF', position: 'relative' }}>
+      <ButtonBase
+        onClick={() => navigate(-1)}
+        aria-label="Back"
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1.5,
-          px: is960 ? 2 : 3,
-          py: is960 ? 1.5 : 2,
-          flexShrink: 0,
-          borderBottom: '1px solid #E2E8F0',
-          bgcolor: 'white',
+          position: 'absolute',
+          top: is960 ? 16 : 20,
+          left: is960 ? 16 : 20,
+          width: is960 ? 48 : 56,
+          height: is960 ? 48 : 56,
+          borderRadius: '50%',
+          bgcolor: '#F3F4F6',
+          color: '#374151',
+          border: '1px solid rgba(0,0,0,0.08)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          zIndex: 2,
+          '&:active': { transform: 'scale(0.96)', bgcolor: '#E5E7EB' },
         }}
       >
-        <ButtonBase
-          onClick={() => navigate(-1)}
-          sx={{
-            minHeight: 48,
-            minWidth: 48,
-            borderRadius: '50%',
-            bgcolor: '#F1F5F9',
-            color: '#475569',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            '&:active': { transform: 'scale(0.95)', bgcolor: '#E2E8F0' },
-          }}
-          aria-label="Back"
-        >
-          <ChevronLeftIcon sx={{ fontSize: is960 ? 26 : 28 }} />
-        </ButtonBase>
-        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.1rem' : '1.35rem', color: '#0F172A' }}>
-          Starting Learning
-        </Typography>
-      </Box>
-
-      <Box
-        sx={{
-          flex: 1,
-          minHeight: 0,
-          overflow: 'auto',
-          p: is960 ? 2 : 3,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 2,
-        }}
-      >
-        <Typography sx={{ color: '#64748B', fontSize: is960 ? '0.9rem' : '1rem', textAlign: 'center', maxWidth: 420 }}>
-          Content placeholder — design your flow here.
-        </Typography>
-      </Box>
+        <ChevronLeftIcon sx={{ fontSize: is960 ? 26 : 30 }} />
+      </ButtonBase>
     </Box>
   )
 }

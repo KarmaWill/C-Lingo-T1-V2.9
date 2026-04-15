@@ -2,7 +2,7 @@
  * LingoFlash — 完整版（对齐 NewBuild/lingoflash.zip 交互）
  * Dashboard → LearningSession → SessionComplete
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { Box, Typography, ButtonBase } from '@mui/material';
@@ -12,8 +12,12 @@ import AutorenewIcon from '@mui/icons-material/Autorenew';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import AddIcon from '@mui/icons-material/Add';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import SettingsIcon from '@mui/icons-material/Settings';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import StarOutlineIcon from '@mui/icons-material/StarOutline';
+import StarIcon from '@mui/icons-material/Star';
 import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CheckIcon from '@mui/icons-material/Check';
@@ -22,14 +26,11 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import AddIcon from '@mui/icons-material/Add';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
 import SchoolIcon from '@mui/icons-material/School';
 import PublicIcon from '@mui/icons-material/Public';
 import BusinessIcon from '@mui/icons-material/Business';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import FlightIcon from '@mui/icons-material/Flight';
-import SettingsIcon from '@mui/icons-material/Settings';
 import TuneIcon from '@mui/icons-material/Tune';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -109,12 +110,16 @@ function Flashcard({
   setIsFlipped,
   onAssess,
   is960,
+  isFavorite,
+  onToggleFavorite,
 }: {
   word: Word;
   isFlipped: boolean;
   setIsFlipped: (v: boolean) => void;
   onAssess: (a: 'know' | 'uncertain' | 'unknown') => void;
   is960: boolean;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
 }) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -136,8 +141,8 @@ function Flashcard({
     }
   };
 
-  const cardW = is960 ? 320 : 380;
-  const cardAspect = is960 ? '10 / 14' : '10 / 15';
+  const cardW = is960 ? 300 : 360;
+  const cardAspect = '3 / 4';
 
   return (
     <Box sx={{ position: 'relative', width: cardW, aspectRatio: cardAspect, perspective: '1200px' }}>
@@ -163,9 +168,16 @@ function Flashcard({
             p: is960 ? 3 : 4,
           }}
         >
-          <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
-            <ButtonBase sx={{ p: 1, borderRadius: '50%', color: '#9CA3AF', '&:active': { color: '#FBBF24' } }}>
-              <StarOutlineIcon sx={{ fontSize: 22 }} />
+          <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 5 }} onClick={(e) => e.stopPropagation()}>
+            <ButtonBase
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite();
+              }}
+              sx={{ p: 1, borderRadius: '50%', color: isFavorite ? '#FBBF24' : '#9CA3AF', '&:active': { color: '#FBBF24' } }}
+            >
+              {isFavorite ? <StarIcon sx={{ fontSize: 22 }} /> : <StarOutlineIcon sx={{ fontSize: 22 }} />}
             </ButtonBase>
           </Box>
 
@@ -240,8 +252,15 @@ function Flashcard({
               <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.35rem' : '1.6rem', color: '#111827' }}>{word.word}</Typography>
               <Typography sx={{ color: '#6B7280', fontSize: is960 ? '0.75rem' : '0.85rem', fontFamily: 'monospace' }}>{word.phonetic}</Typography>
             </Box>
-            <ButtonBase sx={{ p: 1, borderRadius: '50%', color: '#9CA3AF', '&:active': { color: '#FBBF24' } }}>
-              <StarOutlineIcon sx={{ fontSize: 22 }} />
+            <ButtonBase
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite();
+              }}
+              sx={{ p: 1, borderRadius: '50%', color: isFavorite ? '#FBBF24' : '#9CA3AF', '&:active': { color: '#FBBF24' } }}
+            >
+              {isFavorite ? <StarIcon sx={{ fontSize: 22 }} /> : <StarOutlineIcon sx={{ fontSize: 22 }} />}
             </ButtonBase>
           </Box>
 
@@ -321,18 +340,18 @@ function SessionComplete({
       </motion.div>
 
       <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}>
-        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.5rem' : '2rem', color: '#111827', mb: 0.5 }}>学习完成！</Typography>
+        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.5rem' : '2rem', color: '#111827', mb: 0.5 }}>Session complete</Typography>
         <Typography sx={{ fontSize: is960 ? '0.85rem' : '0.95rem', color: '#6B7280', mb: is960 ? 3 : 4 }}>
-          你今天学习了 {stats.total} 个单词，继续保持！
+          You studied {stats.total} cards today — keep it up!
         </Typography>
       </motion.div>
 
       <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.35 }}>
         <Box sx={{ display: 'flex', gap: is960 ? 3 : 5, mb: is960 ? 3 : 4, justifyContent: 'center' }}>
           {[
-            { label: '认识', value: stats.known, color: '#16A34A' },
-            { label: '模糊', value: stats.uncertain, color: '#D97706' },
-            { label: '不认识', value: stats.unknown, color: '#DC2626' },
+            { label: 'Known', value: stats.known, color: '#16A34A' },
+            { label: 'Uncertain', value: stats.uncertain, color: '#D97706' },
+            { label: 'Unknown', value: stats.unknown, color: '#DC2626' },
           ].map((s, i, arr) => (
             <Box key={s.label} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', px: is960 ? 2 : 3, ...(i < arr.length - 1 ? { borderRight: '1px solid #E5E7EB' } : {}) }}>
               <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.5rem' : '1.75rem', color: s.color }}>{s.value}</Typography>
@@ -348,8 +367,8 @@ function SessionComplete({
             <EmojiEventsIcon sx={{ color: 'white', fontSize: is960 ? 22 : 26 }} />
           </Box>
           <Box sx={{ textAlign: 'left' }}>
-            <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.88rem' : '1rem', color: '#1E3A8A' }}>获得勋章</Typography>
-            <Typography sx={{ fontSize: '0.72rem', color: '#3B82F6' }}>连续学习第 15 天</Typography>
+            <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.88rem' : '1rem', color: '#1E3A8A' }}>Badge earned</Typography>
+            <Typography sx={{ fontSize: '0.72rem', color: '#3B82F6' }}>15-day learning streak</Typography>
           </Box>
         </Box>
 
@@ -370,7 +389,7 @@ function SessionComplete({
             '&:active': { bgcolor: '#1F2937' },
           }}
         >
-          返回首页
+          Back to hub
           <ArrowForwardIcon sx={{ fontSize: 20 }} />
         </ButtonBase>
       </motion.div>
@@ -383,12 +402,16 @@ function SessionComplete({
    ═══════════════════════════════════════════════════════════════════════════════ */
 function LearningSession({
   words,
-  onFinish,
   is960,
+  savedWordIds,
+  onToggleSave,
+  onExitToDashboard,
 }: {
   words: Word[];
-  onFinish: () => void;
   is960: boolean;
+  savedWordIds: string[];
+  onToggleSave: (wordId: string) => void;
+  onExitToDashboard: () => void;
 }) {
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -417,13 +440,16 @@ function LearningSession({
     }
   }, [idx, words.length]);
 
-  if (complete) return <SessionComplete stats={stats} onReturn={onFinish} is960={is960} />;
+  if (complete) return <SessionComplete stats={stats} onReturn={onExitToDashboard} is960={is960} />;
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#F8F9FA', overflow: 'hidden' }}>
       {/* Header */}
       <Box sx={{ flexShrink: 0, px: is960 ? 2 : 3, py: is960 ? 1.25 : 1.75, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'white', borderBottom: '1px solid #F1F3F5' }}>
-        <ButtonBase onClick={onFinish} sx={{ p: 1, borderRadius: '50%', color: '#6B7280', '&:hover': { bgcolor: '#F3F4F6' }, minWidth: 44, minHeight: 44 }}>
+        <ButtonBase
+          onClick={onExitToDashboard}
+          sx={{ p: 1, borderRadius: '50%', color: '#6B7280', '&:hover': { bgcolor: '#F3F4F6' }, minWidth: 44, minHeight: 44 }}
+        >
           <CloseIcon sx={{ fontSize: 24 }} />
         </ButtonBase>
 
@@ -445,13 +471,13 @@ function LearningSession({
       </Box>
 
       {/* Card area */}
-      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', px: 2 }}>
+      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflowY: 'auto', overflowX: 'hidden', px: 2, py: is960 ? 1.5 : 2 }}>
         {/* Background preview cards */}
         {idx + 1 < words.length && (
-          <Box sx={{ position: 'absolute', opacity: 0.18, transform: 'translateX(52px) scale(0.9)', zIndex: 0, width: is960 ? 320 : 380, aspectRatio: '10/15', bgcolor: 'white', borderRadius: is960 ? '24px' : '32px', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }} />
+          <Box sx={{ position: 'absolute', opacity: 0.18, transform: 'translateX(52px) scale(0.9)', zIndex: 0, width: is960 ? 300 : 360, aspectRatio: '3 / 4', bgcolor: 'white', borderRadius: is960 ? '24px' : '32px', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }} />
         )}
         {idx > 0 && (
-          <Box sx={{ position: 'absolute', opacity: 0.18, transform: 'translateX(-52px) scale(0.9)', zIndex: 0, width: is960 ? 320 : 380, aspectRatio: '10/15', bgcolor: 'white', borderRadius: is960 ? '24px' : '32px', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }} />
+          <Box sx={{ position: 'absolute', opacity: 0.18, transform: 'translateX(-52px) scale(0.9)', zIndex: 0, width: is960 ? 300 : 360, aspectRatio: '3 / 4', bgcolor: 'white', borderRadius: is960 ? '24px' : '32px', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }} />
         )}
 
         <AnimatePresence mode="wait">
@@ -469,6 +495,8 @@ function LearningSession({
               setIsFlipped={setFlipped}
               onAssess={handleAssess}
               is960={is960}
+              isFavorite={savedWordIds.includes(words[idx].id)}
+              onToggleFavorite={() => onToggleSave(words[idx].id)}
             />
           </motion.div>
         </AnimatePresence>
@@ -519,11 +547,13 @@ function LearningSession({
 const DAILY_GOAL = { target: 50, current: 32, newWords: 15, reviewWords: 17 };
 const WEEKLY = [40, 70, 45, 90, 65, 80, 50];
 const BOOKS = [
-  { title: '快乐中文 Vocab', count: 1200, gradient: 'linear-gradient(135deg,#3B82F6,#6366F1)', active: true },
-  { title: 'HSK 1 核心词', count: 500, gradient: 'linear-gradient(135deg,#10B981,#0D9488)' },
-  { title: 'HSK 2 进阶词', count: 800, gradient: 'linear-gradient(135deg,#F59E0B,#EA580C)' },
-  { title: 'HSK 3 高频词', count: 1200, gradient: 'linear-gradient(135deg,#EC4899,#DB2777)' },
+  { title: 'Happy Chinese Vocab', count: 1200, gradient: 'linear-gradient(135deg,#3B82F6,#6366F1)', active: true },
+  { title: 'HSK 1 Core', count: 500, gradient: 'linear-gradient(135deg,#10B981,#0D9488)' },
+  { title: 'HSK 2 Plus', count: 800, gradient: 'linear-gradient(135deg,#F59E0B,#EA580C)' },
+  { title: 'HSK 3 High-Frequency', count: 1200, gradient: 'linear-gradient(135deg,#EC4899,#DB2777)' },
 ];
+
+const LINGOFLASH_SAVED_IDS_KEY = 'lingoflash-saved-word-ids';
 
 // 词书库：预设词书
 const VOCAB_LIBRARY = [
@@ -959,60 +989,92 @@ function VocabLibraryModal({ onClose, is960 }: { onClose: () => void; is960: boo
   );
 }
 
-function Dashboard({ onStart, onStartReview, is960 }: { onStart: () => void; onStartReview: () => void; is960: boolean }) {
-  const [tab, setTab] = useState<'study' | 'library' | 'stats'>('study');
+function Dashboard({
+  onStart,
+  onStartReview,
+  is960,
+  savedCount,
+  onOpenSaved,
+}: {
+  onStart: () => void;
+  onStartReview: () => void;
+  is960: boolean;
+  savedCount: number;
+  onOpenSaved: () => void;
+}) {
   const [showVocabLibrary, setShowVocabLibrary] = useState(false);
+  const [tab, setTab] = useState<'study' | 'library' | 'stats'>('study');
   const [showEbbinghausSettings, setShowEbbinghausSettings] = useState(false);
+  const [selectedBookIndex, setSelectedBookIndex] = useState(() => BOOKS.findIndex((book) => book.active));
   const progress = (DAILY_GOAL.current / DAILY_GOAL.target) * 100;
 
   const TABS = [
-    { id: 'study', label: '学习', icon: <PlayArrowIcon sx={{ fontSize: 16 }} /> },
-    { id: 'library', label: '词库', icon: <LocalLibraryIcon sx={{ fontSize: 16 }} /> },
-    { id: 'stats', label: '数据', icon: <BarChartIcon sx={{ fontSize: 16 }} /> },
+    { id: 'study', label: 'Study', icon: <PlayArrowIcon sx={{ fontSize: 16 }} /> },
+    { id: 'library', label: 'Vocabulary', icon: <LocalLibraryIcon sx={{ fontSize: 16 }} /> },
+    { id: 'stats', label: 'Stats', icon: <BarChartIcon sx={{ fontSize: 16 }} /> },
   ] as const;
+
+  const selectedBook = BOOKS[selectedBookIndex >= 0 ? selectedBookIndex : 0];
+  const selectedBookProgress = 35;
+  const masteredWords = Math.round(selectedBook.count * (selectedBookProgress / 100));
 
   return (
     <>
       {showVocabLibrary && <VocabLibraryModal onClose={() => setShowVocabLibrary(false)} is960={is960} />}
       {showEbbinghausSettings && <EbbinghausSettingsModal onClose={() => setShowEbbinghausSettings(false)} is960={is960} />}
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#F8F9FA', overflow: 'hidden' }}>
-        {/* Header：仅保留分段切换（系统状态栏由 MainLayout 提供） */}
-      <Box sx={{ flexShrink: 0, px: is960 ? 2 : 3, height: is960 ? 56 : 68, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'white', borderBottom: '1px solid #F1F3F5' }}>
-        <Box sx={{ display: 'flex', gap: 0.5, bgcolor: '#F3F4F6', borderRadius: '18px', p: '4px' }}>
-          {TABS.map(t => (
-            <ButtonBase
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              sx={{
-                display: 'flex', alignItems: 'center', gap: 0.6,
-                px: is960 ? 1.5 : 2, py: 0.75,
-                minHeight: 44,
-                borderRadius: '14px',
-                fontWeight: 800, fontSize: is960 ? '0.7rem' : '0.8rem',
-                color: tab === t.id ? '#2563EB' : '#6B7280',
-                bgcolor: tab === t.id ? 'white' : 'transparent',
-                boxShadow: tab === t.id ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
-                transition: 'all 0.2s',
-              }}
-            >
-              {t.icon} {t.label}
-            </ButtonBase>
-          ))}
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#F8F9FA', overflow: 'hidden', position: 'relative' }}>
+        {/* Back button */}
+        <Box sx={{ position: 'absolute', top: is960 ? 11 : 14, left: is960 ? 10 : 14, zIndex: 30 }}>
+          <ButtonBase
+            type="button"
+            onClick={() => {
+              console.log('[LingoFlash] Back to /AI');
+              window.location.href = '/AI';
+            }}
+            sx={{ minWidth: 44, minHeight: 44, borderRadius: '50%', bgcolor: 'rgba(0,0,0,0.05)', color: '#374151', '&:active': { bgcolor: 'rgba(0,0,0,0.1)' } }}
+          >
+            <ChevronLeftIcon sx={{ fontSize: 26 }} />
+          </ButtonBase>
         </Box>
-      </Box>
 
-      {/* Content：铺满标题栏下方剩余区域 */}
-      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', p: is960 ? 2 : 3 }}>
-        {/* ── Study Tab ── */}
-        {tab === 'study' && (
+        {/* Tab switcher */}
+        <Box sx={{ flexShrink: 0, px: is960 ? 2 : 3, height: is960 ? 56 : 68, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'white', borderBottom: '1px solid #F1F3F5' }}>
+          <Box sx={{ display: 'flex', gap: 0.5, bgcolor: '#F3F4F6', borderRadius: '18px', p: '4px' }}>
+            {TABS.map((t) => (
+              <ButtonBase
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.6,
+                  px: is960 ? 1.5 : 2,
+                  py: 0.75,
+                  minHeight: 44,
+                  borderRadius: '14px',
+                  fontWeight: 800,
+                  fontSize: is960 ? '0.7rem' : '0.8rem',
+                  color: tab === t.id ? '#2563EB' : '#6B7280',
+                  bgcolor: tab === t.id ? 'white' : 'transparent',
+                  boxShadow: tab === t.id ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {t.icon} {t.label}
+              </ButtonBase>
+            ))}
+          </Box>
+        </Box>
+
+        {/* Tab content */}
+        <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', p: is960 ? 2 : 3 }}>
+          {tab === 'study' && (
           <Box sx={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'minmax(0,2fr) minmax(0,1fr)' }, gap: is960 ? 2 : 2.5, alignItems: 'stretch' }}>
-            {/* Left */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 2 : 2.5, minHeight: 0, height: '100%' }}>
-              {/* 今日进度 */}
-              <Box sx={{ flex: 1, minHeight: 0, bgcolor: 'white', borderRadius: '28px', p: is960 ? 2.5 : 3.5, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ width: '100%', aspectRatio: '16 / 7', bgcolor: 'white', borderRadius: '28px', p: is960 ? 2.5 : 3.5, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 2.5 }}>
                   <Box>
-                    <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, color: '#9CA3AF', letterSpacing: '0.12em', textTransform: 'uppercase', mb: 0.75 }}>今日进度</Typography>
+                    <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', fontWeight: 800, color: '#9CA3AF', letterSpacing: '0.12em', textTransform: 'uppercase', mb: 0.75 }}>Daily Progress</Typography>
                     <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
                       <Typography sx={{ fontWeight: 900, fontSize: is960 ? '2.25rem' : '2.75rem', color: '#111827', lineHeight: 1 }}>{DAILY_GOAL.current}</Typography>
                       <Typography sx={{ fontWeight: 700, fontSize: is960 ? '1.1rem' : '1.35rem', color: '#E5E7EB' }}>/ {DAILY_GOAL.target}</Typography>
@@ -1027,10 +1089,10 @@ function Dashboard({ onStart, onStartReview, is960 }: { onStart: () => void; onS
 
                 <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.5 }}>
                   {[
-                    { label: '新学', val: DAILY_GOAL.newWords, bg: '#EFF6FF', color: '#1D4ED8' },
-                    { label: '复习', val: DAILY_GOAL.reviewWords, bg: '#FFFBEB', color: '#B45309' },
-                    { label: '剩余', val: DAILY_GOAL.target - DAILY_GOAL.current, bg: '#F9FAFB', color: '#374151' },
-                  ].map(s => (
+                    { label: 'New', val: DAILY_GOAL.newWords, bg: '#EFF6FF', color: '#1D4ED8' },
+                    { label: 'Review', val: DAILY_GOAL.reviewWords, bg: '#FFFBEB', color: '#B45309' },
+                    { label: 'Left', val: DAILY_GOAL.target - DAILY_GOAL.current, bg: '#F9FAFB', color: '#374151' },
+                  ].map((s) => (
                     <Box key={s.label} sx={{ bgcolor: s.bg, borderRadius: '18px', p: is960 ? 1.5 : 2 }}>
                       <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, color: s.color, opacity: 0.65, textTransform: 'uppercase', letterSpacing: '0.08em', mb: 0.5 }}>{s.label}</Typography>
                       <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.35rem' : '1.75rem', color: s.color }}>{s.val}</Typography>
@@ -1039,14 +1101,49 @@ function Dashboard({ onStart, onStartReview, is960 }: { onStart: () => void; onS
                 </Box>
               </Box>
 
-              {/* Action buttons */}
+              <ButtonBase
+                type="button"
+                onClick={onOpenSaved}
+                sx={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 2,
+                  p: is960 ? 2 : 2.5,
+                  textAlign: 'left',
+                  bgcolor: 'white',
+                  borderRadius: '28px',
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+                  minHeight: 52,
+                  '&:active': { bgcolor: '#F9FAFB', transform: 'scale(0.995)' },
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 1.5 : 2 }}>
+                  <Box sx={{ width: is960 ? 44 : 48, height: is960 ? 44 : 48, bgcolor: '#FEF3C7', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <StarOutlineIcon sx={{ color: '#D97706', fontSize: is960 ? 24 : 26 }} />
+                  </Box>
+                  <Box>
+                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.88rem' : '1rem', color: '#111827', lineHeight: 1.2 }}>Saved words</Typography>
+                    <Typography sx={{ fontSize: is960 ? '0.74rem' : '0.82rem', color: '#9CA3AF', mt: 0.35 }}>Review cards you starred during sessions</Typography>
+                  </Box>
+                </Box>
+                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.1rem' : '1.25rem', color: '#2563EB', flexShrink: 0 }}>{savedCount}</Typography>
+              </ButtonBase>
+
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: is960 ? 1.5 : 2 }}>
                 <ButtonBase
                   onClick={onStart}
                   sx={{
-                    display: 'flex', alignItems: 'center', gap: is960 ? 1.5 : 2.5,
-                    p: is960 ? 2 : 3, textAlign: 'left',
-                    bgcolor: '#2563EB', borderRadius: '28px',
+                    aspectRatio: '5 / 3',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: is960 ? 1.5 : 2.5,
+                    p: is960 ? 2 : 3,
+                    textAlign: 'left',
+                    bgcolor: '#2563EB',
+                    borderRadius: '28px',
                     boxShadow: '0 12px 32px rgba(37,99,235,0.35)',
                     '&:active': { transform: 'scale(0.98)' },
                   }}
@@ -1054,18 +1151,32 @@ function Dashboard({ onStart, onStartReview, is960 }: { onStart: () => void; onS
                   <Box sx={{ width: is960 ? 48 : 60, height: is960 ? 48 : 60, bgcolor: 'rgba(255,255,255,0.2)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <PlayArrowIcon sx={{ color: 'white', fontSize: is960 ? 26 : 34 }} />
                   </Box>
-                  <Box>
-                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.92rem' : '1.1rem', color: 'white', lineHeight: 1.2 }}>开始学习</Typography>
-                    <Typography sx={{ fontSize: is960 ? '0.65rem' : '0.75rem', color: 'rgba(255,255,255,0.72)', mt: 0.35 }}>12个新词 + 3个未完成</Typography>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.92rem' : '1.1rem', color: 'white', lineHeight: 1.2 }}>Start Learning</Typography>
+                    <Box sx={{ mt: 0.45, display: 'flex', flexDirection: 'column', gap: 0.2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.6 }}>
+                        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.05rem' : '1.25rem', color: '#FFFFFF', lineHeight: 1 }}>12</Typography>
+                        <Typography sx={{ fontSize: is960 ? '0.76rem' : '0.86rem', color: 'rgba(255,255,255,0.9)', lineHeight: 1.2 }}>New words</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.6 }}>
+                        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.98rem' : '1.18rem', color: '#BFDBFE', lineHeight: 1 }}>3</Typography>
+                        <Typography sx={{ fontSize: is960 ? '0.76rem' : '0.86rem', color: 'rgba(255,255,255,0.78)', lineHeight: 1.2 }}>Unfinished words</Typography>
+                      </Box>
+                    </Box>
                   </Box>
                 </ButtonBase>
 
                 <ButtonBase
                   onClick={onStartReview}
                   sx={{
-                    display: 'flex', alignItems: 'center', gap: is960 ? 1.5 : 2.5,
-                    p: is960 ? 2 : 3, textAlign: 'left',
-                    bgcolor: 'white', borderRadius: '28px',
+                    aspectRatio: '5 / 3',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: is960 ? 1.5 : 2.5,
+                    p: is960 ? 2 : 3,
+                    textAlign: 'left',
+                    bgcolor: 'white',
+                    borderRadius: '28px',
                     border: '1px solid rgba(0,0,0,0.06)',
                     boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
                     '&:active': { bgcolor: '#F9FAFB', transform: 'scale(0.98)' },
@@ -1074,22 +1185,31 @@ function Dashboard({ onStart, onStartReview, is960 }: { onStart: () => void; onS
                   <Box sx={{ width: is960 ? 48 : 60, height: is960 ? 48 : 60, bgcolor: '#FFFBEB', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <AutorenewIcon sx={{ color: '#D97706', fontSize: is960 ? 26 : 34 }} />
                   </Box>
-                  <Box>
-                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.92rem' : '1.1rem', color: '#111827', lineHeight: 1.2 }}>待复习</Typography>
-                    <Typography sx={{ fontSize: is960 ? '0.65rem' : '0.75rem', color: '#9CA3AF', mt: 0.35 }}>17个艾宾浩斯复习 + 6个待巩固</Typography>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.92rem' : '1.1rem', color: '#111827', lineHeight: 1.2 }}>Review Queue</Typography>
+                    <Box sx={{ mt: 0.45, display: 'flex', flexDirection: 'column', gap: 0.2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.6 }}>
+                        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.05rem' : '1.25rem', color: '#B45309', lineHeight: 1 }}>17</Typography>
+                        <Typography sx={{ fontSize: is960 ? '0.76rem' : '0.86rem', color: '#6B7280', lineHeight: 1.2 }}>Due reviews</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.6 }}>
+                        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.98rem' : '1.18rem', color: '#2563EB', lineHeight: 1 }}>6</Typography>
+                        <Typography sx={{ fontSize: is960 ? '0.76rem' : '0.86rem', color: '#6B7280', lineHeight: 1.2 }}>To reinforce</Typography>
+                      </Box>
+                    </Box>
                   </Box>
                 </ButtonBase>
               </Box>
             </Box>
 
-            {/* Right sidebar */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 2 : 2.5, minHeight: 0, height: '100%' }}>
-              {/* 学习趋势 → 点击进入「数据」详情（艾宾浩斯等） */}
               <ButtonBase
-                onClick={() => setTab('stats')}
+                type="button"
+                onClick={() => setShowEbbinghausSettings(true)}
                 sx={{
-                  flex: 1,
-                  minHeight: 120,
+                  width: '100%',
+                  height: is960 ? 246 : 383,
+                  minHeight: is960 ? 246 : 383,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'stretch',
@@ -1105,8 +1225,8 @@ function Dashboard({ onStart, onStartReview, is960 }: { onStart: () => void; onS
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, width: '100%' }}>
                   <TrendingUpIcon sx={{ fontSize: 18, color: '#3B82F6' }} />
-                  <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.85rem' : '0.95rem', color: '#111827' }}>学习趋势</Typography>
-                  <Typography sx={{ ml: 'auto', fontSize: '0.65rem', fontWeight: 800, color: '#2563EB' }}>数据 ›</Typography>
+                  <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.85rem' : '0.95rem', color: '#111827' }}>Learning Trend</Typography>
+                  <Typography sx={{ ml: 'auto', fontSize: is960 ? '0.76rem' : '0.86rem', fontWeight: 800, color: '#2563EB' }}>Plan ›</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 0.75, flex: 1, minHeight: is960 ? 80 : 100 }}>
                   {WEEKLY.map((h, i) => (
@@ -1125,39 +1245,109 @@ function Dashboard({ onStart, onStartReview, is960 }: { onStart: () => void; onS
                 </Box>
               </ButtonBase>
 
-              {/* 词书信息 */}
-              <Box sx={{ flexShrink: 0, background: 'linear-gradient(135deg, #4F46E5 0%, #2563EB 100%)', borderRadius: '28px', p: is960 ? 2 : 2.5, color: 'white', boxShadow: '0 12px 28px rgba(79,70,229,0.28)' }}>
-                <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.92rem' : '1.05rem', mb: 0.75 }}>快乐中文核心词汇</Typography>
-                <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.78rem', opacity: 0.75, mb: 2, lineHeight: 1.5 }}>当前正在攻克快乐中文词库，已完成 35%</Typography>
-                <ButtonBase
-                  onClick={() => setTab('library')}
-                  sx={{ width: '100%', py: is960 ? 1.25 : 1.35, minHeight: 44, bgcolor: 'rgba(255,255,255,0.18)', borderRadius: '14px', color: 'white', fontWeight: 800, fontSize: is960 ? '0.72rem' : '0.8rem', '&:active': { bgcolor: 'rgba(255,255,255,0.28)' } }}
+              {/* Selected vocabulary book */}
+              <ButtonBase
+                onClick={() => setTab('library')}
+                sx={{
+                  width: '100%',
+                  mt: '1px',
+                  height: is960 ? 109 : 182,
+                  minHeight: is960 ? 109 : 182,
+                  maxHeight: is960 ? 109 : 182,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: is960 ? 1.5 : 2.5,
+                  p: is960 ? 2 : 3,
+                  textAlign: 'left',
+                  background: 'linear-gradient(135deg, #4F46E5 0%, #2563EB 100%)',
+                  borderRadius: '28px',
+                  color: 'white',
+                  boxShadow: '0 12px 28px rgba(79,70,229,0.28)',
+                  '&:active': { transform: 'scale(0.98)' },
+                }}
+              >
+                <Box
+                  sx={{
+                    width: is960 ? 52 : 60,
+                    height: is960 ? 66 : 76,
+                    background: selectedBook.gradient,
+                    borderRadius: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.2)',
+                    flexShrink: 0,
+                  }}
                 >
-                  查看词书详情
-                </ButtonBase>
-              </Box>
+                  <MenuBookIcon sx={{ color: 'white', fontSize: is960 ? 26 : 34 }} />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.92rem' : '1.1rem', color: 'white', lineHeight: 1.2 }}>
+                    {selectedBook.title}
+                  </Typography>
+                  <Box sx={{ mt: 0.6 }}>
+                    <Box sx={{ height: is960 ? 5 : 6, bgcolor: 'rgba(255,255,255,0.24)', borderRadius: 99, overflow: 'hidden' }}>
+                      <motion.div
+                        style={{ height: '100%', background: '#BFDBFE', borderRadius: 99 }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${selectedBookProgress}%` }}
+                        transition={{ duration: 0.9, ease: 'easeOut' }}
+                      />
+                    </Box>
+                    <Box sx={{ mt: 0.45, display: 'flex', alignItems: 'baseline', gap: 0.45 }}>
+                      <Typography sx={{ fontSize: is960 ? '0.64rem' : '0.74rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.2 }}>
+                        {selectedBookProgress}% ·
+                      </Typography>
+                      <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.72rem' : '0.82rem', color: '#FFFFFF', lineHeight: 1.1 }}>
+                        {masteredWords}
+                      </Typography>
+                      <Typography sx={{ fontSize: is960 ? '0.64rem' : '0.74rem', color: 'rgba(255,255,255,0.72)', lineHeight: 1.2 }}>/</Typography>
+                      <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.72rem' : '0.82rem', color: '#BFDBFE', lineHeight: 1.1 }}>
+                        {selectedBook.count}
+                      </Typography>
+                      <Typography sx={{ fontSize: is960 ? '0.64rem' : '0.74rem', color: 'rgba(255,255,255,0.72)', lineHeight: 1.2 }}>
+                        words
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              </ButtonBase>
             </Box>
           </Box>
         )}
 
-        {/* ── Library Tab ── */}
+        {/* Library Tab */}
         {tab === 'library' && (
           <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(3, 1fr)' }, gap: is960 ? 1.5 : 2, alignContent: 'start' }}>
             {BOOKS.map((b, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
-                <ButtonBase sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', bgcolor: 'white', borderRadius: '28px', p: is960 ? 2 : 2.5, border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', '&:active': { bgcolor: '#F9FAFB' } }}>
+                <ButtonBase
+                  onClick={() => setSelectedBookIndex(i)}
+                  sx={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    bgcolor: selectedBookIndex === i ? '#F8FAFF' : 'white',
+                    borderRadius: '28px',
+                    p: is960 ? 2 : 2.5,
+                    border: selectedBookIndex === i ? '1px solid #BFDBFE' : '1px solid rgba(0,0,0,0.06)',
+                    boxShadow: selectedBookIndex === i ? '0 6px 18px rgba(37,99,235,0.12)' : '0 2px 10px rgba(0,0,0,0.05)',
+                    '&:active': { bgcolor: '#F9FAFB' },
+                  }}
+                >
                   <Box sx={{ width: is960 ? 52 : 60, height: is960 ? 66 : 76, background: b.gradient, borderRadius: '14px', mb: is960 ? 1.5 : 2, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(0,0,0,0.15)' }}>
                     <MenuBookIcon sx={{ color: 'white', fontSize: is960 ? 26 : 32 }} />
                   </Box>
                   <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.82rem' : '0.95rem', color: '#111827', mb: 0.35, textAlign: 'left' }}>{b.title}</Typography>
-                  <Typography sx={{ fontSize: '0.68rem', color: '#9CA3AF', mb: 1 }}>{b.count} 词</Typography>
-                  {b.active ? (
+                  <Typography sx={{ fontSize: '0.68rem', color: '#9CA3AF', mb: 1 }}>{b.count} words</Typography>
+                  {selectedBookIndex === i ? (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                       <Box sx={{ width: 7, height: 7, bgcolor: '#2563EB', borderRadius: '50%' }} component={motion.div} animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                      <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#2563EB' }}>当前正在学习</Typography>
+                      <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#2563EB' }}>Currently learning</Typography>
                     </Box>
                   ) : (
-                    <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#9CA3AF' }}>选择此书</Typography>
+                    <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#9CA3AF' }}>Select this book</Typography>
                   )}
                 </ButtonBase>
               </motion.div>
@@ -1167,44 +1357,48 @@ function Dashboard({ onStart, onStartReview, is960 }: { onStart: () => void; onS
               sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: is960 ? 2.5 : 3.5, border: '2px dashed #E5E7EB', borderRadius: '28px', color: '#9CA3AF', transition: 'all 0.2s', '&:active': { borderColor: '#3B82F6', color: '#3B82F6', transform: 'scale(0.98)' }, minHeight: 140 }}
             >
               <AddIcon sx={{ fontSize: is960 ? 28 : 34, mb: 0.75 }} />
-              <Typography sx={{ fontWeight: 800, fontSize: '0.8rem' }}>导入自定义词书</Typography>
+              <Typography sx={{ fontWeight: 800, fontSize: '0.8rem' }}>Import custom word list</Typography>
             </ButtonBase>
           </Box>
         )}
 
-        {/* ── Stats Tab ── */}
+        {/* Stats Tab */}
         {tab === 'stats' && (
           <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: is960 ? 2 : 2.5 }}>
-            {/* 遗忘曲线 */}
             <Box sx={{ flex: 1, minHeight: 320, bgcolor: 'white', borderRadius: '28px', p: is960 ? 2.5 : 3.5, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
               <Box sx={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2.5 }}>
                 <Box>
-                  <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.95rem' : '1.1rem', color: '#111827' }}>艾宾浩斯遗忘曲线</Typography>
-                  <Typography sx={{ fontSize: '0.72rem', color: '#9CA3AF', mt: 0.35 }}>基于你过去 30 天的学习数据预测</Typography>
+                  <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.95rem' : '1.1rem', color: '#111827' }}>Ebbinghaus Forgetting Curve</Typography>
+                  <Typography sx={{ fontSize: '0.72rem', color: '#9CA3AF', mt: 0.35 }}>Forecast from your study data over the last 30 days</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  {[{ color: '#3B82F6', label: '记忆保留率' }, { color: '#E5E7EB', label: '预测遗忘点' }].map(l => (
-                    <Box key={l.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: l.color }} />
-                      <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#6B7280' }}>{l.label}</Typography>
-                    </Box>
-                  ))}
-                </Box>
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    {[
+                      { color: '#3B82F6', label: 'Retention' },
+                      { color: '#E5E7EB', label: 'Forgetting risk' },
+                    ].map((l) => (
+                      <Box key={l.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: l.color }} />
+                        <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#6B7280' }}>{l.label}</Typography>
+                      </Box>
+                    ))}
+                  </Box>
                   <ButtonBase
                     onClick={() => setShowEbbinghausSettings(true)}
                     sx={{ width: 36, height: 36, borderRadius: '50%', bgcolor: '#EFF6FF', color: '#3B82F6', '&:active': { bgcolor: '#DBEAFE' } }}
                   >
                     <SettingsIcon sx={{ fontSize: 18 }} />
                   </ButtonBase>
-              </Box>
+                </Box>
               </Box>
               <Box sx={{ flex: 1, minHeight: 200, position: 'relative', pl: 4 }}>
                 <svg width="100%" height="100%" viewBox="0 0 800 280" preserveAspectRatio="none" overflow="visible">
-                  {[0, 25, 50, 75, 100].map(v => (
+                  {[0, 25, 50, 75, 100].map((v) => (
                     <g key={v}>
                       <line x1="0" y1={280 - v * 2.8} x2="800" y2={280 - v * 2.8} stroke="#F1F3F5" strokeWidth="1" />
-                      <text x="-30" y={280 - v * 2.8 + 4} fontSize="10" fill="#D1D5DB" fontWeight="700">{v}%</text>
+                      <text x="-30" y={280 - v * 2.8 + 4} fontSize="10" fill="#D1D5DB" fontWeight="700">
+                        {v}%
+                      </text>
                     </g>
                   ))}
                   <defs>
@@ -1213,42 +1407,228 @@ function Dashboard({ onStart, onStartReview, is960 }: { onStart: () => void; onS
                       <stop offset="100%" stopColor="#6366F1" />
                     </linearGradient>
                   </defs>
-                  <motion.path d="M0,56 Q200,80 400,168 T800,280" fill="none" stroke="url(#lf-grad)" strokeWidth="3.5" strokeLinecap="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.8, ease: 'easeInOut' }} />
+                  <motion.path
+                    d="M0,56 Q200,80 400,168 T800,280"
+                    fill="none"
+                    stroke="url(#lf-grad)"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 1.8, ease: 'easeInOut' }}
+                  />
                   {[
-                    { x: 0, y: 56, label: '立即' },
+                    { x: 0, y: 56, label: 'Now' },
                     { x: 100, y: 98, label: '20min' },
                     { x: 250, y: 140, label: '1h' },
                     { x: 450, y: 196, label: '9h' },
                     { x: 700, y: 252, label: '1d' },
                   ].map((pt, i) => (
                     <g key={i}>
-                      <motion.circle cx={pt.x} cy={pt.y} r="5" fill="#3B82F6" stroke="white" strokeWidth="2" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 1 + i * 0.1 }} />
-                      <text x={pt.x} y="300" fontSize="9" fill="#9CA3AF" fontWeight="700" textAnchor="middle">{pt.label}</text>
+                      <motion.circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r="5"
+                        fill="#3B82F6"
+                        stroke="white"
+                        strokeWidth="2"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 1 + i * 0.1 }}
+                      />
+                      <text x={pt.x} y="300" fontSize="9" fill="#9CA3AF" fontWeight="700" textAnchor="middle">
+                        {pt.label}
+                      </text>
                     </g>
                   ))}
                 </svg>
               </Box>
             </Box>
 
-            {/* Stats grid */}
             <Box sx={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: is960 ? 1.25 : 1.75 }}>
               {[
-                { label: '记忆持久度', val: '12.4 天', sub: '较上周提升 15%', subColor: '#16A34A' },
-                { label: '掌握单词', val: '1,234', sub: '快乐中文完成 35%', subColor: '#2563EB' },
-                { label: '复习准确率', val: '87.5%', sub: '近期状态稳定', subColor: '#D97706' },
-              ].map(s => (
-                <Box key={s.label} sx={{ bgcolor: 'white', borderRadius: '22px', p: is960 ? 2 : 2.5, border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-                  <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 0.75 }}>{s.label}</Typography>
-                  <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.25rem' : '1.5rem', color: '#111827', mb: 0.25 }}>{s.val}</Typography>
-                  <Typography sx={{ fontSize: '0.68rem', color: s.subColor }}>{s.sub}</Typography>
+                { label: 'Memory span', val: '12.4 days', sub: 'Up 15% vs last week', subColor: '#16A34A' },
+                { label: 'Words mastered', val: '1,234', sub: 'Happy Chinese 35% complete', subColor: '#2563EB' },
+                { label: 'Review accuracy', val: '87.5%', sub: 'Stable lately', subColor: '#D97706' },
+              ].map((s) => (
+                <Box
+                  key={s.label}
+                  sx={{
+                    width: '100%',
+                    aspectRatio: '3 / 2',
+                    boxSizing: 'border-box',
+                    bgcolor: 'white',
+                    borderRadius: '22px',
+                    p: is960 ? 1.75 : 2.25,
+                    border: '1px solid rgba(0,0,0,0.05)',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    minHeight: 0,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <Typography sx={{ fontSize: is960 ? '0.66rem' : '0.74rem', fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 0.55, lineHeight: 1.2 }}>
+                    {s.label}
+                  </Typography>
+                  <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.24rem' : '1.52rem', color: '#111827', mb: 0.25, lineHeight: 1.15 }}>{s.val}</Typography>
+                  <Typography
+                    sx={{
+                      fontSize: is960 ? '0.72rem' : '0.8rem',
+                      color: s.subColor,
+                      lineHeight: 1.3,
+                      overflow: 'hidden',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                    }}
+                  >
+                    {s.sub}
+                  </Typography>
                 </Box>
               ))}
             </Box>
           </Box>
         )}
+        </Box>
       </Box>
-    </Box>
     </>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SavedWordsDialog
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function SavedWordsDialog({
+  open,
+  onClose,
+  savedWordIds,
+  allWords,
+  onRemove,
+  onStartStudySaved,
+  is960,
+}: {
+  open: boolean;
+  onClose: () => void;
+  savedWordIds: string[];
+  allWords: Word[];
+  onRemove: (id: string) => void;
+  onStartStudySaved: () => void;
+  is960: boolean;
+}) {
+  const savedWords = allWords.filter((w) => savedWordIds.includes(w.id));
+
+  if (!open) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        style={{ position: 'fixed', inset: 0, zIndex: 2100, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            width: is960 ? '92%' : '80%',
+            maxWidth: 520,
+            maxHeight: '82%',
+            backgroundColor: 'white',
+            borderRadius: is960 ? '24px' : '28px',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.2)',
+          }}
+        >
+          <Box sx={{ flexShrink: 0, px: is960 ? 2.5 : 3, py: is960 ? 2 : 2.5, borderBottom: '1px solid #F1F3F5', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.05rem' : '1.2rem', color: '#111827' }}>Saved words</Typography>
+            <ButtonBase onClick={onClose} sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: '#F3F4F6', color: '#6B7280', '&:active': { bgcolor: '#E5E7EB' } }}>
+              <CloseIcon sx={{ fontSize: 22 }} />
+            </ButtonBase>
+          </Box>
+
+          <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: is960 ? 2 : 2.5 }}>
+            {savedWords.length === 0 ? (
+              <Typography sx={{ textAlign: 'center', color: '#9CA3AF', fontSize: is960 ? '0.85rem' : '0.95rem', py: 4 }}>No saved words yet. Star cards while you study.</Typography>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {savedWords.map((w) => (
+                  <Box
+                    key={w.id}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      p: is960 ? 1.5 : 2,
+                      borderRadius: '18px',
+                      border: '1px solid #E5E7EB',
+                      bgcolor: '#FAFAFA',
+                    }}
+                  >
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1rem' : '1.1rem', color: '#111827' }}>{w.word}</Typography>
+                      <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.8rem', color: '#6B7280', mt: 0.25 }} noWrap>
+                        {w.translation}
+                      </Typography>
+                    </Box>
+                    <ButtonBase
+                      type="button"
+                      onClick={() => onRemove(w.id)}
+                      sx={{
+                        flexShrink: 0,
+                        px: 1.5,
+                        py: 1,
+                        borderRadius: '12px',
+                        bgcolor: '#FEF2F2',
+                        color: '#DC2626',
+                        fontWeight: 800,
+                        fontSize: '0.72rem',
+                        '&:active': { bgcolor: '#FEE2E2' },
+                      }}
+                    >
+                      Remove
+                    </ButtonBase>
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
+
+          <Box sx={{ flexShrink: 0, px: is960 ? 2.5 : 3, py: is960 ? 2 : 2.5, borderTop: '1px solid #F1F3F5', display: 'flex', gap: 1.5 }}>
+            <ButtonBase
+              onClick={onClose}
+              sx={{ flex: 1, py: 1.75, borderRadius: '16px', fontWeight: 800, fontSize: is960 ? '0.85rem' : '0.95rem', color: '#6B7280', bgcolor: '#F9FAFB', border: '2px solid #E5E7EB', '&:active': { bgcolor: '#F3F4F6' } }}
+            >
+              Close
+            </ButtonBase>
+            <ButtonBase
+              disabled={savedWords.length === 0}
+              onClick={onStartStudySaved}
+              sx={{
+                flex: 1,
+                py: 1.75,
+                borderRadius: '16px',
+                fontWeight: 800,
+                fontSize: is960 ? '0.85rem' : '0.95rem',
+                color: 'white',
+                bgcolor: savedWords.length === 0 ? '#D1D5DB' : '#2563EB',
+                '&:active': { bgcolor: savedWords.length === 0 ? '#D1D5DB' : '#1D4ED8' },
+              }}
+            >
+              Study saved
+            </ButtonBase>
+          </Box>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -1261,32 +1641,79 @@ export default function LingoFlashPage() {
   const is960 = screenSize === '960x540';
 
   const [view, setView] = useState<'dashboard' | 'learning' | 'review'>('dashboard');
+  const [learningWords, setLearningWords] = useState<Word[]>(DECK);
+  const [savedWordIds, setSavedWordIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(LINGOFLASH_SAVED_IDS_KEY);
+      if (raw) return JSON.parse(raw) as string[];
+    } catch {
+      /* ignore */
+    }
+    return [];
+  });
+  const [savedDialogOpen, setSavedDialogOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LINGOFLASH_SAVED_IDS_KEY, JSON.stringify(savedWordIds));
+    } catch {
+      /* ignore */
+    }
+  }, [savedWordIds]);
+
+  const onToggleSave = useCallback((wordId: string) => {
+    setSavedWordIds((prev) => (prev.includes(wordId) ? prev.filter((id) => id !== wordId) : [...prev, wordId]));
+  }, []);
+
+  const handleStartLearning = useCallback(() => {
+    setLearningWords(DECK);
+    setView('learning');
+  }, []);
+
+  const handleStartReview = useCallback(() => {
+    setLearningWords(DECK);
+    setView('review');
+  }, []);
+
+  const handleStartStudySaved = useCallback(() => {
+    const next = DECK.filter((w) => savedWordIds.includes(w.id));
+    if (next.length === 0) return;
+    setLearningWords(next);
+    setSavedDialogOpen(false);
+    setView('learning');
+  }, [savedWordIds]);
 
   return (
     <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
-      {/* Back button — only on dashboard */}
-      {view === 'dashboard' && (
-        <Box sx={{ position: 'absolute', top: is960 ? 11 : 14, left: is960 ? 10 : 14, zIndex: 20 }}>
-          <ButtonBase
-            onClick={() => navigate(-1)}
-            sx={{ minWidth: 44, minHeight: 44, borderRadius: '50%', bgcolor: 'rgba(0,0,0,0.05)', color: '#374151', '&:active': { bgcolor: 'rgba(0,0,0,0.1)' } }}
-          >
-            <ChevronLeftIcon sx={{ fontSize: 26 }} />
-          </ButtonBase>
-        </Box>
-      )}
-
       <Box sx={{ flex: 1, minHeight: 0 }}>
         {view === 'dashboard' ? (
           <Dashboard
-            onStart={() => setView('learning')}
-            onStartReview={() => setView('review')}
+            onStart={handleStartLearning}
+            onStartReview={handleStartReview}
             is960={is960}
+            savedCount={savedWordIds.length}
+            onOpenSaved={() => setSavedDialogOpen(true)}
           />
         ) : (
-          <LearningSession words={DECK} onFinish={() => setView('dashboard')} is960={is960} />
+          <LearningSession
+            words={learningWords}
+            is960={is960}
+            savedWordIds={savedWordIds}
+            onToggleSave={onToggleSave}
+            onExitToDashboard={() => setView('dashboard')}
+          />
         )}
       </Box>
+
+      <SavedWordsDialog
+        open={savedDialogOpen}
+        onClose={() => setSavedDialogOpen(false)}
+        savedWordIds={savedWordIds}
+        allWords={DECK}
+        onRemove={(id) => setSavedWordIds((prev) => prev.filter((x) => x !== id))}
+        onStartStudySaved={handleStartStudySaved}
+        is960={is960}
+      />
     </Box>
   );
 }

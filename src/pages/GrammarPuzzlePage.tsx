@@ -38,7 +38,7 @@ interface Level {
 const DEMO_LEVELS: Level[] = [
   {
     id: 1,
-    theme: '温馨日常',
+    theme: 'Daily Life',
     sentence: '我每天早上喝一杯咖啡。',
     pinyin: 'Wǒ měitiān zǎoshang hē yī bēi kāfēi.',
     translation: 'I drink a cup of coffee every morning.',
@@ -53,7 +53,7 @@ const DEMO_LEVELS: Level[] = [
   },
   {
     id: 2,
-    theme: '温馨日常',
+    theme: 'Daily Life',
     sentence: '周末我喜欢在家里看书。',
     pinyin: 'Zhōumò wǒ xǐhuān zài jiālǐ kànshū.',
     translation: 'I like to read at home on weekends.',
@@ -69,7 +69,7 @@ const DEMO_LEVELS: Level[] = [
   },
   {
     id: 3,
-    theme: '温馨日常',
+    theme: 'Daily Life',
     sentence: '妈妈正在厨房里做晚饭。',
     pinyin: 'Māma zhèngzài chúfáng lǐ zuò wǎnfàn.',
     translation: 'Mom is cooking dinner in the kitchen.',
@@ -84,7 +84,7 @@ const DEMO_LEVELS: Level[] = [
   },
   {
     id: 4,
-    theme: '萌宠',
+    theme: 'Pets',
     sentence: '我有一只可爱的橘猫。',
     pinyin: 'Wǒ yǒu yī zhī kě\'ài de júmāo.',
     translation: 'I have a cute orange cat.',
@@ -100,7 +100,7 @@ const DEMO_LEVELS: Level[] = [
   },
   {
     id: 5,
-    theme: '美食',
+    theme: 'Food',
     sentence: '这家餐厅的烤鸭非常好吃。',
     pinyin: 'Zhè jiā cāntīng de kǎoyā fēicháng hǎochī.',
     translation: 'This restaurant\'s roast duck is very delicious.',
@@ -116,7 +116,7 @@ const DEMO_LEVELS: Level[] = [
   },
   {
     id: 6,
-    theme: '旅游',
+    theme: 'Travel',
     sentence: '我们明天一起去看电影。',
     pinyin: 'Wǒmen míngtiān yīqǐ qù kàn diànyǐng.',
     translation: 'We will go watch a movie together tomorrow.',
@@ -276,14 +276,14 @@ function LevelSelectionView({ onBack, onSelectLevel, completedIds, is960 }: { on
         >
           <ChevronLeftIcon sx={{ fontSize: 24 }} />
         </ButtonBase>
-        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.5rem' : '2rem', color: '#073642' }}>选择关卡</Typography>
+        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.5rem' : '2rem', color: '#073642', fontFamily: "'Google Sans', 'Product Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif" }}>Choose Level</Typography>
       </Box>
 
       {/* Level Grid */}
       <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: is960 ? 2 : 3 }}>
         {Object.entries(groupedLevels).map(([theme, levels]) => (
           <Box key={theme} sx={{ mb: 4 }}>
-            <Typography sx={{ fontSize: is960 ? '0.85rem' : '1rem', fontWeight: 800, color: '#2AA198', mb: 2, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            <Typography sx={{ fontSize: is960 ? '0.85rem' : '1rem', fontWeight: 800, color: '#2AA198', mb: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Google Sans', 'Product Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif" }}>
               {theme}
             </Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: is960 ? 1.5 : 2 }}>
@@ -368,9 +368,9 @@ function LevelSelectionView({ onBack, onSelectLevel, completedIds, is960 }: { on
    GalleryView — 图鉴
    ═══════════════════════════════════════════════════════════════════════════════ */
 function GalleryView({ onBack, completedIds, onPlayLevel, is960 }: { onBack: () => void; completedIds: number[]; onPlayLevel: (level: Level) => void; is960: boolean }) {
-  const [filterTheme, setFilterTheme] = useState<string>('全部');
-  const themes = ['全部', ...Array.from(new Set(DEMO_LEVELS.map(l => l.theme)))];
-  const filteredLevels = filterTheme === '全部' ? DEMO_LEVELS : DEMO_LEVELS.filter(l => l.theme === filterTheme);
+  const [filterTheme, setFilterTheme] = useState<string>('All');
+  const themes = ['All', ...Array.from(new Set(DEMO_LEVELS.map(l => l.theme)))];
+  const filteredLevels = filterTheme === 'All' ? DEMO_LEVELS : DEMO_LEVELS.filter(l => l.theme === filterTheme);
 
   const speakSentence = (sentence: string) => {
     const utterance = new SpeechSynthesisUtterance(sentence);
@@ -389,7 +389,7 @@ function GalleryView({ onBack, completedIds, onPlayLevel, is960 }: { onBack: () 
           >
             <ChevronLeftIcon sx={{ fontSize: 24 }} />
           </ButtonBase>
-          <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.5rem' : '2rem', color: '#073642' }}>我的图鉴</Typography>
+          <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.5rem' : '2rem', color: '#073642', fontFamily: "'Google Sans', 'Product Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif" }}>My Gallery</Typography>
         </Box>
 
         {/* Theme Filter */}
@@ -409,6 +409,7 @@ function GalleryView({ onBack, completedIds, onPlayLevel, is960 }: { onBack: () 
                 bgcolor: filterTheme === theme ? '#2AA198' : 'white',
                 border: filterTheme === theme ? '2px solid #2AA198' : '1px solid rgba(0,0,0,0.06)',
                 '&:active': { transform: 'scale(0.95)' },
+                fontFamily: "'Google Sans', 'Product Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif",
               }}
             >
               {theme}
@@ -463,6 +464,29 @@ function GalleryView({ onBack, completedIds, onPlayLevel, is960 }: { onBack: () 
                     )}
 
                     {isUnlocked && (
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: 10,
+                          right: 10,
+                          bgcolor: '#859900',
+                          color: 'white',
+                          fontSize: '0.62rem',
+                          fontWeight: 900,
+                          px: 1.3,
+                          py: 0.45,
+                          borderRadius: '10px',
+                          letterSpacing: '0.04em',
+                          border: '1px solid rgba(255,255,255,0.45)',
+                          boxShadow: '0 4px 12px rgba(133,153,0,0.3)',
+                          fontFamily: "'Google Sans', 'Product Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif",
+                        }}
+                      >
+                        UNLOCKED
+                      </Box>
+                    )}
+
+                    {isUnlocked && (
                       <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(42,161,152,0.6)', opacity: 0, transition: 'opacity 0.3s', '&:hover': { opacity: 1 }, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
                         <ButtonBase
                           onClick={() => onPlayLevel(level)}
@@ -486,11 +510,6 @@ function GalleryView({ onBack, completedIds, onPlayLevel, is960 }: { onBack: () 
                       <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#2AA198', textTransform: 'uppercase', bgcolor: 'rgba(42,161,152,0.1)', px: 1.5, py: 0.5, borderRadius: '8px' }}>
                         关卡 {level.id} • {level.theme}
                       </Typography>
-                      {isUnlocked && (
-                        <Box sx={{ bgcolor: '#859900', color: 'white', fontSize: '0.6rem', fontWeight: 900, px: 1.25, py: 0.35, borderRadius: '8px', transform: 'rotate(3deg)' }}>
-                          UNLOCKED
-                        </Box>
-                      )}
                     </Box>
                     <Typography sx={{ fontSize: is960 ? '1rem' : '1.15rem', fontWeight: 900, color: isUnlocked ? '#073642' : '#93A1A1', lineHeight: 1.3, mb: 0.5 }}>
                       {isUnlocked ? level.sentence : '??? ???'}

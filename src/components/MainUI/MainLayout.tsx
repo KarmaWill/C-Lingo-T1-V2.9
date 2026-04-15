@@ -54,6 +54,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isSyntaxSnapPage = location.pathname === '/syntax-snap'
   const isHSKPrepTrainingPage = location.pathname === '/hsk-prep-training'
   const isLibraryBookSelectionPage = location.pathname === '/library/select-books'
+  const isStartingLearningPage = location.pathname === '/starting-learning'
   const isFunChineseHubPage = location.pathname === '/library/hub/fun-chinese'
   const isFunChineseLessonPage = location.pathname.startsWith('/library/hub/fun-chinese/lesson')
   const isCultureMapPage = location.pathname === '/library/hub/culture'
@@ -74,7 +75,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isHSKMockExamPage ||
     isAudioReadingPage ||
     isCultureVideoRoutePage
-  const hideChromeNav = isCoveringMain || isLingoFlashPage || isGrammarPuzzlePage || isSyntaxSnapPage || isHSKPrepTrainingPage || isLibraryBookSelectionPage || isFunChineseHubPage || isFunChineseLessonPage || isCultureMapPage || isCharacterWritingPage
+  const hideChromeNav = isCoveringMain || isLingoFlashPage || isGrammarPuzzlePage || isSyntaxSnapPage || isHSKPrepTrainingPage || isLibraryBookSelectionPage || isStartingLearningPage || isFunChineseHubPage || isFunChineseLessonPage || isCultureMapPage || isCharacterWritingPage
 
   // 主四 tab + LingoFlash + GrammarPuzzle + SyntaxSnap + HSKPrepTraining + LibraryBookSelection + FunChineseHub + FunChineseLesson + CultureMap + CharacterWriting：显示系统状态栏；其它全屏页不显示
   const showSystemBar =

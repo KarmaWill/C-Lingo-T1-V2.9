@@ -110,7 +110,7 @@ export default function HomePage() {
 
             <Box sx={{ position: 'absolute', bottom: is960 ? 20 : 40, left: is960 ? 20 : 40, right: is960 ? 20 : 40, zIndex: 3 }}>
               <Typography sx={{ color: '#FFDFA3', fontWeight: 900, fontSize: is960 ? '0.75rem' : '1.125rem', mb: is960 ? 0.75 : 1.5, letterSpacing: '0.05em', opacity: 0.98 }}>CURRENT LEARNING</Typography>
-              <Typography sx={{ color: 'white', fontSize: is960 ? '1.35rem' : '2.5rem', fontWeight: 900, lineHeight: 1.2, mb: is960 ? 1.5 : 3, letterSpacing: '-0.02em' }}>
+              <Typography sx={{ color: 'white', fontSize: is960 ? '1.05rem' : '1.75rem', fontWeight: 900, lineHeight: 1.25, mb: is960 ? 1.25 : 2.25, letterSpacing: '-0.02em' }}>
                 Lesson 1 | How many people in your family?
         </Typography>
 

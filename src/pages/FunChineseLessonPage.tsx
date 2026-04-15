@@ -258,6 +258,12 @@ export default function FunChineseLessonPage() {
 
   const orange = '#FF7A45';
   const teal = '#14B8A6';
+  const languageMeta: Record<Language, { flag: string; label: string }> = {
+    en: { flag: '🇺🇸', label: 'ENGLISH' },
+    vi: { flag: '🇻🇳', label: 'VIETNAMESE' },
+    th: { flag: '🇹🇭', label: 'THAI' },
+    id: { flag: '🇮🇩', label: 'INDONESIAN' },
+  };
 
   // 追踪已出现的单个汉字
   const getSeenCharacters = (): Set<string> => {
@@ -306,6 +312,16 @@ export default function FunChineseLessonPage() {
     } else {
       handleNextPhase();
     }
+  };
+
+  const playChineseAudio = (text: string) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'zh-CN';
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
   };
 
   // Warmup Phase
@@ -372,23 +388,21 @@ export default function FunChineseLessonPage() {
             </Typography>
           </Box>
 
-          {/* Knowledge List - Language Comparison */}
+          {/* Knowledge List - Unified bilingual alignment */}
           <Box
             sx={{
               flex: 1,
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: is960 ? 2 : 2.5,
+              display: 'flex',
+              flexDirection: 'column',
               minHeight: 0,
             }}
           >
-            {/* Vietnamese Column */}
             <Box
               sx={{
                 bgcolor: 'white',
                 borderRadius: is960 ? '20px' : '26px',
-                border: '2px solid #E2E8F0',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
+                border: `2px solid ${orange}22`,
+                boxShadow: `0 4px 16px ${orange}14`,
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',
@@ -399,83 +413,34 @@ export default function FunChineseLessonPage() {
                   px: is960 ? 2 : 2.5,
                   py: is960 ? 1.5 : 2,
                   bgcolor: '#F8FAFC',
-                  borderBottom: '2px solid #E2E8F0',
+                  borderBottom: `2px solid ${orange}18`,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 1,
+                  gap: is960 ? 1.25 : 1.5,
                   flexShrink: 0,
                 }}
               >
-                <Typography sx={{ fontSize: is960 ? '1.35rem' : '1.6rem' }}>🇻🇳</Typography>
-                <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.8rem', fontWeight: 800, color: '#475569', letterSpacing: '0.08em' }}>
-                  VIETNAMESE
-                </Typography>
-              </Box>
-              <Box
-                sx={{
-                  flex: 1,
-                  p: is960 ? 1.5 : 2,
-                  overflowY: 'auto',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: is960 ? 0.75 : 1,
-                }}
-              >
-                {LESSON_DATA.vocabulary.map((vocab) => (
-                  <Box
-                    key={vocab.id}
-                    sx={{
-                      p: is960 ? 1 : 1.25,
-                      bgcolor: '#F8FAFC',
-                      borderRadius: is960 ? '10px' : '12px',
-                      border: '1px solid #E2E8F0',
-                    }}
-                  >
-                    <Typography sx={{ fontSize: is960 ? '0.95rem' : '1.08rem', fontWeight: 700, color: '#475569', mb: 0.25 }}>
-                      {vocab.translations[userLanguage] || vocab.translations.en}
-                    </Typography>
-                    <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.75rem', color: '#94A3B8', fontWeight: 600 }}>
-                      {vocab.chinese} · {vocab.pinyin}
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(220px,1fr) minmax(240px,1fr)', gap: is960 ? 1.5 : 2.5, width: '100%', minWidth: 680, alignItems: 'center' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography sx={{ fontSize: is960 ? '1.35rem' : '1.6rem' }}>{languageMeta[userLanguage].flag}</Typography>
+                    <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.8rem', fontWeight: 800, color: '#475569', letterSpacing: '0.08em' }}>
+                      {languageMeta[userLanguage].label}
                     </Typography>
                   </Box>
-                ))}
-              </Box>
-            </Box>
-
-            {/* Chinese Column */}
-            <Box
-              sx={{
-                bgcolor: 'white',
-                borderRadius: is960 ? '20px' : '26px',
-                border: `2px solid ${orange}30`,
-                boxShadow: `0 4px 16px ${orange}15`,
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-              }}
-            >
-              <Box
-                sx={{
-                  px: is960 ? 2 : 2.5,
-                  py: is960 ? 1.5 : 2,
-                  bgcolor: `${orange}08`,
-                  borderBottom: `2px solid ${orange}30`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  flexShrink: 0,
-                }}
-              >
-                <Typography sx={{ fontSize: is960 ? '1.35rem' : '1.6rem' }}>🇨🇳</Typography>
-                <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.8rem', fontWeight: 800, color: orange, letterSpacing: '0.08em' }}>
-                  中文
-                </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography sx={{ fontSize: is960 ? '1.35rem' : '1.6rem' }}>🇨🇳</Typography>
+                    <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.8rem', fontWeight: 800, color: orange, letterSpacing: '0.08em' }}>
+                      CHINESE
+                    </Typography>
+                  </Box>
+                </Box>
               </Box>
               <Box
                 sx={{
                   flex: 1,
                   p: is960 ? 1.5 : 2,
                   overflowY: 'auto',
+                  overflowX: 'auto',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: is960 ? 0.75 : 1,
@@ -485,21 +450,58 @@ export default function FunChineseLessonPage() {
                   <Box
                     key={vocab.id}
                     sx={{
-                      p: is960 ? 1 : 1.25,
-                      bgcolor: `${orange}05`,
+                      p: is960 ? 1 : 1.2,
+                      bgcolor: '#FFFFFF',
                       borderRadius: is960 ? '10px' : '12px',
                       border: `1px solid ${orange}20`,
                     }}
                   >
-                    <Typography sx={{ fontSize: is960 ? '1.15rem' : '1.35rem', fontWeight: 800, color: '#1E293B', mb: 0.25 }}>
-                      {vocab.chinese}
-                    </Typography>
-                    <Typography sx={{ fontSize: is960 ? '0.75rem' : '0.85rem', color: orange, fontWeight: 700, mb: 0.25 }}>
-                      {vocab.pinyin}
-                    </Typography>
-                    <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.75rem', color: '#64748B', fontWeight: 600 }}>
-                      {vocab.translations[userLanguage] || vocab.translations.en}
-                    </Typography>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(220px,1fr) minmax(240px,1fr)', gap: is960 ? 1.5 : 2.5, minWidth: 680, alignItems: 'center' }}>
+                      <Typography sx={{ fontSize: is960 ? '0.95rem' : '1.08rem', fontWeight: 700, color: '#475569' }}>
+                        {vocab.translations[userLanguage] || vocab.translations.en}
+                      </Typography>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+                          <Typography sx={{ fontSize: is960 ? '1.15rem' : '1.35rem', fontWeight: 800, color: '#1E293B', lineHeight: 1.2 }}>
+                            {vocab.chinese}
+                          </Typography>
+                          <Box
+                            sx={{
+                              px: is960 ? 0.7 : 0.85,
+                              py: 0.2,
+                              borderRadius: '999px',
+                              bgcolor: '#FFF7ED',
+                              border: '1px solid #FED7AA',
+                              color: '#C2410C',
+                              fontSize: is960 ? '0.58rem' : '0.66rem',
+                              fontWeight: 800,
+                              lineHeight: 1.2,
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            HSK {vocab.hskLevel}
+                          </Box>
+                          <ButtonBase
+                            onClick={() => playChineseAudio(vocab.chinese)}
+                            aria-label={`Play pronunciation ${vocab.chinese}`}
+                            sx={{
+                              width: is960 ? 30 : 34,
+                              height: is960 ? 30 : 34,
+                              borderRadius: '50%',
+                              bgcolor: '#EFF6FF',
+                              color: '#2563EB',
+                              border: '1px solid #BFDBFE',
+                              '&:active': { transform: 'scale(0.96)', bgcolor: '#DBEAFE' },
+                            }}
+                          >
+                            <VolumeUpIcon sx={{ fontSize: is960 ? 16 : 18 }} />
+                          </ButtonBase>
+                        </Box>
+                        <Typography sx={{ fontSize: is960 ? '0.74rem' : '0.84rem', color: orange, fontWeight: 700, mt: 0.15 }}>
+                          {vocab.pinyin}
+                        </Typography>
+                      </Box>
+                    </Box>
                   </Box>
                 ))}
               </Box>

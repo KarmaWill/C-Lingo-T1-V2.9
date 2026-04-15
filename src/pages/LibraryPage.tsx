@@ -257,7 +257,7 @@ export default function LibraryPage() {
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    第一单元 我和你
+                    Unit 1 · You and I
                   </Typography>
                   <ChevronRightIcon sx={{ fontSize: is960 ? 19 : 21, color: '#475569', flexShrink: 0 }} />
                 </Box>
@@ -290,7 +290,7 @@ export default function LibraryPage() {
                     lineHeight: 1.25,
                   }}
                 >
-                  Lesson 1: 他是谁
+                  Lesson 1: Who is he?
                 </Typography>
                 <Box
                   component="ul"

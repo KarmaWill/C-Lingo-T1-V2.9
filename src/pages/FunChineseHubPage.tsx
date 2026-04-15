@@ -50,25 +50,26 @@ export default function FunChineseHubPage() {
   const teal = '#14B8A6';
   const orange = '#FF7A45';
   const pageBg = '#FDF6E9';
+  const googleSansFamily = '"Google Sans","Product Sans","Roboto","Arial",sans-serif';
 
   const tools: Tool[] = [
     {
       id: 'dialogue',
-      title: '对话卡',
+      title: 'Dialogue Cards',
       titleEn: 'Dialogue Cards',
       icon: <MessageIcon sx={{ fontSize: is960 ? 22 : 26 }} />,
       color: orange,
     },
     {
       id: 'grammar',
-      title: '语法卡',
+      title: 'Grammar Cards',
       titleEn: 'Grammar Cards',
       icon: <BoltIcon sx={{ fontSize: is960 ? 22 : 26 }} />,
       color: '#3B82F6',
     },
     {
       id: 'pattern',
-      title: '句型卡',
+      title: 'Pattern Cards',
       titleEn: 'Pattern Cards',
       icon: <ViewModuleIcon sx={{ fontSize: is960 ? 22 : 26 }} />,
       color: teal,
@@ -181,7 +182,7 @@ export default function FunChineseHubPage() {
                   mb: is960 ? 1.5 : 2,
                 }}
               >
-                单元课程进度
+                Unit Progress
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 1.5 : 2 }}>
                 {LESSONS.map((lesson) => (
@@ -261,7 +262,7 @@ export default function FunChineseHubPage() {
                           },
                         }}
                       >
-                        {lesson.status === 'completed' ? '复习' : lesson.status === 'current' ? '开始' : '锁定'}
+                        {lesson.status === 'completed' ? 'Review' : lesson.status === 'current' ? 'Start' : 'Locked'}
                       </ButtonBase>
                     </Box>
                   </Box>
@@ -281,6 +282,47 @@ export default function FunChineseHubPage() {
                 overflow: 'hidden',
               }}
             >
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: is960 ? 12 : 14,
+                  right: is960 ? 12 : 14,
+                  zIndex: 2,
+                  px: is960 ? 1 : 1.25,
+                  py: 0.5,
+                  borderRadius: '999px',
+                  bgcolor: 'rgba(255,255,255,0.14)',
+                  border: '1px solid rgba(255,255,255,0.28)',
+                  backdropFilter: 'blur(6px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.6,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: '50%',
+                    bgcolor: '#34D399',
+                    boxShadow: '0 0 10px rgba(52,211,153,0.85)',
+                    flexShrink: 0,
+                  }}
+                />
+                <Typography
+                  sx={{
+                    fontSize: is960 ? '0.6rem' : '0.68rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    color: 'rgba(255,255,255,0.95)',
+                    fontFamily: googleSansFamily,
+                    lineHeight: 1.1,
+                  }}
+                >
+                  Online only
+                </Typography>
+              </Box>
               <Box
                 sx={{
                   position: 'absolute',
@@ -309,11 +351,11 @@ export default function FunChineseHubPage() {
                     <PsychologyIcon sx={{ fontSize: is960 ? 24 : 28 }} />
                   </Box>
                   <Box>
-                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.1rem' : '1.35rem', lineHeight: 1.2 }}>
-                      AI 智能强化训练
+                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.1rem' : '1.35rem', lineHeight: 1.2, fontFamily: googleSansFamily }}>
+                      AI Intensive Practice
                     </Typography>
-                    <Typography sx={{ fontSize: is960 ? '0.75rem' : '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>
-                      Based on your weak points
+                    <Typography sx={{ fontSize: is960 ? '0.66rem' : '0.75rem', color: 'rgba(255,255,255,0.76)', fontWeight: 600, mt: 0.25, fontFamily: googleSansFamily }}>
+                      Internet connection required
                     </Typography>
                   </Box>
                 </Box>
@@ -340,7 +382,7 @@ export default function FunChineseHubPage() {
                     },
                   }}
                 >
-                  敬请期待
+                  Coming soon
                 </ButtonBase>
               </Box>
             </Box>
@@ -367,7 +409,7 @@ export default function FunChineseHubPage() {
                 mb: is960 ? 2 : 2.5,
               }}
             >
-              知识工具箱
+              Knowledge Toolbox
             </Typography>
             <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: is960 ? 1.5 : 2 }}>
               {tools.map((tool) => (
@@ -408,11 +450,8 @@ export default function FunChineseHubPage() {
                     {tool.icon}
                   </Box>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.95rem' : '1.08rem', color: '#1E293B', lineHeight: 1.2 }}>
+                    <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.95rem' : '1.08rem', color: '#1E293B', lineHeight: 1.2, fontFamily: googleSansFamily }}>
                       {tool.title}
-                    </Typography>
-                    <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', color: '#64748B', fontWeight: 600 }}>
-                      {tool.titleEn}
                     </Typography>
                   </Box>
                   <ChevronRightIcon sx={{ fontSize: is960 ? 20 : 22, color: '#CBD5E1' }} />
@@ -441,11 +480,11 @@ export default function FunChineseHubPage() {
               >
                 <AccessTimeIcon sx={{ fontSize: is960 ? 22 : 26, color: teal }} />
                 <Box>
-                  <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: teal, fontWeight: 800 }}>
-                    今日学习时长
+                  <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: teal, fontWeight: 800, fontFamily: googleSansFamily }}>
+                    Today&apos;s study time
                   </Typography>
-                  <Typography sx={{ fontSize: is960 ? '1.35rem' : '1.65rem', color: teal, fontWeight: 900, lineHeight: 1 }}>
-                    24 <Box component="span" sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', fontWeight: 800 }}>分钟</Box>
+                  <Typography sx={{ fontSize: is960 ? '1.35rem' : '1.65rem', color: teal, fontWeight: 900, lineHeight: 1, fontFamily: googleSansFamily }}>
+                    24 <Box component="span" sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', fontWeight: 800, fontFamily: googleSansFamily }}>min</Box>
                   </Typography>
                 </Box>
               </Box>

@@ -395,7 +395,7 @@ export default function UnitSelectionStage({ lesson, completedUnitIds, onSelectU
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ fontWeight: 700, color: '#6B7280', fontSize: '1rem', mb: 0.5 }}>After this unit, I can:</Typography>
-            <Typography sx={{ color: '#1F2937', fontSize: '1.25rem', mb: 1 }}>说出米饭、饺子等中式主食</Typography>
+            <Typography sx={{ color: '#1F2937', fontSize: '1.25rem', mb: 1 }}>Name staple Chinese foods like rice and dumplings.</Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <LinearProgress variant="determinate" value={unitProgressPercent} sx={{ height: 10, borderRadius: 6, bgcolor: '#E5E7EB', '& .MuiLinearProgress-bar': { bgcolor: '#00B4A0', borderRadius: 6 } }} />
@@ -423,7 +423,7 @@ export default function UnitSelectionStage({ lesson, completedUnitIds, onSelectU
             boxSizing: 'border-box',
           }}
         >
-          <Typography sx={{ fontWeight: 900, color: '#1F2937', fontSize: '1.35rem', p: 3, pb: 2, flexShrink: 0 }}>Lesson 1 | 他是谁</Typography>
+          <Typography sx={{ fontWeight: 900, color: '#1F2937', fontSize: '1.35rem', p: 3, pb: 2, flexShrink: 0 }}>Lesson 1 | Staple Food</Typography>
           {/* 课节列表 + Study Report / Mistakes 同在一个方框内 */}
           <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', px: 3, pb: 2, boxSizing: 'border-box' }}>
             <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 1.5, overflowY: 'auto', overflowX: 'hidden', mb: 2 }}>
@@ -533,12 +533,12 @@ export default function UnitSelectionStage({ lesson, completedUnitIds, onSelectU
             flexDirection: 'column',
             alignItems: 'center',
             textAlign: 'center',
-            justifyContent: 'space-between',
+            justifyContent: 'center',
             boxSizing: 'border-box',
             overflow: 'hidden',
           }}
         >
-          <Box>
+          <Box sx={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', mt: 2 }}>
             <Box sx={{ width: 80, height: 80, borderRadius: '50%', bgcolor: '#FFD93D', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2 }}>
               <CardGiftcardIcon sx={{ fontSize: 40, color: '#1F2937' }} />
             </Box>
@@ -593,7 +593,7 @@ export default function UnitSelectionStage({ lesson, completedUnitIds, onSelectU
             </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography sx={{ fontWeight: 700, color: '#6B7280', fontSize: is960 ? '0.8rem' : '0.9rem', mb: 0.5 }}>After this unit, I can:</Typography>
-              <Typography sx={{ color: '#1F2937', fontSize: is960 ? '0.85rem' : '1rem', mb: 1.5 }}>说出米饭、饺子等中式主食</Typography>
+              <Typography sx={{ color: '#1F2937', fontSize: is960 ? '0.85rem' : '1rem', mb: 1.5 }}>Name staple Chinese foods like rice and dumplings.</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <LinearProgress variant="determinate" value={unitProgressPercent} sx={{ height: is960 ? 6 : 8, borderRadius: 6, bgcolor: '#E5E7EB', '& .MuiLinearProgress-bar': { bgcolor: '#00B4A0', borderRadius: 6 } }} />
@@ -604,7 +604,7 @@ export default function UnitSelectionStage({ lesson, completedUnitIds, onSelectU
           </Box>
 
           <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'white', borderRadius: is960 ? '16px' : '20px', boxShadow: '0 4px 20px rgba(15,23,42,0.06)', border: '1px solid rgba(0,0,0,0.05)', p: is960 ? 1.5 : 2.5, overflow: 'hidden', boxSizing: 'border-box' }}>
-            <Typography sx={{ fontWeight: 900, color: '#1F2937', fontSize: is960 ? '0.9rem' : '1.1rem', mb: 2, flexShrink: 0 }}>Lesson 1 | 他是谁</Typography>
+            <Typography sx={{ fontWeight: 900, color: '#1F2937', fontSize: is960 ? '0.9rem' : '1.1rem', mb: 2, flexShrink: 0 }}>Lesson 1 | Staple Food</Typography>
             <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: is960 ? 0.75 : 1, overflowY: 'auto', overflowX: 'hidden' }}>
               {firstUnit && (() => {
                 const lessonTitles = ['Lesson 1: Rice', 'Lesson 2: Dumplings', 'Lesson 3: Eat Baozi']

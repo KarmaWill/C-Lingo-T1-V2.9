@@ -14,6 +14,13 @@ const COURSES = [
   'Business Chinese'
 ];
 
+/** Main curriculum track shown under AI Class Studio (English-first UI). */
+const PROGRAMS = [
+  'C-Lingo Chinese',
+  'HSK Standard',
+  'Business Chinese',
+];
+
 const LEVELS = ['Level 1', 'Level 2', 'Level 3'];
 
 // Units for each Level (8 units per level)
@@ -73,11 +80,13 @@ export default function TopBanner() {
 
   // Course/Level/Unit State
   const [currentCourse, setCurrentCourse] = useState('AI Class Studio');
+  const [currentProgram, setCurrentProgram] = useState('C-Lingo Chinese');
   const [currentLevel, setCurrentLevel] = useState('Level 1');
   const [currentUnit, setCurrentUnit] = useState('Unit 1: Hello & Greetings');
 
   // Menu Anchors
   const [courseAnchor, setCourseAnchor] = useState<null | HTMLElement>(null);
+  const [programAnchor, setProgramAnchor] = useState<null | HTMLElement>(null);
   const [levelAnchor, setLevelAnchor] = useState<null | HTMLElement>(null);
   const [unitAnchor, setUnitAnchor] = useState<null | HTMLElement>(null);
   
@@ -94,6 +103,11 @@ export default function TopBanner() {
     const firstUnit = UNITS_BY_LEVEL['Level 1'][0];
     setCurrentUnit(firstUnit);
     setCourseAnchor(null);
+  };
+
+  const handleProgramSelect = (program: string) => {
+    setCurrentProgram(program);
+    setProgramAnchor(null);
   };
 
   const handleLevelSelect = (level: string) => {
@@ -130,22 +144,101 @@ export default function TopBanner() {
         <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
           {isHomePage ? (
             <>
-              {/* Row 1: App Title */}
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
-                      fontWeight: 900,
+              {/* Row 1: App title */}
+              <Typography
+                variant="h6"
+                component="h6"
+                sx={{
+                  fontWeight: 900,
                   fontSize: is960 ? '1.15rem' : (is2000x1200 ? '2rem' : (is1920x1125 ? '1.875rem' : '1.5rem')),
-                      color: '#2D3436',
+                  color: '#2D3436',
                   letterSpacing: '-0.02em',
-                  mb: 0.5
+                  lineHeight: 1.2,
+                  mb: is960 ? 0.75 : 1,
+                }}
+              >
+                AI Class Studio
+              </Typography>
+
+              {/* Row 2: Program track + Level & Unit (one row) */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 2.5,
+                  rowGap: 1.25,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <ButtonBase
+                    onClick={(e) => setProgramAnchor(e.currentTarget)}
+                    aria-haspopup="true"
+                    aria-expanded={Boolean(programAnchor)}
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 0.75,
+                      px: is960 ? 1.75 : 2.25,
+                      py: is960 ? 1 : 1.25,
+                      minHeight: is960 ? 44 : 48,
+                      borderRadius: '14px',
+                      bgcolor: '#F3F4F6',
+                      border: '1px solid rgba(15, 23, 42, 0.08)',
+                      boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+                      transition: 'background-color 0.15s ease, box-shadow 0.15s ease',
+                      '&:hover': {
+                        bgcolor: '#EEF0F3',
+                        boxShadow: '0 2px 6px rgba(15, 23, 42, 0.06)',
+                      },
+                      '&:active': { bgcolor: '#E5E7EB' },
                     }}
                   >
-                AI Class Studio
-                  </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: is960 ? '0.8rem' : (is2000x1200 ? '1.2rem' : (is1920x1125 ? '1.1rem' : '0.95rem')),
+                        fontWeight: 800,
+                        color: '#374151',
+                        letterSpacing: '-0.01em',
+                      }}
+                    >
+                      {currentProgram}
+                    </Typography>
+                    <KeyboardArrowDown
+                      sx={{
+                        fontSize: is960 ? 18 : (is2000x1200 ? 26 : (is1920x1125 ? 24 : 20)),
+                        color: '#9CA3AF',
+                      }}
+                    />
+                  </ButtonBase>
+                  <Menu
+                    anchorEl={programAnchor}
+                    open={Boolean(programAnchor)}
+                    onClose={() => setProgramAnchor(null)}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                    PaperProps={{
+                      sx: {
+                        borderRadius: '16px',
+                        mt: 1,
+                        minWidth: 260,
+                        boxShadow: '0 15px 40px rgba(0,0,0,0.12)',
+                      },
+                    }}
+                  >
+                    {PROGRAMS.map((p) => (
+                      <MenuItem
+                        key={p}
+                        selected={p === currentProgram}
+                        onClick={() => handleProgramSelect(p)}
+                        sx={{ fontWeight: 700, fontSize: '1rem', py: 1.25 }}
+                      >
+                        {p}
+                      </MenuItem>
+                    ))}
+                  </Menu>
+                </Box>
 
-              {/* Row 2: Level & Unit Selection */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
                 {/* Level Selector */}
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <ButtonBase
