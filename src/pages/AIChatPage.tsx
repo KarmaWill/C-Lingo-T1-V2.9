@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Box, Typography, IconButton, Avatar, ButtonBase, TextField, Grid, Tab, Tabs, List, ListItem, ListItemText, ListItemSecondaryAction, Dialog, DialogTitle, DialogContent, Paper, Divider } from '@mui/material';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Box, Typography, IconButton, Avatar, ButtonBase, TextField, Grid, Tab, Tabs, List, ListItem, ListItemText, ListItemSecondaryAction, Dialog, DialogTitle, DialogContent, Paper, Divider, Snackbar, Alert } from '@mui/material';
 
 // 语音识别类型定义
 interface SpeechRecognition extends EventTarget {
@@ -82,6 +82,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store/store';
 import { addHistory, deleteHistory, ChatHistoryItem } from '../store/slices/chatHistorySlice';
 import { aiService } from '../services/aiService';
+import { AiRequestTimeoutError } from '../utils/requestWrapper';
+import { AiConversationPipeline, type PipelineStage } from '../services/aiConversationPipeline';
 
 // --- Types ---
 enum ScreenState {
@@ -178,6 +180,17 @@ export default function AIChatPage() {
   const [dictTab, setDictTab] = useState(0);
   const [showAITranslation, setShowAITranslation] = useState(false);
   const [toolLoading, setToolLoading] = useState(false);
+  const [aiRequestTimeoutOpen, setAiRequestTimeoutOpen] = useState(false);
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const [pipelineStage, setPipelineStage] = useState<PipelineStage>('idle');
+
+  const pipelineRef = useRef<AiConversationPipeline | null>(null);
+  const getPipeline = () => {
+    if (!pipelineRef.current) {
+      pipelineRef.current = new AiConversationPipeline();
+    }
+    return pipelineRef.current;
+  };
 
   // Config Screen State
   const [difficulty, setDifficulty] = useState<'简单' | '中等' | '困难'>('中等');
@@ -193,6 +206,11 @@ export default function AIChatPage() {
   }, [messages, isTyping, screen]);
 
   const goHome = () => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    setPlayingAudioId(null);
+    setPipelineStage('idle');
     setScreen(ScreenState.HOME);
     setSelectedTopic(null);
     setMessages([]);
@@ -237,9 +255,31 @@ export default function AIChatPage() {
     setTimeout(() => setIsMagicGenerating(false), 800);
   };
 
-  const handleSend = async (overrideText?: string, isVoiceInput: boolean = false) => {
-    const textToSend = overrideText || inputText;
-    if (!textToSend.trim()) return;
+  const speakUtterance = useCallback((text: string, messageId: string) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) {
+      return Promise.resolve();
+    }
+    return new Promise<void>((resolve) => {
+      window.speechSynthesis.cancel();
+      setPlayingAudioId(messageId);
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'zh-CN';
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.onend = () => {
+        setPlayingAudioId(null);
+        resolve();
+      };
+      utterance.onerror = () => {
+        setPlayingAudioId(null);
+        resolve();
+      };
+      window.speechSynthesis.speak(utterance);
+    });
+  }, []);
+
+  const runFullTurn = useCallback(async (textToSend: string, isVoiceInput: boolean): Promise<{ id: string; text: string } | null> => {
+    if (!textToSend.trim()) return null;
 
     // 为语音输入生成拼音和翻译（模拟）
     const generatePinyin = (text: string): string => {
@@ -361,28 +401,52 @@ export default function AIChatPage() {
       translation: generateTranslation(textToSend)
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    setMessages((prev) => [...prev, userMsg]);
     setInputText('');
     setShowAITranslation(false);
     setIsTyping(true);
 
+    await new Promise<void>((r) => setTimeout(r, 1200));
     try {
-      setTimeout(async () => {
-        const response = await aiService.chat(textToSend);
-        const aiMsg: Message = { 
+      const response = await aiService.chat(textToSend);
+      const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         text: response,
         sender: 'ai',
         timestamp: new Date(),
-          pinyin: "Zhè shì nǐ de kāfēi, qǐng màn yòng.",
-          translation: "Here is your coffee, please enjoy."
-        };
-        setMessages(prev => [...prev, aiMsg]);
-        setIsTyping(false);
-      }, 1200);
+        pinyin: "Zhè shì nǐ de kāfēi, qǐng màn yòng.",
+        translation: "Here is your coffee, please enjoy."
+      };
+      setMessages((prev) => [...prev, aiMsg]);
+      return { id: aiMsg.id, text: aiMsg.text };
     } catch (e) {
+      if (e instanceof AiRequestTimeoutError) {
+        setAiRequestTimeoutOpen(true);
+      }
+      return null;
+    } finally {
       setIsTyping(false);
     }
+  }, []);
+
+  useEffect(() => {
+    getPipeline().setHandlers({
+      runFullTurn,
+      speakUtterance,
+      onStage: setPipelineStage,
+    });
+  }, [runFullTurn, speakUtterance]);
+
+  const handleSend = () => {
+    const t = inputText.trim();
+    if (!t) return;
+    getPipeline().enqueueKeyboardTurn(t);
+  };
+
+  const handleSendLine = (line: string) => {
+    const t = line.trim();
+    if (!t) return;
+    getPipeline().enqueueKeyboardTurn(t);
   };
 
   const FloatingBackButton = () => (
@@ -720,6 +784,7 @@ export default function AIChatPage() {
         };
         setMessages([aiGreeting]);
         setScreen(ScreenState.CHAT);
+        getPipeline().enqueueAudioOnly(aiGreeting.text, aiGreeting.id);
       }, 1500);
     };
 
@@ -881,7 +946,6 @@ export default function AIChatPage() {
     const [inputMode, setInputMode] = useState<'text' | 'voice'>('voice');
     const [activeDeepLearning, setActiveDeepLearning] = useState<Message | null>(null);
     const [showTranslationIds, setShowTranslationIds] = useState<string[]>([]); // Track which messages show translation
-    const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
     
     // 语音录音相关状态
     const [isRecording, setIsRecording] = useState(false);
@@ -941,7 +1005,7 @@ export default function AIChatPage() {
             // 松开时立即发送识别结果
             const text = recordedTextRef.current.trim();
             if (text) {
-              handleSend(text, true);
+              getPipeline().enqueueVoiceAsrFinal(text);
               recordedTextRef.current = '';
               setRecordedText('');
             }
@@ -963,6 +1027,7 @@ export default function AIChatPage() {
     
     // 开始录音
     const startRecording = () => {
+      if (pipelineStage !== 'idle') return;
       if (recognition.current && !isRecording) {
         recordedTextRef.current = '';
         setRecordedText('');
@@ -1026,20 +1091,10 @@ export default function AIChatPage() {
     // TTS播放函数
     const playTTS = (text: string, messageId: string) => {
       if (playingAudioId === messageId) {
-        // 如果正在播放，则停止
         window.speechSynthesis.cancel();
         setPlayingAudioId(null);
       } else {
-        // 停止其他正在播放的音频
-        window.speechSynthesis.cancel();
-        setPlayingAudioId(messageId);
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'zh-CN';
-        utterance.rate = 0.9;
-        utterance.pitch = 1;
-        utterance.onend = () => setPlayingAudioId(null);
-        utterance.onerror = () => setPlayingAudioId(null);
-        window.speechSynthesis.speak(utterance);
+        getPipeline().enqueuePlayback(text, messageId);
       }
     };
     
@@ -1050,19 +1105,7 @@ export default function AIChatPage() {
       return nonChineseRegex.test(text);
     };
     
-    // Auto-play audio for new AI messages（先听后看逻辑）
-    useEffect(() => {
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage && lastMessage.sender === 'ai' && lastMessage.text) {
-        // 自动播放AI消息
-        setPlayingAudioId(lastMessage.id);
-        const utterance = new SpeechSynthesisUtterance(lastMessage.text);
-        utterance.lang = 'zh-CN';
-        utterance.rate = 0.9;
-        utterance.onend = () => setPlayingAudioId(null);
-        window.speechSynthesis.speak(utterance);
-      }
-    }, [messages]);
+    const pipelineBusy = pipelineStage !== 'idle';
 
     return (
       <Box sx={{ height: '100%', display: 'flex', bgcolor: '#F3F4F6', position: 'relative' }}>
@@ -1393,7 +1436,7 @@ export default function AIChatPage() {
                 <IconButton size="small" onClick={() => setShowAITranslation(false)}><Close sx={{ fontSize: 16 }} /></IconButton>
               </Box>
               <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', mb: 2, color: '#1F2937' }}>我想点一杯热拿铁。</Typography>
-              <ButtonBase onClick={() => handleSend("我想点一杯热拿铁。")} sx={{ width: '100%', py: 2, bgcolor: '#4F46E5', color: 'white', borderRadius: '14px', fontWeight: 900, fontSize: '0.95rem', '&:active': { transform: 'scale(0.98)' } }}>
+              <ButtonBase onClick={() => handleSendLine("我想点一杯热拿铁。")} sx={{ width: '100%', py: 2, bgcolor: '#4F46E5', color: 'white', borderRadius: '14px', fontWeight: 900, fontSize: '0.95rem', '&:active': { transform: 'scale(0.98)' } }}>
                 发送此句
               </ButtonBase>
             </Box>
@@ -1401,6 +1444,62 @@ export default function AIChatPage() {
 
           {/* Input Area - 设计稿：底部固定，grid图标+紫色按住说话 */}
           <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, p: is1920 ? 4 : 3, bgcolor: 'white', borderTop: '2px solid #F3F4F6', pb: is1920 ? 5 : 4, zIndex: 20 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 0.75,
+                flexWrap: 'wrap',
+                mb: 1.5,
+                px: 1,
+                py: 0.75,
+                borderRadius: '12px',
+                bgcolor: '#F9FAFB',
+                border: '1px solid #E5E7EB',
+              }}
+              aria-label="Conversation pipeline"
+            >
+              {(
+                [
+                  { id: 'mic', label: 'Mic', on: isRecording },
+                  { id: 'asr', label: 'ASR', on: pipelineStage === 'asr_finalize' },
+                  { id: 'llm', label: 'LLM', on: pipelineStage === 'llm' },
+                  { id: 'tts', label: 'TTS', on: pipelineStage === 'playback' },
+                  { id: 'audio', label: 'Audio', on: pipelineStage === 'playback' },
+                ] as const
+              ).map((step, i, arr) => (
+                <React.Fragment key={step.id}>
+                  <Box
+                    sx={{
+                      px: 1.25,
+                      py: 0.5,
+                      borderRadius: '10px',
+                      bgcolor: step.on ? 'rgba(79,70,229,0.12)' : 'transparent',
+                      border: '1px solid',
+                      borderColor: step.on ? '#4F46E5' : 'transparent',
+                      minHeight: 36,
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontSize: is1920 ? '0.85rem' : '0.75rem',
+                        fontWeight: 800,
+                        color: step.on ? '#4338CA' : '#9CA3AF',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      {step.label}
+                    </Typography>
+                  </Box>
+                  {i < arr.length - 1 && (
+                    <Typography sx={{ fontSize: '0.65rem', fontWeight: 900, color: '#D1D5DB', px: 0.25 }}>→</Typography>
+                  )}
+                </React.Fragment>
+              ))}
+            </Box>
             {/* AI Tools - Only show in text mode */}
             {inputMode === 'text' && (
               <Box sx={{ display: 'flex', gap: 1.5, mb: 2.5, overflowX: 'auto', px: 0.5 }}>
@@ -1526,6 +1625,7 @@ export default function AIChatPage() {
                   <ButtonBase 
                     onMouseDown={(e) => {
                       e.preventDefault();
+                      if (pipelineBusy && !isRecording) return;
                       if (!isRecording) {
                         startRecording();
                       }
@@ -1544,6 +1644,7 @@ export default function AIChatPage() {
                     }}
                     onTouchStart={(e) => {
                       e.preventDefault();
+                      if (pipelineBusy && !isRecording) return;
                       if (!isRecording) {
                         startRecording();
                       }
@@ -1557,7 +1658,7 @@ export default function AIChatPage() {
                     sx={{ 
                       width: '100%', 
                       height: is1920 ? 60 : 52, 
-                      bgcolor: isRecording ? '#EF4444' : '#6B4FF6', 
+                      bgcolor: isRecording ? '#EF4444' : pipelineBusy ? '#9CA3AF' : '#6B4FF6', 
                       color: 'white', 
                       borderRadius: is1920 ? '20px' : '16px', 
                       fontWeight: 900, 
@@ -1566,11 +1667,12 @@ export default function AIChatPage() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: 1.5,
-                      boxShadow: isRecording ? '0 4px 12px rgba(239,68,68,0.4)' : '0 4px 12px rgba(107,79,246,0.3)',
+                      boxShadow: isRecording ? '0 4px 12px rgba(239,68,68,0.4)' : pipelineBusy ? 'none' : '0 4px 12px rgba(107,79,246,0.3)',
                       transition: 'all 0.2s',
                       userSelect: 'none',
                       WebkitUserSelect: 'none',
                       position: 'relative',
+                      cursor: pipelineBusy && !isRecording ? 'not-allowed' : 'pointer',
                       '&:active': {
                         transform: 'scale(0.98)'
                       }
@@ -1638,8 +1740,8 @@ export default function AIChatPage() {
                       </>
                     ) : (
                       <>
-                        <Mic sx={{ fontSize: 24 }} /> 
-                        按住说话
+                        <Mic sx={{ fontSize: 24 }} />
+                        {pipelineBusy ? 'Please wait…' : '按住说话'}
                       </>
                     )}
                   </ButtonBase>
@@ -2624,6 +2726,30 @@ export default function AIChatPage() {
         {screen === ScreenState.HISTORY_LIST && <HistoryListScreen />}
         {screen === ScreenState.HISTORY_DETAIL && <HistoryDetailScreen />}
       </Box>
+      <Snackbar
+        open={aiRequestTimeoutOpen}
+        autoHideDuration={6000}
+        onClose={() => setAiRequestTimeoutOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ maxWidth: 'min(92vw, 560px)' }}
+      >
+        <Alert
+          onClose={() => setAiRequestTimeoutOpen(false)}
+          severity="warning"
+          variant="filled"
+          sx={{
+            width: '100%',
+            alignItems: 'center',
+            fontSize: '1rem',
+            py: 1.5,
+            px: 2,
+            borderRadius: 2,
+            boxShadow: 4,
+          }}
+        >
+          Request timed out. Check your connection and try again.
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

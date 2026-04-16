@@ -1,3 +1,5 @@
+import { withAiRequest } from '../utils/requestWrapper'
+
 // AI服务接口
 class AIService {
   // API配置（保留用于未来扩展）
@@ -11,43 +13,54 @@ class AIService {
   }
 
   async chat(message: string): Promise<string> {
-    // 模拟AI回复（实际应该调用真实的AI API）
-    // 这里可以集成OpenAI、本地AI模型等
-    
-    // 简单的规则回复示例
-    if (message.includes('你好')) {
-      return '你好！很高兴和你对话。让我们用中文继续交流吧！'
-    }
-    if (message.includes('谢谢')) {
-      return '不客气！继续加油学习中文！'
-    }
-    
-    // 默认回复
-    return `我理解你说的"${message}"。让我们继续用中文练习吧！如果你有任何问题，随时问我。`
+    return withAiRequest(
+      async (_signal) => {
+        // 模拟AI回复（实际应该调用真实的AI API）
+        // 这里可以集成OpenAI、本地AI模型等
+
+        // 简单的规则回复示例
+        if (message.includes('你好')) {
+          return '你好！很高兴和你对话。让我们用中文继续交流吧！'
+        }
+        if (message.includes('谢谢')) {
+          return '不客气！继续加油学习中文！'
+        }
+
+        // 默认回复
+        return `我理解你说的"${message}"。让我们继续用中文练习吧！如果你有任何问题，随时问我。`
+      },
+      { label: 'ai.chat' },
+    )
   }
 
   async correctGrammar(text: string): Promise<{ corrected: string; suggestions: string[] }> {
-    // 语法纠正功能
-    return {
-      corrected: text,
-      suggestions: [],
-    }
+    return withAiRequest(
+      async (_signal) => ({
+        corrected: text,
+        suggestions: [],
+      }),
+      { label: 'ai.correctGrammar' },
+    )
   }
 
   async evaluatePronunciation(_audio: Blob): Promise<{ score: number; feedback: string }> {
-    // 发音评测功能
-    return {
-      score: 85,
-      feedback: '发音不错，继续练习！',
-    }
+    return withAiRequest(
+      async (_signal) => ({
+        score: 85,
+        feedback: '发音不错，继续练习！',
+      }),
+      { label: 'ai.evaluatePronunciation' },
+    )
   }
 
   async generateLesson(_userId: string, _performance: any): Promise<any> {
-    // AI自适应课程生成
-    return {
-      lessonId: 'lesson-1',
-      content: '根据你的表现，我为你生成了专属课程...',
-    }
+    return withAiRequest(
+      async (_signal) => ({
+        lessonId: 'lesson-1',
+        content: '根据你的表现，我为你生成了专属课程...',
+      }),
+      { label: 'ai.generateLesson' },
+    )
   }
 }
 
