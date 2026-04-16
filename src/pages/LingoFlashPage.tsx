@@ -5,7 +5,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
-import { Box, Typography, ButtonBase } from '@mui/material';
+import { Box, Typography, ButtonBase, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
@@ -34,6 +34,7 @@ import FlightIcon from '@mui/icons-material/Flight';
 import TuneIcon from '@mui/icons-material/Tune';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined';
 
 /* ─────────────────────────────────── types ─────────────────────────────────── */
 interface Word {
@@ -418,6 +419,8 @@ function LearningSession({
   const [direction, setDirection] = useState(0);
   const [complete, setComplete] = useState(false);
   const [stats, setStats] = useState({ total: words.length, known: 0, uncertain: 0, unknown: 0 });
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackText, setFeedbackText] = useState('');
 
   const progress = ((idx + 1) / words.length) * 100;
 
@@ -454,11 +457,18 @@ function LearningSession({
         </ButtonBase>
 
         <Box sx={{ flex: 1, mx: is960 ? 2 : 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#9CA3AF', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 0.75 }}>
+            <Typography
+              sx={{
+                fontSize: is960 ? '0.95rem' : '1.125rem',
+                fontWeight: 800,
+                color: '#64748B',
+                letterSpacing: '0.04em',
+              }}
+            >
               {idx + 1} / {words.length}
             </Typography>
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#3B82F6' }}>
+            <Typography sx={{ fontSize: is960 ? '0.95rem' : '1.125rem', fontWeight: 800, color: '#2563EB' }}>
               {Math.round(progress)}%
             </Typography>
           </Box>
@@ -467,7 +477,68 @@ function LearningSession({
           </Box>
         </Box>
 
-        <Box sx={{ width: 44, height: 44 }} />
+        <ButtonBase
+          onClick={() => setFeedbackOpen(true)}
+          aria-label="Feedback on this word or experience"
+          sx={{
+            width: 44,
+            height: 44,
+            borderRadius: '50%',
+            color: '#64748B',
+            flexShrink: 0,
+            '&:hover': { bgcolor: '#F3F4F6' },
+            '&:active': { transform: 'scale(0.96)' },
+          }}
+        >
+          <RateReviewOutlinedIcon sx={{ fontSize: 26 }} />
+        </ButtonBase>
+
+        <Dialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} fullWidth maxWidth="sm" aria-labelledby="lingo-feedback-title">
+          <DialogTitle id="lingo-feedback-title" sx={{ fontWeight: 800 }}>
+            Feedback
+          </DialogTitle>
+          <DialogContent>
+            <Typography sx={{ mb: 2, color: '#64748B', fontSize: is960 ? '0.85rem' : '0.95rem', lineHeight: 1.5 }}>
+              Tell us about a problem with this card, the word content, or anything that felt confusing. This demo does not send data to a server yet.
+            </Typography>
+            <Typography sx={{ mb: 1, fontWeight: 700, fontSize: is960 ? '0.8rem' : '0.88rem', color: '#334155' }}>
+              Current card: <Box component="span" sx={{ color: '#2563EB' }}>{words[idx]?.word}</Box>
+            </Typography>
+            <TextField
+              autoFocus
+              multiline
+              minRows={4}
+              fullWidth
+              placeholder="What went wrong or what could be better?"
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
+              sx={{ mt: 0.5 }}
+            />
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={() => setFeedbackOpen(false)} color="inherit">
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              disableElevation
+              onClick={() => {
+                const text = feedbackText.trim();
+                if (import.meta.env.DEV && text) {
+                  globalThis.console?.info?.('[LingoFlash feedback]', {
+                    wordId: words[idx]?.id,
+                    word: words[idx]?.word,
+                    text,
+                  });
+                }
+                setFeedbackText('');
+                setFeedbackOpen(false);
+              }}
+            >
+              Submit
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
 
       {/* Card area */}
