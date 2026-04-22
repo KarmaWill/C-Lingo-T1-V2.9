@@ -3,7 +3,7 @@
  * Dashboard → LearningSession → SessionComplete
  */
 import { useState, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { Box, Typography, ButtonBase, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -35,6 +35,7 @@ import TuneIcon from '@mui/icons-material/Tune';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined';
+import { getFunChineseFlashWordsForHub } from '../utils/funChineseUnitVocab';
 
 /* ─────────────────────────────────── types ─────────────────────────────────── */
 interface Word {
@@ -1733,6 +1734,7 @@ function SavedWordsDialog({
    ═══════════════════════════════════════════════════════════════════════════════ */
 export default function LingoFlashPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
   const is960 = screenSize === '960x540';
 
@@ -1756,6 +1758,27 @@ export default function LingoFlashPage() {
       /* ignore */
     }
   }, [savedWordIds]);
+
+  const embedFromFunChinese = searchParams.get('from') === 'fun-chinese';
+
+  useEffect(() => {
+    if (!embedFromFunChinese) return;
+    const words = getFunChineseFlashWordsForHub();
+    if (words.length === 0) {
+      navigate('/library/hub/fun-chinese', { replace: true });
+      return;
+    }
+    setLearningWords(words as Word[]);
+    setView('learning');
+  }, [embedFromFunChinese, navigate]);
+
+  const handleExitFromSession = useCallback(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('from') === 'fun-chinese') {
+      navigate('/library/hub/fun-chinese');
+      return;
+    }
+    setView('dashboard');
+  }, [navigate]);
 
   const onToggleSave = useCallback((wordId: string) => {
     setSavedWordIds((prev) => (prev.includes(wordId) ? prev.filter((id) => id !== wordId) : [...prev, wordId]));
@@ -1796,7 +1819,7 @@ export default function LingoFlashPage() {
             is960={is960}
             savedWordIds={savedWordIds}
             onToggleSave={onToggleSave}
-            onExitToDashboard={() => setView('dashboard')}
+            onExitToDashboard={handleExitFromSession}
           />
         )}
       </Box>

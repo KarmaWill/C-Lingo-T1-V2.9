@@ -2,7 +2,7 @@
  * Fun Chinese Lesson Page - 学习流程页面
  * 包含 Warmup -> Learn -> Practice -> Complete 等阶段
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Box, Typography, ButtonBase } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -17,6 +17,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import MessageIcon from '@mui/icons-material/ChatBubbleOutline';
 import BoltIcon from '@mui/icons-material/Bolt';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import { markLessonCompleted, UNIT_LESSON_COUNT } from '../utils/funChineseUnitProgress';
 
 type Phase = 'warmup' | 'learn' | 'cards' | 'practice' | 'complete';
 type Language = 'en' | 'vi' | 'th' | 'id';
@@ -255,6 +256,14 @@ export default function FunChineseLessonPage() {
   const [matchedPairs, setMatchedPairs] = useState<string[]>([]);
   // TODO: 从用户设置或系统语言获取，目前默认越南语
   const [userLanguage] = useState<Language>('vi');
+
+  useEffect(() => {
+    if (currentPhase !== 'complete') return;
+    const id = parseInt(lessonId || '1', 10);
+    if (Number.isFinite(id) && id >= 1 && id <= UNIT_LESSON_COUNT) {
+      markLessonCompleted(id);
+    }
+  }, [currentPhase, lessonId]);
 
   const orange = '#FF7A45';
   const teal = '#14B8A6';
@@ -871,6 +880,9 @@ export default function FunChineseLessonPage() {
 
   // Complete Phase
   if (currentPhase === 'complete') {
+    const currentLessonId = parseInt(lessonId || '1', 10);
+    const hasNextLesson = Number.isFinite(currentLessonId) && currentLessonId < UNIT_LESSON_COUNT;
+
     const handleRestart = () => {
       setCurrentPhase('warmup');
       setVocabIndex(0);
@@ -884,8 +896,10 @@ export default function FunChineseLessonPage() {
     };
 
     const handleNextLesson = () => {
-      // Get current lesson ID and navigate to next lesson
-      const currentLessonId = parseInt(lessonId || '1');
+      if (!hasNextLesson) {
+        navigate('/library/hub/fun-chinese');
+        return;
+      }
       const nextLessonId = currentLessonId + 1;
       navigate(`/library/hub/fun-chinese/lesson/${nextLessonId}`);
     };
@@ -986,7 +1000,7 @@ export default function FunChineseLessonPage() {
               },
             }}
           >
-            进入下一课
+            {hasNextLesson ? '进入下一课' : '返回课程'}
           </ButtonBase>
 
           <Box sx={{ display: 'flex', gap: is960 ? 1.5 : 2 }}>
@@ -1010,7 +1024,7 @@ export default function FunChineseLessonPage() {
               重新学习
             </ButtonBase>
             <ButtonBase
-              onClick={() => navigate(-1)}
+              onClick={() => navigate('/library/hub/fun-chinese')}
               sx={{
                 flex: 1,
                 py: is960 ? 1.25 : 1.5,

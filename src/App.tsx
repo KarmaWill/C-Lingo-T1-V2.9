@@ -33,6 +33,7 @@ import StartingLearningPage from './pages/StartingLearningPage'
 import LibraryHubPlaceholderPage from './pages/LibraryHubPlaceholderPage'
 import FunChineseHubPage from './pages/FunChineseHubPage'
 import FunChineseLessonPage from './pages/FunChineseLessonPage'
+import FunChineseIntensivePage from './pages/FunChineseIntensivePage'
 import CharacterWritingPage from './pages/CharacterWritingPage'
 import CultureMapPage from './pages/CultureMapPage'
 import HSKGoStudyPlaceholderPage from './pages/HSKGoStudyPlaceholderPage'
@@ -100,6 +101,7 @@ function App() {
               <Route path="/library/select-books" element={<LibraryBookSelectionPage />} />
               <Route path="/starting-learning" element={<StartingLearningPage />} />
               <Route path="/library/hub/fun-chinese" element={<FunChineseHubPage />} />
+              <Route path="/library/hub/fun-chinese/intensive" element={<FunChineseIntensivePage />} />
               <Route path="/library/hub/fun-chinese/lesson/:lessonId" element={<FunChineseLessonPage />} />
               <Route path="/library/hub/culture" element={<CultureMapPage />} />
               <Route path="/character-writing/:character" element={<CharacterWritingPage />} />

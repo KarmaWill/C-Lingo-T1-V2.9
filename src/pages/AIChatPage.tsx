@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Box, Typography, IconButton, Avatar, ButtonBase, TextField, Grid, Tab, Tabs, List, ListItem, ListItemText, ListItemSecondaryAction, Dialog, DialogTitle, DialogContent, Paper, Divider, Snackbar, Alert } from '@mui/material';
+import { Box, Typography, IconButton, Avatar, ButtonBase, Button, TextField, Grid, Tab, Tabs, List, ListItem, ListItemText, ListItemSecondaryAction, Dialog, DialogTitle, DialogContent, Paper, Divider, Snackbar, Alert } from '@mui/material';
 
 // 语音识别类型定义
 interface SpeechRecognition extends EventTarget {
@@ -83,7 +83,14 @@ import { RootState } from '../store/store';
 import { addHistory, deleteHistory, ChatHistoryItem } from '../store/slices/chatHistorySlice';
 import { aiService } from '../services/aiService';
 import { AiRequestTimeoutError } from '../utils/requestWrapper';
-import { AiConversationPipeline, type PipelineStage } from '../services/aiConversationPipeline';
+import {
+  AiConversationPipeline,
+  type PipelineStage,
+  type RunFullTurnOptions,
+  type RunFullTurnResult,
+  type LlmFailedInfo,
+  type PlaybackFailedInfo,
+} from '../services/aiConversationPipeline';
 
 // --- Types ---
 enum ScreenState {
@@ -109,13 +116,21 @@ interface Topic {
 interface Message {
   id: string;
   text: string;
-  sender: 'user' | 'ai';
+  sender: 'user' | 'ai' | 'system';
   pinyin?: string;
   translation?: string;
   timestamp: Date;
   score?: number;
   isVoiceInput?: boolean; // 标识是否为语音输入
+  systemKind?: 'llm_fail' | 'tts_fail';
+  replayText?: string;
+  replayMessageId?: string;
 }
+
+type LlmSnackState =
+  | { open: false }
+  | { open: true; mode: 'timeout' }
+  | { open: true; mode: 'error'; detail: string };
 
 // --- Mock Data ---
 const TOPICS: Topic[] = [
@@ -180,10 +195,12 @@ export default function AIChatPage() {
   const [dictTab, setDictTab] = useState(0);
   const [showAITranslation, setShowAITranslation] = useState(false);
   const [toolLoading, setToolLoading] = useState(false);
-  const [aiRequestTimeoutOpen, setAiRequestTimeoutOpen] = useState(false);
+  const [llmSnack, setLlmSnack] = useState<LlmSnackState>({ open: false });
+  const [playbackSnack, setPlaybackSnack] = useState<{ text: string; messageId: string } | null>(null);
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [pipelineStage, setPipelineStage] = useState<PipelineStage>('idle');
 
+  const pendingLlmRetryRef = useRef<{ text: string; isVoiceInput: boolean } | null>(null);
   const pipelineRef = useRef<AiConversationPipeline | null>(null);
   const getPipeline = () => {
     if (!pipelineRef.current) {
@@ -211,6 +228,9 @@ export default function AIChatPage() {
     }
     setPlayingAudioId(null);
     setPipelineStage('idle');
+    setLlmSnack({ open: false });
+    setPlaybackSnack(null);
+    pendingLlmRetryRef.current = null;
     setScreen(ScreenState.HOME);
     setSelectedTopic(null);
     setMessages([]);
@@ -255,11 +275,11 @@ export default function AIChatPage() {
     setTimeout(() => setIsMagicGenerating(false), 800);
   };
 
-  const speakUtterance = useCallback((text: string, messageId: string) => {
+  const speakUtterance = useCallback((text: string, messageId: string): Promise<boolean> => {
     if (typeof window === 'undefined' || !window.speechSynthesis) {
-      return Promise.resolve();
+      return Promise.resolve(false);
     }
-    return new Promise<void>((resolve) => {
+    return new Promise((resolve) => {
       window.speechSynthesis.cancel();
       setPlayingAudioId(messageId);
       const utterance = new SpeechSynthesisUtterance(text);
@@ -268,18 +288,32 @@ export default function AIChatPage() {
       utterance.pitch = 1;
       utterance.onend = () => {
         setPlayingAudioId(null);
-        resolve();
+        resolve(true);
       };
-      utterance.onerror = () => {
+      utterance.onerror = (ev) => {
         setPlayingAudioId(null);
-        resolve();
+        console.warn('[TTS] utterance error', ev);
+        resolve(false);
       };
-      window.speechSynthesis.speak(utterance);
+      try {
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        setPlayingAudioId(null);
+        console.warn('[TTS] speak threw', e);
+        resolve(false);
+      }
     });
   }, []);
 
-  const runFullTurn = useCallback(async (textToSend: string, isVoiceInput: boolean): Promise<{ id: string; text: string } | null> => {
-    if (!textToSend.trim()) return null;
+  const runFullTurn = useCallback(
+    async (
+      textToSend: string,
+      isVoiceInput: boolean,
+      opts?: RunFullTurnOptions,
+    ): Promise<RunFullTurnResult> => {
+    if (!textToSend.trim()) return { ok: false };
+
+    const skipUserMessage = opts?.skipUserMessage === true;
 
     // 为语音输入生成拼音和翻译（模拟）
     const generatePinyin = (text: string): string => {
@@ -401,12 +435,15 @@ export default function AIChatPage() {
       translation: generateTranslation(textToSend)
     };
 
-    setMessages((prev) => [...prev, userMsg]);
-    setInputText('');
-    setShowAITranslation(false);
+    if (!skipUserMessage) {
+      setMessages((prev) => [...prev, userMsg]);
+      setInputText('');
+      setShowAITranslation(false);
+    }
     setIsTyping(true);
 
-    await new Promise<void>((r) => setTimeout(r, 1200));
+    const thinkMs = skipUserMessage ? 300 : 1200;
+    await new Promise<void>((r) => setTimeout(r, thinkMs));
     try {
       const response = await aiService.chat(textToSend);
       const aiMsg: Message = {
@@ -418,15 +455,54 @@ export default function AIChatPage() {
         translation: "Here is your coffee, please enjoy."
       };
       setMessages((prev) => [...prev, aiMsg]);
-      return { id: aiMsg.id, text: aiMsg.text };
+      return { ok: true, id: aiMsg.id, text: aiMsg.text };
     } catch (e) {
-      if (e instanceof AiRequestTimeoutError) {
-        setAiRequestTimeoutOpen(true);
-      }
-      return null;
+      const isTimeout = e instanceof AiRequestTimeoutError;
+      return { ok: false, error: e, isTimeout };
     } finally {
       setIsTyping(false);
     }
+  }, []);
+
+  const handleLlmFailed = useCallback((info: LlmFailedInfo) => {
+    pendingLlmRetryRef.current = { text: info.text, isVoiceInput: info.isVoiceInput };
+    if (info.isTimeout) {
+      setLlmSnack({ open: true, mode: 'timeout' });
+    } else {
+      const detail =
+        info.error instanceof Error
+          ? info.error.message
+          : typeof info.error === 'string'
+            ? info.error
+            : 'Something went wrong. Check your network and try again.';
+      setLlmSnack({ open: true, mode: 'error', detail });
+    }
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `sys-llm-${Date.now()}`,
+        sender: 'system',
+        systemKind: 'llm_fail',
+        text: info.isTimeout ? 'The reply timed out.' : 'The reply could not load.',
+        timestamp: new Date(),
+      },
+    ]);
+  }, []);
+
+  const handlePlaybackFailed = useCallback((info: PlaybackFailedInfo) => {
+    setPlaybackSnack({ text: info.text, messageId: info.messageId });
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `sys-tts-${Date.now()}`,
+        sender: 'system',
+        systemKind: 'tts_fail',
+        text: 'Playback failed. You can still read the reply below.',
+        timestamp: new Date(),
+        replayText: info.text,
+        replayMessageId: info.messageId,
+      },
+    ]);
   }, []);
 
   useEffect(() => {
@@ -434,8 +510,10 @@ export default function AIChatPage() {
       runFullTurn,
       speakUtterance,
       onStage: setPipelineStage,
+      onLlmFailed: handleLlmFailed,
+      onPlaybackFailed: handlePlaybackFailed,
     });
-  }, [runFullTurn, speakUtterance]);
+  }, [runFullTurn, speakUtterance, handleLlmFailed, handlePlaybackFailed]);
 
   const handleSend = () => {
     const t = inputText.trim();
@@ -954,7 +1032,10 @@ export default function AIChatPage() {
     const recognition = useRef<SpeechRecognition | null>(null);
     const recordedTextRef = useRef<string>(''); // 用于在 onend 中访问最新的文本
     const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null); // 倒计时定时器
-    
+    /** 与 recognition 实际是否在跑同步；避免 stopRecording 读到过期的 isRecording 闭包（快速点按尤其明显） */
+    const isRecordingActiveRef = useRef(false);
+    const [voiceUiError, setVoiceUiError] = useState<string | null>(null);
+
     // 初始化语音识别
     useEffect(() => {
       if (typeof window !== 'undefined') {
@@ -985,6 +1066,7 @@ export default function AIChatPage() {
           
           recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => {
             console.error('Speech recognition error:', event.error);
+            isRecordingActiveRef.current = false;
             setIsRecording(false);
             recordedTextRef.current = '';
             setRecordedText('');
@@ -996,6 +1078,7 @@ export default function AIChatPage() {
           };
           
           recognitionInstance.onend = () => {
+            isRecordingActiveRef.current = false;
             setIsRecording(false);
             if (countdownTimerRef.current) {
               clearInterval(countdownTimerRef.current);
@@ -1028,61 +1111,68 @@ export default function AIChatPage() {
     // 开始录音
     const startRecording = () => {
       if (pipelineStage !== 'idle') return;
-      if (recognition.current && !isRecording) {
-        recordedTextRef.current = '';
-        setRecordedText('');
-        setIsRecording(true);
-        setCountdown(60); // 设置60秒倒计时
-        
-        // 启动倒计时
-        countdownTimerRef.current = setInterval(() => {
-          setCountdown((prev) => {
-            if (prev <= 1) {
-              // 倒计时结束，自动停止录音
-              if (countdownTimerRef.current) {
-                clearInterval(countdownTimerRef.current);
-                countdownTimerRef.current = null;
-              }
-              stopRecording();
-              return 0;
+      if (!recognition.current) {
+        setVoiceUiError(
+          'Voice uses the Web Speech API. Cursor’s embedded browser often does not support it. Open this app in Chrome or Edge with the microphone allowed, or switch to keyboard input.'
+        );
+        return;
+      }
+      if (isRecordingActiveRef.current) return;
+
+      isRecordingActiveRef.current = true;
+      recordedTextRef.current = '';
+      setRecordedText('');
+      setIsRecording(true);
+      setCountdown(60); // 设置60秒倒计时
+
+      // 启动倒计时
+      countdownTimerRef.current = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            // 倒计时结束，自动停止录音
+            if (countdownTimerRef.current) {
+              clearInterval(countdownTimerRef.current);
+              countdownTimerRef.current = null;
             }
-            return prev - 1;
-          });
-        }, 1000);
-        
-        try {
-          recognition.current.start();
-        } catch (e) {
-          console.error('Failed to start recording:', e);
-          setIsRecording(false);
-          setCountdown(0);
-          if (countdownTimerRef.current) {
-            clearInterval(countdownTimerRef.current);
-            countdownTimerRef.current = null;
+            stopRecording();
+            return 0;
           }
+          return prev - 1;
+        });
+      }, 1000);
+
+      try {
+        recognition.current.start();
+      } catch (e) {
+        console.error('Failed to start recording:', e);
+        isRecordingActiveRef.current = false;
+        setIsRecording(false);
+        setCountdown(0);
+        if (countdownTimerRef.current) {
+          clearInterval(countdownTimerRef.current);
+          countdownTimerRef.current = null;
         }
       }
     };
-    
+
     // 停止录音
     const stopRecording = () => {
-      if (recognition.current && isRecording) {
-        try {
-          // 停止倒计时
-          if (countdownTimerRef.current) {
-            clearInterval(countdownTimerRef.current);
-            countdownTimerRef.current = null;
-          }
-          recognition.current.stop();
-          // onend 回调会自动处理发送
-        } catch (e) {
-          console.error('Failed to stop recording:', e);
-          setIsRecording(false);
-          setCountdown(0);
-          if (countdownTimerRef.current) {
-            clearInterval(countdownTimerRef.current);
-            countdownTimerRef.current = null;
-          }
+      if (!recognition.current || !isRecordingActiveRef.current) return;
+      try {
+        if (countdownTimerRef.current) {
+          clearInterval(countdownTimerRef.current);
+          countdownTimerRef.current = null;
+        }
+        recognition.current.stop();
+        // onend 回调会自动处理发送
+      } catch (e) {
+        console.error('Failed to stop recording:', e);
+        isRecordingActiveRef.current = false;
+        setIsRecording(false);
+        setCountdown(0);
+        if (countdownTimerRef.current) {
+          clearInterval(countdownTimerRef.current);
+          countdownTimerRef.current = null;
         }
       }
     };
@@ -1108,6 +1198,7 @@ export default function AIChatPage() {
     const pipelineBusy = pipelineStage !== 'idle';
 
     return (
+      <>
       <Box sx={{ height: '100%', display: 'flex', bgcolor: '#F3F4F6', position: 'relative' }}>
         {/* Main Chat Area */}
         <Box sx={{ 
@@ -1142,7 +1233,61 @@ export default function AIChatPage() {
 
           {/* Messages */}
           <Box sx={{ flexGrow: 1, overflowY: 'auto', p: is1920 ? 5 : 4, display: 'flex', flexDirection: 'column', gap: is1920 ? 5 : 4, pb: is1920 ? 28 : 24 }}>
-            {messages.map(msg => (
+            {messages.map(msg => {
+              if (msg.sender === 'system') {
+                const showRetryLlm = msg.systemKind === 'llm_fail';
+                const showReplayTts =
+                  msg.systemKind === 'tts_fail' && msg.replayText && msg.replayMessageId;
+                return (
+                  <Box key={msg.id} sx={{ alignSelf: 'stretch', maxWidth: '100%', px: 0.25 }}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: 2,
+                        p: 2,
+                        borderRadius: '16px',
+                        bgcolor: '#FEF2F2',
+                        border: '1px solid #FECACA',
+                      }}
+                    >
+                      <AlertCircle sx={{ color: '#DC2626', fontSize: 28, flexShrink: 0 }} />
+                      <Typography sx={{ flex: 1, minWidth: 200, fontWeight: 700, color: '#7F1D1D', fontSize: '0.95rem' }}>
+                        {msg.text}
+                      </Typography>
+                      {showRetryLlm && (
+                        <Button
+                          variant="contained"
+                          size="large"
+                          onClick={() => {
+                            const p = pendingLlmRetryRef.current;
+                            if (p) getPipeline().enqueueLlmRetry(p.text, p.isVoiceInput);
+                          }}
+                          sx={{ borderRadius: '12px', fontWeight: 800, minHeight: 48, px: 3, bgcolor: '#991B1B', '&:hover': { bgcolor: '#7F1D1D' } }}
+                        >
+                          Retry
+                        </Button>
+                      )}
+                      {showReplayTts && (
+                        <Button
+                          variant="contained"
+                          size="large"
+                          onClick={() => {
+                            getPipeline().enqueuePlayback(msg.replayText!, msg.replayMessageId!);
+                            setPlaybackSnack(null);
+                          }}
+                          sx={{ borderRadius: '12px', fontWeight: 800, minHeight: 48, px: 3, bgcolor: '#4F46E5', '&:hover': { bgcolor: '#4338CA' } }}
+                        >
+                          Replay
+                        </Button>
+                      )}
+                    </Paper>
+                  </Box>
+                );
+              }
+              return (
               <Box key={msg.id} sx={{ alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
                 <Box sx={{ display: 'flex', gap: 2, flexDirection: msg.sender === 'user' ? 'row-reverse' : 'row', alignItems: 'flex-start' }}>
                   <Avatar 
@@ -1381,7 +1526,8 @@ export default function AIChatPage() {
                   </Box>
                 </Box>
               </Box>
-            ))}
+              );
+            })}
             {isTyping && (
               <Box sx={{ display: 'flex', gap: 2, ml: 7, alignItems: 'center' }}>
       <Box sx={{ display: 'flex', gap: 1 }}>
@@ -1625,33 +1771,39 @@ export default function AIChatPage() {
                   <ButtonBase 
                     onMouseDown={(e) => {
                       e.preventDefault();
-                      if (pipelineBusy && !isRecording) return;
-                      if (!isRecording) {
+                      if (pipelineBusy && !isRecordingActiveRef.current) return;
+                      if (!isRecordingActiveRef.current) {
                         startRecording();
                       }
                     }}
                     onMouseUp={(e) => {
                       e.preventDefault();
-                      if (isRecording) {
+                      if (isRecordingActiveRef.current) {
                         stopRecording();
                       }
                     }}
                     onMouseLeave={(e) => {
-                      if (isRecording) {
+                      if (isRecordingActiveRef.current) {
                         e.preventDefault();
                         stopRecording();
                       }
                     }}
                     onTouchStart={(e) => {
                       e.preventDefault();
-                      if (pipelineBusy && !isRecording) return;
-                      if (!isRecording) {
+                      if (pipelineBusy && !isRecordingActiveRef.current) return;
+                      if (!isRecordingActiveRef.current) {
                         startRecording();
                       }
                     }}
                     onTouchEnd={(e) => {
                       e.preventDefault();
-                      if (isRecording) {
+                      if (isRecordingActiveRef.current) {
+                        stopRecording();
+                      }
+                    }}
+                    onTouchCancel={(e) => {
+                      if (isRecordingActiveRef.current) {
+                        e.preventDefault();
                         stopRecording();
                       }
                     }}
@@ -1990,6 +2142,18 @@ export default function AIChatPage() {
           </Box>
         )}
       </Box>
+      <Snackbar
+        open={!!voiceUiError}
+        autoHideDuration={8000}
+        onClose={() => setVoiceUiError(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ maxWidth: 'min(92vw, 560px)' }}
+      >
+        <Alert onClose={() => setVoiceUiError(null)} severity="warning" variant="filled" sx={{ width: '100%' }}>
+          {voiceUiError}
+        </Alert>
+      </Snackbar>
+      </>
     );
   };
 
@@ -2727,14 +2891,14 @@ export default function AIChatPage() {
         {screen === ScreenState.HISTORY_DETAIL && <HistoryDetailScreen />}
       </Box>
       <Snackbar
-        open={aiRequestTimeoutOpen}
-        autoHideDuration={6000}
-        onClose={() => setAiRequestTimeoutOpen(false)}
+        open={llmSnack.open}
+        autoHideDuration={llmSnack.open && llmSnack.mode === 'timeout' ? 8000 : 10000}
+        onClose={() => setLlmSnack({ open: false })}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         sx={{ maxWidth: 'min(92vw, 560px)' }}
       >
         <Alert
-          onClose={() => setAiRequestTimeoutOpen(false)}
+          onClose={() => setLlmSnack({ open: false })}
           severity="warning"
           variant="filled"
           sx={{
@@ -2746,8 +2910,65 @@ export default function AIChatPage() {
             borderRadius: 2,
             boxShadow: 4,
           }}
+          action={
+            <Button
+              color="inherit"
+              size="large"
+              sx={{ fontWeight: 800, minHeight: 48, px: 2 }}
+              onClick={() => {
+                const p = pendingLlmRetryRef.current;
+                if (p) getPipeline().enqueueLlmRetry(p.text, p.isVoiceInput);
+                setLlmSnack({ open: false });
+              }}
+            >
+              Retry
+            </Button>
+          }
         >
-          Request timed out. Check your connection and try again.
+          {!llmSnack.open
+            ? ''
+            : llmSnack.mode === 'timeout'
+              ? 'Request timed out. Check your connection, then tap Retry.'
+              : llmSnack.detail}
+        </Alert>
+      </Snackbar>
+      <Snackbar
+        open={!!playbackSnack}
+        autoHideDuration={10000}
+        onClose={() => setPlaybackSnack(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ maxWidth: 'min(92vw, 560px)', bottom: { xs: 96, sm: 112 } }}
+      >
+        <Alert
+          onClose={() => setPlaybackSnack(null)}
+          severity="info"
+          variant="filled"
+          sx={{
+            width: '100%',
+            alignItems: 'center',
+            fontSize: '1rem',
+            py: 1.5,
+            px: 2,
+            borderRadius: 2,
+            boxShadow: 4,
+          }}
+          action={
+            playbackSnack ? (
+              <Button
+                color="inherit"
+                size="large"
+                sx={{ fontWeight: 800, minHeight: 48, px: 2 }}
+                onClick={() => {
+                  getPipeline().enqueuePlayback(playbackSnack.text, playbackSnack.messageId);
+                  setPlaybackSnack(null);
+                }}
+              >
+                Replay
+              </Button>
+            ) : undefined
+          }
+        >
+          Playback failed. The reply is still on screen — tap Replay to try audio again.
         </Alert>
       </Snackbar>
     </Box>

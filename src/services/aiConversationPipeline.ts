@@ -8,10 +8,39 @@ export const ASR_FINALIZE_DELAY_MS = 220
 
 export type PipelineStage = 'idle' | 'asr_finalize' | 'llm' | 'playback'
 
+export type RunFullTurnOptions = {
+  /** When true, do not append another user bubble (LLM retry after failure). */
+  skipUserMessage?: boolean
+}
+
+export type RunFullTurnOk = { ok: true; id: string; text: string }
+export type RunFullTurnFail = { ok: false; error?: unknown; isTimeout?: boolean }
+export type RunFullTurnResult = RunFullTurnOk | RunFullTurnFail
+
+export type LlmFailedInfo = {
+  text: string
+  isVoiceInput: boolean
+  error?: unknown
+  isTimeout?: boolean
+}
+
+export type PlaybackFailedInfo = {
+  text: string
+  messageId: string
+  error?: unknown
+}
+
 export type PipelineHandlers = {
-  runFullTurn: (text: string, isVoiceInput: boolean) => Promise<{ id: string; text: string } | null>
-  speakUtterance: (text: string, messageId: string) => Promise<void>
+  runFullTurn: (
+    text: string,
+    isVoiceInput: boolean,
+    opts?: RunFullTurnOptions,
+  ) => Promise<RunFullTurnResult>
+  /** Returns true if playback finished normally; false on error / unsupported. */
+  speakUtterance: (text: string, messageId: string) => Promise<boolean>
   onStage?: (stage: PipelineStage) => void
+  onLlmFailed?: (info: LlmFailedInfo) => void
+  onPlaybackFailed?: (info: PlaybackFailedInfo) => void
 }
 
 function sleep(ms: number): Promise<void> {
@@ -32,9 +61,10 @@ export class AiConversationPipeline {
   }
 
   private chainWork(task: () => Promise<void>): void {
-    this.workTail = this.workTail
-      .then(task)
-      .catch((err) => console.error('[AI pipeline]', err))
+    this.workTail = this.workTail.then(task).catch((err) => {
+      console.error('[AI pipeline]', err)
+      this.emit('idle')
+    })
   }
 
   /** After mic release: text enters ASR buffer, then finalize delay, then LLM + playback. */
@@ -56,16 +86,34 @@ export class AiConversationPipeline {
     })
   }
 
+  /** Retry LLM + TTS for an existing user line (no new user bubble). */
+  enqueueLlmRetry(text: string, isVoiceInput: boolean): void {
+    const t = text.trim()
+    if (!t) return
+    this.chainWork(async () => {
+      await this.runLlmAndSpeak({ text: t, isVoiceInput, skipUserMessage: true })
+    })
+  }
+
   /** TTS only (e.g. first AI greeting when entering chat). */
   enqueueAudioOnly(text: string, messageId: string): void {
     const t = text.trim()
     if (!t) return
     this.chainWork(async () => {
       const h = this.handlers
-      if (!h) return
-      this.emit('playback')
-      await h.speakUtterance(t, messageId)
-      this.emit('idle')
+      if (!h) {
+        this.emit('idle')
+        return
+      }
+      try {
+        this.emit('playback')
+        const ok = await h.speakUtterance(t, messageId)
+        if (!ok) {
+          h.onPlaybackFailed?.({ text: t, messageId })
+        }
+      } finally {
+        this.emit('idle')
+      }
     })
   }
 
@@ -75,10 +123,19 @@ export class AiConversationPipeline {
     if (!t) return
     this.chainWork(async () => {
       const h = this.handlers
-      if (!h) return
-      this.emit('playback')
-      await h.speakUtterance(t, messageId)
-      this.emit('idle')
+      if (!h) {
+        this.emit('idle')
+        return
+      }
+      try {
+        this.emit('playback')
+        const ok = await h.speakUtterance(t, messageId)
+        if (!ok) {
+          h.onPlaybackFailed?.({ text: t, messageId })
+        }
+      } finally {
+        this.emit('idle')
+      }
     })
   }
 
@@ -92,15 +149,46 @@ export class AiConversationPipeline {
     this.emit('idle')
   }
 
-  private async runLlmAndSpeak(job: { text: string; isVoiceInput: boolean }): Promise<void> {
+  private async runLlmAndSpeak(job: {
+    text: string
+    isVoiceInput: boolean
+    skipUserMessage?: boolean
+  }): Promise<void> {
     const h = this.handlers
-    if (!h) return
-    this.emit('llm')
-    const ai = await h.runFullTurn(job.text, job.isVoiceInput)
-    if (ai) {
-      this.emit('playback')
-      await h.speakUtterance(ai.text, ai.id)
+    if (!h) {
+      this.emit('idle')
+      return
     }
-    this.emit('idle')
+    try {
+      this.emit('llm')
+      let result: RunFullTurnResult
+      try {
+        result = await h.runFullTurn(job.text, job.isVoiceInput, {
+          skipUserMessage: job.skipUserMessage,
+        })
+      } catch (err) {
+        console.error('[AI pipeline] runFullTurn threw', err)
+        h.onLlmFailed?.({ text: job.text, isVoiceInput: job.isVoiceInput, error: err, isTimeout: false })
+        return
+      }
+
+      if (!result.ok) {
+        h.onLlmFailed?.({
+          text: job.text,
+          isVoiceInput: job.isVoiceInput,
+          error: result.error,
+          isTimeout: result.isTimeout,
+        })
+        return
+      }
+
+      this.emit('playback')
+      const spokenOk = await h.speakUtterance(result.text, result.id)
+      if (!spokenOk) {
+        h.onPlaybackFailed?.({ text: result.text, messageId: result.id })
+      }
+    } finally {
+      this.emit('idle')
+    }
   }
 }
