@@ -9,7 +9,7 @@
  */
 import { useState, useMemo, useRef, useEffect, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, ButtonBase, InputBase } from '@mui/material';
+import { Box, Typography, ButtonBase, InputBase, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import SearchIcon from '@mui/icons-material/Search';
 import GridViewIcon from '@mui/icons-material/GridView';
@@ -148,6 +148,8 @@ export default function LibraryBookSelectionPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [managedBookId, setManagedBookId] = useState<string | null>(null);
   const [selectedBookIds, setSelectedBookIds] = useState<string[]>([]);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [deleteConfirmMode, setDeleteConfirmMode] = useState<'all' | 'selected'>('all');
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const downloadTimersRef = useRef<Record<string, ReturnType<typeof setInterval>>>({});
 
@@ -253,6 +255,24 @@ export default function LibraryBookSelectionPage() {
       )
     );
     setSelectedBookIds([]);
+  };
+
+  const openDeleteConfirm = () => {
+    setDeleteConfirmMode(selectedBookIds.length > 0 ? 'selected' : 'all');
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const closeDeleteConfirm = () => {
+    setIsDeleteConfirmOpen(false);
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirmMode === 'selected') {
+      deleteSelectedBooks();
+    } else {
+      deleteAllDownloaded();
+    }
+    setIsDeleteConfirmOpen(false);
   };
 
   // ── Long-press (grid, non-edit) ──
@@ -473,7 +493,7 @@ export default function LibraryBookSelectionPage() {
             </ButtonBase>
             {(downloadedCount > 0 || selectedBookIds.length > 0) && (
               <ButtonBase
-                onClick={selectedBookIds.length > 0 ? deleteSelectedBooks : deleteAllDownloaded}
+                onClick={openDeleteConfirm}
                 sx={{
                   height: sz.iconBtn,
                   px: is960 ? 1.5 : 2,
@@ -824,6 +844,30 @@ export default function LibraryBookSelectionPage() {
                       </Box>
                     )}
 
+                    {/* Edit mode: download status tag (bottom-right) */}
+                    {isEditMode && (
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          right: 8,
+                          bottom: 8,
+                          px: 1,
+                          height: is960 ? 20 : 22,
+                          borderRadius: '999px',
+                          bgcolor: book.isDownloaded ? 'rgba(20,184,166,0.92)' : 'rgba(71,85,105,0.88)',
+                          color: 'white',
+                          fontSize: is960 ? '0.58rem' : '0.62rem',
+                          fontWeight: 800,
+                          display: 'flex',
+                          alignItems: 'center',
+                          letterSpacing: '0.01em',
+                          zIndex: 12,
+                        }}
+                      >
+                        {book.isDownloaded ? 'Downloaded' : 'Not downloaded'}
+                      </Box>
+                    )}
+
                     {/* Management overlay (long-press only) */}
                     {showMgmtOverlay && (
                       <Box
@@ -1108,6 +1152,58 @@ export default function LibraryBookSelectionPage() {
           </Box>
         )}
       </Box>
+
+      <Dialog
+        open={isDeleteConfirmOpen}
+        onClose={closeDeleteConfirm}
+        PaperProps={{
+          sx: {
+            borderRadius: is960 ? '16px' : '18px',
+            width: is960 ? 320 : 360,
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, fontSize: is960 ? '1rem' : '1.1rem', color: '#1E293B' }}>
+          Confirm Delete
+        </DialogTitle>
+        <DialogContent sx={{ pt: 0.5 }}>
+          <Typography sx={{ color: '#64748B', fontSize: is960 ? '0.82rem' : '0.9rem' }}>
+            {deleteConfirmMode === 'selected'
+              ? `Delete ${selectedBookIds.length} selected book${selectedBookIds.length > 1 ? 's' : ''} from downloads?`
+              : 'Delete all downloaded books?'}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 2, pb: 2, gap: 1 }}>
+          <ButtonBase
+            onClick={closeDeleteConfirm}
+            sx={{
+              height: is960 ? 40 : 42,
+              px: 2,
+              borderRadius: '12px',
+              bgcolor: '#F1F5F9',
+              color: '#475569',
+              fontWeight: 700,
+              fontSize: is960 ? '0.8rem' : '0.86rem',
+            }}
+          >
+            Cancel
+          </ButtonBase>
+          <ButtonBase
+            onClick={confirmDelete}
+            sx={{
+              height: is960 ? 40 : 42,
+              px: 2,
+              borderRadius: '12px',
+              bgcolor: '#EF4444',
+              color: 'white',
+              fontWeight: 700,
+              fontSize: is960 ? '0.8rem' : '0.86rem',
+            }}
+          >
+            Delete
+          </ButtonBase>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
