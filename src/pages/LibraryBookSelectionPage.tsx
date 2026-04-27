@@ -37,13 +37,65 @@ interface Book {
 
 type Category = 'All' | 'Happy Chinese' | 'HSK' | 'Culture' | 'Practice';
 
+const buildCourseCover = (level: string, title: string, startColor: string, endColor: string) =>
+  `data:image/svg+xml;utf8,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="560" viewBox="0 0 400 560">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="${startColor}"/>
+          <stop offset="100%" stop-color="${endColor}"/>
+        </linearGradient>
+        <radialGradient id="glow" cx="70%" cy="20%" r="65%">
+          <stop offset="0%" stop-color="rgba(255,255,255,0.55)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+        </radialGradient>
+      </defs>
+      <rect width="400" height="560" rx="28" fill="url(#bg)"/>
+      <rect width="400" height="560" rx="28" fill="url(#glow)"/>
+      <circle cx="316" cy="78" r="52" fill="rgba(255,255,255,0.22)"/>
+      <circle cx="84" cy="456" r="72" fill="rgba(15,23,42,0.12)"/>
+      <rect x="36" y="44" width="328" height="472" rx="24" fill="rgba(255,255,255,0.13)" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+      <text x="56" y="112" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="white" letter-spacing="2">CHINESE</text>
+      <text x="56" y="174" font-family="Arial, sans-serif" font-size="70" font-weight="900" fill="white">${level}</text>
+      <text x="56" y="224" font-family="Arial, sans-serif" font-size="28" font-weight="800" fill="rgba(255,255,255,0.92)">${title}</text>
+      <text x="56" y="266" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="rgba(255,255,255,0.78)">Standard Course</text>
+      <path d="M82 358 C128 322, 176 320, 222 356 S310 392, 344 346" fill="none" stroke="rgba(255,255,255,0.78)" stroke-width="14" stroke-linecap="round"/>
+      <path d="M86 410 H314" stroke="rgba(255,255,255,0.45)" stroke-width="4" stroke-linecap="round"/>
+      <path d="M112 438 H288" stroke="rgba(255,255,255,0.32)" stroke-width="4" stroke-linecap="round"/>
+    </svg>`
+  )}`;
+
+const buildSeriesCover = (label: string, title: string, subtitle: string, startColor: string, endColor: string) =>
+  `data:image/svg+xml;utf8,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="560" viewBox="0 0 400 560">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="${startColor}"/>
+          <stop offset="100%" stop-color="${endColor}"/>
+        </linearGradient>
+      </defs>
+      <rect width="400" height="560" rx="28" fill="url(#bg)"/>
+      <circle cx="318" cy="94" r="70" fill="rgba(255,255,255,0.18)"/>
+      <circle cx="70" cy="432" r="92" fill="rgba(15,23,42,0.12)"/>
+      <rect x="38" y="42" width="324" height="476" rx="24" fill="rgba(255,255,255,0.13)" stroke="rgba(255,255,255,0.34)" stroke-width="2"/>
+      <text x="58" y="108" font-family="Arial, sans-serif" font-size="22" font-weight="900" fill="rgba(255,255,255,0.78)" letter-spacing="2">${label}</text>
+      <text x="58" y="184" font-family="Arial, sans-serif" font-size="52" font-weight="900" fill="white">${title}</text>
+      <text x="58" y="226" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="rgba(255,255,255,0.88)">${subtitle}</text>
+      <rect x="58" y="286" width="116" height="116" rx="26" fill="rgba(255,255,255,0.88)"/>
+      <text x="116" y="360" text-anchor="middle" font-family="Arial, sans-serif" font-size="54" font-weight="900" fill="${endColor}">中</text>
+      <path d="M210 310 C244 286, 282 286, 316 310" fill="none" stroke="rgba(255,255,255,0.78)" stroke-width="10" stroke-linecap="round"/>
+      <path d="M202 356 H326" stroke="rgba(255,255,255,0.48)" stroke-width="5" stroke-linecap="round"/>
+      <path d="M202 386 H286" stroke="rgba(255,255,255,0.34)" stroke-width="5" stroke-linecap="round"/>
+    </svg>`
+  )}`;
+
 const INITIAL_BOOKS: Book[] = [
   {
     id: 'hc-1',
     title: 'Happy Chinese',
     subtitle: 'Volume 1',
     author: 'Li Xiaolin',
-    coverUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=400',
+    coverUrl: buildSeriesCover('HAPPY CHINESE', 'Volume 1', 'Starter Textbook', '#14B8A6', '#0F766E'),
     progress: 25,
     totalPages: 198,
     currentPage: 59,
@@ -56,7 +108,7 @@ const INITIAL_BOOKS: Book[] = [
     title: 'Happy Chinese',
     subtitle: 'Volume 2',
     author: 'Li Xiaolin',
-    coverUrl: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&q=80&w=400',
+    coverUrl: buildSeriesCover('HAPPY CHINESE', 'Volume 2', 'Next Level', '#8B5CF6', '#6D28D9'),
     progress: 0,
     totalPages: 210,
     currentPage: 0,
@@ -69,7 +121,7 @@ const INITIAL_BOOKS: Book[] = [
     title: 'HSK 1 Standard Course',
     subtitle: 'Textbook',
     author: 'Confucius Institute',
-    coverUrl: 'https://images.unsplash.com/photo-1544640808-32ca72ac7f67?auto=format&fit=crop&q=80&w=400',
+    coverUrl: buildCourseCover('HSK 1', 'Textbook', '#F97316', '#F59E0B'),
     progress: 85,
     totalPages: 150,
     currentPage: 128,
@@ -82,7 +134,7 @@ const INITIAL_BOOKS: Book[] = [
     title: 'HSK 2 Standard Course',
     subtitle: 'Textbook',
     author: 'Confucius Institute',
-    coverUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=400',
+    coverUrl: buildCourseCover('HSK 2', 'Textbook', '#2563EB', '#06B6D4'),
     progress: 0,
     totalPages: 180,
     currentPage: 0,
@@ -96,7 +148,7 @@ const INITIAL_BOOKS: Book[] = [
     title: 'Chinese Festivals',
     subtitle: 'Culture Series',
     author: 'Wang Ming',
-    coverUrl: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&q=80&w=400',
+    coverUrl: buildSeriesCover('CULTURE', 'Festivals', 'Culture Series', '#DC2626', '#F97316'),
     progress: 50,
     totalPages: 100,
     currentPage: 50,
@@ -108,7 +160,7 @@ const INITIAL_BOOKS: Book[] = [
     title: 'Grammar Master',
     subtitle: 'HSK 1-2',
     author: 'Zhang San',
-    coverUrl: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&q=80&w=400',
+    coverUrl: buildSeriesCover('PRACTICE', 'Grammar', 'HSK 1-2', '#334155', '#0F172A'),
     progress: 15,
     totalPages: 80,
     currentPage: 12,
