@@ -328,8 +328,35 @@ export default function HSKTestPage() {
               background: 'linear-gradient(135deg, #7B42F6 0%, #3B59F6 100%)',
               boxShadow: '0 16px 40px rgba(59, 89, 246, 0.38)',
               justifyContent: 'space-between',
+              position: 'relative',
+              isolation: 'isolate',
             }}
           >
+            <Box
+              sx={{
+                position: 'absolute',
+                top: is960 ? -34 : -46,
+                right: is960 ? -26 : -34,
+                width: is960 ? 110 : 148,
+                height: is960 ? 110 : 148,
+                borderRadius: '50%',
+                bgcolor: 'rgba(255,255,255,0.14)',
+                zIndex: 0,
+              }}
+            />
+            <Box
+              sx={{
+                position: 'absolute',
+                right: is960 ? 16 : 24,
+                bottom: is960 ? 18 : 24,
+                width: is960 ? 92 : 124,
+                height: is960 ? 54 : 68,
+                borderRadius: '999px',
+                border: '1px solid rgba(255,255,255,0.22)',
+                transform: 'rotate(-12deg)',
+                zIndex: 0,
+              }}
+            />
             <Box sx={{ display: 'flex', gap: is960 ? 1.75 : 2, flexShrink: 0, alignItems: 'flex-start' }}>
               <MenuBookOutlinedIcon
                 sx={{
@@ -338,9 +365,10 @@ export default function HSKTestPage() {
                   flexShrink: 0,
                   mt: 0.25,
                   opacity: 0.98,
+                  zIndex: 1,
                 }}
               />
-              <Box sx={{ minWidth: 0 }}>
+              <Box sx={{ minWidth: 0, zIndex: 1 }}>
                 <Typography
                   sx={{
                     fontWeight: 900,
@@ -365,17 +393,33 @@ export default function HSKTestPage() {
                 </Typography>
               </Box>
             </Box>
+
             <Box
               sx={{
                 flex: 1,
                 minHeight: is960 ? 36 : 44,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                pt: is960 ? 2 : 2.5,
+                justifyContent: 'space-between',
+                gap: is960 ? 1.25 : 1.5,
+                pt: is960 ? 1.5 : 2,
                 pb: is960 ? 0.25 : 0.5,
+                zIndex: 1,
               }}
             >
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
+                  <Typography sx={{ color: 'rgba(255,255,255,0.78)', fontSize: is960 ? '0.62rem' : '0.72rem', fontWeight: 800 }}>
+                    Current focus
+                  </Typography>
+                  <Typography sx={{ color: 'white', fontSize: is960 ? '0.62rem' : '0.72rem', fontWeight: 900 }}>
+                    68%
+                  </Typography>
+                </Box>
+                <Box sx={{ height: is960 ? 5 : 6, borderRadius: '999px', bgcolor: 'rgba(255,255,255,0.20)', overflow: 'hidden' }}>
+                  <Box sx={{ width: '68%', height: '100%', borderRadius: '999px', bgcolor: '#FFFFFF' }} />
+                </Box>
+              </Box>
               <Box
                 component="span"
                 sx={{

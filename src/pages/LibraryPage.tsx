@@ -5,8 +5,8 @@ import AddIcon from '@mui/icons-material/Add';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
-import PaletteIcon from '@mui/icons-material/Palette';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import PublicIcon from '@mui/icons-material/Public';
 
 interface Book {
   id: string;
@@ -185,8 +185,7 @@ export default function LibraryPage() {
     const pageBg = '#FDF6E9';
     const funOrange = '#FF7A45';
     const teal = '#14B8A6';
-    const lessonCoverImage =
-      '/images/library-lesson-cover.png';
+    const lessonCoverImage = '/images/lesson-1-who-is-he.jpg';
     const bookshelfCoverImage =
       buildSeriesCover('HAPPY CHINESE', 'Volume 1', 'Starter Textbook', '#14B8A6', '#0F766E');
 
@@ -253,7 +252,8 @@ export default function LibraryPage() {
                 position: 'relative',
                 borderRadius: is960 ? '24px' : '28px',
                 overflow: 'hidden',
-                boxShadow: '0 12px 40px rgba(45, 51, 54, 0.12)',
+                bgcolor: '#0F172A',
+                boxShadow: '0 18px 48px rgba(15,23,42,0.18)',
                 cursor: 'pointer',
                 WebkitTapHighlightColor: 'transparent',
                 '&:active': { transform: 'scale(0.995)' },
@@ -264,39 +264,54 @@ export default function LibraryPage() {
               <Box
                 component="img"
                 src={lessonCoverImage}
-                alt=""
-                sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                alt="Lesson 1 cover"
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  objectPosition: 'center 38%',
+                }}
+              />
+              <Box
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: [
+                    'radial-gradient(circle at 82% 16%, rgba(20,184,166,0.34) 0, rgba(20,184,166,0) 28%)',
+                    'radial-gradient(circle at 80% 82%, rgba(255,122,69,0.24) 0, rgba(255,122,69,0) 26%)',
+                    'linear-gradient(90deg, rgba(15,23,42,0.56) 0%, rgba(15,23,42,0.24) 48%, rgba(15,23,42,0.38) 100%)',
+                    'linear-gradient(180deg, rgba(15,23,42,0.16) 0%, rgba(15,23,42,0.42) 100%)',
+                  ].join(','),
+                }}
               />
               <Box
                 sx={{
                   position: 'absolute',
                   inset: 0,
                   pointerEvents: 'none',
-                  background: [
-                    'linear-gradient(180deg, rgba(15,23,42,0.16) 0%, transparent 34%)',
-                    'linear-gradient(0deg, rgba(15,23,42,0.42) 0%, rgba(15,23,42,0.08) 45%, transparent 70%)',
-                  ].join(','),
+                  background: 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 26%)',
                 }}
               />
 
-              {/* 顶部居中：Current Unit 切换条 */}
+              {/* 左上：Current Unit 切换条 */}
               <Box
                 onClick={(e) => e.stopPropagation()}
                 sx={{
                   position: 'absolute',
-                  top: is960 ? 12 : 18,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
+                  top: is960 ? 14 : 20,
+                  left: is960 ? 14 : 20,
                   zIndex: 2,
-                  bgcolor: 'rgba(255,255,255,0.9)',
-                  backdropFilter: 'blur(10px)',
-                  borderRadius: '999px',
-                  px: is960 ? 1.4 : 1.9,
-                  py: is960 ? 0.62 : 0.78,
-                  maxWidth: 'min(calc(100% - 24px), 340px)',
-                  width: 'max-content',
+                  bgcolor: 'rgba(255,255,255,0.16)',
+                  backdropFilter: 'blur(16px)',
+                  borderRadius: is960 ? '18px' : '22px',
+                  px: is960 ? 1.2 : 1.5,
+                  py: is960 ? 0.85 : 1.05,
+                  width: is960 ? 240 : 292,
                   minWidth: 0,
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                  boxShadow: '0 12px 28px rgba(15,23,42,0.16)',
+                  border: '1px solid rgba(255,255,255,0.24)',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'stretch',
@@ -305,17 +320,17 @@ export default function LibraryPage() {
                 <Typography
                   sx={{
                     fontSize: is960 ? '0.52rem' : '0.62rem',
-                    fontWeight: 800,
-                    color: '#64748B',
-                    letterSpacing: '0.02em',
-                    textAlign: 'center',
+                    fontWeight: 900,
+                    color: 'rgba(255,255,255,0.68)',
+                    letterSpacing: '0.12em',
+                    textAlign: 'left',
                     width: '100%',
                     mb: 0.28,
                   }}
                 >
                   CURRENT UNIT
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.35, minWidth: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.4, minWidth: 0 }}>
                   <ButtonBase
                     type="button"
                     aria-label="Previous unit"
@@ -328,7 +343,7 @@ export default function LibraryPage() {
                       minWidth: is960 ? 32 : 36,
                       minHeight: is960 ? 32 : 36,
                       borderRadius: '50%',
-                      color: currentUnitIndex <= 0 ? '#CBD5E1' : '#94A3B8',
+                      color: currentUnitIndex <= 0 ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.76)',
                       flexShrink: 0,
                       '&:disabled': { opacity: 0.45 },
                       '&:active': { transform: currentUnitIndex <= 0 ? 'none' : 'scale(0.92)' },
@@ -340,7 +355,7 @@ export default function LibraryPage() {
                     sx={{
                       fontWeight: 800,
                       fontSize: is960 ? '0.9rem' : '1.04rem',
-                      color: '#1E293B',
+                      color: 'white',
                       lineHeight: 1.25,
                       textAlign: 'center',
                       overflow: 'hidden',
@@ -364,7 +379,7 @@ export default function LibraryPage() {
                       minWidth: is960 ? 32 : 36,
                       minHeight: is960 ? 32 : 36,
                       borderRadius: '50%',
-                      color: currentUnitIndex >= CURRICULUM_UNITS.length - 1 ? '#CBD5E1' : '#475569',
+                      color: currentUnitIndex >= CURRICULUM_UNITS.length - 1 ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.86)',
                       flexShrink: 0,
                       '&:disabled': { opacity: 0.45 },
                       '&:active': {
@@ -385,13 +400,13 @@ export default function LibraryPage() {
                   position: 'absolute',
                   left: is960 ? 12 : 18,
                   bottom: is960 ? 22 : 30,
-                  maxWidth: { xs: 'calc(100% - 180px)', md: 'min(52%, 380px)' },
+                  maxWidth: { xs: 'calc(100% - 180px)', md: 'min(54%, 420px)' },
                   zIndex: 2,
-                  bgcolor: 'rgba(17,24,39,0.48)',
-                  backdropFilter: 'blur(8px)',
-                  borderRadius: is960 ? '12px' : '14px',
-                  p: is960 ? 1.1 : 1.4,
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  bgcolor: 'rgba(255,255,255,0.14)',
+                  backdropFilter: 'blur(16px)',
+                  borderRadius: is960 ? '18px' : '22px',
+                  p: is960 ? 1.35 : 1.75,
+                  border: '1px solid rgba(255,255,255,0.22)',
                 }}
               >
                 <Typography
@@ -399,7 +414,7 @@ export default function LibraryPage() {
                     fontWeight: 900,
                     fontSize: is960 ? '1.02rem' : is1920x1125 ? '1.44rem' : '1.22rem',
                     color: 'white',
-                    mb: is960 ? 0.6 : 0.75,
+                    mb: is960 ? 0.72 : 0.9,
                     letterSpacing: '-0.01em',
                     lineHeight: 1.25,
                   }}
@@ -411,7 +426,7 @@ export default function LibraryPage() {
                   sx={{
                     m: 0,
                     pl: is960 ? 1.4 : 1.65,
-                    color: 'rgba(255,255,255,0.92)',
+                    color: 'rgba(255,255,255,0.88)',
                     fontSize: is960 ? '0.74rem' : '0.88rem',
                     fontWeight: 600,
                     lineHeight: 1.35,
@@ -431,26 +446,29 @@ export default function LibraryPage() {
                 }}
                 sx={{
                   position: 'absolute',
-                  right: is960 ? 12 : 18,
-                  bottom: is960 ? 14 : 20,
+                  right: is960 ? 16 : 24,
+                  bottom: is960 ? 22 : 30,
                   left: { xs: '50%', md: 'auto' },
                   transform: { xs: 'translateX(-50%)', md: 'none' },
                   zIndex: 3,
-                  bgcolor: 'white',
+                  bgcolor: '#FFFFFF',
                   color: '#0F172A',
-                  px: is960 ? 3.3 : 5.2,
+                  px: is960 ? 2.4 : 3,
                   py: is960 ? 1.15 : 1.45,
-                  minHeight: is960 ? 50 : 58,
-                  borderRadius: '999px',
-                  fontSize: is960 ? '0.98rem' : '1.15rem',
-                  fontWeight: 800,
-                  boxShadow: '0 12px 30px rgba(0,0,0,0.26)',
+                  minHeight: is960 ? 52 : 62,
+                  minWidth: is960 ? 210 : 246,
+                  borderRadius: is960 ? '18px' : '22px',
+                  fontSize: is960 ? '0.98rem' : '1.12rem',
+                  fontWeight: 900,
+                  boxShadow: '0 18px 36px rgba(15,23,42,0.3)',
                   whiteSpace: 'nowrap',
-                  justifyContent: 'center',
+                  justifyContent: 'space-between',
+                  gap: 1.4,
                   '&:active': { transform: { xs: 'translateX(-50%) scale(0.98)', md: 'scale(0.98)' } },
                 }}
               >
-                Starting Learning
+                <Box component="span">Starting Learning</Box>
+                <ArrowForwardIcon sx={{ fontSize: is960 ? 22 : 24 }} />
               </ButtonBase>
             </Box>
 
@@ -470,35 +488,58 @@ export default function LibraryPage() {
                   sx={{
                     width: '100%',
                     minHeight: { xs: 56, md: 92 },
-                    borderRadius: is960 ? '20px' : '24px',
+                    borderRadius: is960 ? '22px' : '28px',
                     overflow: 'hidden',
                     display: 'flex',
                     alignItems: 'stretch',
-                    boxShadow: '0 10px 28px rgba(255,122,69,0.28)',
+                    boxShadow: '0 14px 34px rgba(255,122,69,0.2)',
+                    transition: 'transform 180ms ease, box-shadow 180ms ease',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 18px 40px rgba(255,122,69,0.28)',
+                    },
                     '&:active': { transform: 'scale(0.99)' },
                   }}
                 >
                   <Box
                     sx={{
+                      position: 'relative',
                       bgcolor: funOrange,
-                      px: is960 ? 1.35 : 1.85,
-                      py: is960 ? 1 : 1.15,
+                      background: 'linear-gradient(135deg, #C2410C 0%, #FF7A45 64%, #FDBA74 100%)',
+                      px: is960 ? 1.55 : 2,
+                      py: is960 ? 1.15 : 1.35,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       flex: 1,
                       width: '100%',
                       minHeight: { md: 92 },
+                      overflow: 'hidden',
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 1.1 : 1.35, flex: 1, minWidth: 0 }}>
-                      <SportsEsportsIcon sx={{ fontSize: is960 ? 32 : 38, color: 'white', opacity: 0.98, flexShrink: 0 }} />
+                      <Box
+                        sx={{
+                          width: is960 ? 48 : 54,
+                          height: is960 ? 48 : 54,
+                          borderRadius: is960 ? '16px' : '18px',
+                          bgcolor: 'rgba(255,255,255,0.18)',
+                          border: '1px solid rgba(255,255,255,0.28)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          zIndex: 1,
+                        }}
+                      >
+                        <AutoAwesomeIcon sx={{ fontSize: is960 ? 28 : 32, color: 'white', opacity: 0.98 }} />
+                      </Box>
                       <Box sx={{ textAlign: 'left', minWidth: 0 }}>
-                        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.92rem' : '1.05rem', color: 'white', mb: 0.2, lineHeight: 1.2 }}>
+                        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1rem' : '1.14rem', color: 'white', mb: 0.2, lineHeight: 1.2 }}>
                           Fun Chinese
                         </Typography>
-                        <Typography sx={{ fontSize: is960 ? '0.62rem' : '0.74rem', color: 'rgba(255,255,255,0.94)', fontWeight: 600, lineHeight: 1.2 }}>
-                          Games & Activities
+                        <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.78rem', color: 'rgba(255,255,255,0.9)', fontWeight: 700, lineHeight: 1.2 }}>
+                          Practice through challenges
                         </Typography>
                       </Box>
                     </Box>
@@ -508,6 +549,7 @@ export default function LibraryPage() {
                         height: is960 ? 44 : 48,
                         borderRadius: '50%',
                         bgcolor: 'rgba(255,255,255,0.25)',
+                        backdropFilter: 'blur(8px)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -525,35 +567,58 @@ export default function LibraryPage() {
                   sx={{
                     width: '100%',
                     minHeight: { xs: 56, md: 92 },
-                    borderRadius: is960 ? '20px' : '24px',
+                    borderRadius: is960 ? '22px' : '28px',
                     overflow: 'hidden',
                     display: 'flex',
                     alignItems: 'stretch',
-                    boxShadow: '0 10px 28px rgba(20,184,166,0.25)',
+                    boxShadow: '0 14px 34px rgba(20,184,166,0.18)',
+                    transition: 'transform 180ms ease, box-shadow 180ms ease',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 18px 40px rgba(20,184,166,0.26)',
+                    },
                     '&:active': { transform: 'scale(0.99)' },
                   }}
                 >
                   <Box
                     sx={{
+                      position: 'relative',
                       bgcolor: teal,
-                      px: is960 ? 1.35 : 1.85,
-                      py: is960 ? 1 : 1.15,
+                      background: 'linear-gradient(135deg, #0F766E 0%, #14B8A6 60%, #99F6E4 100%)',
+                      px: is960 ? 1.55 : 2,
+                      py: is960 ? 1.15 : 1.35,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       flex: 1,
                       width: '100%',
                       minHeight: { md: 92 },
+                      overflow: 'hidden',
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 1.1 : 1.35, flex: 1, minWidth: 0 }}>
-                      <PaletteIcon sx={{ fontSize: is960 ? 32 : 38, color: 'white', opacity: 0.98, flexShrink: 0 }} />
+                      <Box
+                        sx={{
+                          width: is960 ? 48 : 54,
+                          height: is960 ? 48 : 54,
+                          borderRadius: is960 ? '16px' : '18px',
+                          bgcolor: 'rgba(255,255,255,0.18)',
+                          border: '1px solid rgba(255,255,255,0.28)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          zIndex: 1,
+                        }}
+                      >
+                        <PublicIcon sx={{ fontSize: is960 ? 28 : 32, color: 'white', opacity: 0.98 }} />
+                      </Box>
                       <Box sx={{ textAlign: 'left', minWidth: 0 }}>
-                        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.92rem' : '1.05rem', color: 'white', mb: 0.2, lineHeight: 1.2 }}>
+                        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1rem' : '1.14rem', color: 'white', mb: 0.2, lineHeight: 1.2 }}>
                           Culture
                         </Typography>
-                        <Typography sx={{ fontSize: is960 ? '0.62rem' : '0.74rem', color: 'rgba(255,255,255,0.96)', fontWeight: 600, lineHeight: 1.2 }}>
-                          Explore Traditions
+                        <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.78rem', color: 'rgba(255,255,255,0.92)', fontWeight: 700, lineHeight: 1.2 }}>
+                          Podcast · Mindmap · Video
                         </Typography>
                       </Box>
                     </Box>
@@ -563,6 +628,7 @@ export default function LibraryPage() {
                         height: is960 ? 44 : 48,
                         borderRadius: '50%',
                         bgcolor: 'rgba(255,255,255,0.25)',
+                        backdropFilter: 'blur(8px)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
