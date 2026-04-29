@@ -18,12 +18,23 @@ import MenuBookIcon from '@mui/icons-material/MenuBook';
 import CloseIcon from '@mui/icons-material/Close';
 import LockIcon from '@mui/icons-material/Lock';
 import HeadphonesIcon from '@mui/icons-material/Headphones';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import LayersIcon from '@mui/icons-material/Layers';
 import { buildHubLessons, loadCompletedLessonIds, type HubLessonStatus } from '../utils/funChineseUnitProgress';
 import {
   FUN_CHINESE_UNIT1_PODCAST_BADGE,
   FUN_CHINESE_UNIT1_PODCAST_TAGLINE,
   FUN_CHINESE_UNIT1_PODCAST_TITLE,
 } from '../utils/funChineseUnitPodcastCopy';
+import {
+  FUN_CHINESE_UNIT1_COLLECTION_CARDS,
+  groupFunChineseSavedCards,
+  loadFunChineseSavedCards,
+  removeFunChineseSavedCard,
+  type FunChineseCardType,
+  type FunChineseSavedCard,
+} from '../utils/funChineseCardCollection';
 
 interface Tool {
   id: string;
@@ -42,6 +53,7 @@ export default function FunChineseHubPage() {
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
   const [lessons, setLessons] = useState<HubLessonStatus[]>(() => buildHubLessons(loadCompletedLessonIds()));
+  const [savedCards, setSavedCards] = useState<FunChineseSavedCard[]>([]);
 
   const refreshLessons = useCallback(() => {
     setLessons(buildHubLessons(loadCompletedLessonIds()));
@@ -57,12 +69,18 @@ export default function FunChineseHubPage() {
     return () => window.removeEventListener('focus', onFocus);
   }, [refreshLessons]);
 
+  useEffect(() => {
+    if (activeTool !== 'saved') return;
+    setSavedCards(loadFunChineseSavedCards());
+  }, [activeTool, location.pathname, location.key]);
+
   const teal = '#14B8A6';
   const orange = '#FF7A45';
   const pageBg = '#FDF6E9';
   const googleSansFamily = '"Google Sans","Product Sans","Roboto","Arial",sans-serif';
 
   const unitComplete = useMemo(() => lessons.every((l) => l.status === 'completed'), [lessons]);
+  const completedLessonCount = useMemo(() => lessons.filter((l) => l.status === 'completed').length, [lessons]);
 
   const tools: Tool[] = [
     {
@@ -105,6 +123,10 @@ export default function FunChineseHubPage() {
       navigate('/lingo-flash?from=fun-chinese');
       return;
     }
+    if (tool.id === 'saved') {
+      navigate('/library/hub/fun-chinese/card-collection');
+      return;
+    }
     setActiveTool(tool.id);
   };
 
@@ -122,6 +144,30 @@ export default function FunChineseHubPage() {
   };
 
   const activeToolMeta = tools.find((t) => t.id === activeTool);
+  const savedCardIds = useMemo(() => new Set(savedCards.map((card) => card.id)), [savedCards]);
+  const collectionCards = savedCards.length > 0 ? savedCards : FUN_CHINESE_UNIT1_COLLECTION_CARDS;
+  const collectionSections = useMemo(() => groupFunChineseSavedCards(collectionCards), [collectionCards]);
+
+  const cardTypeMeta: Record<FunChineseCardType, { label: string; color: string }> = {
+    grammar: { label: 'Grammar', color: '#3B82F6' },
+    pattern: { label: 'Patterns', color: '#14B8A6' },
+    dialogue: { label: 'Dialogue', color: '#FF7A45' },
+  };
+
+  const handleRemoveSavedCard = (cardId: string) => {
+    setSavedCards(removeFunChineseSavedCard(cardId));
+  };
+
+  const handleOpenSavedCard = (card: FunChineseSavedCard) => {
+    navigate(`/library/hub/fun-chinese/lesson/${card.lessonId}?phase=cards&card=${card.cardIndex}&from=collection`);
+    setActiveTool(null);
+  };
+
+  const handleStudySavedCards = () => {
+    if (collectionCards.length === 0) return;
+    const first = collectionCards[0];
+    handleOpenSavedCard(first);
+  };
 
   return (
     <Box
@@ -152,17 +198,25 @@ export default function FunChineseHubPage() {
         </Alert>
       </Snackbar>
 
-      {/* Header */}
+      {/* Unit Hero */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          px: is960 ? 2 : 3,
-          py: is960 ? 1.5 : 2,
+          gap: is960 ? 2 : 3,
+          mx: is960 ? 2 : 3,
+          mt: is960 ? 2 : 3,
+          px: is960 ? 2.2 : 3,
+          py: is960 ? 1.25 : 1.55,
           flexShrink: 0,
-          borderBottom: '1px solid rgba(0,0,0,0.06)',
+          borderRadius: is960 ? '24px' : '30px',
+          color: '#1E293B',
           bgcolor: 'white',
+          border: '1px solid rgba(15,23,42,0.06)',
+          boxShadow: '0 10px 24px rgba(15,23,42,0.06)',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -174,7 +228,8 @@ export default function FunChineseHubPage() {
               minWidth: is960 ? 44 : 52,
               borderRadius: '50%',
               bgcolor: 'rgba(0,0,0,0.04)',
-              color: '#374151',
+              border: '1px solid rgba(15,23,42,0.08)',
+              color: '#475569',
               '&:active': { transform: 'scale(0.96)' },
             }}
           >
@@ -182,33 +237,61 @@ export default function FunChineseHubPage() {
           </ButtonBase>
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-              <MenuBookIcon sx={{ fontSize: is960 ? 16 : 18, color: orange }} />
-              <Typography sx={{ fontSize: is960 ? '0.65rem' : '0.75rem', fontWeight: 800, color: orange, letterSpacing: '0.05em' }}>
+              <MenuBookIcon sx={{ fontSize: is960 ? 16 : 18, color: '#F59E0B' }} />
+              <Typography sx={{ fontSize: is960 ? '0.65rem' : '0.75rem', fontWeight: 900, color: '#94A3B8', letterSpacing: '0.12em' }}>
                 UNIT 1
               </Typography>
             </Box>
-            <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.25rem' : '1.55rem', color: '#1E293B', letterSpacing: '-0.02em' }}>
-              我和你 <Box component="span" sx={{ fontSize: is960 ? '0.88rem' : '1.05rem', fontWeight: 600, color: '#94A3B8', ml: 1 }}>You and I</Box>
+            <Typography sx={{ fontWeight: 850, fontSize: is960 ? '1.26rem' : '1.56rem', color: '#1E293B', letterSpacing: '-0.03em', lineHeight: 1.05 }}>
+              我和你 <Box component="span" sx={{ fontSize: is960 ? '0.84rem' : '0.98rem', fontWeight: 650, color: '#94A3B8', ml: 1 }}>You and I</Box>
             </Typography>
           </Box>
         </Box>
         <Box
           sx={{
-            px: is960 ? 2.5 : 3,
-            py: is960 ? 1 : 1.25,
-            bgcolor: 'white',
-            borderRadius: is960 ? '16px' : '20px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-            border: '1px solid rgba(0,0,0,0.06)',
             display: 'flex',
-            alignItems: 'center',
-            gap: 1,
+            alignItems: 'stretch',
+            gap: is960 ? 1.2 : 1.5,
           }}
         >
-          <StarIcon sx={{ fontSize: is960 ? 18 : 22, color: '#FDB022' }} />
-          <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.88rem' : '1rem', color: '#1E293B' }}>
-            1,240 XP
-          </Typography>
+          <Box
+            sx={{
+              px: is960 ? 2 : 2.5,
+              py: is960 ? 0.8 : 0.95,
+              bgcolor: '#F8FAFC',
+              borderRadius: is960 ? '16px' : '20px',
+              border: '1px solid #E2E8F0',
+              minWidth: is960 ? 98 : 114,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 1,
+            }}
+          >
+            <AccessTimeIcon sx={{ fontSize: is960 ? 18 : 22, color: '#14B8A6' }} />
+            <Typography sx={{ fontWeight: 850, fontSize: is960 ? '0.8rem' : '0.9rem', color: '#334155' }}>
+              24 min
+            </Typography>
+          </Box>
+          <Box
+            sx={{
+              px: is960 ? 2 : 2.5,
+              py: is960 ? 0.8 : 0.95,
+              bgcolor: '#F8FAFC',
+              borderRadius: is960 ? '16px' : '20px',
+              border: '1px solid #E2E8F0',
+              minWidth: is960 ? 108 : 124,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 1,
+            }}
+          >
+            <StarIcon sx={{ fontSize: is960 ? 18 : 22, color: '#FDB022' }} />
+            <Typography sx={{ fontWeight: 850, fontSize: is960 ? '0.8rem' : '0.9rem', color: '#334155' }}>
+              1,240 XP
+            </Typography>
+          </Box>
         </Box>
       </Box>
 
@@ -217,40 +300,64 @@ export default function FunChineseHubPage() {
         sx={{
           flex: 1,
           minHeight: 0,
-          overflow: 'auto',
+          overflow: 'hidden',
           p: is960 ? 2 : 3,
         }}
       >
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1.8fr 1fr' },
-            gap: is960 ? 2 : 3,
+            gridTemplateColumns: { xs: '1fr', md: '1.65fr 1fr' },
+            gap: is960 ? 1.8 : 2.4,
             height: '100%',
+            minHeight: 0,
           }}
         >
           {/* Left: Lesson Progress */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 2 : 3, minHeight: 0, overflowY: 'auto' }}>
-            <Box>
-              <Typography
-                sx={{
-                  fontSize: is960 ? '0.68rem' : '0.75rem',
-                  fontWeight: 800,
-                  color: '#94A3B8',
-                  letterSpacing: '0.1em',
-                  mb: is960 ? 1.5 : 2,
-                }}
-              >
-                Unit Progress
-              </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 1.8 : 2.4, minHeight: 0 }}>
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                bgcolor: 'white',
+                borderRadius: is960 ? '24px' : '30px',
+                p: is960 ? 2 : 2.5,
+                boxShadow: '0 10px 30px rgba(15,23,42,0.06)',
+                border: '1px solid rgba(15,23,42,0.06)',
+                overflow: 'visible',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', mb: is960 ? 1.4 : 1.8 }}>
+                <Box>
+                  <Typography
+                    sx={{
+                      fontSize: is960 ? '0.68rem' : '0.75rem',
+                      fontWeight: 900,
+                      color: orange,
+                      letterSpacing: '0.12em',
+                      mb: 0.4,
+                    }}
+                  >
+                    LEARNING PATH
+                  </Typography>
+                  <Typography sx={{ fontSize: is960 ? '1.12rem' : '1.35rem', color: '#0F172A', fontWeight: 900, letterSpacing: '-0.03em' }}>
+                    Unit lessons
+                  </Typography>
+                </Box>
+                <Typography sx={{ fontSize: is960 ? '0.76rem' : '0.86rem', color: '#94A3B8', fontWeight: 750 }}>
+                  {completedLessonCount} completed
+                </Typography>
+              </Box>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 1.5 : 2 }}>
                 {lessons.map((lesson) => (
                   <Box
                     key={lesson.id}
                     onClick={() => handleStartLesson(lesson.id, lesson.status)}
                     sx={{
-                      p: is960 ? 2 : 2.5,
-                      borderRadius: is960 ? '20px' : '26px',
+                      p: is960 ? 1.85 : 2.25,
+                      borderRadius: is960 ? '18px' : '22px',
                       border: '2px solid',
                       borderColor:
                         lesson.status === 'current'
@@ -264,21 +371,26 @@ export default function FunChineseHubPage() {
                           : lesson.status === 'completed'
                             ? 'white'
                             : '#F8FAFC',
-                      boxShadow: lesson.status === 'current' ? `0 8px 20px ${orange}20` : '0 2px 8px rgba(0,0,0,0.04)',
+                      boxShadow:
+                        lesson.status === 'current'
+                          ? `0 10px 24px ${orange}24`
+                          : lesson.status === 'completed'
+                            ? '0 6px 16px rgba(15,23,42,0.08)'
+                            : '0 2px 8px rgba(0,0,0,0.03)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       cursor: lesson.status === 'locked' ? 'not-allowed' : 'pointer',
                       opacity: lesson.status === 'locked' ? 0.5 : 1,
                       transition: 'all 0.2s',
-                      '&:hover': lesson.status !== 'locked' ? { transform: 'translateX(4px)' } : {},
+                      '&:hover': lesson.status !== 'locked' ? { transform: 'translateX(4px) scale(1.01)' } : {},
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 1.5 : 2 }}>
                       <Box
                         sx={{
-                          width: is960 ? 44 : 52,
-                          height: is960 ? 44 : 52,
+                          width: is960 ? 42 : 48,
+                          height: is960 ? 42 : 48,
                           borderRadius: is960 ? '14px' : '16px',
                           bgcolor: lesson.status === 'current' ? orange : '#E2E8F0',
                           color: lesson.status === 'current' ? 'white' : '#64748B',
@@ -292,7 +404,7 @@ export default function FunChineseHubPage() {
                         {lesson.id}
                       </Box>
                       <Box>
-                        <Typography sx={{ fontWeight: 800, fontSize: is960 ? '1rem' : '1.2rem', color: '#1E293B', lineHeight: 1.2 }}>
+                        <Typography sx={{ fontWeight: 850, fontSize: is960 ? '0.98rem' : '1.15rem', color: '#1E293B', lineHeight: 1.2 }}>
                           {lesson.title}
                         </Typography>
                         <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: '#64748B', fontWeight: 600 }}>
@@ -356,16 +468,19 @@ export default function FunChineseHubPage() {
               </Box>
             </Box>
 
-            {/* AI Training Section */}
+            {/* Audio Reading Section */}
             <Box
               sx={{
-                mt: is960 ? 1 : 2,
                 borderRadius: is960 ? '24px' : '30px',
-                p: is960 ? 2.5 : 3.5,
+                p: is960 ? 2.2 : 2.8,
                 bgcolor: '#0F172A',
                 color: 'white',
                 position: 'relative',
                 overflow: 'hidden',
+                minHeight: is960 ? 116 : 128,
+                flexShrink: 0,
+                background:
+                  'radial-gradient(circle at 78% 22%, rgba(255,122,69,0.34) 0, rgba(255,122,69,0) 28%), radial-gradient(circle at 28% 92%, rgba(20,184,166,0.28) 0, rgba(20,184,166,0) 32%), linear-gradient(135deg, #111827 0%, #1E293B 52%, #0F766E 100%)',
               }}
             >
               {!unitComplete && (
@@ -387,51 +502,10 @@ export default function FunChineseHubPage() {
                 >
                   <LockIcon sx={{ fontSize: 36, color: 'rgba(255,255,255,0.85)' }} />
                   <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.88rem' : '0.95rem', color: 'rgba(255,255,255,0.92)', maxWidth: 280 }}>
-                    Complete all lessons to unlock
+                    Complete all lessons to unlock audio reading
                   </Typography>
                 </Box>
               )}
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: is960 ? 12 : 14,
-                  right: is960 ? 12 : 14,
-                  zIndex: 2,
-                  px: is960 ? 1 : 1.25,
-                  py: 0.5,
-                  borderRadius: '999px',
-                  bgcolor: 'rgba(255,255,255,0.14)',
-                  border: '1px solid rgba(255,255,255,0.28)',
-                  backdropFilter: 'blur(6px)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.6,
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: '50%',
-                    bgcolor: '#34D399',
-                    boxShadow: '0 0 10px rgba(52,211,153,0.85)',
-                    flexShrink: 0,
-                  }}
-                />
-                <Typography
-                  sx={{
-                    fontSize: is960 ? '0.55rem' : '0.62rem',
-                    fontWeight: 800,
-                    letterSpacing: '0.02em',
-                    textTransform: 'none',
-                    color: 'rgba(255,255,255,0.95)',
-                    fontFamily: googleSansFamily,
-                    lineHeight: 1.15,
-                  }}
-                >
-                  {FUN_CHINESE_UNIT1_PODCAST_BADGE}
-                </Typography>
-              </Box>
               <Box
                 sx={{
                   position: 'absolute',
@@ -439,61 +513,88 @@ export default function FunChineseHubPage() {
                   right: -40,
                   width: 200,
                   height: 200,
-                  bgcolor: `${orange}20`,
+                  bgcolor: `${orange}28`,
                   borderRadius: '50%',
                   filter: 'blur(60px)',
                 }}
               />
-              <Box sx={{ position: 'relative', zIndex: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: is960 ? 1.5 : 2 }}>
+              <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: is960 ? 2 : 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
                   <Box
                     sx={{
-                      width: is960 ? 44 : 52,
-                      height: is960 ? 44 : 52,
-                      borderRadius: is960 ? '14px' : '16px',
-                      bgcolor: orange,
+                      width: is960 ? 52 : 64,
+                      height: is960 ? 52 : 64,
+                      borderRadius: is960 ? '18px' : '22px',
+                      bgcolor: 'rgba(255,255,255,0.16)',
+                      border: '1px solid rgba(255,255,255,0.24)',
+                      backdropFilter: 'blur(12px)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      flexShrink: 0,
                     }}
                   >
-                    <PsychologyIcon sx={{ fontSize: is960 ? 24 : 28 }} />
+                    <HeadphonesIcon sx={{ fontSize: is960 ? 28 : 34 }} />
                   </Box>
-                  <Box>
-                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.1rem' : '1.35rem', lineHeight: 1.2, fontFamily: googleSansFamily }}>
-                      {FUN_CHINESE_UNIT1_PODCAST_TITLE}
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.02rem' : '1.22rem', lineHeight: 1.08, letterSpacing: '-0.04em', fontFamily: googleSansFamily }}>
+                      AI Talk
                     </Typography>
-                    <Typography sx={{ fontSize: is960 ? '0.66rem' : '0.75rem', color: 'rgba(255,255,255,0.76)', fontWeight: 600, mt: 0.25, fontFamily: googleSansFamily }}>
-                      {FUN_CHINESE_UNIT1_PODCAST_TAGLINE}
+                    <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.82rem', color: 'rgba(255,255,255,0.76)', fontWeight: 650, mt: 0.35, fontFamily: googleSansFamily, maxWidth: 380 }}>
+                      How to say hello?
                     </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: is960 ? 0.75 : 0.95 }}>
+                      {['3 min', 'Bilingual', 'Read-along'].map((tag) => (
+                        <Box
+                          key={tag}
+                          sx={{
+                            px: is960 ? 0.9 : 1.05,
+                            py: 0.3,
+                            borderRadius: '999px',
+                            bgcolor: 'rgba(255,255,255,0.12)',
+                            border: '1px solid rgba(255,255,255,0.18)',
+                            color: 'rgba(255,255,255,0.82)',
+                            fontSize: is960 ? '0.56rem' : '0.64rem',
+                            fontWeight: 800,
+                          }}
+                        >
+                          {tag}
+                        </Box>
+                      ))}
+                    </Box>
                   </Box>
                 </Box>
                 <ButtonBase
                   onClick={handleIntensiveClick}
                   sx={{
-                    width: '100%',
-                    py: is960 ? 1.25 : 1.5,
+                    position: 'absolute',
+                    right: is960 ? 16 : 20,
+                    top: '50%',
+                    transform: 'translateY(-42%)',
+                    width: is960 ? 104 : 124,
+                    height: is960 ? 40 : 46,
                     bgcolor: 'white',
                     color: '#0F172A',
-                    borderRadius: is960 ? '16px' : '20px',
-                    fontSize: is960 ? '0.95rem' : '1.08rem',
-                    fontWeight: 800,
+                    borderRadius: is960 ? '12px' : '14px',
+                    fontSize: is960 ? '0.8rem' : '0.9rem',
+                    fontWeight: 900,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 1,
+                    zIndex: 3,
                     cursor: unitComplete ? 'pointer' : 'default',
                     opacity: unitComplete ? 1 : 0.78,
                     '&:hover': {
                       bgcolor: unitComplete ? '#F1F5F9' : 'white',
                     },
+                    '&:active': {
+                      transform: 'translateY(-42%) scale(0.98)',
+                    },
                   }}
                 >
                   {unitComplete ? (
-                    <>
-                      <HeadphonesIcon sx={{ fontSize: is960 ? 24 : 26 }} />
-                      Listen
-                    </>
+                    'Start'
                   ) : (
                     'Locked'
                   )}
@@ -617,10 +718,10 @@ export default function FunChineseHubPage() {
                 <AccessTimeIcon sx={{ fontSize: is960 ? 22 : 26, color: teal }} />
                 <Box>
                   <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: teal, fontWeight: 800, fontFamily: googleSansFamily }}>
-                    Today&apos;s study time
+                    Review focus
                   </Typography>
-                  <Typography sx={{ fontSize: is960 ? '1.35rem' : '1.65rem', color: teal, fontWeight: 900, lineHeight: 1, fontFamily: googleSansFamily }}>
-                    24 <Box component="span" sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', fontWeight: 800, fontFamily: googleSansFamily }}>min</Box>
+                  <Typography sx={{ fontSize: is960 ? '1.05rem' : '1.18rem', color: teal, fontWeight: 900, lineHeight: 1.15, fontFamily: googleSansFamily }}>
+                    Names · Home · Greetings
                   </Typography>
                 </Box>
               </Box>
@@ -650,8 +751,8 @@ export default function FunChineseHubPage() {
             sx={{
               bgcolor: 'white',
               width: '100%',
-              maxWidth: is960 ? 580 : 720,
-              maxHeight: '90%',
+              maxWidth: is960 ? 760 : 980,
+              maxHeight: '92%',
               borderRadius: is960 ? '28px' : '36px',
               boxShadow: '0 24px 56px rgba(0,0,0,0.3)',
               display: 'flex',
@@ -663,7 +764,7 @@ export default function FunChineseHubPage() {
               sx={{
                 p: is960 ? 2 : 2.5,
                 borderBottom: '1px solid #F1F5F9',
-                bgcolor: '#F8FAFC',
+                bgcolor: activeTool === 'saved' ? '#FFFFFF' : '#F8FAFC',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -684,9 +785,16 @@ export default function FunChineseHubPage() {
                 >
                   {activeToolMeta.icon}
                 </Box>
-                <Typography sx={{ fontWeight: 800, fontSize: is960 ? '1.05rem' : '1.2rem', color: '#1E293B' }}>
-                  {activeToolMeta.title}
-                </Typography>
+                <Box>
+                  <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.05rem' : '1.22rem', color: '#1E293B', lineHeight: 1.15 }}>
+                    {activeToolMeta.title}
+                  </Typography>
+                  {activeTool === 'saved' && (
+                    <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.76rem', color: '#94A3B8', fontWeight: 700, mt: 0.35 }}>
+                      Browse knowledge cards by type
+                    </Typography>
+                  )}
+                </Box>
               </Box>
               <ButtonBase
                 onClick={() => setActiveTool(null)}
@@ -705,27 +813,191 @@ export default function FunChineseHubPage() {
               sx={{
                 flex: 1,
                 overflow: 'auto',
-                p: is960 ? 3 : 4,
+                p: activeTool === 'saved' ? 0 : is960 ? 3 : 4,
+                bgcolor: activeTool === 'saved' ? '#F8F9FA' : 'transparent',
               }}
             >
               {activeTool === 'saved' && (
-                <Box
-                  sx={{
-                    py: is960 ? 6 : 8,
-                    px: 2,
-                    textAlign: 'center',
-                    bgcolor: '#F8FAFC',
-                    borderRadius: is960 ? '20px' : '24px',
-                    border: '2px dashed #E2E8F0',
-                  }}
-                >
-                  <BookmarkBorderIcon sx={{ fontSize: 48, color: '#CBD5E1', mb: 2 }} />
-                  <Typography sx={{ fontWeight: 800, fontSize: is960 ? '1.05rem' : '1.15rem', color: '#475569', mb: 1 }}>
-                    No cards in your collection yet
-                  </Typography>
-                  <Typography sx={{ fontSize: is960 ? '0.85rem' : '0.92rem', color: '#94A3B8', fontWeight: 600, maxWidth: 360, mx: 'auto' }}>
-                    Save cards from a lesson to see them here.
-                  </Typography>
+                <Box sx={{ px: is960 ? 3 : 4, py: is960 ? 2.5 : 3.5 }}>
+                  <Box
+                    sx={{
+                      mb: is960 ? 3 : 4,
+                      p: is960 ? 2.4 : 3,
+                      borderRadius: is960 ? '24px' : '30px',
+                      bgcolor: '#0F172A',
+                      color: 'white',
+                      position: 'relative',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: -60,
+                        right: -40,
+                        width: 220,
+                        height: 220,
+                        borderRadius: '50%',
+                        bgcolor: 'rgba(59,130,246,0.32)',
+                        filter: 'blur(36px)',
+                      }}
+                    />
+                    <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 560 }}>
+                      <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', fontWeight: 900, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.62)', mb: 0.8 }}>
+                        KNOWLEDGE CARD LIBRARY
+                      </Typography>
+                      <Typography sx={{ fontSize: is960 ? '1.35rem' : '1.7rem', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1.1 }}>
+                        Review grammar, patterns, and dialogues in one place.
+                      </Typography>
+                      <Typography sx={{ mt: 1, fontSize: is960 ? '0.78rem' : '0.9rem', color: 'rgba(255,255,255,0.68)', fontWeight: 650 }}>
+                        {savedCards.length > 0 ? `${savedCards.length} saved cards in your collection.` : 'Start browsing. Save cards inside lessons to build your personal set.'}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 3 : 4 }}>
+                    {collectionSections.map((section) => (
+                      <Box key={section.type}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: is960 ? 1.4 : 1.8 }}>
+                          <Box sx={{ width: 6, height: 34, borderRadius: '999px', bgcolor: cardTypeMeta[section.type].color }} />
+                          <Typography
+                            sx={{
+                              fontSize: is960 ? '1.05rem' : '1.22rem',
+                              fontWeight: 900,
+                              letterSpacing: '-0.03em',
+                              color: '#111827',
+                            }}
+                          >
+                            {cardTypeMeta[section.type].label} Cards
+                          </Typography>
+                        </Box>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            gap: is960 ? 1.6 : 2,
+                            overflowX: 'auto',
+                            pb: 1,
+                            mx: -0.5,
+                            px: 0.5,
+                            '&::-webkit-scrollbar': { height: 6 },
+                            '&::-webkit-scrollbar-thumb': { bgcolor: '#E5E7EB', borderRadius: 999 },
+                          }}
+                        >
+                          {section.cards.map((card) => (
+                            <ButtonBase
+                              key={card.id}
+                              onClick={() => handleOpenSavedCard(card)}
+                              sx={{
+                                width: is960 ? 260 : 310,
+                                minWidth: is960 ? 260 : 310,
+                                minHeight: is960 ? 164 : 196,
+                                border: '1px solid rgba(0,0,0,0.04)',
+                                borderRadius: is960 ? '22px' : '28px',
+                                p: is960 ? 2 : 2.4,
+                                bgcolor: '#FFFFFF',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'stretch',
+                                justifyContent: 'space-between',
+                                textAlign: 'left',
+                                boxShadow: '0 8px 30px rgba(15,23,42,0.05)',
+                                transition: 'transform 180ms ease, box-shadow 180ms ease',
+                                '&:hover': {
+                                  transform: 'translateY(-3px)',
+                                  boxShadow: `0 18px 42px ${cardTypeMeta[section.type].color}18`,
+                                },
+                                '&:active': { transform: 'scale(0.99)' },
+                              }}
+                            >
+                              <Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: is960 ? 1.6 : 2 }}>
+                                  <Box
+                                    sx={{
+                                      px: 1.2,
+                                      py: 0.45,
+                                      borderRadius: '999px',
+                                      bgcolor: `${cardTypeMeta[section.type].color}12`,
+                                      color: cardTypeMeta[section.type].color,
+                                      fontSize: is960 ? '0.62rem' : '0.68rem',
+                                      fontWeight: 900,
+                                    }}
+                                  >
+                                    Lesson {card.lessonId}
+                                  </Box>
+                                  {savedCardIds.has(card.id) && (
+                                    <Box sx={{ px: 1, py: 0.45, borderRadius: '999px', bgcolor: '#FEF3C7', color: '#D97706', fontSize: is960 ? '0.62rem' : '0.68rem', fontWeight: 900 }}>
+                                      Saved
+                                    </Box>
+                                  )}
+                                </Box>
+                                <Typography sx={{ fontSize: is960 ? '1.15rem' : '1.38rem', color: '#111827', fontWeight: 900, mb: 0.45, lineHeight: 1.08, letterSpacing: '-0.04em' }}>
+                                  {card.cardTitle}
+                                </Typography>
+                                <Typography sx={{ fontSize: is960 ? '0.75rem' : '0.84rem', color: '#9CA3AF', fontWeight: 700, mb: is960 ? 1.2 : 1.5 }}>
+                                  {card.cardSubtitle}
+                                </Typography>
+                                <Typography
+                                  sx={{
+                                    fontSize: is960 ? '0.82rem' : '0.92rem',
+                                    color: '#4B5563',
+                                    fontWeight: 650,
+                                    lineHeight: 1.4,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                  }}
+                                >
+                                  {card.preview}
+                                </Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: is960 ? 1.8 : 2.4, pt: is960 ? 1.2 : 1.5, borderTop: '1px solid #F3F4F6' }}>
+                                <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.76rem', color: cardTypeMeta[section.type].color, fontWeight: 900, letterSpacing: '0.12em' }}>
+                                  ENTER CARD
+                                </Typography>
+                                <Box sx={{ display: 'flex', gap: 0.7 }}>
+                                  {savedCardIds.has(card.id) && (
+                                    <ButtonBase
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRemoveSavedCard(card.id);
+                                      }}
+                                      sx={{
+                                        width: is960 ? 32 : 36,
+                                        height: is960 ? 32 : 36,
+                                        borderRadius: '50%',
+                                        color: '#94A3B8',
+                                        '&:hover': { bgcolor: '#F1F5F9', color: '#64748B' },
+                                      }}
+                                    >
+                                      <DeleteOutlineIcon sx={{ fontSize: is960 ? 16 : 18 }} />
+                                    </ButtonBase>
+                                  )}
+                                <ButtonBase
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenSavedCard(card);
+                                  }}
+                                  sx={{
+                                    width: is960 ? 34 : 38,
+                                    height: is960 ? 34 : 38,
+                                    borderRadius: '50%',
+                                    bgcolor: `${cardTypeMeta[card.cardType].color}18`,
+                                    color: cardTypeMeta[card.cardType].color,
+                                    '&:hover': { bgcolor: `${cardTypeMeta[card.cardType].color}24` },
+                                  }}
+                                >
+                                  <PlayArrowIcon sx={{ fontSize: is960 ? 20 : 22 }} />
+                                </ButtonBase>
+                                </Box>
+                              </Box>
+                            </ButtonBase>
+                          ))}
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
                 </Box>
               )}
 
@@ -764,21 +1036,45 @@ export default function FunChineseHubPage() {
               }}
             >
               {(activeTool === 'saved' || activeTool === 'unit_test') && (
-                <ButtonBase
-                  onClick={() => setActiveTool(null)}
-                  sx={{
-                    px: is960 ? 4 : 5,
-                    py: is960 ? 1.25 : 1.5,
-                    bgcolor: '#E2E8F0',
-                    color: '#1E293B',
-                    borderRadius: is960 ? '16px' : '20px',
-                    fontSize: is960 ? '0.95rem' : '1.08rem',
-                    fontWeight: 800,
-                    '&:hover': { bgcolor: '#CBD5E1' },
-                  }}
-                >
-                  Close
-                </ButtonBase>
+                <Box sx={{ display: 'flex', gap: 1.2 }}>
+                  <ButtonBase
+                    onClick={() => setActiveTool(null)}
+                    sx={{
+                      px: is960 ? 3.2 : 4.2,
+                      py: is960 ? 1.25 : 1.5,
+                      bgcolor: '#E2E8F0',
+                      color: '#1E293B',
+                      borderRadius: is960 ? '16px' : '20px',
+                      fontSize: is960 ? '0.95rem' : '1.08rem',
+                      fontWeight: 800,
+                      '&:hover': { bgcolor: '#CBD5E1' },
+                    }}
+                  >
+                    Close
+                  </ButtonBase>
+                  {activeTool === 'saved' && (
+                    <ButtonBase
+                      onClick={handleStudySavedCards}
+                      disabled={savedCards.length === 0}
+                      sx={{
+                        px: is960 ? 3.2 : 4.2,
+                        py: is960 ? 1.25 : 1.5,
+                        bgcolor: '#3B82F6',
+                        color: 'white',
+                        borderRadius: is960 ? '16px' : '20px',
+                        fontSize: is960 ? '0.95rem' : '1.08rem',
+                        fontWeight: 800,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.8,
+                        '&:hover': { bgcolor: '#2563EB' },
+                      }}
+                    >
+                      <LayersIcon sx={{ fontSize: is960 ? 18 : 20 }} />
+                      {savedCards.length === 0 ? 'Start browsing' : 'Study saved'}
+                    </ButtonBase>
+                  )}
+                </Box>
               )}
             </Box>
           </Box>

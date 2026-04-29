@@ -3,7 +3,7 @@
  * 包含 Warmup -> Learn -> Practice -> Complete 等阶段
  */
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Box, Typography, ButtonBase } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
@@ -17,7 +17,10 @@ import EditIcon from '@mui/icons-material/Edit';
 import MessageIcon from '@mui/icons-material/ChatBubbleOutline';
 import BoltIcon from '@mui/icons-material/Bolt';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import BookmarkIcon from '@mui/icons-material/Bookmark';
 import { markLessonCompleted, UNIT_LESSON_COUNT } from '../utils/funChineseUnitProgress';
+import { loadFunChineseSavedCards, toggleFunChineseSavedCard, type FunChineseSavedCard } from '../utils/funChineseCardCollection';
 
 type Phase = 'warmup' | 'learn' | 'cards' | 'practice' | 'complete';
 type Language = 'en' | 'vi' | 'th' | 'id';
@@ -242,12 +245,21 @@ const LESSON_DATA = {
 export default function FunChineseLessonPage() {
   const navigate = useNavigate();
   const { lessonId } = useParams<{ lessonId: string }>();
+  const [searchParams] = useSearchParams();
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
   const is960 = screenSize === '960x540';
+  const parsedLessonId = Number.parseInt(lessonId || '1', 10);
+  const safeLessonId = Number.isFinite(parsedLessonId) ? parsedLessonId : 1;
+  const fromCollection = searchParams.get('from') === 'collection';
+  const queryWantsCards = searchParams.get('phase') === 'cards';
+  const queryCardIndex = Number.parseInt(searchParams.get('card') || '0', 10);
+  const initialCardIndex = Number.isFinite(queryCardIndex)
+    ? Math.min(Math.max(queryCardIndex, 0), LESSON_DATA.knowledgeCards.length - 1)
+    : 0;
 
-  const [currentPhase, setCurrentPhase] = useState<Phase>('warmup');
+  const [currentPhase, setCurrentPhase] = useState<Phase>(queryWantsCards ? 'cards' : 'warmup');
   const [vocabIndex, setVocabIndex] = useState(0);
-  const [cardIndex, setCardIndex] = useState(0);
+  const [cardIndex, setCardIndex] = useState(initialCardIndex);
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -256,14 +268,36 @@ export default function FunChineseLessonPage() {
   const [matchedPairs, setMatchedPairs] = useState<string[]>([]);
   // TODO: 从用户设置或系统语言获取，目前默认越南语
   const [userLanguage] = useState<Language>('vi');
+  const [savedCardIds, setSavedCardIds] = useState<string[]>(() => loadFunChineseSavedCards().map((item) => item.id));
 
   useEffect(() => {
     if (currentPhase !== 'complete') return;
-    const id = parseInt(lessonId || '1', 10);
+    const id = safeLessonId;
     if (Number.isFinite(id) && id >= 1 && id <= UNIT_LESSON_COUNT) {
       markLessonCompleted(id);
     }
-  }, [currentPhase, lessonId]);
+  }, [currentPhase, safeLessonId]);
+
+  const buildSavedCardPayload = (cardIdx: number): Omit<FunChineseSavedCard, 'savedAt'> => {
+    const card = LESSON_DATA.knowledgeCards[cardIdx];
+    const preview =
+      card.type === 'dialogue'
+        ? card.content.dialogueLines?.[0]?.chinese || card.content.scene || card.title
+        : card.type === 'pattern'
+          ? card.content.formula || card.content.function || card.title
+          : card.content.point || card.content.formula || card.title;
+    return {
+      id: `fun-chinese:${safeLessonId}:${cardIdx}:${card.type}`,
+      lessonId: safeLessonId,
+      lessonTitle: LESSON_DATA.title,
+      lessonTitleEn: LESSON_DATA.titleEn,
+      cardIndex: cardIdx,
+      cardType: card.type,
+      cardTitle: card.title,
+      cardSubtitle: card.titleVi,
+      preview,
+    };
+  };
 
   const orange = '#FF7A45';
   const teal = '#14B8A6';
@@ -294,6 +328,14 @@ export default function FunChineseLessonPage() {
   const isFirstTimeChar = isSingleChar && !seenChars.has(currentVocab.chinese);
   const shouldShowWriting = isFirstTimeChar;
   const shouldShowTones = isFirstTimeChar;
+
+  const handleCloseLesson = () => {
+    if (fromCollection) {
+      navigate('/library/hub/fun-chinese');
+      return;
+    }
+    navigate(-1);
+  };
 
   const handleNextPhase = () => {
     if (currentPhase === 'warmup') {
@@ -1051,6 +1093,8 @@ export default function FunChineseLessonPage() {
   // Cards Phase - Knowledge Cards
   if (currentPhase === 'cards') {
     const currentCard = LESSON_DATA.knowledgeCards[cardIndex];
+    const currentCardPayload = buildSavedCardPayload(cardIndex);
+    const isCurrentCardSaved = savedCardIds.includes(currentCardPayload.id);
 
     const handleNextCard = () => {
       if (cardIndex < LESSON_DATA.knowledgeCards.length - 1) {
@@ -1064,6 +1108,11 @@ export default function FunChineseLessonPage() {
       if (cardIndex > 0) {
         setCardIndex(cardIndex - 1);
       }
+    };
+
+    const handleToggleSaveCard = () => {
+      const result = toggleFunChineseSavedCard(currentCardPayload);
+      setSavedCardIds(result.cards.map((item) => item.id));
     };
 
     return (
@@ -1115,19 +1164,39 @@ export default function FunChineseLessonPage() {
                 />
               ))}
             </Box>
-            <ButtonBase
-              onClick={() => navigate(-1)}
-              sx={{
-                width: is960 ? 36 : 40,
-                height: is960 ? 36 : 40,
-                borderRadius: '50%',
-                bgcolor: 'rgba(0,0,0,0.04)',
-                color: '#64748B',
-                '&:active': { transform: 'scale(0.96)' },
-              }}
-            >
-              <CloseIcon sx={{ fontSize: is960 ? 20 : 22 }} />
-            </ButtonBase>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <ButtonBase
+                onClick={handleToggleSaveCard}
+                sx={{
+                  minWidth: is960 ? 36 : 40,
+                  minHeight: is960 ? 36 : 40,
+                  borderRadius: '50%',
+                  bgcolor: isCurrentCardSaved ? '#FEF3C7' : 'rgba(0,0,0,0.04)',
+                  color: isCurrentCardSaved ? '#F59E0B' : '#64748B',
+                  '&:active': { transform: 'scale(0.96)' },
+                }}
+                aria-label={isCurrentCardSaved ? 'Remove from collection' : 'Save to collection'}
+              >
+                {isCurrentCardSaved ? (
+                  <BookmarkIcon sx={{ fontSize: is960 ? 20 : 22 }} />
+                ) : (
+                  <BookmarkBorderIcon sx={{ fontSize: is960 ? 20 : 22 }} />
+                )}
+              </ButtonBase>
+              <ButtonBase
+                onClick={handleCloseLesson}
+                sx={{
+                  width: is960 ? 36 : 40,
+                  height: is960 ? 36 : 40,
+                  borderRadius: '50%',
+                  bgcolor: 'rgba(0,0,0,0.04)',
+                  color: '#64748B',
+                  '&:active': { transform: 'scale(0.96)' },
+                }}
+              >
+                <CloseIcon sx={{ fontSize: is960 ? 20 : 22 }} />
+              </ButtonBase>
+            </Box>
           </Box>
         </Box>
 
