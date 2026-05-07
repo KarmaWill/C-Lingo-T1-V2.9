@@ -17,7 +17,6 @@ import MenuBookIcon from '@mui/icons-material/MenuBook';
 import SettingsIcon from '@mui/icons-material/Settings';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import StarOutlineIcon from '@mui/icons-material/StarOutline';
-import StarIcon from '@mui/icons-material/Star';
 import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CheckIcon from '@mui/icons-material/Check';
@@ -112,16 +111,12 @@ function Flashcard({
   setIsFlipped,
   onAssess,
   is960,
-  isFavorite,
-  onToggleFavorite,
 }: {
   word: Word;
   isFlipped: boolean;
   setIsFlipped: (v: boolean) => void;
   onAssess: (a: 'know' | 'uncertain' | 'unknown') => void;
   is960: boolean;
-  isFavorite: boolean;
-  onToggleFavorite: () => void;
 }) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -170,19 +165,6 @@ function Flashcard({
             p: is960 ? 3 : 4,
           }}
         >
-          <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 5 }} onClick={(e) => e.stopPropagation()}>
-            <ButtonBase
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleFavorite();
-              }}
-              sx={{ p: 1, borderRadius: '50%', color: isFavorite ? '#FBBF24' : '#9CA3AF', '&:active': { color: '#FBBF24' } }}
-            >
-              {isFavorite ? <StarIcon sx={{ fontSize: 22 }} /> : <StarOutlineIcon sx={{ fontSize: 22 }} />}
-            </ButtonBase>
-          </Box>
-
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: is960 ? 2 : 3, textAlign: 'center' }}>
             <Typography
               sx={{
@@ -254,16 +236,6 @@ function Flashcard({
               <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.35rem' : '1.6rem', color: '#111827' }}>{word.word}</Typography>
               <Typography sx={{ color: '#6B7280', fontSize: is960 ? '0.75rem' : '0.85rem', fontFamily: 'monospace' }}>{word.phonetic}</Typography>
             </Box>
-            <ButtonBase
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleFavorite();
-              }}
-              sx={{ p: 1, borderRadius: '50%', color: isFavorite ? '#FBBF24' : '#9CA3AF', '&:active': { color: '#FBBF24' } }}
-            >
-              {isFavorite ? <StarIcon sx={{ fontSize: 22 }} /> : <StarOutlineIcon sx={{ fontSize: 22 }} />}
-            </ButtonBase>
           </Box>
 
           {/* Sections */}
@@ -405,14 +377,10 @@ function SessionComplete({
 function LearningSession({
   words,
   is960,
-  savedWordIds,
-  onToggleSave,
   onExitToDashboard,
 }: {
   words: Word[];
   is960: boolean;
-  savedWordIds: string[];
-  onToggleSave: (wordId: string) => void;
   onExitToDashboard: () => void;
 }) {
   const [idx, setIdx] = useState(0);
@@ -567,8 +535,6 @@ function LearningSession({
               setIsFlipped={setFlipped}
               onAssess={handleAssess}
               is960={is960}
-              isFavorite={savedWordIds.includes(words[idx].id)}
-              onToggleFavorite={() => onToggleSave(words[idx].id)}
             />
           </motion.div>
         </AnimatePresence>
@@ -1780,10 +1746,6 @@ export default function LingoFlashPage() {
     setView('dashboard');
   }, [navigate]);
 
-  const onToggleSave = useCallback((wordId: string) => {
-    setSavedWordIds((prev) => (prev.includes(wordId) ? prev.filter((id) => id !== wordId) : [...prev, wordId]));
-  }, []);
-
   const handleStartLearning = useCallback(() => {
     setLearningWords(DECK);
     setView('learning');
@@ -1817,8 +1779,6 @@ export default function LingoFlashPage() {
           <LearningSession
             words={learningWords}
             is960={is960}
-            savedWordIds={savedWordIds}
-            onToggleSave={onToggleSave}
             onExitToDashboard={handleExitFromSession}
           />
         )}

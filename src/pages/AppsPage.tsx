@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Box, Typography, ButtonBase, Snackbar, Alert, Switch } from '@mui/material';
 import AccessAlarmOutlinedIcon from '@mui/icons-material/AccessAlarmOutlined';
 import AddIcon from '@mui/icons-material/Add';
+import TranslateIcon from '@mui/icons-material/Translate';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import AutoStoriesIcon from '@mui/icons-material/AutoStories';
+import EditNoteIcon from '@mui/icons-material/EditNote';
+import PublicIcon from '@mui/icons-material/Public';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 export default function AppsPage() {
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -52,13 +59,13 @@ export default function AppsPage() {
   const dateInfo = formatDate(currentTime);
   const timeString = currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 
-  const cardRadius = is960 ? '16px' : is1920x1125 ? '22px' : '20px';
-  const barRadius = is960 ? '10px' : '12px';
-  const tileRadius = is960 ? '10px' : '12px';
-  const tileMinH = is960 ? 76 : 92;
+  const cardRadius = is960 ? '18px' : is1920x1125 ? '28px' : '24px';
+  const barRadius = is960 ? '12px' : '14px';
+  const tileRadius = is960 ? '14px' : '18px';
+  const tileMinH = is960 ? 62 : 76;
 
   // 略小于 1 的缩放避免裁切；top center 让缩放后相对主区域水平居中（避免仅靠左上原点导致整体偏左）
-  const SCALE = is960 ? 0.92 : is1920x1125 ? 0.96 : 0.96;
+  const SCALE = 1;
 
   return (
     <Box sx={{ 
@@ -87,8 +94,8 @@ export default function AppsPage() {
           height: '100%',
           minHeight: 0,
           overflow: 'auto',
-          px: { xs: is960 ? 2 : (is1920x1125 ? 4 : 3), md: 0 },
-          py: is960 ? 2 : (is1920x1125 ? 4 : 3),
+          px: { xs: is960 ? 2 : (is1920x1125 ? 4 : 3), md: is960 ? 2 : 3 },
+          py: is960 ? 1.4 : (is1920x1125 ? 3 : 2),
           boxSizing: 'border-box', 
           display: 'flex',
           flexDirection: 'column',
@@ -99,7 +106,7 @@ export default function AppsPage() {
             overflow: 'hidden',
             width: '100%',
             maxWidth: '100%',
-            px: { xs: is960 ? 1 : (is1920x1125 ? 2 : 1.5), md: 0 },
+            px: { xs: is960 ? 1 : (is1920x1125 ? 2 : 1.5), md: is960 ? 1.5 : 2.5 },
             display: 'flex',
             flexDirection: 'column',
           }}>
@@ -109,12 +116,13 @@ export default function AppsPage() {
                 flex: '1 1 0',
                 minHeight: 0,
                 width: '100%',
-                maxWidth: '100%',
+                maxWidth: is960 ? 900 : 940,
                 display: 'flex',
                 flexDirection: { xs: 'column', md: 'row' },
-                gap: is960 ? 1.5 : 2,
+                gap: is960 ? 1.2 : 1.8,
                 alignItems: 'stretch',
-                justifyContent: { xs: 'stretch', md: 'flex-start' },
+                justifyContent: { xs: 'stretch', md: 'center' },
+                mx: 'auto',
               }}
             >
               <Box
@@ -125,11 +133,11 @@ export default function AppsPage() {
                   bgcolor: 'white',
                   borderRadius: cardRadius,
                   p: is960 ? 1.5 : (is1920x1125 ? 2.5 : 2),
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                  boxShadow: '0 12px 28px rgba(15,23,42,0.08)',
                   border: '1px solid rgba(0,0,0,0.04)',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: is960 ? 1.25 : 1.75,
+                  gap: is960 ? 1.15 : 1.45,
                 }}
               >
                 <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1rem' : (is1920x1125 ? '1.4rem' : '1.2rem'), color: '#111827' }}>
@@ -216,64 +224,161 @@ export default function AppsPage() {
                   </Box>
                 </Box>
 
-                {/* App grid — 3×3: row3 = Downloads | Add | empty */}
+                {/* App grid — matches reference layout: compact top row + large writing card. */}
                 <Box
                   sx={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                    gap: is960 ? 0.85 : 1.15,
+                    gridTemplateRows: `${tileMinH}px ${tileMinH}px ${tileMinH}px`,
+                    gap: is960 ? 0.85 : 1.05,
                     alignItems: 'stretch',
                   }}
                 >
                   {[
-                    { label: 'Pinyin Chart', path: '/pinyin-chart', bg: '#FF6B35' as const },
-                    { label: 'Dictionary', path: '/library', bg: '#3B82F6' as const },
+                    { label: 'Pinyin Chart', path: '/pinyin-chart', bg: '#FF6B35' as const, icon: TranslateIcon },
+                    { label: 'Dictionary', path: '/library', bg: '#2F6DF6' as const, icon: MenuBookIcon },
                     {
                       label: 'C-Reader',
                       path: '/library',
-                      bg: '#10B981' as const,
+                      bg: '#10B3A3' as const,
+                      icon: AutoStoriesIcon,
                       state: { openBookSelection: true } as const,
                     },
-                    { label: 'Character Writing', path: '/flashcards', bg: '#7C3AED' as const },
-                    { label: 'Culture', path: '/specialized', bg: '#14B8A6' as const },
-                    { label: 'Parental controls', path: '/profile', bg: '#EC4899' as const },
-                  ].map((app) => (
-                    <ButtonBase
-                      key={app.label}
-                      onClick={() =>
-                        'state' in app && app.state
-                          ? navigate(app.path, { state: app.state })
-                          : navigate(app.path)
-                      }
-                      sx={{
-                        borderRadius: tileRadius,
-                        px: is960 ? 0.75 : 1,
-                        py: is960 ? 1.1 : 1.35,
-                        bgcolor: app.bg,
-                        color: 'white',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        minHeight: tileMinH,
-                        transition: 'transform 0.15s',
-                        '&:active': { transform: 'scale(0.97)' },
-                      }}
-                    >
-                      <Typography
+                  ].map((app) => {
+                    const Icon = app.icon;
+                    return (
+                      <ButtonBase
+                        key={app.label}
+                        onClick={() =>
+                          'state' in app && app.state
+                            ? navigate(app.path, { state: app.state })
+                            : navigate(app.path)
+                        }
                         sx={{
-                          fontWeight: 800,
-                          fontSize: is960 ? '0.68rem' : '0.8rem',
-                          textAlign: 'center',
-                          lineHeight: 1.25,
-                          wordBreak: 'break-word',
-                          hyphens: 'auto',
+                          borderRadius: tileRadius,
+                          px: is960 ? 1 : 1.2,
+                          py: is960 ? 0.9 : 1.1,
+                          bgcolor: app.bg,
+                          color: 'white',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'flex-start',
+                          gap: is960 ? 0.7 : 0.9,
+                          minHeight: tileMinH,
+                          transition: 'transform 0.15s',
+                          '&:active': { transform: 'scale(0.97)' },
                         }}
                       >
-                        {app.label}
-                      </Typography>
-                    </ButtonBase>
-                  ))}
+                        <Box
+                          sx={{
+                            width: is960 ? 24 : 28,
+                            height: is960 ? 24 : 28,
+                            borderRadius: is960 ? '8px' : '10px',
+                            bgcolor: 'rgba(255,255,255,0.18)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Icon sx={{ fontSize: is960 ? 15 : 17 }} />
+                        </Box>
+                        <Typography
+                          sx={{
+                            fontWeight: 850,
+                            fontSize: is960 ? '0.68rem' : '0.8rem',
+                            textAlign: 'left',
+                            lineHeight: 1.2,
+                            wordBreak: 'break-word',
+                            hyphens: 'auto',
+                          }}
+                        >
+                          {app.label}
+                        </Typography>
+                      </ButtonBase>
+                    );
+                  })}
+
+                  <ButtonBase
+                    onClick={() => navigate('/flashcards')}
+                    sx={{
+                      gridColumn: '1 / 2',
+                      gridRow: '2 / 4',
+                      borderRadius: tileRadius,
+                      p: is960 ? 1.2 : 1.5,
+                      bgcolor: '#FFC72C',
+                      color: 'white',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      minHeight: 0,
+                      position: 'relative',
+                      overflow: 'hidden',
+                      transition: 'transform 0.15s',
+                      '&:active': { transform: 'scale(0.97)' },
+                    }}
+                  >
+                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.98rem' : '1.18rem', lineHeight: 1.16, textAlign: 'left' }}>
+                      Character<br />Writing
+                    </Typography>
+                    <EditNoteIcon
+                      sx={{
+                        position: 'absolute',
+                        right: is960 ? 14 : 18,
+                        bottom: is960 ? 10 : 14,
+                        fontSize: is960 ? 80 : 104,
+                        color: 'rgba(255,255,255,0.82)',
+                        transform: 'rotate(-10deg)',
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        right: is960 ? 38 : 46,
+                        top: is960 ? 32 : 40,
+                        color: 'rgba(255,255,255,0.88)',
+                        fontSize: is960 ? '1.15rem' : '1.45rem',
+                        fontWeight: 900,
+                      }}
+                    >
+                      ✦
+                    </Box>
+                  </ButtonBase>
+
+                  {[
+                    { label: 'Culture', path: '/specialized', bg: '#09B96E' as const, icon: PublicIcon },
+                    { label: 'Parental controls', path: '/profile', bg: '#F65068' as const, icon: AdminPanelSettingsIcon },
+                  ].map((app) => {
+                    const Icon = app.icon;
+                    return (
+                      <ButtonBase
+                        key={app.label}
+                        onClick={() => navigate(app.path)}
+                        sx={{
+                          borderRadius: tileRadius,
+                          px: is960 ? 1 : 1.2,
+                          py: is960 ? 0.9 : 1.1,
+                          bgcolor: app.bg,
+                          color: 'white',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'flex-start',
+                          gap: is960 ? 0.7 : 0.9,
+                          minHeight: tileMinH,
+                          transition: 'transform 0.15s',
+                          '&:active': { transform: 'scale(0.97)' },
+                        }}
+                      >
+                        <Box sx={{ width: is960 ? 24 : 28, height: is960 ? 24 : 28, borderRadius: is960 ? '8px' : '10px', bgcolor: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Icon sx={{ fontSize: is960 ? 15 : 17 }} />
+                        </Box>
+                        <Typography sx={{ fontWeight: 850, fontSize: is960 ? '0.68rem' : '0.8rem', textAlign: 'left', lineHeight: 1.2 }}>
+                          {app.label}
+                        </Typography>
+                      </ButtonBase>
+                    );
+                  })}
 
                   <ButtonBase
                     onClick={() => {
@@ -282,20 +387,23 @@ export default function AppsPage() {
                     }}
                     sx={{
                       borderRadius: tileRadius,
-                      px: is960 ? 0.75 : 1,
-                      py: is960 ? 1.1 : 1.35,
-                      bgcolor: '#3F3F46',
+                      px: is960 ? 1 : 1.2,
+                      py: is960 ? 0.9 : 1.1,
+                      bgcolor: '#263238',
                       color: 'white',
                       display: 'flex',
-                      flexDirection: 'column',
                       alignItems: 'center',
-                      justifyContent: 'center',
+                      justifyContent: 'flex-start',
+                      gap: is960 ? 0.7 : 0.9,
                       minHeight: tileMinH,
                       transition: 'transform 0.15s',
                       '&:active': { transform: 'scale(0.97)' },
                     }}
                   >
-                    <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.68rem' : '0.8rem', textAlign: 'center', lineHeight: 1.25 }}>
+                    <Box sx={{ width: is960 ? 24 : 28, height: is960 ? 24 : 28, borderRadius: is960 ? '8px' : '10px', bgcolor: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <CloudDownloadIcon sx={{ fontSize: is960 ? 15 : 17 }} />
+                    </Box>
+                    <Typography sx={{ fontWeight: 850, fontSize: is960 ? '0.68rem' : '0.8rem', textAlign: 'left', lineHeight: 1.2 }}>
                       Downloads
                     </Typography>
                   </ButtonBase>
@@ -308,8 +416,8 @@ export default function AppsPage() {
                     sx={{
                       borderRadius: tileRadius,
                       minHeight: tileMinH,
-                      border: '2px dashed #CBD5E1',
-                      bgcolor: '#F8FAFC',
+                      border: '1px solid #E5E7EB',
+                      bgcolor: '#FFFFFF',
                       color: '#94A3B8',
                       display: 'flex',
                       alignItems: 'center',
@@ -320,22 +428,20 @@ export default function AppsPage() {
                   >
                     <AddIcon sx={{ fontSize: is960 ? 30 : 34 }} />
                   </ButtonBase>
-
-                  <Box sx={{ minHeight: tileMinH }} aria-hidden />
                 </Box>
               </Box>
               <Box
                 sx={{
-                  flex: { xs: '1 1 auto', md: '0 0 min(440px, 42%)' },
+                  flex: { xs: '1 1 auto', md: '0 0 min(344px, 36%)' },
                   width: { xs: '100%', md: 'auto' },
-                  minWidth: { md: 280 },
-                  maxWidth: { md: 440 },
+                  minWidth: { md: 300 },
+                  maxWidth: { md: 360 },
                   ml: { md: 'auto' },
                   alignSelf: 'stretch',
                   bgcolor: 'white',
                   borderRadius: is960 ? '20px' : (is1920x1125 ? '28px' : '24px'),
                   p: is960 ? 1.5 : (is1920x1125 ? 3 : 2.5),
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                  boxShadow: '0 12px 28px rgba(15,23,42,0.08)',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: is960 ? 1 : 1.5,

@@ -39,7 +39,6 @@ import {
 interface Tool {
   id: string;
   title: string;
-  titleEn: string;
   icon: React.ReactNode;
   color: string;
 }
@@ -86,21 +85,18 @@ export default function FunChineseHubPage() {
     {
       id: 'flashcard',
       title: 'Flashcards',
-      titleEn: 'Flashcards',
       icon: <StyleIcon sx={{ fontSize: is960 ? 22 : 26 }} />,
       color: orange,
     },
     {
       id: 'saved',
       title: 'Card Collection',
-      titleEn: 'Card Collection',
       icon: <BookmarkBorderIcon sx={{ fontSize: is960 ? 22 : 26 }} />,
       color: '#3B82F6',
     },
     {
       id: 'unit_test',
       title: 'Unit Test',
-      titleEn: 'Unit Test',
       icon: <QuizIcon sx={{ fontSize: is960 ? 22 : 26 }} />,
       color: teal,
     },
@@ -343,7 +339,7 @@ export default function FunChineseHubPage() {
                     LEARNING PATH
                   </Typography>
                   <Typography sx={{ fontSize: is960 ? '1.12rem' : '1.35rem', color: '#0F172A', fontWeight: 900, letterSpacing: '-0.03em' }}>
-                    Unit lessons
+                    Lessons
                   </Typography>
                 </Box>
                 <Typography sx={{ fontSize: is960 ? '0.76rem' : '0.86rem', color: '#94A3B8', fontWeight: 750 }}>
@@ -537,9 +533,27 @@ export default function FunChineseHubPage() {
                     <HeadphonesIcon sx={{ fontSize: is960 ? 28 : 34 }} />
                   </Box>
                   <Box sx={{ minWidth: 0 }}>
-                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.02rem' : '1.22rem', lineHeight: 1.08, letterSpacing: '-0.04em', fontFamily: googleSansFamily }}>
-                      AI Talk
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                      <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.02rem' : '1.22rem', lineHeight: 1.08, letterSpacing: '-0.04em', fontFamily: googleSansFamily }}>
+                        AI Talk
+                      </Typography>
+                      <Box
+                        sx={{
+                          px: is960 ? 0.85 : 1,
+                          py: 0.28,
+                          borderRadius: '999px',
+                          bgcolor: 'rgba(59, 130, 246, 0.22)',
+                          border: '1px solid rgba(59, 130, 246, 0.4)',
+                          color: '#60A5FA',
+                          fontSize: is960 ? '0.54rem' : '0.62rem',
+                          fontWeight: 900,
+                          letterSpacing: '0.08em',
+                          fontFamily: googleSansFamily,
+                        }}
+                      >
+                        ONLINE ONLY
+                      </Box>
+                    </Box>
                     <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.82rem', color: 'rgba(255,255,255,0.76)', fontWeight: 650, mt: 0.35, fontFamily: googleSansFamily, maxWidth: 380 }}>
                       How to say hello?
                     </Typography>
@@ -667,6 +681,34 @@ export default function FunChineseHubPage() {
                       }}
                     >
                       {tool.icon}
+                      {tool.id === 'flashcard' && (
+                        <Box
+                          aria-label="20 cards to review"
+                          sx={{
+                            position: 'absolute',
+                            top: is960 ? -9 : -11,
+                            right: is960 ? -16 : -18,
+                            minWidth: is960 ? 42 : 48,
+                            height: is960 ? 28 : 32,
+                            px: is960 ? 1.05 : 1.2,
+                            borderRadius: '999px',
+                            bgcolor: '#F94B4B',
+                            color: 'white',
+                            border: '2px solid #F8FAFC',
+                            boxShadow: '0 8px 18px rgba(239,68,68,0.26)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: is960 ? '1.12rem' : '1.28rem',
+                            fontWeight: 900,
+                            lineHeight: 1,
+                            letterSpacing: '-0.04em',
+                            fontFamily: googleSansFamily,
+                          }}
+                        >
+                          20
+                        </Box>
+                      )}
                       {!unlocked && (
                         <LockIcon
                           sx={{
@@ -687,9 +729,6 @@ export default function FunChineseHubPage() {
                       <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.95rem' : '1.08rem', color: '#1E293B', lineHeight: 1.2, fontFamily: googleSansFamily }}>
                         {tool.title}
                       </Typography>
-                      <Typography sx={{ fontSize: is960 ? '0.7rem' : '0.75rem', color: '#94A3B8', fontWeight: 600, mt: 0.35 }}>
-                        {unlocked ? tool.titleEn : 'Complete all lessons in this unit'}
-                      </Typography>
                     </Box>
                     <ChevronRightIcon sx={{ fontSize: is960 ? 20 : 22, color: unlocked ? '#CBD5E1' : '#E2E8F0' }} />
                   </ButtonBase>
@@ -704,27 +743,86 @@ export default function FunChineseHubPage() {
                 borderTop: '1px solid #F1F5F9',
               }}
             >
-              <Box
+              <ButtonBase
+                onClick={() => {
+                  if (!unitComplete) {
+                    showUnitGateHint();
+                    return;
+                  }
+                  // TODO: Navigate to PPT viewer page
+                  navigate('/library/hub/fun-chinese/teacher-guide');
+                }}
+                disabled={!unitComplete}
                 sx={{
+                  width: '100%',
                   p: is960 ? 2 : 2.5,
-                  bgcolor: `${teal}08`,
+                  bgcolor: unitComplete ? 'linear-gradient(135deg, #667EEA 0%, #764BA2 100%)' : '#F1F5F9',
+                  background: unitComplete ? 'linear-gradient(135deg, #667EEA 0%, #764BA2 100%)' : '#F1F5F9',
                   borderRadius: is960 ? '18px' : '22px',
-                  border: `1px solid ${teal}30`,
+                  border: unitComplete ? '1px solid rgba(102,126,234,0.3)' : '1px solid #E2E8F0',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 1.5,
+                  textAlign: 'left',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  transition: 'all 0.2s',
+                  cursor: unitComplete ? 'pointer' : 'not-allowed',
+                  opacity: unitComplete ? 1 : 0.6,
+                  '&:hover': unitComplete ? {
+                    transform: 'scale(1.02)',
+                    boxShadow: '0 12px 24px rgba(102,126,234,0.3)',
+                  } : {},
                 }}
               >
-                <AccessTimeIcon sx={{ fontSize: is960 ? 22 : 26, color: teal }} />
-                <Box>
-                  <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: teal, fontWeight: 800, fontFamily: googleSansFamily }}>
-                    Review focus
+                {!unitComplete && (
+                  <LockIcon
+                    sx={{
+                      position: 'absolute',
+                      top: is960 ? 8 : 10,
+                      right: is960 ? 84 : 96,
+                      fontSize: 16,
+                      color: '#94A3B8',
+                      zIndex: 2,
+                    }}
+                  />
+                )}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: is960 ? 8 : 10,
+                    right: is960 ? 8 : 10,
+                    px: is960 ? 0.7 : 0.85,
+                    py: 0.22,
+                    borderRadius: '999px',
+                    bgcolor: unitComplete ? 'rgba(255,255,255,0.18)' : 'rgba(148,163,184,0.15)',
+                    border: unitComplete ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(148,163,184,0.25)',
+                    color: unitComplete ? 'rgba(255,255,255,0.92)' : '#94A3B8',
+                    fontSize: is960 ? '0.48rem' : '0.56rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.08em',
+                    fontFamily: googleSansFamily,
+                    zIndex: 2,
+                  }}
+                >
+                  ONLINE ONLY
+                </Box>
+                <MenuBookIcon sx={{ fontSize: is960 ? 26 : 32, color: unitComplete ? 'white' : '#94A3B8', flexShrink: 0 }} />
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', color: unitComplete ? 'rgba(255,255,255,0.85)' : '#94A3B8', fontWeight: 800, fontFamily: googleSansFamily, mb: 0.2 }}>
+                    TEACHER'S GUIDE
                   </Typography>
-                  <Typography sx={{ fontSize: is960 ? '1.05rem' : '1.18rem', color: teal, fontWeight: 900, lineHeight: 1.15, fontFamily: googleSansFamily }}>
-                    Names · Home · Greetings
+                  <Typography sx={{ fontSize: is960 ? '0.98rem' : '1.12rem', color: unitComplete ? 'white' : '#64748B', fontWeight: 900, lineHeight: 1.15, fontFamily: googleSansFamily }}>
+                    Lesson Resources
+                  </Typography>
+                  <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.76rem', color: unitComplete ? 'rgba(255,255,255,0.72)' : '#94A3B8', fontWeight: 650, mt: 0.35, fontFamily: googleSansFamily }}>
+                    {unitComplete ? 'View online materials' : 'Complete all lessons to unlock'}
                   </Typography>
                 </Box>
-              </Box>
+                {unitComplete && (
+                  <ChevronRightIcon sx={{ fontSize: is960 ? 20 : 24, color: 'rgba(255,255,255,0.85)', flexShrink: 0 }} />
+                )}
+              </ButtonBase>
             </Box>
           </Box>
         </Box>
