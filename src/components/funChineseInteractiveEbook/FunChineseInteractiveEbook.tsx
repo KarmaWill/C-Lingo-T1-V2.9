@@ -391,7 +391,7 @@ export default function FunChineseInteractiveEbook() {
   const [selectedRepeatIds, setSelectedRepeatIds] = useState<string[]>([]);
   const [isRepeatPlaying, setIsRepeatPlaying] = useState<boolean>(false);
   const [currentRepeatPlayingId, setCurrentRepeatPlayingId] = useState<string | null>(null);
-  const repeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const repeatIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toggleRepeatSentence = (sentenceId: string) => {
     setSelectedRepeatIds((prev) => {
@@ -495,7 +495,7 @@ export default function FunChineseInteractiveEbook() {
   const [isMyVoicePlaying, setIsMyVoicePlaying] = useState<boolean>(false);
 
   // Audio Context elements
-  const evaluationTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const evaluationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // --- EXERCISE STATES ---
   const [exerciseTab, setExerciseTab] = useState<'match' | 'fill' | 'truefalse' | 'roleplay' | 'stroke'>('match');
@@ -520,7 +520,7 @@ export default function FunChineseInteractiveEbook() {
   const [activeStrokeCharIdx, setActiveStrokeCharIdx] = useState<number>(0);
   const [activeStrokeStep, setActiveStrokeStep] = useState<number>(-1); // -1 is full outline
   const [isStrokeAnimating, setIsStrokeAnimating] = useState<boolean>(false);
-  const strokeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const strokeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // --- ANIMATED VIDEO SCREEN (导学视频) ---
   const [isVideoOpen, setIsVideoOpen] = useState<boolean>(false);
