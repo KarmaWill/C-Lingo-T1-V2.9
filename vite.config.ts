@@ -1,5 +1,6 @@
 import { networkInterfaces } from 'node:os'
 import type { Plugin } from 'vite'
+import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -61,7 +62,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-  plugins: [react(), lanUrlHintPlugin(port)],
+  plugins: [react(), tailwindcss(), lanUrlHintPlugin(port)],
   server: {
       port: port,
       // 监听所有网卡，同一局域网内手机/平板可用本机 IP 访问

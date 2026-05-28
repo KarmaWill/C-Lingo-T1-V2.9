@@ -57,6 +57,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isHSKOralReviewPage = location.pathname === '/hsk-oral-review'
   const isLibraryBookSelectionPage = location.pathname === '/library/select-books'
   const isStartingLearningPage = location.pathname === '/starting-learning'
+  const isFunChineseTeacherGuidePage = location.pathname === '/library/hub/fun-chinese/teacher-guide'
   const isFunChineseHubPage = location.pathname === '/library/hub/fun-chinese'
   const isFunChineseCardCollectionPage = location.pathname === '/library/hub/fun-chinese/card-collection'
   const isFunChineseIntensivePage = location.pathname === '/library/hub/fun-chinese/intensive'
@@ -81,7 +82,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isCultureVideoRoutePage ||
     isHSKSkillDrillPage ||
     isHSKOralReviewPage
-  const hideChromeNav = isCoveringMain || isLingoFlashPage || isGrammarPuzzlePage || isSyntaxSnapPage || isHSKPrepTrainingPage || isLibraryBookSelectionPage || isStartingLearningPage || isFunChineseHubPage || isFunChineseCardCollectionPage || isFunChineseIntensivePage || isFunChineseLessonPage || isCultureMapPage || isCharacterWritingPage
+  const hideChromeNav = isCoveringMain || isLingoFlashPage || isGrammarPuzzlePage || isSyntaxSnapPage || isHSKPrepTrainingPage || isLibraryBookSelectionPage || isStartingLearningPage || isFunChineseTeacherGuidePage || isFunChineseHubPage || isFunChineseCardCollectionPage || isFunChineseIntensivePage || isFunChineseLessonPage || isCultureMapPage || isCharacterWritingPage
 
   // 主四 tab + LingoFlash + GrammarPuzzle + SyntaxSnap + HSKPrepTraining + LibraryBookSelection + FunChineseHub + FunChineseLesson + CultureMap + CharacterWriting：显示系统状态栏；其它全屏页不显示
   const showSystemBar =

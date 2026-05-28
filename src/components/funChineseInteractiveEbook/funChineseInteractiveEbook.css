@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@450;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+@source "./FunChineseInteractiveEbook.tsx";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom styles for professional textbook look */
+.tianzige-pattern {
+  background-image: 
+    linear-gradient(to right, rgba(239, 68, 68, 0.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(239, 68, 68, 0.15) 1px, transparent 1px);
+  background-size: 50% 50%;
+}
+
+.tianzige-diagonal {
+  background-image: 
+    linear-gradient(to top right, transparent 49%, rgba(239, 68, 68, 0.1) 49%, rgba(239, 68, 68, 0.1) 51%, transparent 51%),
+    linear-gradient(to bottom right, transparent 49%, rgba(239, 68, 68, 0.1) 49%, rgba(239, 68, 68, 0.1) 51%, transparent 51%);
+}
+
+/* Custom animation effects */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom scrollbars for a premium look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* iPad-friendly voice speed slider */
+.voice-speed-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    #fed7aa 0%,
+    #ea580c var(--speed-progress, 50%),
+    #f1f5f9 var(--speed-progress, 50%),
+    #f1f5f9 100%
+  );
+  outline: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.voice-speed-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 2px solid #ea580c;
+  box-shadow: 0 1px 4px rgba(234, 88, 12, 0.25);
+}
+
+.voice-speed-range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 2px solid #ea580c;
+  box-shadow: 0 1px 4px rgba(234, 88, 12, 0.25);
+}

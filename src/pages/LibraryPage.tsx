@@ -237,11 +237,11 @@ export default function LibraryPage() {
             }}
           >
             <Box
-              onClick={() => navigate('/lesson/1')}
+              onClick={() => navigate('/starting-learning')}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  navigate('/lesson/1');
+                  navigate('/starting-learning');
                 }
               }}
               role="button"
