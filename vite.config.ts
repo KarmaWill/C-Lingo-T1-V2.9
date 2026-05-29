@@ -49,14 +49,14 @@ export default defineConfig(({ mode }) => {
   // Read screen size from environment variable
   const screenSize = process.env.VITE_SCREEN_SIZE || '1024x768';
   
-  // Determine port based on screen size
-  let port = 3000;
+  // Default 1024×768 dev server — port 3001 avoids conflict with API on 3000
+  let port = 3001;
   if (screenSize === '2000x1200') {
     port = 3001;
   } else if (screenSize === '960x540') {
-    port = 3001;
+    port = 3002;
   } else if (screenSize === '1920x1125') {
-    port = 3001;
+    port = 3003;
   } else if (screenSize === '1920x1080') {
     port = 3002;
   }
