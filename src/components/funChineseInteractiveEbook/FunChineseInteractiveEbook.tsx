@@ -54,14 +54,22 @@ export interface StrokeCharacter {
   meanings: string[]; // Stroke names
 }
 
+export interface SceneDialogue {
+  sentenceId: string;
+  align: 'left' | 'right';
+  characters: string;
+}
+
 export interface Lesson {
   id: number;
   title: string;
   pinyin: string;
   englishTitle: string;
   desc: string;
+  learningObjectives?: string[];
+  sceneDialogues?: SceneDialogue[];
   textbookLeft: {
-    illustration: string; // Tailwind emoji class
+    illustration: string;
     sentences: SentenceItem[];
   };
   vocabList: WordItem[];
@@ -96,6 +104,15 @@ const LESSONS_DATA: Lesson[] = [
     pinyin: "Nǐ Hǎo",
     englishTitle: "Hello!",
     desc: "学习基础招呼用语与自我介绍",
+    learningObjectives: [
+      "Learn basic greetings and self-introduction.",
+      "Ask and answer someone's name.",
+      "Use common phrases to start learning Chinese together.",
+    ],
+    sceneDialogues: [
+      { sentenceId: "1-1", align: "left", characters: "👦" },
+      { sentenceId: "1-2", align: "right", characters: "👧" },
+    ],
     textbookLeft: {
       illustration: "👋🧑‍🤝‍🧑",
       sentences: [
@@ -189,6 +206,15 @@ const LESSONS_DATA: Lesson[] = [
     pinyin: "Shǔ Yī Shǔ",
     englishTitle: "Counting Numbers",
     desc: "学习基本数字口诀与数量表达",
+    learningObjectives: [
+      "Count from one to ten in Chinese.",
+      "Use numbers to describe quantities.",
+      "Practice number phrases with everyday objects.",
+    ],
+    sceneDialogues: [
+      { sentenceId: "2-1", align: "left", characters: "🍎" },
+      { sentenceId: "2-2", align: "right", characters: "👧👦" },
+    ],
     textbookLeft: {
       illustration: "🍎🔢",
       sentences: [
@@ -341,6 +367,65 @@ export default function FunChineseInteractiveEbook() {
       setActiveBubble(null);
       setActivePlayingKey(null);
     }
+  };
+
+  const getLessonObjectives = (lesson: Lesson): string[] =>
+    lesson.learningObjectives ?? [lesson.desc];
+
+  const getSceneDialogues = (lesson: Lesson): SceneDialogue[] => {
+    if (lesson.sceneDialogues?.length) return lesson.sceneDialogues;
+    return lesson.textbookLeft.sentences.slice(0, 2).map((s, i) => ({
+      sentenceId: s.id,
+      align: i === 0 ? 'left' : 'right',
+      characters: i === 0 ? '👦' : '👧',
+    }));
+  };
+
+  const getExtraSceneSentences = (lesson: Lesson): SentenceItem[] => {
+    const sceneIds = new Set(getSceneDialogues(lesson).map((d) => d.sentenceId));
+    return lesson.textbookLeft.sentences.filter((s) => !sceneIds.has(s.id));
+  };
+
+  const renderTextbookBubble = (sentence: SentenceItem, align: 'left' | 'right') => {
+    const isHighlightedRepeatLine = currentRepeatPlayingId === sentence.id;
+    const isRepeatSelected = selectedRepeatIds.includes(sentence.id);
+    const repeatSelectionIndex = selectedRepeatIds.indexOf(sentence.id);
+    const isShadowSelected = selectedShadowIds.includes(sentence.id);
+    const shadowSelectionIndex = selectedShadowIds.indexOf(sentence.id);
+    const isActiveReadSentence = mode === 'read' && activeBubble?.sentenceId === sentence.id;
+    const isSentencePlaying = activePlayingKey === `sentence-${sentence.id}`;
+
+    const handleTap = () => {
+      if (mode === 'read') handleReadSentenceTap(sentence);
+      else if (mode === 'repeat') toggleRepeatSentence(sentence.id);
+      else if (mode === 'shadow') toggleShadowSentence(sentence.id);
+    };
+
+    return (
+      <button
+        key={sentence.id}
+        type="button"
+        onClick={handleTap}
+        disabled={mode === 'exercise'}
+        className={`textbook-speech-bubble ${align === 'left' ? 'textbook-speech-bubble-left self-start' : 'textbook-speech-bubble-right self-end'} ${
+          isHighlightedRepeatLine ? 'ring-2 ring-sky-300' :
+          isActiveReadSentence || isSentencePlaying ? 'ring-2 ring-orange-300' :
+          isRepeatSelected ? 'ring-2 ring-sky-200' :
+          isShadowSelected ? 'ring-2 ring-pink-200' : ''
+        }`}
+      >
+        {(mode === 'repeat' && isRepeatSelected) && (
+          <span className="absolute -top-2 -left-2 w-5 h-5 bg-sky-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{repeatSelectionIndex + 1}</span>
+        )}
+        {(mode === 'shadow' && isShadowSelected) && (
+          <span className="absolute -top-2 -left-2 w-5 h-5 bg-pink-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{shadowSelectionIndex + 1}</span>
+        )}
+        {showPinyin && (
+          <p className="text-[10px] text-sky-700 font-semibold leading-snug mb-0.5" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>{sentence.pinyin}</p>
+        )}
+        <p className="text-sm font-bold text-slate-800 leading-snug" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{sentence.chinese}</p>
+      </button>
+    );
   };
 
   const speakZH = (text: string, playingKey?: string) => {
@@ -861,7 +946,7 @@ export default function FunChineseInteractiveEbook() {
         )}
 
         {/* --- MAIN DOUBLE-PAGE TEXTBOOK SPREAD --- */}
-        <main className={`flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-5 relative overflow-hidden bg-orange-100/10 rounded-2xl p-3 border border-orange-100/30 transition-all duration-300 ${isFocusMode ? 'mt-0' : 'mt-3'}`}>
+        <main className={`textbook-spread flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-5 relative overflow-hidden bg-orange-100/10 rounded-2xl p-3 border border-orange-100/30 transition-all duration-300 ${isFocusMode ? 'mt-0' : 'mt-3'}`}>
           
           {/* Ring binder division effect in landscape mode to resemble physical workbook */}
           <div className="hidden lg:flex absolute left-1/2 top-4 bottom-4 w-1 bg-amber-800/10 -translate-x-1/2 z-20 flex-col justify-around py-6 pointer-events-none">
@@ -873,168 +958,129 @@ export default function FunChineseInteractiveEbook() {
           {/* =========================================
               LEFT PAGE: TEXTBOOK CORES / READING SPREADS
               ========================================= */}
-          <section className="rounded-2xl flex flex-col p-4 relative transition-all duration-300 shadow-sm bg-[#FDFDFB] border border-orange-100/60 text-slate-800 md:mr-1">
+          <section className="textbook-left-page-shell rounded-2xl flex flex-col p-4 relative transition-all duration-300 shadow-sm bg-[#FDFDFB] border border-orange-100/60 text-slate-800 md:mr-1">
 
-            <div className={`flex-1 flex flex-col justify-between py-1 overflow-y-auto min-h-0 ${isFocusMode ? 'pb-9' : ''}`}>
-              {/* Lesson topic strip — compact */}
-              <div className="px-3 py-2 flex items-center gap-2.5 bg-amber-50/75 border border-amber-100 rounded-xl relative overflow-hidden">
-                <div className="text-3xl filter drop-shadow select-none shrink-0 leading-none">{currentLesson.textbookLeft.illustration}</div>
-                <div className="min-w-0 flex-1 text-left">
-                  <p className="text-[10px] uppercase font-extrabold tracking-wider text-orange-600">
-                    Lesson {currentLesson.id}
-                  </p>
-                  <p className="font-extrabold text-slate-800 text-sm tracking-tight leading-tight mt-0.5" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
-                    {currentLesson.title}
-                    <span className="text-xs font-normal text-slate-500 italic ml-1" style={{ fontFamily: '"Google Sans", sans-serif' }}>
-                      ({currentLesson.englishTitle})
-                    </span>
-                  </p>
-                  <p className="text-[10px] text-amber-800 font-semibold mt-0.5 truncate" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>
-                    {showPinyin ? currentLesson.pinyin : '\u00A0'}
-                  </p>
+            <div className={`textbook-left-content flex-1 flex flex-col min-h-0 overflow-hidden py-1 ${isFocusMode ? 'pb-9' : ''}`}>
+              {/* Textbook left page — lesson header + scene */}
+              <div className="textbook-left-header relative mb-2 shrink-0">
+                <div className="textbook-wave-band flex items-end gap-3 pr-[58px] min-h-[72px]">
+                  <div className="textbook-lesson-badge shrink-0">{currentLesson.id}</div>
+                  <div className="min-w-0 pb-2">
+                    <h2 className="textbook-lesson-title" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
+                      {currentLesson.title}
+                    </h2>
+                    {showPinyin && (
+                      <p className="text-[11px] text-sky-800/80 font-semibold mt-0.5" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>
+                        {currentLesson.pinyin}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <button
                   type="button"
                   id="btn-video-guide"
                   onClick={() => { setIsVideoOpen(true); setVideoScene(0); }}
-                  className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-2.5 py-1.5 min-w-[52px] min-h-[52px] rounded-xl bg-orange-100 hover:bg-orange-200 border border-orange-200/70 text-orange-700 transition-colors cursor-pointer"
+                  className="absolute top-1 right-0 shrink-0 flex flex-col items-center justify-center gap-0.5 px-2.5 py-1.5 min-w-[52px] min-h-[52px] rounded-xl bg-orange-100 hover:bg-orange-200 border border-orange-200/70 text-orange-700 transition-colors cursor-pointer z-10"
                   title="Intro Video"
                   aria-label="Intro Video"
                 >
                   <Tv className="w-4 h-4" />
                   <span className="text-[9px] font-bold leading-none">Video</span>
                 </button>
+                <div className="textbook-objectives-box absolute top-1 right-[58px] max-w-[48%] hidden sm:block">
+                  <p className="text-[10px] font-extrabold text-sky-800 mb-1">Learning Objectives</p>
+                  <ul className="text-[9px] text-slate-600 space-y-0.5 list-disc pl-3 leading-snug">
+                    {getLessonObjectives(currentLesson).map((obj, i) => (
+                      <li key={i}>{obj}</li>
+                    ))}
+                  </ul>
+                </div>
               </div>
 
-              {/* Instructions banner */}
-              <div className="my-2 bg-[#F9F7F1]/80 px-3 py-1.5 rounded-xl border border-orange-100/30 text-[11px] text-slate-600 flex items-center gap-2">
-                <span className="text-sm">💡</span>
-                {mode === 'read' && (
-                  <p><strong className="text-orange-600">Tap to Read</strong> — Tap any word or sentence to hear pronunciation. Use the right panel to practice speaking.</p>
-                )}
-                {mode === 'repeat' && (
-                  <p><strong className="text-sky-700">Repeat Range</strong> — Tap sentences to build a listening playlist. Use Loop to review before your exam.</p>
-                )}
-                {mode === 'shadow' && (
-                  <p><strong className="text-pink-700">Shadow Reading</strong> — Tap sentences to select, then speak each line on the right. AI scores every line you practice.</p>
-                )}
-                {mode === 'exercise' && (
-                  <p>当前处于<strong className="text-emerald-700">互动练习</strong>：点击右半面卡片标签，完成连线、填空、笔画等丰富测试。</p>
-                )}
+              {/* Mode hint — compact */}
+              {mode !== 'read' && (
+                <div className="mb-2 px-2.5 py-1.5 rounded-xl bg-[#F9F7F1]/90 border border-orange-100/40 text-[10px] text-slate-600 shrink-0">
+                  {mode === 'repeat' && (
+                    <p><strong className="text-sky-700">Repeat Range</strong> — Tap speech bubbles to build your listening playlist.</p>
+                  )}
+                  {mode === 'shadow' && (
+                    <p><strong className="text-pink-700">Shadow Reading</strong> — Tap bubbles to select lines for speaking practice.</p>
+                  )}
+                  {mode === 'exercise' && (
+                    <p><strong className="text-emerald-700">Practice</strong> — Use the right page for exercises.</p>
+                  )}
+                </div>
+              )}
+
+              {/* Scene illustration with speech bubbles */}
+              <div className="textbook-scene flex-1 min-h-[220px] relative rounded-2xl overflow-hidden border border-sky-100/80 mb-2">
+                <div className="absolute inset-0 textbook-scene-bg" />
+                <div className="relative z-10 h-full flex flex-col p-3">
+                  <div className="textbook-scene-symbol flex items-center justify-center gap-4 py-2 shrink-0">
+                    <span className="text-5xl select-none">{currentLesson.textbookLeft.illustration}</span>
+                  </div>
+                  <div className="textbook-scene-dialogues flex-1 flex flex-col gap-3 justify-center px-1">
+                    {getSceneDialogues(currentLesson).map((scene) => {
+                      const sentence = currentLesson.textbookLeft.sentences.find((s) => s.id === scene.sentenceId);
+                      if (!sentence) return null;
+                      return (
+                        <div key={scene.sentenceId} className={`textbook-character-row flex items-end gap-2 ${scene.align === 'right' ? 'flex-row-reverse' : ''}`}>
+                          <span className="textbook-character-avatar text-3xl select-none shrink-0">{scene.characters}</span>
+                          {renderTextbookBubble(sentence, scene.align)}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
-              {/* Chinese & Pinyin sentence list styled with workbooks lines */}
-              <div className="space-y-3.5 my-2">
-                {currentLesson.textbookLeft.sentences.map((sentence) => {
-                  const isHighlightedRepeatLine = currentRepeatPlayingId === sentence.id;
-                  const isRepeatSelected = selectedRepeatIds.includes(sentence.id);
-                  const repeatSelectionIndex = selectedRepeatIds.indexOf(sentence.id);
-                  const isShadowSelected = selectedShadowIds.includes(sentence.id);
-                  const shadowSelectionIndex = selectedShadowIds.indexOf(sentence.id);
-                  const isActiveReadSentence = mode === 'read' && activeBubble?.sentenceId === sentence.id;
-                  const isSentencePlaying = activePlayingKey === `sentence-${sentence.id}`;
-                  const segments = getSentenceSegments(sentence);
+              {/* Extra sentence bubbles (not in main scene) */}
+              {getExtraSceneSentences(currentLesson).length > 0 && (
+                <div className="space-y-2 mb-2 shrink-0">
+                  {getExtraSceneSentences(currentLesson).map((sentence, idx) =>
+                    renderTextbookBubble(sentence, idx % 2 === 0 ? 'left' : 'right')
+                  )}
+                </div>
+              )}
 
-                  return (
-                    <div
-                      key={sentence.id}
-                      onClick={() => {
-                        if (mode === 'read') {
-                          handleReadSentenceTap(sentence);
-                        } else if (mode === 'repeat') {
-                          toggleRepeatSentence(sentence.id);
-                        } else if (mode === 'shadow') {
-                          toggleShadowSentence(sentence.id);
-                        }
-                      }}
-                      className={`group p-3 rounded-2xl border transition-all relative ${
-                        isHighlightedRepeatLine 
-                          ? 'bg-sky-500/10 border-sky-400 ring-2 ring-sky-300 translate-x-1 shadow-sm' 
-                          : isActiveReadSentence || isSentencePlaying
-                            ? 'bg-orange-50 border-orange-400 ring-2 ring-orange-200 shadow-sm'
-                          : isRepeatSelected
-                            ? 'bg-sky-50 border-sky-300 ring-1 ring-sky-200'
-                          : isShadowSelected
-                            ? 'bg-pink-50 border-pink-300 ring-1 ring-pink-200'
-                            : showReadHighlights && mode === 'read'
-                              ? 'bg-[#FCFAF5]/90 border-orange-100 hover:border-orange-300 hover:bg-[#FDFDFB]' 
-                              : showReadHighlights
-                              ? 'bg-[#FCFAF5]/90 border-orange-100 hover:border-orange-300 hover:bg-[#FDFDFB]' 
-                              : 'bg-transparent border-transparent hover:border-orange-100'
-                      }`}
-                      style={{ cursor: mode === 'read' || mode === 'repeat' || mode === 'shadow' ? 'pointer' : 'default' }}
-                    >
-                      {mode === 'repeat' && isRepeatSelected && (
-                        <span className="absolute -left-2 -top-2 min-w-[20px] h-5 px-1 bg-sky-500 text-white font-extrabold rounded-full flex items-center justify-center text-[10px] shadow-sm">
-                          {repeatSelectionIndex + 1}
-                        </span>
-                      )}
-                      {mode === 'shadow' && isShadowSelected && (
-                        <span className="absolute -left-2 -top-2 min-w-[20px] h-5 px-1 bg-pink-500 text-white font-extrabold rounded-full flex items-center justify-center text-[10px] shadow-sm">
-                          {shadowSelectionIndex + 1}
-                        </span>
-                      )}
-
-                      {/* Character / word tap blocks for point-to-read */}
-                      <div className="flex flex-wrap items-end gap-x-1 gap-y-1 mb-1 leading-normal">
-                        {segments.map((segment, segIdx) => {
-                          const wordKey = `word-${sentence.id}-${segIdx}`;
-                          const isActiveWord = activePlayingKey === wordKey;
-                          const isSpeakable = segment.speakable !== false;
-
-                          if (!isSpeakable) {
-                            return (
-                              <span key={wordKey} className="text-lg font-extrabold text-[#2C2925] px-0.5 select-none" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
-                                {segment.text}
-                              </span>
-                            );
-                          }
-
+              {/* Word-level tap strip — read mode only */}
+              {mode === 'read' && activeBubble && (() => {
+                const activeSent = currentLesson.textbookLeft.sentences.find((s) => s.id === activeBubble.sentenceId);
+                if (!activeSent) return null;
+                const segments = getSentenceSegments(activeSent);
+                return (
+                  <div className="shrink-0 p-2.5 rounded-xl bg-orange-50/80 border border-orange-200/60 mb-2">
+                    <p className="text-[9px] uppercase text-orange-600 font-extrabold mb-1.5">Tap words</p>
+                    <div className="flex flex-wrap items-end gap-x-1 gap-y-1">
+                      {segments.map((segment, segIdx) => {
+                        const wordKey = `word-${activeSent.id}-${segIdx}`;
+                        const isActiveWord = activePlayingKey === wordKey;
+                        if (segment.speakable === false) {
                           return (
-                            <button
-                              key={wordKey}
-                              type="button"
-                              onClick={(e) => mode === 'read' && handleReadWordTap(sentence, segment, segIdx, e)}
-                              disabled={mode !== 'read'}
-                              className={`rounded-lg px-1 py-0.5 transition-all border ${
-                                isActiveWord
-                                  ? 'bg-orange-200 border-orange-400 scale-105 shadow-sm'
-                                  : mode === 'read'
-                                    ? 'bg-transparent border-transparent hover:bg-orange-100/80 hover:border-orange-200 active:scale-95'
-                                    : 'bg-transparent border-transparent'
-                              }`}
-                              style={{ fontFamily: 'KaiTi, STKaiti, serif' }}
-                            >
-                              <ruby className="text-lg font-extrabold text-[#2C2925] tracking-wide">
-                                {segment.text}
-                                {showPinyin && segment.pinyin ? (
-                                  <rt className="text-amber-800 text-[10px] font-semibold font-mono tracking-normal block pt-0.5" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>
-                                    {segment.pinyin}
-                                  </rt>
-                                ) : null}
-                              </ruby>
-                            </button>
+                            <span key={wordKey} className="text-base font-bold px-0.5" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{segment.text}</span>
                           );
-                        })}
-                      </div>
-
-                      {aiAssistEnabled && (
-                        <p className="text-xs text-slate-500 italic font-medium font-serif flex items-center gap-1">
-                          <Sparkles className="w-3 h-3 text-violet-500 shrink-0" />
-                          <span>{sentence.english}</span>
-                        </p>
-                      )}
-                      
-                      {/* Dynamic volume helper icon */}
-                      {mode === 'read' && (
-                        <span className="absolute right-3 bottom-2.5 opacity-0 group-hover:opacity-100 transition-opacity bg-orange-100 p-1 rounded-md text-orange-600 hover:scale-110 shadow-sm border border-orange-200/50">
-                          <Volume2 className="w-3 h-3" />
-                        </span>
-                      )}
+                        }
+                        return (
+                          <button
+                            key={wordKey}
+                            type="button"
+                            onClick={(e) => handleReadWordTap(activeSent, segment, segIdx, e)}
+                            className={`rounded-lg px-1 py-0.5 border transition-all ${isActiveWord ? 'bg-orange-200 border-orange-400' : 'border-transparent hover:bg-orange-100'}`}
+                            style={{ fontFamily: 'KaiTi, STKaiti, serif' }}
+                          >
+                            <ruby className="text-base font-bold">
+                              {segment.text}
+                              {showPinyin && segment.pinyin ? (
+                                <rt className="text-[9px] text-amber-800 block" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>{segment.pinyin}</rt>
+                              ) : null}
+                            </ruby>
+                          </button>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })()}
 
               {/* Repeat Interval Loop controller */}
               {mode === 'repeat' && (
@@ -1115,90 +1161,100 @@ export default function FunChineseInteractiveEbook() {
           {/* =========================================
               RIGHT PAGE: ADAPTIVE INTERACTION MODES
               ========================================= */}
-          <section className="rounded-2xl flex flex-col p-4 bg-[#F8F5EF] border border-[#E9E4D9] shadow-sm text-slate-800 min-h-0 overflow-hidden md:ml-1 relative">
+          <section className="textbook-right-page-shell rounded-2xl flex flex-col p-4 bg-[#FDFDFB] border border-orange-100/60 shadow-sm text-slate-800 min-h-0 overflow-hidden md:ml-1 relative">
             
             <div className={`flex-1 min-h-0 overflow-y-auto ${isFocusMode ? 'pb-9' : ''}`}>
             {mode === 'read' ? (
-              <div className="flex-1 flex flex-col min-h-0">
-                <div className="flex items-center justify-between border-b pb-2 border-orange-100/80 mb-3 select-none">
-                  <h3 className="font-extrabold text-[#2C2925] text-sm flex items-center gap-2">
-                    <span className="p-1 bg-orange-100 text-orange-600 rounded-lg">📖</span>
-                    <span>Tap to Read · Vocabulary</span>
-                  </h3>
+              <div className="flex-1 flex flex-col min-h-0 textbook-right-page">
+                <div className="textbook-right-header shrink-0 select-none">
+                  <span className="textbook-right-header-icon" aria-hidden="true">☁</span>
+                  <span className="textbook-right-header-title" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
+                    {currentLesson.id} {currentLesson.title}
+                  </span>
                 </div>
 
-                <p className="text-[10px] text-slate-500 mb-3 select-none">
-                  Tap a word below to hear it. Tap a sentence on the left to hear the full line.
-                </p>
-
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  {currentLesson.vocabList.map((vocab, vIdx) => (
-                    <button
-                      key={vIdx}
-                      type="button"
-                      onClick={() => speakZH(vocab.chinese, `vocab-${vIdx}`)}
-                      className={`p-2.5 rounded-xl border text-left transition-colors cursor-pointer select-none ${
-                        activePlayingKey === `vocab-${vIdx}`
-                          ? 'bg-orange-100 border-orange-400 ring-2 ring-orange-200'
-                          : 'bg-[#FDFDFB] border-slate-200 hover:bg-orange-50/80 hover:border-orange-200'
-                      }`}
-                    >
-                      <ruby className="font-extrabold text-sm text-[#2C2925]" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
-                        {vocab.chinese}
-                        {showPinyin && (
-                          <rt className="text-[10px] font-mono text-amber-800 block pt-0.5" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>{vocab.pinyin}</rt>
-                        )}
-                      </ruby>
-                      {aiAssistEnabled && (
-                        <span className="text-[10px] block text-slate-500 mt-1 font-medium">{vocab.english}</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-
-                {activeBubble && (() => {
-                  const activeSent = currentLesson.textbookLeft.sentences.find(s => s.id === activeBubble.sentenceId);
-                  if (!activeSent) return null;
-                  return (
-                    <div className="mt-auto bg-[#FAF7F1] rounded-2xl p-4 border border-orange-200 shadow-sm animate-fade-in">
-                      <p className="text-[9px] uppercase text-orange-600 tracking-wider font-extrabold mb-2">Selected line</p>
-                      <p className="text-base font-bold text-slate-800 leading-relaxed" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{activeSent.chinese}</p>
-                      {showPinyin && (
-                        <p className="text-xs text-amber-800 font-mono mt-1" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>{activeSent.pinyin}</p>
-                      )}
-                      {aiAssistEnabled && (
-                        <p className="text-xs text-slate-500 italic mt-1 flex items-center gap-1">
-                          <Sparkles className="w-3 h-3 text-violet-500 shrink-0" />
-                          <span>"{activeSent.english}"</span>
-                        </p>
-                      )}
-                      <div className="flex items-center gap-2 mt-3">
-                        <button
-                          type="button"
-                          onClick={() => speakZH(activeSent.chinese, `sentence-${activeSent.id}`)}
-                          className="p-2.5 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-xl border border-orange-200/40"
-                          aria-label="Play again"
-                        >
-                          <Volume2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openFollowRead(activeSent.chinese, activeSent.pinyin, activeSent.english)}
-                          className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"
-                        >
-                          <Mic className="w-3.5 h-3.5" />
-                          <span>Practice pronunciation</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {!activeBubble && (
-                  <div className="mt-auto text-center py-6 px-3 bg-orange-50/50 rounded-2xl border border-dashed border-orange-200 text-[11px] text-slate-500">
-                    Select a word or sentence on the left to start tap-to-read.
+                <div className="textbook-right-card shrink-0">
+                  <h3 className="textbook-section-title">New Words</h3>
+                  <div className="textbook-vocab-grid">
+                    {currentLesson.vocabList.map((vocab, vIdx) => (
+                      <button
+                        key={vIdx}
+                        type="button"
+                        onClick={() => speakZH(vocab.chinese, `vocab-${vIdx}`)}
+                        className={`textbook-vocab-item ${
+                          activePlayingKey === `vocab-${vIdx}` ? 'textbook-vocab-item-active' : ''
+                        }`}
+                      >
+                        <span className="textbook-vocab-num">{vIdx + 1}.</span>
+                        <span className="min-w-0 flex-1">
+                          {showPinyin && (
+                            <span className="textbook-vocab-pinyin">{vocab.pinyin}</span>
+                          )}
+                          <span className="textbook-vocab-char" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{vocab.chinese}</span>
+                          {aiAssistEnabled && (
+                            <span className="textbook-vocab-en">{vocab.english}</span>
+                          )}
+                        </span>
+                      </button>
+                    ))}
                   </div>
-                )}
+
+                  <div className="textbook-patterns-section">
+                    <h3 className="textbook-section-title shrink-0">Sentence Patterns</h3>
+                    <div className="textbook-pattern-grid">
+                      {currentLesson.textbookLeft.sentences.map((sentence, sIdx) => {
+                        const isActive =
+                          activeBubble?.sentenceId === sentence.id ||
+                          activePlayingKey === `sentence-${sentence.id}`;
+                        return (
+                          <button
+                            key={sentence.id}
+                            type="button"
+                            onClick={() => handleReadSentenceTap(sentence)}
+                            className={`textbook-pattern-item w-full text-left ${isActive ? 'textbook-pattern-item-active' : ''}`}
+                          >
+                            <span className="textbook-pattern-num">{sIdx + 1}.</span>
+                            <span className="min-w-0 flex-1">
+                              {showPinyin && (
+                                <span className="textbook-pattern-pinyin">{sentence.pinyin}</span>
+                              )}
+                              <span className="textbook-pattern-char" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
+                                {sentence.chinese}
+                              </span>
+                              {aiAssistEnabled && (
+                                <span className="textbook-pattern-en">{sentence.english}</span>
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="textbook-listen-practice shrink-0">
+                  <p className="textbook-listen-title">
+                    <span className="textbook-listen-number">1</span>
+                    <span>Listen and write Pinyin.</span>
+                    <span className="text-slate-400 font-medium">听一听，写拼音。</span>
+                  </p>
+                  <div className="textbook-pinyin-table" aria-hidden="true">
+                    {['A', 'B'].map((row) => (
+                      <div className="textbook-pinyin-row" key={row}>
+                        <div className="textbook-pinyin-label">{row}</div>
+                        {[1, 2, 3, 4, 5, 6].map((num) => (
+                          <div className="textbook-pinyin-cell" key={`${row}-${num}`}>
+                            <span>{num}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="shrink-0 mt-auto pt-2 text-[10px] text-slate-500 select-none leading-snug">
+                  Tap to Read — Tap any word or sentence to hear pronunciation. Use the left page for word-level practice.
+                </p>
               </div>
             ) : mode === 'repeat' ? (
               <div className="flex-1 flex flex-col min-h-0">
