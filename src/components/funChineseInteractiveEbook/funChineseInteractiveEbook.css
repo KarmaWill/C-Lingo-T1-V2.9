@@ -8,18 +8,45 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
-/* Custom styles for professional textbook look */
-.tianzige-pattern {
-  background-image: 
-    linear-gradient(to right, rgba(239, 68, 68, 0.15) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(239, 68, 68, 0.15) 1px, transparent 1px);
-  background-size: 50% 50%;
+/* Stroke practice — single centered 田字格 (cross guide, no mí grid) */
+.stroke-guide-square {
+  position: absolute;
+  inset: 14%;
+  border: 1.5px solid rgba(234, 88, 12, 0.22);
+  border-radius: 6px;
+  background: rgba(255, 252, 248, 0.6);
+  pointer-events: none;
 }
 
-.tianzige-diagonal {
-  background-image: 
-    linear-gradient(to top right, transparent 49%, rgba(239, 68, 68, 0.1) 49%, rgba(239, 68, 68, 0.1) 51%, transparent 51%),
-    linear-gradient(to bottom right, transparent 49%, rgba(239, 68, 68, 0.1) 49%, rgba(239, 68, 68, 0.1) 51%, transparent 51%);
+.stroke-guide-square::before,
+.stroke-guide-square::after {
+  content: "";
+  position: absolute;
+  background: rgba(234, 88, 12, 0.14);
+}
+
+.stroke-guide-square::before {
+  left: 50%;
+  top: 6%;
+  bottom: 6%;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+.stroke-guide-square::after {
+  top: 50%;
+  left: 6%;
+  right: 6%;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.stroke-char-ghost {
+  font-family: KaiTi, STKaiti, "AR PL UKai CN", serif;
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+  pointer-events: none;
 }
 
 /* Custom animation effects */

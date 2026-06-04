@@ -386,18 +386,29 @@ export default function FunChineseInteractiveEbook() {
     return lesson.textbookLeft.sentences.filter((s) => !sceneIds.has(s.id));
   };
 
+  const renderTextbookListenChip = (text: string, playingKey: string) => (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        speakZH(text, playingKey);
+      }}
+      className="mt-1 flex items-center gap-1 text-[9px] text-sky-600 font-bold py-0.5 px-1.5 bg-sky-50 rounded-full border border-sky-200 hover:bg-sky-100 transition-colors w-fit"
+    >
+      <Volume2 className="w-2.5 h-2.5" />
+      <span>Listen</span>
+    </button>
+  );
+
   const renderTextbookBubble = (sentence: SentenceItem, align: 'left' | 'right') => {
-    const isHighlightedRepeatLine = currentRepeatPlayingId === sentence.id;
-    const isRepeatSelected = selectedRepeatIds.includes(sentence.id);
-    const repeatSelectionIndex = selectedRepeatIds.indexOf(sentence.id);
     const isShadowSelected = selectedShadowIds.includes(sentence.id);
     const shadowSelectionIndex = selectedShadowIds.indexOf(sentence.id);
-    const isActiveReadSentence = mode === 'read' && activeBubble?.sentenceId === sentence.id;
+    const isActiveReadSentence =
+      (mode === 'read' || mode === 'repeat') && activeBubble?.sentenceId === sentence.id;
     const isSentencePlaying = activePlayingKey === `sentence-${sentence.id}`;
 
     const handleTap = () => {
-      if (mode === 'read') handleReadSentenceTap(sentence);
-      else if (mode === 'repeat') toggleRepeatSentence(sentence.id);
+      if (mode === 'read' || mode === 'repeat') handleReadSentenceTap(sentence);
       else if (mode === 'shadow') toggleShadowSentence(sentence.id);
     };
 
@@ -408,15 +419,10 @@ export default function FunChineseInteractiveEbook() {
         onClick={handleTap}
         disabled={mode === 'exercise'}
         className={`textbook-speech-bubble ${align === 'left' ? 'textbook-speech-bubble-left self-start' : 'textbook-speech-bubble-right self-end'} ${
-          isHighlightedRepeatLine ? 'ring-2 ring-sky-300' :
           isActiveReadSentence || isSentencePlaying ? 'ring-2 ring-orange-300' :
-          isRepeatSelected ? 'ring-2 ring-sky-200' :
           isShadowSelected ? 'ring-2 ring-pink-200' : ''
         }`}
       >
-        {(mode === 'repeat' && isRepeatSelected) && (
-          <span className="absolute -top-2 -left-2 w-5 h-5 bg-sky-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{repeatSelectionIndex + 1}</span>
-        )}
         {(mode === 'shadow' && isShadowSelected) && (
           <span className="absolute -top-2 -left-2 w-5 h-5 bg-pink-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{shadowSelectionIndex + 1}</span>
         )}
@@ -424,6 +430,7 @@ export default function FunChineseInteractiveEbook() {
           <p className="text-[10px] text-sky-700 font-semibold leading-snug mb-0.5" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>{sentence.pinyin}</p>
         )}
         <p className="text-sm font-bold text-slate-800 leading-snug" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{sentence.chinese}</p>
+        {mode === 'repeat' && showReadHighlights && renderTextbookListenChip(sentence.chinese, `bubble-listen-${sentence.id}`)}
       </button>
     );
   };
@@ -821,15 +828,9 @@ export default function FunChineseInteractiveEbook() {
         {/* Top Minimal Brand Header */}
         {!isFocusMode && (
         <div className="flex items-center justify-center text-[10px] text-slate-400 font-medium select-none border-b border-orange-100/60 pb-2 mb-3 gap-3">
-          <div className="flex items-center justify-center gap-1.5 min-w-0">
-            <span className="font-extrabold text-[#2C2925] text-sm tracking-tight shrink-0">
+          <span className="font-extrabold text-[#2C2925] text-lg tracking-tight">
               Happy Chinese
             </span>
-            <span className="text-slate-300 px-0.5 shrink-0">|</span>
-            <span className="text-slate-500 text-xs font-medium truncate">
-              Unit {currentLesson.id}: {currentLesson.pinyin} · {currentLesson.englishTitle}
-            </span>
-          </div>
         </div>
         )}
 
@@ -998,11 +999,8 @@ export default function FunChineseInteractiveEbook() {
               </div>
 
               {/* Mode hint — compact */}
-              {mode !== 'read' && (
+              {mode !== 'read' && mode !== 'repeat' && (
                 <div className="mb-2 px-2.5 py-1.5 rounded-xl bg-[#F9F7F1]/90 border border-orange-100/40 text-[10px] text-slate-600 shrink-0">
-                  {mode === 'repeat' && (
-                    <p><strong className="text-sky-700">Repeat Range</strong> — Tap speech bubbles to build your listening playlist.</p>
-                  )}
                   {mode === 'shadow' && (
                     <p><strong className="text-pink-700">Shadow Reading</strong> — Tap bubbles to select lines for speaking practice.</p>
                   )}
@@ -1043,8 +1041,8 @@ export default function FunChineseInteractiveEbook() {
                 </div>
               )}
 
-              {/* Word-level tap strip — read mode only */}
-              {mode === 'read' && activeBubble && (() => {
+              {/* Word-level tap strip — read & repeat */}
+              {(mode === 'read' || mode === 'repeat') && activeBubble && (() => {
                 const activeSent = currentLesson.textbookLeft.sentences.find((s) => s.id === activeBubble.sentenceId);
                 if (!activeSent) return null;
                 const segments = getSentenceSegments(activeSent);
@@ -1082,51 +1080,6 @@ export default function FunChineseInteractiveEbook() {
                 );
               })()}
 
-              {/* Repeat Interval Loop controller */}
-              {mode === 'repeat' && (
-                <div id="repeat-loop-panel" className="bg-sky-50/70 p-3 rounded-2xl border border-sky-200 flex items-center justify-between mt-3 text-slate-800">
-                  <div className="text-xs min-w-0">
-                    <p className="font-extrabold text-sky-700 flex items-center gap-1">
-                      <span>🔁 Loop Player</span>
-                    </p>
-                    <p className="text-[10px] text-slate-550 mt-0.5 truncate">
-                      {selectedRepeatIds.length === 0
-                        ? 'Select sentences on the left to start'
-                        : `${selectedRepeatIds.length} line${selectedRepeatIds.length > 1 ? 's' : ''} selected · tap again to deselect`}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 select-none shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setIsRepeatPlaying(!isRepeatPlaying)}
-                      disabled={selectedRepeatIds.length === 0}
-                      className={`px-3.5 py-1.5 min-h-[36px] text-xs font-bold rounded-xl flex items-center gap-1 transition-colors ${
-                        selectedRepeatIds.length === 0
-                          ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
-                          : isRepeatPlaying 
-                            ? 'bg-pink-600 hover:bg-pink-500 text-white' 
-                            : 'bg-sky-600 hover:bg-sky-500 text-white shadow-sm'
-                      }`}
-                    >
-                      {isRepeatPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-                      <span>{isRepeatPlaying ? 'Pause' : 'Loop'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedRepeatIds([]);
-                        setIsRepeatPlaying(false);
-                        setCurrentRepeatPlayingId(null);
-                      }}
-                      className="p-1.5 min-h-[36px] min-w-[36px] bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg text-slate-650 flex items-center justify-center"
-                      title="Clear selection"
-                      aria-label="Clear selection"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              )}
             {/* Pagination textbook footer navigation indicators */}
             {!isFocusMode && (
             <div className="mt-3 pt-2.5 border-t border-orange-100/60 flex items-center justify-between select-none">
@@ -1164,7 +1117,7 @@ export default function FunChineseInteractiveEbook() {
           <section className="textbook-right-page-shell rounded-2xl flex flex-col p-4 bg-[#FDFDFB] border border-orange-100/60 shadow-sm text-slate-800 min-h-0 overflow-hidden md:ml-1 relative">
             
             <div className={`flex-1 min-h-0 overflow-y-auto ${isFocusMode ? 'pb-9' : ''}`}>
-            {mode === 'read' ? (
+            {mode === 'read' || mode === 'repeat' ? (
               <div className="flex-1 flex flex-col min-h-0 textbook-right-page">
                 <div className="textbook-right-header shrink-0 select-none">
                   <span className="textbook-right-header-icon" aria-hidden="true">☁</span>
@@ -1194,6 +1147,7 @@ export default function FunChineseInteractiveEbook() {
                           {aiAssistEnabled && (
                             <span className="textbook-vocab-en">{vocab.english}</span>
                           )}
+                          {mode === 'repeat' && showReadHighlights && renderTextbookListenChip(vocab.chinese, `vocab-listen-${vIdx}`)}
                         </span>
                       </button>
                     ))}
@@ -1224,6 +1178,7 @@ export default function FunChineseInteractiveEbook() {
                               {aiAssistEnabled && (
                                 <span className="textbook-pattern-en">{sentence.english}</span>
                               )}
+                              {mode === 'repeat' && showReadHighlights && renderTextbookListenChip(sentence.chinese, `pattern-listen-${sentence.id}`)}
                             </span>
                           </button>
                         );
@@ -1256,52 +1211,67 @@ export default function FunChineseInteractiveEbook() {
                   Tap to Read — Tap any word or sentence to hear pronunciation. Use the left page for word-level practice.
                 </p>
               </div>
-            ) : mode === 'repeat' ? (
+            ) : mode === 'shadow' ? (
               <div className="flex-1 flex flex-col min-h-0">
-                <div className="flex items-center justify-between border-b pb-2 border-orange-100/80 mb-3 select-none shrink-0">
-                  <h3 className="font-extrabold text-[#2C2925] text-sm flex items-center gap-2">
-                    <span className="p-1 bg-sky-100 text-sky-600 rounded-lg">🔁</span>
-                    <span>Review Playlist</span>
-                  </h3>
-                  {selectedRepeatSentences.length > 0 && (
-                    <span className="text-[10px] bg-sky-100 px-2 py-0.5 rounded-full text-sky-700 font-mono font-bold">
-                      {selectedRepeatSentences.length} lines
+                <div className="flex items-center justify-between border-b pb-2 border-orange-100/80 mb-2 select-none shrink-0">
+                  <div className="min-w-0">
+                    <h3 className="font-extrabold text-[#2C2925] text-sm flex items-center gap-2">
+                      <span className="p-1 bg-pink-100 text-pink-600 rounded-lg">🎙️</span>
+                      <span>Sentence Challenge</span>
+                    </h3>
+                    <p className="text-[10px] text-slate-500 mt-0.5 pl-1">Tap a sentence to speak and get scored</p>
+                  </div>
+                  {selectedShadowIds.length > 0 && (
+                    <span className="text-[10px] bg-pink-100 px-2 py-0.5 rounded-full text-pink-700 font-mono font-bold shrink-0">
+                      {selectedShadowIds.length} lines
                     </span>
                   )}
                 </div>
 
-                {selectedRepeatSentences.length === 0 ? (
+                {selectedShadowSentences.length === 0 ? (
                   <div className="flex-1 flex flex-col justify-center text-center px-3 select-none">
                     <p className="text-xs text-slate-500 leading-relaxed mb-4">
-                      Tap sentences on the left to build your listening queue.
-                      Use Loop on the left to repeat them — no speaking required.
+                      Tap sentences on the left to add them to your speaking queue.
+                      Then speak each one and get an instant score.
                     </p>
-                    <div className="bg-sky-50/70 rounded-2xl border border-dashed border-sky-200 p-4 text-[11px] text-slate-400">
+                    <div className="bg-pink-50/70 rounded-2xl border border-dashed border-pink-200 p-4 text-[11px] text-slate-400">
                       No lines selected yet
                     </div>
                   </div>
                 ) : (
                   <>
-                    <p className="text-[10px] text-slate-500 mb-2 select-none shrink-0">
-                      Listen-only review. Tap a line to play, or use Loop on the left page.
-                    </p>
                     <div className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-0.5">
-                      {selectedRepeatSentences.map((sentence, idx) => {
-                        const isLoopPlaying = currentRepeatPlayingId === sentence.id;
-
+                      {selectedShadowSentences.map((sentence, idx) => {
+                        const score = shadowSentenceScores[sentence.id];
                         return (
                           <div
                             key={sentence.id}
                             className={`rounded-2xl border p-3 transition-all ${
-                              isLoopPlaying
-                                ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-200'
-                                : 'bg-[#FDFDFB] border-orange-100'
+                              score != null && score >= 80
+                                ? 'bg-emerald-50/40 border-emerald-200'
+                                : score != null
+                                  ? 'bg-amber-50/50 border-amber-200'
+                                  : 'bg-pink-50/60 border-pink-200'
                             }`}
                           >
-                            <span className="text-[10px] font-extrabold text-sky-600 bg-sky-100 px-1.5 py-0.5 rounded-md">
-                              {idx + 1}
-                            </span>
-                            <p className="text-sm font-bold text-slate-800 leading-relaxed mt-1.5" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-extrabold text-pink-600 bg-pink-100 px-1.5 py-0.5 rounded-md">
+                                  {idx + 1}
+                                </span>
+                                {score == null && (
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase">Not scored</span>
+                                )}
+                              </div>
+                              {score != null && (
+                                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full shrink-0 ${
+                                  score >= 80 ? 'text-emerald-700 bg-emerald-100' : 'text-amber-700 bg-amber-100'
+                                }`}>
+                                  {score}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm font-bold text-slate-800 leading-relaxed" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
                               {sentence.chinese}
                             </p>
                             {showPinyin && (
@@ -1309,186 +1279,62 @@ export default function FunChineseInteractiveEbook() {
                                 {sentence.pinyin}
                               </p>
                             )}
-                            {aiAssistEnabled && (
-                              <p className="text-[10px] text-slate-500 italic mt-0.5 flex items-center gap-1">
-                                <Sparkles className="w-2.5 h-2.5 text-violet-500 shrink-0" />
-                                <span>{sentence.english}</span>
-                              </p>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => speakZH(sentence.chinese, `repeat-${sentence.id}`)}
-                              className="w-full mt-2.5 min-h-[44px] py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 border border-orange-200/50"
-                            >
-                              <Volume2 className="w-3.5 h-3.5" />
-                              <span>Listen</span>
-                            </button>
+                            <p className="text-[10px] text-slate-500 italic mt-0.5">
+                              {sentence.english}
+                            </p>
+                            <div className="flex gap-2 mt-2.5">
+                              <button
+                                type="button"
+                                onClick={() => speakZH(sentence.chinese, `shadow-${sentence.id}`)}
+                                className="flex-1 min-h-[44px] py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 border border-orange-200/50"
+                              >
+                                <Volume2 className="w-3.5 h-3.5" />
+                                <span>Listen</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openFollowRead(sentence.chinese, sentence.pinyin, sentence.english, sentence.id, false)}
+                                className="flex-1 min-h-[44px] py-2 bg-pink-600 hover:bg-pink-500 text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-sm"
+                              >
+                                <Mic className="w-3.5 h-3.5" />
+                                <span>Speak & Score</span>
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
                     </div>
+
+                    <div className="mt-3 pt-2.5 border-t border-orange-100/60 shrink-0 select-none space-y-2">
+                      <div className="flex items-center justify-between text-[10px] text-slate-500">
+                        <span>
+                          Scored{' '}
+                          {selectedShadowSentences.filter((s) => shadowSentenceScores[s.id] != null).length}
+                          /{selectedShadowSentences.length}
+                        </span>
+                        {selectedShadowSentences.some((s) => shadowSentenceScores[s.id] != null) && (
+                          <span className="font-mono font-bold text-emerald-700">
+                            Avg{' '}
+                            {Math.round(
+                              selectedShadowSentences
+                                .filter((s) => shadowSentenceScores[s.id] != null)
+                                .reduce((sum, s) => sum + shadowSentenceScores[s.id], 0) /
+                              Math.max(1, selectedShadowSentences.filter((s) => shadowSentenceScores[s.id] != null).length)
+                            )}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={startShadowTraining}
+                        className="w-full min-h-[48px] py-2.5 bg-pink-600 hover:bg-pink-500 text-white font-extrabold rounded-xl shadow-md flex items-center justify-center gap-2 text-xs"
+                      >
+                        <Mic className="w-4 h-4" />
+                        <span>Start Training ({selectedShadowIds.length} lines)</span>
+                      </button>
+                    </div>
                   </>
                 )}
-              </div>
-            ) : mode === 'shadow' ? (
-              <div className="flex-1 flex flex-col min-h-0">
-                <div className="flex items-center justify-between border-b pb-2 border-orange-100/80 mb-2 select-none shrink-0">
-                  <h3 className="font-extrabold text-[#2C2925] text-sm flex items-center gap-2">
-                    <span className="p-1 bg-pink-100 text-pink-600 rounded-lg">🎙️</span>
-                    <span>Sentence Challenge</span>
-                  </h3>
-                  <span className="text-[10px] bg-pink-100 px-2 py-0.5 rounded-full text-pink-700 font-mono font-bold">
-                    {selectedShadowIds.length > 0 ? `${selectedShadowIds.length} selected` : `${currentLesson.textbookLeft.sentences.length} lines`}
-                  </span>
-                </div>
-
-                <p className="text-[10px] text-slate-500 mb-2 select-none shrink-0">
-                  Select sentences on the left, or practice all lines below. Every line requires AI scoring.
-                </p>
-
-                <div className="flex flex-wrap gap-1.5 mb-2 shrink-0">
-                  {(['all', 'not_scored', 'retry'] as const).map((f) => (
-                    <button
-                      key={f}
-                      type="button"
-                      onClick={() => setShadowFilter(f)}
-                      className={`px-2.5 py-1 min-h-[32px] rounded-lg text-[10px] font-bold border transition-colors ${
-                        shadowFilter === f
-                          ? 'bg-pink-600 text-white border-pink-500'
-                          : 'bg-[#FDFDFB] text-slate-600 border-orange-100 hover:bg-pink-50'
-                      }`}
-                    >
-                      {f === 'all' ? 'All' : f === 'not_scored' ? 'Not scored' : 'Retry (<80)'}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setSelectedShadowIds(currentLesson.textbookLeft.sentences.map((s) => s.id))}
-                    className="px-2.5 py-1 min-h-[32px] rounded-lg text-[10px] font-bold border bg-[#FDFDFB] text-slate-600 border-orange-100 hover:bg-pink-50"
-                  >
-                    Select all
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedShadowIds([])}
-                    className="px-2.5 py-1 min-h-[32px] rounded-lg text-[10px] font-bold border bg-[#FDFDFB] text-slate-600 border-orange-100 hover:bg-pink-50"
-                  >
-                    Clear
-                  </button>
-                </div>
-
-                <div className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-0.5">
-                  {filteredShadowSentences.map((sentence) => {
-                    const score = shadowSentenceScores[sentence.id];
-                    const queueIdx = selectedShadowIds.indexOf(sentence.id);
-                    const isSelected = selectedShadowIds.includes(sentence.id);
-
-                    return (
-                      <div
-                        key={sentence.id}
-                        className={`rounded-2xl border p-3 transition-all ${
-                          score != null && score >= 80
-                            ? 'bg-emerald-50/40 border-emerald-200'
-                            : score != null
-                              ? 'bg-amber-50/50 border-amber-200'
-                              : isSelected
-                                ? 'bg-pink-50/60 border-pink-200'
-                                : 'bg-[#FDFDFB] border-orange-100'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <div className="flex items-center gap-1.5">
-                            {isSelected && (
-                              <span className="text-[10px] font-extrabold text-pink-600 bg-pink-100 px-1.5 py-0.5 rounded-md">
-                                {queueIdx + 1}
-                              </span>
-                            )}
-                            {score == null && (
-                              <span className="text-[9px] font-bold text-slate-400 uppercase">Not scored</span>
-                            )}
-                          </div>
-                          {score != null && (
-                            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full shrink-0 ${
-                              score >= 80 ? 'text-emerald-700 bg-emerald-100' : 'text-amber-700 bg-amber-100'
-                            }`}>
-                              {score}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm font-bold text-slate-800 leading-relaxed" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
-                          {sentence.chinese}
-                        </p>
-                        {showPinyin && (
-                          <p className="text-[10px] text-amber-800 font-mono mt-0.5" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>
-                            {sentence.pinyin}
-                          </p>
-                        )}
-                        {aiAssistEnabled && (
-                          <p className="text-[10px] text-slate-500 italic mt-0.5 flex items-center gap-1">
-                            <Sparkles className="w-2.5 h-2.5 text-violet-500 shrink-0" />
-                            <span>{sentence.english}</span>
-                          </p>
-                        )}
-                        <div className="flex gap-2 mt-2.5">
-                          <button
-                            type="button"
-                            onClick={() => speakZH(sentence.chinese, `shadow-${sentence.id}`)}
-                            className="flex-1 min-h-[44px] py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 border border-orange-200/50"
-                          >
-                            <Volume2 className="w-3.5 h-3.5" />
-                            <span>Listen</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openFollowRead(sentence.chinese, sentence.pinyin, sentence.english, sentence.id, false)}
-                            className="flex-1 min-h-[44px] py-2 bg-pink-600 hover:bg-pink-500 text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-sm"
-                          >
-                            <Mic className="w-3.5 h-3.5" />
-                            <span>Speak & Score</span>
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-3 pt-2.5 border-t border-orange-100/60 shrink-0 select-none space-y-2">
-                  <div className="flex items-center justify-between text-[10px] text-slate-500">
-                    <span>
-                      Scored{' '}
-                      {Object.keys(shadowSentenceScores).filter((id) =>
-                        (selectedShadowIds.length > 0 ? selectedShadowIds : currentLesson.textbookLeft.sentences.map((s) => s.id)).includes(id)
-                      ).length}
-                      /{selectedShadowIds.length > 0 ? selectedShadowIds.length : currentLesson.textbookLeft.sentences.length}
-                    </span>
-                    {Object.keys(shadowSentenceScores).length > 0 && (
-                      <span className="font-mono font-bold text-emerald-700">
-                        Avg{' '}
-                        {Math.round(
-                          (selectedShadowIds.length > 0 ? selectedShadowSentences : currentLesson.textbookLeft.sentences)
-                            .filter((s) => shadowSentenceScores[s.id] != null)
-                            .reduce((sum, s) => sum + shadowSentenceScores[s.id], 0) /
-                            Math.max(
-                              1,
-                              (selectedShadowIds.length > 0 ? selectedShadowSentences : currentLesson.textbookLeft.sentences)
-                                .filter((s) => shadowSentenceScores[s.id] != null).length
-                            )
-                        )}
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={startShadowTraining}
-                    className="w-full min-h-[48px] py-2.5 bg-pink-600 hover:bg-pink-500 text-white font-extrabold rounded-xl shadow-md flex items-center justify-center gap-2 text-xs"
-                  >
-                    <Mic className="w-4 h-4" />
-                    <span>
-                      Start Training
-                      {selectedShadowIds.length > 0 ? ` (${selectedShadowIds.length} lines)` : ' (all lines)'}
-                    </span>
-                  </button>
-                </div>
               </div>
             ) : (
               // Condition B: Render Standard Exercise panels with 5 custom tabs
@@ -1834,37 +1680,19 @@ export default function FunChineseInteractiveEbook() {
                           if (!charObj) return null;
                           return (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1.5">
-                              {/* Left Calligraphy Tianzige red lines sheet */}
-                              <div className="relative bg-[#FDFDFB] rounded-2xl p-4 flex flex-col items-center justify-center border border-red-500/15 overflow-hidden shadow-sm h-36">
-                                
-                                {/* Background Calligraphy grid helper (Tianzige 田字格) */}
-                                <div className="absolute inset-0 m-2 tianzige-pattern tianzige-diagonal rounded border-2 border-dashed border-red-500/10 pointer-events-none" />
+                              {/* Left — 田字格 + 楷体笔顺 */}
+                              <div className="relative bg-[#FFFCF8] rounded-2xl p-4 flex flex-col items-center justify-center border border-orange-200/40 overflow-hidden shadow-sm h-36">
+                                <div className="stroke-guide-square" aria-hidden="true" />
 
-                                <svg viewBox="0 0 100 100" className="w-28 h-28 relative select-none">
-                                  <text
-                                    x="50"
-                                    y="56"
-                                    textAnchor="middle"
-                                    dominantBaseline="middle"
-                                    fill="#E2E8F0"
-                                    style={{ fontFamily: 'KaiTi, STKaiti, serif', fontSize: 68, fontWeight: 700 }}
-                                  >
-                                    {charObj.char}
-                                  </text>
-                                  {/* Render base background character elements in light brush gray */}
-                                  {charObj.strokes.map((path, idx) => (
-                                    <path
-                                      key={`bg-${idx}`}
-                                      d={path}
-                                      fill="none"
-                                      stroke="#E2E8F0"
-                                      strokeWidth="9"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  ))}
+                                <span
+                                  className="stroke-char-ghost absolute text-[5.5rem] text-orange-100/90 z-0"
+                                  aria-hidden="true"
+                                >
+                                  {charObj.char}
+                                </span>
 
-                                  {/* Animated red brush traces over based on step selection */}
+                                <svg viewBox="0 0 100 100" className="w-28 h-28 relative z-10 select-none">
+                                  {/* Animated brush strokes (楷体轮廓由 HTML 层显示) */}
                                   {charObj.strokes.map((path, idx) => {
                                     const isVisible = activeStrokeStep === -1 || idx <= activeStrokeStep;
                                     const isCurrentlyDrawing = activeStrokeStep === idx;
@@ -1980,7 +1808,7 @@ export default function FunChineseInteractiveEbook() {
 
         {/* Minimal functional footer */}
         {!isFocusMode && (
-        <footer className="mt-3 flex items-center justify-between text-xs text-slate-400 border-t border-orange-100/60 pt-3 z-10 select-none gap-2">
+        <footer className="mt-3 flex items-center justify-between text-xs text-slate-400 border-t border-orange-100/60 pt-3 z-10 select-none">
           <div className="flex items-center gap-1.5 text-[10px] font-semibold shrink-0">
             <span>Reading speed:</span>
             <span className="font-extrabold text-orange-700 font-mono px-2 py-0.5 bg-orange-100 rounded-full border border-orange-200/20">{voiceSpeed}x</span>
@@ -1991,7 +1819,7 @@ export default function FunChineseInteractiveEbook() {
             onClick={toggleFocusMode}
             aria-label="Focus reading"
             title="Hide controls for full-page reading"
-            className="flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-full bg-orange-100 hover:bg-orange-200 text-orange-800 border border-orange-200/50 text-[10px] font-bold transition-colors cursor-pointer shrink-0"
+            className="flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-full bg-orange-100 hover:bg-orange-200 text-orange-800 border border-orange-200/50 text-[10px] font-bold transition-colors cursor-pointer"
           >
             <Maximize2 className="w-3.5 h-3.5" />
             <span>Focus</span>
@@ -2465,16 +2293,16 @@ export default function FunChineseInteractiveEbook() {
                 </div>
               </div>
 
-              {/* Setting 3: Multilingual AI assist */}
+              {/* Setting 3: Translation */}
               <div className="my-5 border-t pt-4 border-orange-100 select-none">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <label className="text-[10px] text-slate-400 block font-extrabold uppercase tracking-wider flex items-center gap-1">
                       <Sparkles className="w-3 h-3 text-violet-500" />
-                      <span>Multilingual AI assist</span>
+                      <span>Show translation</span>
                     </label>
                     <p className="text-[10px] text-slate-400 mt-0.5 leading-normal font-medium">
-                      Show AI-powered English translations for sentences and vocabulary.
+                      Show English translations for sentences and vocabulary.
                     </p>
                   </div>
                   <button
@@ -2489,12 +2317,12 @@ export default function FunChineseInteractiveEbook() {
                 </div>
               </div>
 
-              {/* Setting 4: Highlights Switch */}
+              {/* Setting 4: Tap-read marker */}
               <div className="my-5 border-t pt-4 border-orange-100 select-none">
                 <div className="flex items-center justify-between">
                   <div>
                     <label className="text-[10px] text-slate-400 block font-extrabold uppercase tracking-wider">
-                      Sentence highlight markers
+                      Tap-read marker
                     </label>
                     <p className="text-[10px] text-slate-400 mt-0.5 leading-normal font-medium">
                       Show dashed borders on tappable sentences.
