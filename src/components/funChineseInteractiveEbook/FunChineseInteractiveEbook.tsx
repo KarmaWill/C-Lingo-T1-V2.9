@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import './funChineseInteractiveEbook.css';
 import {
   Volume2, Play, Pause, Mic, Settings, Tv,
-  ChevronLeft, ChevronRight, Check, X, RotateCcw,
+  ChevronLeft, ChevronRight, ChevronDown, Check, X, RotateCcw,
   Star, Sliders, Eye, EyeOff, Sparkles, Smile, RefreshCw,
   Link2, ListTodo, CircleHelp, MessageCircle, PenLine,
-  Maximize2, Minimize2, LayoutList,
+  Maximize2, Minimize2, LayoutList, Languages, SquareDashed,
 } from 'lucide-react';
 
 const EXERCISE_TABS = [
@@ -301,6 +301,132 @@ const LESSONS_DATA: Lesson[] = [
   }
 ];
 
+// --- CURRICULUM OUTLINE (lesson picker tree) ---
+type CurriculumItemKind = 'lesson' | 'culture' | 'unit-summary' | 'appendix';
+
+interface CurriculumItem {
+  kind: CurriculumItemKind;
+  lessonNum?: number;
+  label: string;
+  sublabel?: string;
+}
+
+interface CurriculumUnit {
+  id: number;
+  titleZh: string;
+  titleEn: string;
+  items: CurriculumItem[];
+}
+
+const CURRICULUM_UNITS: CurriculumUnit[] = [
+  {
+    id: 1,
+    titleZh: '我和你',
+    titleEn: 'You and I',
+    items: [
+      { kind: 'lesson', lessonNum: 1, label: '你好' },
+      { kind: 'lesson', lessonNum: 2, label: '你叫什么' },
+      { kind: 'lesson', lessonNum: 3, label: '你家在哪儿' },
+      { kind: 'culture', label: 'Chinese Culture' },
+      { kind: 'unit-summary', label: '单元小结', sublabel: 'Unit Review' },
+    ],
+  },
+  {
+    id: 2,
+    titleZh: '我的家',
+    titleEn: 'My Family',
+    items: [
+      { kind: 'lesson', lessonNum: 4, label: '爸爸、妈妈' },
+      { kind: 'lesson', lessonNum: 5, label: '我有一只小猫' },
+      { kind: 'lesson', lessonNum: 6, label: '我家不大' },
+      { kind: 'culture', label: 'Chinese Culture' },
+      { kind: 'unit-summary', label: '单元小结', sublabel: 'Unit Review' },
+    ],
+  },
+  {
+    id: 3,
+    titleZh: '饮食和用餐',
+    titleEn: 'Food and Dining',
+    items: [
+      { kind: 'lesson', lessonNum: 7, label: '喝牛奶，不喝咖啡' },
+      { kind: 'lesson', lessonNum: 8, label: '我要苹果，你呢' },
+      { kind: 'lesson', lessonNum: 9, label: '我喜欢海鲜' },
+      { kind: 'culture', label: 'Chinese Culture' },
+      { kind: 'unit-summary', label: '单元小结', sublabel: 'Unit Review' },
+    ],
+  },
+  {
+    id: 4,
+    titleZh: '学校生活',
+    titleEn: 'School Life',
+    items: [
+      { kind: 'lesson', lessonNum: 10, label: '中文课' },
+      { kind: 'lesson', lessonNum: 11, label: '我们班' },
+      { kind: 'lesson', lessonNum: 12, label: '我去图书馆' },
+      { kind: 'culture', label: 'Chinese Culture' },
+      { kind: 'unit-summary', label: '单元小结', sublabel: 'Unit Review' },
+    ],
+  },
+  {
+    id: 5,
+    titleZh: '时间和天气',
+    titleEn: 'Time and Weather',
+    items: [
+      { kind: 'lesson', lessonNum: 13, label: '现在几点' },
+      { kind: 'lesson', lessonNum: 14, label: '我的生日' },
+      { kind: 'lesson', lessonNum: 15, label: '今天不冷' },
+      { kind: 'culture', label: 'Chinese Culture' },
+      { kind: 'unit-summary', label: '单元小结', sublabel: 'Unit Review' },
+    ],
+  },
+  {
+    id: 6,
+    titleZh: '职业和工作',
+    titleEn: 'Work Life and Professions',
+    items: [
+      { kind: 'lesson', lessonNum: 16, label: '他是医生' },
+      { kind: 'lesson', lessonNum: 17, label: '他在医院工作' },
+      { kind: 'lesson', lessonNum: 18, label: '我想做演员' },
+      { kind: 'culture', label: 'Chinese Culture' },
+      { kind: 'unit-summary', label: '单元小结', sublabel: 'Unit Review' },
+    ],
+  },
+  {
+    id: 7,
+    titleZh: '兴趣和爱好',
+    titleEn: 'Interests and Hobbies',
+    items: [
+      { kind: 'lesson', lessonNum: 19, label: '你的爱好是什么' },
+      { kind: 'lesson', lessonNum: 20, label: '你会打网球吗' },
+      { kind: 'lesson', lessonNum: 21, label: '我天天看电视' },
+      { kind: 'culture', label: 'Chinese Culture' },
+      { kind: 'unit-summary', label: '单元小结', sublabel: 'Unit Review' },
+    ],
+  },
+  {
+    id: 8,
+    titleZh: '交通和旅游',
+    titleEn: 'Transportation and Travel',
+    items: [
+      { kind: 'lesson', lessonNum: 22, label: '这儿是火车站' },
+      { kind: 'lesson', lessonNum: 23, label: '我坐飞机去' },
+      { kind: 'lesson', lessonNum: 24, label: '车站在前边' },
+      { kind: 'culture', label: 'Chinese Culture' },
+      { kind: 'unit-summary', label: '单元小结', sublabel: 'Unit Review' },
+    ],
+  },
+];
+
+const CURRICULUM_APPENDIX: CurriculumItem[] = [
+  { kind: 'appendix', label: '词语表', sublabel: 'Vocabulary' },
+  { kind: 'appendix', label: '书写汉字表', sublabel: 'Written Characters' },
+  { kind: 'appendix', label: '汉字笔顺规则表', sublabel: 'Stroke Order Rules' },
+];
+
+const AVAILABLE_LESSON_IDS = new Set(LESSONS_DATA.map((l) => l.id));
+
+const lessonUnitId = (lessonNum: number) => Math.ceil(lessonNum / 3);
+
 export default function FunChineseInteractiveEbook() {
   const navigate = useNavigate();
   const [currentLessonId, setCurrentLessonId] = useState<number>(1);
@@ -317,10 +443,15 @@ export default function FunChineseInteractiveEbook() {
   const [aiAssistEnabled, setAiAssistEnabled] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showLessonPicker, setShowLessonPicker] = useState<boolean>(false);
+  const [expandedUnits, setExpandedUnits] = useState<Set<number>>(() => new Set([1]));
   const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
   const [voiceSpeed, setVoiceSpeed] = useState<number>(1.0);
 
   const voiceSpeedIndex = Math.max(0, VOICE_SPEED_STEPS.indexOf(voiceSpeed as typeof VOICE_SPEED_STEPS[number]));
+
+  const isTextbookStudyMode = mode === 'read' || mode === 'repeat';
+  const pinyinVisible = isTextbookStudyMode || showPinyin;
+  const tapMarkerVisible = !isTextbookStudyMode && showReadHighlights;
 
   const toggleFocusMode = () => {
     setIsFocusMode((prev) => {
@@ -337,6 +468,21 @@ export default function FunChineseInteractiveEbook() {
     setShowLessonPicker(false);
     setShowSettings(false);
   };
+
+  const toggleUnitExpanded = (unitId: number) => {
+    setExpandedUnits((prev) => {
+      const next = new Set(prev);
+      if (next.has(unitId)) next.delete(unitId);
+      else next.add(unitId);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (!showLessonPicker) return;
+    const activeUnit = lessonUnitId(currentLessonId);
+    setExpandedUnits((prev) => new Set([...prev, activeUnit]));
+  }, [showLessonPicker, currentLessonId]);
 
   // --- POINT-TO-READ (点读 BUBBLE) ---
   const [activeBubble, setActiveBubble] = useState<{ sentenceId: string } | null>(null);
@@ -421,16 +567,16 @@ export default function FunChineseInteractiveEbook() {
         className={`textbook-speech-bubble ${align === 'left' ? 'textbook-speech-bubble-left self-start' : 'textbook-speech-bubble-right self-end'} ${
           isActiveReadSentence || isSentencePlaying ? 'ring-2 ring-orange-300' :
           isShadowSelected ? 'ring-2 ring-pink-200' : ''
-        }`}
+        } ${tapMarkerVisible ? 'border-dashed !border-orange-300' : ''}`}
       >
         {(mode === 'shadow' && isShadowSelected) && (
           <span className="absolute -top-2 -left-2 w-5 h-5 bg-pink-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{shadowSelectionIndex + 1}</span>
         )}
-        {showPinyin && (
+        {pinyinVisible && (
           <p className="text-[10px] text-sky-700 font-semibold leading-snug mb-0.5" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>{sentence.pinyin}</p>
         )}
         <p className="text-sm font-bold text-slate-800 leading-snug" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{sentence.chinese}</p>
-        {mode === 'repeat' && showReadHighlights && renderTextbookListenChip(sentence.chinese, `bubble-listen-${sentence.id}`)}
+        {mode === 'repeat' && renderTextbookListenChip(sentence.chinese, `bubble-listen-${sentence.id}`)}
       </button>
     );
   };
@@ -849,46 +995,46 @@ export default function FunChineseInteractiveEbook() {
           </div>
 
           {/* Core Brand segmented control for learning modes */}
-          <div className="flex items-center bg-orange-100/40 p-1 rounded-2xl border border-orange-200/50">
+          <div className="flex items-center bg-orange-100/40 p-1.5 rounded-2xl border border-orange-200/50">
             <button
               onClick={() => switchMode('read')}
-              className={`py-1.5 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`min-h-[44px] py-2 px-4 rounded-xl text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
                 mode === 'read' ? 'bg-[#FCFAF0] text-amber-700 shadow-sm border border-orange-200/40' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <span>📖</span>
+              <span className="text-base">📖</span>
               <span>Tap to Read</span>
             </button>
             <button
               onClick={() => switchMode('repeat')}
-              className={`py-1.5 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`min-h-[44px] py-2 px-4 rounded-xl text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
                 mode === 'repeat' ? 'bg-[#FCFAF0] text-sky-700 shadow-sm border border-orange-200/40' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <span>🔁</span>
+              <span className="text-base">🔁</span>
               <span>Repeat Range</span>
             </button>
             <button
               onClick={() => switchMode('shadow')}
-              className={`py-1.5 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`min-h-[44px] py-2 px-4 rounded-xl text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
                 mode === 'shadow' ? 'bg-[#FCFAF0] text-pink-700 shadow-sm border border-orange-200/40' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <span>🎙️</span>
+              <span className="text-base">🎙️</span>
               <span>Shadow Reading</span>
             </button>
             <button
               onClick={() => switchMode('exercise')}
-              className={`py-1.5 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`min-h-[44px] py-2 px-4 rounded-xl text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
                 mode === 'exercise' ? 'bg-[#FCFAF0] text-emerald-700 shadow-sm border border-orange-200/40' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <span>📝</span>
+              <span className="text-base">📝</span>
               <span>Practice</span>
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <button
               type="button"
               onClick={() => {
@@ -896,7 +1042,7 @@ export default function FunChineseInteractiveEbook() {
                 setShowSettings(false);
               }}
               id="btn-lesson-picker"
-              className={`p-1.5 border rounded-xl transition-all hover:scale-105 shadow-sm ${
+              className={`min-w-[44px] min-h-[44px] p-2.5 border rounded-xl transition-all hover:scale-105 shadow-sm flex items-center justify-center ${
                 showLessonPicker
                   ? 'bg-orange-100 border-orange-300 text-orange-700'
                   : 'bg-[#FAF8F5] hover:bg-orange-50 border-orange-200/40 text-slate-600'
@@ -904,7 +1050,7 @@ export default function FunChineseInteractiveEbook() {
               title="Lessons"
               aria-label="Lessons"
             >
-              <LayoutList className="w-4.5 h-4.5" />
+              <LayoutList className="w-5 h-5" />
             </button>
 
             <button
@@ -913,10 +1059,11 @@ export default function FunChineseInteractiveEbook() {
                 setShowLessonPicker(false);
               }}
               id="btn-settings-toggle"
-              className="p-1.5 bg-[#FAF8F5] hover:bg-orange-50 border border-orange-200/40 text-slate-600 rounded-xl transition-all hover:scale-105 shadow-sm"
+              className="min-w-[44px] min-h-[44px] p-2.5 bg-[#FAF8F5] hover:bg-orange-50 border border-orange-200/40 text-slate-600 rounded-xl transition-all hover:scale-105 shadow-sm flex items-center justify-center"
               title="Settings"
+              aria-label="Settings"
             >
-              <Settings className="w-4.5 h-4.5" />
+              <Settings className="w-5 h-5" />
             </button>
           </div>
         </header>
@@ -970,7 +1117,7 @@ export default function FunChineseInteractiveEbook() {
                     <h2 className="textbook-lesson-title" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
                       {currentLesson.title}
                     </h2>
-                    {showPinyin && (
+                    {pinyinVisible && (
                       <p className="text-[11px] text-sky-800/80 font-semibold mt-0.5" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>
                         {currentLesson.pinyin}
                       </p>
@@ -1068,7 +1215,7 @@ export default function FunChineseInteractiveEbook() {
                           >
                             <ruby className="text-base font-bold">
                               {segment.text}
-                              {showPinyin && segment.pinyin ? (
+                              {segment.pinyin ? (
                                 <rt className="text-[9px] text-amber-800 block" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>{segment.pinyin}</rt>
                               ) : null}
                             </ruby>
@@ -1140,14 +1287,12 @@ export default function FunChineseInteractiveEbook() {
                       >
                         <span className="textbook-vocab-num">{vIdx + 1}.</span>
                         <span className="min-w-0 flex-1">
-                          {showPinyin && (
-                            <span className="textbook-vocab-pinyin">{vocab.pinyin}</span>
-                          )}
+                          <span className="textbook-vocab-pinyin">{vocab.pinyin}</span>
                           <span className="textbook-vocab-char" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{vocab.chinese}</span>
                           {aiAssistEnabled && (
                             <span className="textbook-vocab-en">{vocab.english}</span>
                           )}
-                          {mode === 'repeat' && showReadHighlights && renderTextbookListenChip(vocab.chinese, `vocab-listen-${vIdx}`)}
+                          {mode === 'repeat' && renderTextbookListenChip(vocab.chinese, `vocab-listen-${vIdx}`)}
                         </span>
                       </button>
                     ))}
@@ -1169,16 +1314,14 @@ export default function FunChineseInteractiveEbook() {
                           >
                             <span className="textbook-pattern-num">{sIdx + 1}.</span>
                             <span className="min-w-0 flex-1">
-                              {showPinyin && (
-                                <span className="textbook-pattern-pinyin">{sentence.pinyin}</span>
-                              )}
+                              <span className="textbook-pattern-pinyin">{sentence.pinyin}</span>
                               <span className="textbook-pattern-char" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
                                 {sentence.chinese}
                               </span>
                               {aiAssistEnabled && (
                                 <span className="textbook-pattern-en">{sentence.english}</span>
                               )}
-                              {mode === 'repeat' && showReadHighlights && renderTextbookListenChip(sentence.chinese, `pattern-listen-${sentence.id}`)}
+                              {mode === 'repeat' && renderTextbookListenChip(sentence.chinese, `pattern-listen-${sentence.id}`)}
                             </span>
                           </button>
                         );
@@ -1279,9 +1422,11 @@ export default function FunChineseInteractiveEbook() {
                                 {sentence.pinyin}
                               </p>
                             )}
-                            <p className="text-[10px] text-slate-500 italic mt-0.5">
-                              {sentence.english}
-                            </p>
+                            {aiAssistEnabled && (
+                              <p className="text-[10px] text-slate-500 italic mt-0.5">
+                                {sentence.english}
+                              </p>
+                            )}
                             <div className="flex gap-2 mt-2.5">
                               <button
                                 type="button"
@@ -1482,7 +1627,9 @@ export default function FunChineseInteractiveEbook() {
                               </span>{" "}
                               ？
                             </div>
-                            <span className="text-xs text-slate-400 font-mono block mt-1.5">nǐ jiào shén me ({currentLesson.fillBlank.pinyin}) ?</span>
+                            <span className="text-xs text-slate-400 font-mono block mt-1.5">
+                              {showPinyin ? `nǐ jiào shén me (${currentLesson.fillBlank.pinyin}) ?` : 'Listen and pick the missing word.'}
+                            </span>
                           </div>
                         </div>
 
@@ -1598,7 +1745,9 @@ export default function FunChineseInteractiveEbook() {
                                 <span className="text-[10px] text-orange-600 block font-extrabold select-none">{chat.name}：</span>
                                 
                                 <p className="text-xs font-extrabold text-slate-800 mt-0.5" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{chat.bubbleText}</p>
-                                <p className="text-[9px] text-slate-400 font-mono font-semibold mt-0.5">{chat.pinyin}</p>
+                                {showPinyin && (
+                                  <p className="text-[9px] text-slate-400 font-mono font-semibold mt-0.5">{chat.pinyin}</p>
+                                )}
 
                                 {/* Action bar for roleplay mic */}
                                 <div className="mt-2 flex items-center justify-between border-t pt-1.5 border-orange-100/50 select-none">
@@ -1808,10 +1957,10 @@ export default function FunChineseInteractiveEbook() {
 
         {/* Minimal functional footer */}
         {!isFocusMode && (
-        <footer className="mt-3 flex items-center justify-between text-xs text-slate-400 border-t border-orange-100/60 pt-3 z-10 select-none">
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold shrink-0">
+        <footer className="mt-3 flex items-center justify-between text-sm text-slate-400 border-t border-orange-100/60 pt-3 z-10 select-none">
+          <div className="flex items-center gap-2 text-xs font-semibold shrink-0">
             <span>Reading speed:</span>
-            <span className="font-extrabold text-orange-700 font-mono px-2 py-0.5 bg-orange-100 rounded-full border border-orange-200/20">{voiceSpeed}x</span>
+            <span className="font-extrabold text-orange-700 font-mono text-sm px-2.5 py-1 bg-orange-100 rounded-full border border-orange-200/20">{voiceSpeed}x</span>
           </div>
 
           <button
@@ -1819,51 +1968,133 @@ export default function FunChineseInteractiveEbook() {
             onClick={toggleFocusMode}
             aria-label="Focus reading"
             title="Hide controls for full-page reading"
-            className="flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-full bg-orange-100 hover:bg-orange-200 text-orange-800 border border-orange-200/50 text-[10px] font-bold transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-full bg-orange-100 hover:bg-orange-200 text-orange-800 border border-orange-200/50 text-xs font-bold transition-colors cursor-pointer"
           >
-            <Maximize2 className="w-3.5 h-3.5" />
+            <Maximize2 className="w-4 h-4" />
             <span>Focus</span>
           </button>
 
-          <span className="text-[10px] text-slate-500 font-mono font-semibold shrink-0">
+          <span className="text-xs text-slate-500 font-mono font-semibold shrink-0">
             Pages {leftPageNum}–{rightPageNum} of {totalPages}
           </span>
         </footer>
         )}
 
-        {/* Lesson picker dropdown — chapter preview */}
+        {/* Lesson picker dropdown — full curriculum outline */}
         {showLessonPicker && !isFocusMode && (
           <div
             id="lesson-picker-panel"
-            className="absolute top-[72px] right-4 w-[280px] bg-[#FDFDFB] border border-orange-200/80 rounded-2xl shadow-2xl p-4 z-40 animate-fade-in"
+            className="absolute top-[88px] right-4 w-[340px] bg-[#FDFDFB] border border-orange-200/80 rounded-2xl shadow-2xl p-4 z-40 animate-fade-in flex flex-col max-h-[min(520px,62vh)]"
           >
-            <div className="flex items-center justify-between border-b border-orange-100 pb-2 mb-2 select-none">
-              <h3 className="font-extrabold text-orange-800 text-xs uppercase tracking-wider">Lessons</h3>
+            <div className="flex items-center justify-between border-b border-orange-100 pb-2.5 mb-3 select-none shrink-0">
+              <h3 className="font-extrabold text-orange-800 text-sm uppercase tracking-wider">Contents</h3>
               <button
                 type="button"
                 onClick={() => setShowLessonPicker(false)}
-                className="p-1 hover:bg-orange-100/50 rounded-lg text-slate-400 hover:text-slate-800"
+                className="min-w-[36px] min-h-[36px] p-1.5 hover:bg-orange-100/50 rounded-lg text-slate-400 hover:text-slate-800 flex items-center justify-center"
                 aria-label="Close"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
-              {LESSONS_DATA.map((lesson) => (
-                <button
-                  key={lesson.id}
-                  type="button"
-                  onClick={() => selectLesson(lesson.id)}
-                  className={`w-full p-2.5 rounded-xl text-xs font-bold text-left border flex justify-between items-center gap-2 cursor-pointer transition-colors ${
-                    currentLessonId === lesson.id
-                      ? 'bg-orange-50 border-orange-300 text-orange-800'
-                      : 'bg-[#FAF8F5] border-orange-100 text-slate-600 hover:bg-[#FAF7F1]'
-                  }`}
-                >
-                  <span>Lesson {lesson.id}: {lesson.englishTitle}</span>
-                  <span className="text-[10px] font-mono text-slate-400 font-semibold shrink-0">{lesson.pinyin}</span>
-                </button>
-              ))}
+
+            <div className="space-y-3 overflow-y-auto pr-1 -mr-1 flex-1 min-h-0">
+              {CURRICULUM_UNITS.map((unit) => {
+                const isExpanded = expandedUnits.has(unit.id);
+                return (
+                <section key={unit.id} className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => toggleUnitExpanded(unit.id)}
+                    aria-expanded={isExpanded}
+                    className="w-full min-h-[44px] text-left text-xs font-extrabold text-orange-900/90 px-2.5 py-2 bg-orange-50/80 rounded-lg border border-orange-100/80 leading-snug hover:bg-orange-100/60 transition-colors cursor-pointer flex items-center gap-2"
+                  >
+                    <ChevronDown
+                      className={`w-4 h-4 shrink-0 text-orange-600/70 transition-transform duration-200 ${isExpanded ? '' : '-rotate-90'}`}
+                      aria-hidden
+                    />
+                    <span className="flex-1 min-w-0">
+                      Unit {unit.id}: {unit.titleZh}
+                      <span className="block text-[10px] font-semibold text-slate-500 mt-0.5">{unit.titleEn}</span>
+                    </span>
+                  </button>
+                  {isExpanded && (
+                  <ul className="space-y-0.5 pl-1 animate-fade-in">
+                    {unit.items.map((item, idx) => {
+                      const isLesson = item.kind === 'lesson';
+                      const lessonId = item.lessonNum;
+                      const isAvailable = isLesson && lessonId != null && AVAILABLE_LESSON_IDS.has(lessonId);
+                      const isActive = isLesson && lessonId === currentLessonId;
+
+                      if (isLesson) {
+                        return (
+                          <li key={`u${unit.id}-l${lessonId}`}>
+                            <button
+                              type="button"
+                              disabled={!isAvailable}
+                              onClick={() => isAvailable && lessonId != null && selectLesson(lessonId)}
+                              className={`w-full min-h-[40px] py-2 px-2.5 rounded-xl text-xs font-bold text-left border flex items-center gap-2 transition-colors ${
+                                isActive
+                                  ? 'bg-orange-50 border-orange-300 text-orange-800'
+                                  : isAvailable
+                                    ? 'bg-[#FAF8F5] border-orange-100/80 text-slate-700 hover:bg-[#FAF7F1] cursor-pointer'
+                                    : 'bg-slate-50/60 border-slate-100 text-slate-400 cursor-not-allowed'
+                              }`}
+                            >
+                              <span className="shrink-0 w-5 text-[10px] font-mono font-extrabold text-orange-600/80">{lessonId}</span>
+                              <span className="flex-1 leading-snug">
+                                <span className="text-[10px] font-semibold text-slate-400 mr-1">第{lessonId}课</span>
+                                {item.label}
+                              </span>
+                              {!isAvailable && (
+                                <span className="text-[9px] font-bold uppercase tracking-wide text-slate-300 shrink-0">Soon</span>
+                              )}
+                            </button>
+                          </li>
+                        );
+                      }
+
+                      const icon = item.kind === 'culture' ? '🏮' : item.kind === 'unit-summary' ? '📋' : '·';
+                      return (
+                        <li key={`u${unit.id}-${item.kind}-${idx}`}>
+                          <div className="min-h-[36px] py-1.5 px-2.5 rounded-xl text-xs font-semibold text-left flex items-center gap-2 text-slate-500 bg-slate-50/40 border border-dashed border-slate-200/60">
+                            <span className="shrink-0 text-sm leading-none">{icon}</span>
+                            <span className="flex-1 leading-snug">
+                              {item.label}
+                              {item.sublabel && (
+                                <span className="block text-[10px] font-medium text-slate-400">{item.sublabel}</span>
+                              )}
+                            </span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  )}
+                </section>
+              );})}
+
+              <section className="space-y-1 pt-1 border-t border-orange-100/80">
+                <h4 className="text-xs font-extrabold text-slate-600 px-2 py-1.5 bg-slate-50 rounded-lg border border-slate-200/60">
+                  附录
+                  <span className="block text-[10px] font-semibold text-slate-400 mt-0.5">Appendix</span>
+                </h4>
+                <ul className="space-y-0.5 pl-1">
+                  {CURRICULUM_APPENDIX.map((item, idx) => (
+                    <li key={`appendix-${idx}`}>
+                      <div className="min-h-[36px] py-1.5 px-2.5 rounded-xl text-xs font-semibold text-left flex items-center gap-2 text-slate-500 bg-slate-50/40 border border-dashed border-slate-200/60">
+                        <span className="shrink-0 text-sm leading-none">📎</span>
+                        <span className="flex-1 leading-snug">
+                          {item.label}
+                          {item.sublabel && (
+                            <span className="block text-[10px] font-medium text-slate-400">{item.sublabel}</span>
+                          )}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             </div>
           </div>
         )}
@@ -1903,7 +2134,7 @@ export default function FunChineseInteractiveEbook() {
               <div className="bg-[#FAF7F1] rounded-2xl p-4 text-center border border-orange-100 my-4 shadow-inner">
                 <ruby className="text-3xl font-extrabold text-slate-800 tracking-widest block py-2 select-none">
                   {followModal.text}
-                  <rt className="text-amber-800 text-xs font-semibold font-mono block pt-1 tracking-tight">{showPinyin ? followModal.pinyin : ''}</rt>
+                  <rt className="text-amber-800 text-xs font-semibold font-mono block pt-1 tracking-tight">{pinyinVisible ? followModal.pinyin : ''}</rt>
                 </ruby>
                 {aiAssistEnabled && (
                   <p className="text-xs text-slate-400 italic mt-1 font-serif">"{followModal.english}"</p>
@@ -2215,26 +2446,27 @@ export default function FunChineseInteractiveEbook() {
         {showSettings && (
           <div id="settings-slide-drawer" className="absolute top-0 bottom-0 right-0 w-80 bg-[#FDFDFB] border-l border-orange-200/80 shadow-2xl p-6 z-50 animate-slide-in text-slate-800 flex flex-col min-h-0">
             <div className="flex items-center justify-between border-b pb-3 border-orange-100 select-none shrink-0">
-              <h3 className="font-extrabold text-orange-800 text-sm flex items-center gap-1.5">
-                <Settings className="w-4.5 h-4.5" />
+              <h3 className="font-extrabold text-orange-800 text-base flex items-center gap-2">
+                <Settings className="w-5 h-5" />
                 <span>Settings</span>
               </h3>
               <button 
                 onClick={() => setShowSettings(false)} 
-                className="p-1 hover:bg-orange-100/50 rounded-lg text-slate-400 hover:text-slate-800 cursor-pointer transition-colors"
+                className="min-w-[44px] min-h-[44px] p-2 hover:bg-orange-100/50 rounded-lg text-slate-400 hover:text-slate-800 cursor-pointer transition-colors flex items-center justify-center"
+                aria-label="Close settings"
               >
-                <X className="w-4.5 h-4.5" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto py-1">
               {/* Setting 1: Voice Speed */}
               <div className="my-5 select-none">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-[10px] text-slate-400 uppercase tracking-wider font-extrabold">
+                <div className="flex items-center justify-between mb-2.5">
+                  <label className="text-xs text-slate-500 uppercase tracking-wider font-extrabold">
                     Speech playback speed
                   </label>
-                  <span className="text-xs font-extrabold text-orange-700 font-mono px-2 py-0.5 bg-orange-100 rounded-full border border-orange-200/30">
+                  <span className="text-sm font-extrabold text-orange-700 font-mono px-2.5 py-1 bg-orange-100 rounded-full border border-orange-200/30">
                     {voiceSpeed}x
                   </span>
                 </div>
@@ -2249,13 +2481,13 @@ export default function FunChineseInteractiveEbook() {
                   className="voice-speed-range w-full"
                   aria-label="Speech playback speed"
                 />
-                <div className="flex justify-between mt-1.5 px-0.5">
+                <div className="flex justify-between mt-2 px-0.5">
                   {VOICE_SPEED_STEPS.map((step) => (
                     <button
                       key={step}
                       type="button"
                       onClick={() => setVoiceSpeed(step)}
-                      className={`min-w-[28px] min-h-[28px] text-[9px] font-bold rounded-lg transition-colors ${
+                      className={`min-w-[36px] min-h-[36px] text-xs font-bold rounded-lg transition-colors ${
                         voiceSpeed === step
                           ? 'text-orange-700 bg-orange-100'
                           : 'text-slate-400 hover:text-slate-600'
@@ -2265,74 +2497,61 @@ export default function FunChineseInteractiveEbook() {
                     </button>
                   ))}
                 </div>
-                <p className="text-[10px] text-slate-400 mt-2 leading-normal font-medium">
-                  Drag the slider or tap a step. Slower speeds help with pinyin.
-                </p>
               </div>
 
               {/* Setting 2: Pinyin */}
-              <div className="my-5 border-t pt-4 border-orange-100 select-none">
+              <div className="my-4 border-t pt-4 border-orange-100 select-none">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <label className="text-[10px] text-slate-400 block font-extrabold uppercase tracking-wider">
-                      Pinyin display
-                    </label>
-                    <p className="text-[10px] text-slate-400 mt-0.5 leading-normal font-medium">
-                      Show pinyin above characters in the textbook and vocabulary.
-                    </p>
-                  </div>
+                  <label className="text-xs text-slate-500 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                    <Languages className="w-4 h-4 text-sky-600" />
+                    <span>Pinyin display</span>
+                  </label>
                   <button
                     type="button"
                     role="switch"
                     aria-checked={showPinyin}
                     onClick={() => setShowPinyin(!showPinyin)}
-                    className={`shrink-0 w-11 h-6 rounded-full flex items-center p-0.5 transition-colors duration-300 ${showPinyin ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'}`}
+                    className={`shrink-0 w-12 h-7 rounded-full flex items-center p-0.5 transition-colors duration-300 ${showPinyin ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'}`}
                   >
-                    <div className="bg-white w-5 h-5 rounded-full shadow" />
+                    <div className="bg-white w-6 h-6 rounded-full shadow" />
                   </button>
                 </div>
               </div>
 
               {/* Setting 3: Translation */}
-              <div className="my-5 border-t pt-4 border-orange-100 select-none">
+              <div className="my-4 border-t pt-4 border-orange-100 select-none">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <label className="text-[10px] text-slate-400 block font-extrabold uppercase tracking-wider flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-violet-500" />
-                      <span>Show translation</span>
-                    </label>
-                    <p className="text-[10px] text-slate-400 mt-0.5 leading-normal font-medium">
-                      Show English translations for sentences and vocabulary.
-                    </p>
-                  </div>
+                  <label className="text-xs text-slate-500 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-violet-500" />
+                    <span>Show translation</span>
+                  </label>
                   <button
                     type="button"
                     role="switch"
                     aria-checked={aiAssistEnabled}
                     onClick={() => setAiAssistEnabled(!aiAssistEnabled)}
-                    className={`shrink-0 w-11 h-6 rounded-full flex items-center p-0.5 transition-colors duration-300 ${aiAssistEnabled ? 'bg-violet-600 justify-end' : 'bg-slate-300 justify-start'}`}
+                    className={`shrink-0 w-12 h-7 rounded-full flex items-center p-0.5 transition-colors duration-300 ${aiAssistEnabled ? 'bg-violet-600 justify-end' : 'bg-slate-300 justify-start'}`}
                   >
-                    <div className="bg-white w-5 h-5 rounded-full shadow" />
+                    <div className="bg-white w-6 h-6 rounded-full shadow" />
                   </button>
                 </div>
               </div>
 
               {/* Setting 4: Tap-read marker */}
-              <div className="my-5 border-t pt-4 border-orange-100 select-none">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-[10px] text-slate-400 block font-extrabold uppercase tracking-wider">
-                      Tap-read marker
-                    </label>
-                    <p className="text-[10px] text-slate-400 mt-0.5 leading-normal font-medium">
-                      Show dashed borders on tappable sentences.
-                    </p>
-                  </div>
+              <div className="my-4 border-t pt-4 border-orange-100 select-none">
+                <div className="flex items-center justify-between gap-3">
+                  <label className="text-xs text-slate-500 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                    <SquareDashed className="w-4 h-4 text-orange-500" />
+                    <span>Tap-read marker</span>
+                  </label>
                   <button
+                    type="button"
+                    role="switch"
+                    aria-checked={showReadHighlights}
                     onClick={() => setShowReadHighlights(!showReadHighlights)}
-                    className={`w-11 h-6 rounded-full flex items-center p-0.5 transition-colors duration-305 ${showReadHighlights ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'}`}
+                    className={`shrink-0 w-12 h-7 rounded-full flex items-center p-0.5 transition-colors duration-300 ${showReadHighlights ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'}`}
                   >
-                    <div className="bg-white w-5 h-5 rounded-full shadow" />
+                    <div className="bg-white w-6 h-6 rounded-full shadow" />
                   </button>
                 </div>
               </div>
@@ -2349,7 +2568,7 @@ export default function FunChineseInteractiveEbook() {
                   switchMode('read');
                   setShowSettings(false);
                 }}
-                className="w-full py-2 bg-slate-100 text-slate-600 border border-slate-200 rounded-xl text-xs hover:bg-slate-200 font-bold"
+                className="w-full min-h-[44px] py-2.5 bg-slate-100 text-slate-600 border border-slate-200 rounded-xl text-sm hover:bg-slate-200 font-bold"
               >
                 Reset to default settings
               </button>
