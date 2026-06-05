@@ -576,7 +576,7 @@ export default function FunChineseInteractiveEbook() {
           <p className="text-[10px] text-sky-700 font-semibold leading-snug mb-0.5" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>{sentence.pinyin}</p>
         )}
         <p className="text-sm font-bold text-slate-800 leading-snug" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{sentence.chinese}</p>
-        {mode === 'repeat' && renderTextbookListenChip(sentence.chinese, `bubble-listen-${sentence.id}`)}
+        {mode === 'repeat' && showReadHighlights && renderTextbookListenChip(sentence.chinese, `bubble-listen-${sentence.id}`)}
       </button>
     );
   };
@@ -1292,7 +1292,7 @@ export default function FunChineseInteractiveEbook() {
                           {aiAssistEnabled && (
                             <span className="textbook-vocab-en">{vocab.english}</span>
                           )}
-                          {mode === 'repeat' && renderTextbookListenChip(vocab.chinese, `vocab-listen-${vIdx}`)}
+                          {mode === 'repeat' && showReadHighlights && renderTextbookListenChip(vocab.chinese, `vocab-listen-${vIdx}`)}
                         </span>
                       </button>
                     ))}
@@ -1321,7 +1321,7 @@ export default function FunChineseInteractiveEbook() {
                               {aiAssistEnabled && (
                                 <span className="textbook-pattern-en">{sentence.english}</span>
                               )}
-                              {mode === 'repeat' && renderTextbookListenChip(sentence.chinese, `pattern-listen-${sentence.id}`)}
+                              {mode === 'repeat' && showReadHighlights && renderTextbookListenChip(sentence.chinese, `pattern-listen-${sentence.id}`)}
                             </span>
                           </button>
                         );
