@@ -8,6 +8,7 @@ export default function FunChineseEbookPageLayout() {
 
   return (
     <Box
+      id="fun-chinese-ebook-shell"
       sx={{
         height: '100%',
         minHeight: 0,
@@ -18,9 +19,13 @@ export default function FunChineseEbookPageLayout() {
         overflow: 'hidden',
         p: is960 ? 1 : 1.5,
         boxSizing: 'border-box',
+        '&[data-focus-mode="true"]': {
+          p: is960 ? 1 : 1.25,
+          bgcolor: '#F6F2E9',
+        },
       }}
     >
-      <Box sx={{ flex: 1, minHeight: 0 }}>
+      <Box sx={{ flex: 1, minHeight: 0, position: 'relative' }}>
         <FunChineseInteractiveEbook />
       </Box>
     </Box>

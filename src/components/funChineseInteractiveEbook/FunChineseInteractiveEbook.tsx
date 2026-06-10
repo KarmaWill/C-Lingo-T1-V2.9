@@ -17,7 +17,7 @@ const EXERCISE_TABS = [
   { id: 'stroke' as const, label: 'Write', Icon: PenLine },
 ];
 
-const VOICE_SPEED_STEPS = [0.75, 1.0, 1.25, 1.5] as const;
+const VOICE_SPEED_STEPS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0] as const;
 
 const formatVoiceSpeedLabel = (speed: number) => (speed === 1 ? 'Normal' : `${speed}x`);
 
@@ -447,13 +447,40 @@ export default function FunChineseInteractiveEbook() {
   const [showLessonPicker, setShowLessonPicker] = useState<boolean>(false);
   const [expandedUnits, setExpandedUnits] = useState<Set<number>>(() => new Set([1]));
   const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
+  const [focusChromeVisible, setFocusChromeVisible] = useState<boolean>(true);
+  const focusChromeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [voiceSpeed, setVoiceSpeed] = useState<number>(1.0);
 
   const voiceSpeedIndex = Math.max(0, VOICE_SPEED_STEPS.indexOf(voiceSpeed as typeof VOICE_SPEED_STEPS[number]));
 
-  const isTextbookStudyMode = mode === 'read' || mode === 'repeat';
-  const pinyinVisible = isTextbookStudyMode || showPinyin;
-  const tapMarkerVisible = !isTextbookStudyMode && showReadHighlights;
+  const revealFocusChrome = () => {
+    setFocusChromeVisible(true);
+    if (focusChromeTimerRef.current) clearTimeout(focusChromeTimerRef.current);
+    focusChromeTimerRef.current = setTimeout(() => setFocusChromeVisible(false), 5000);
+  };
+
+  useEffect(() => {
+    if (!isFocusMode) {
+      setFocusChromeVisible(true);
+      if (focusChromeTimerRef.current) clearTimeout(focusChromeTimerRef.current);
+      return;
+    }
+    revealFocusChrome();
+    return () => {
+      if (focusChromeTimerRef.current) clearTimeout(focusChromeTimerRef.current);
+    };
+  }, [isFocusMode]);
+
+  useEffect(() => {
+    const shell = document.getElementById('fun-chinese-ebook-shell');
+    if (!shell) return;
+    if (isFocusMode) {
+      shell.setAttribute('data-focus-mode', 'true');
+    } else {
+      shell.removeAttribute('data-focus-mode');
+    }
+    return () => shell.removeAttribute('data-focus-mode');
+  }, [isFocusMode]);
 
   const toggleFocusMode = () => {
     setIsFocusMode((prev) => {
@@ -569,14 +596,12 @@ export default function FunChineseInteractiveEbook() {
         className={`textbook-speech-bubble ${align === 'left' ? 'textbook-speech-bubble-left self-start' : 'textbook-speech-bubble-right self-end'} ${
           isActiveReadSentence || isSentencePlaying ? 'ring-2 ring-orange-300' :
           isShadowSelected ? 'ring-2 ring-pink-200' : ''
-        } ${tapMarkerVisible ? 'border-dashed !border-orange-300' : ''}`}
+        }`}
       >
         {(mode === 'shadow' && isShadowSelected) && (
           <span className="absolute -top-2 -left-2 w-5 h-5 bg-pink-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{shadowSelectionIndex + 1}</span>
         )}
-        {pinyinVisible && (
-          <p className="text-[10px] text-sky-700 font-semibold leading-snug mb-0.5" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>{sentence.pinyin}</p>
-        )}
+        <p className="text-[10px] text-sky-700 font-semibold leading-snug mb-0.5" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>{sentence.pinyin}</p>
         <p className="text-sm font-bold text-slate-800 leading-snug" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{sentence.chinese}</p>
         {mode === 'repeat' && showReadHighlights && renderTextbookListenChip(sentence.chinese, `bubble-listen-${sentence.id}`)}
       </button>
@@ -703,6 +728,10 @@ export default function FunChineseInteractiveEbook() {
   };
 
   const filteredShadowSentences = getFilteredShadowSentences();
+
+  const canShadowAll =
+    selectedShadowIds.length > 0 &&
+    (shadowSelectAllEnabled || selectedShadowIds.length >= 2);
 
   const startShadowTraining = () => {
     const queue = selectedShadowIds.length > 0
@@ -980,16 +1009,36 @@ export default function FunChineseInteractiveEbook() {
   }, []);
 
   return (
-    <div className="h-full w-full bg-[#F6F2E9] flex flex-col selection:bg-orange-100 font-sans relative overflow-hidden">
+    <div
+      className={`flex flex-col selection:bg-orange-100 font-sans overflow-hidden ${
+        isFocusMode
+          ? 'absolute inset-0 z-10 bg-[#F6F2E9]'
+          : 'h-full w-full bg-[#F6F2E9] relative'
+      }`}
+    >
       
       {/* Decorative desktop shadows & school leaves backgrounds */}
-      <div className="absolute top-[-100px] left-[-100px] w-96 h-96 rounded-full bg-orange-200/10 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-[-100px] right-[-100px] w-96 h-96 rounded-full bg-emerald-200/10 blur-3xl pointer-events-none" />
+      {!isFocusMode && (
+        <>
+          <div className="absolute top-[-100px] left-[-100px] w-96 h-96 rounded-full bg-orange-200/10 blur-3xl pointer-events-none" />
+          <div className="absolute bottom-[-100px] right-[-100px] w-96 h-96 rounded-full bg-emerald-200/10 blur-3xl pointer-events-none" />
+        </>
+      )}
 
       {/* Main Container - Elegant Bound Notebook sitting on Desk */}
       <div 
         id="book-notebook-body" 
-        className="w-full h-full min-h-0 bg-[#FAF8F5] rounded-2xl p-4 shadow-lg border border-amber-900/10 relative flex flex-col overflow-hidden"
+        className={`w-full h-full min-h-0 bg-[#FAF8F5] relative flex flex-col overflow-hidden ${
+          isFocusMode
+            ? 'p-3 rounded-2xl shadow-none border-0'
+            : 'rounded-2xl p-4 shadow-lg border border-amber-900/10'
+        }`}
+        onClick={(e) => {
+          if (!isFocusMode || focusChromeVisible) return;
+          const target = e.target as HTMLElement;
+          if (target.closest('button, a, input, textarea, [role="switch"], label')) return;
+          revealFocusChrome();
+        }}
       >
         
         {/* --- HEADER CONTROLS & DYNAMIC MODE SELECTOR BAR --- */}
@@ -1081,46 +1130,46 @@ export default function FunChineseInteractiveEbook() {
         </header>
         )}
 
-        {/* Focus mode — minimal floating controls */}
+        {/* Focus mode — back (top), auto-hide after 5s; tap non-interactive area to wake */}
         {isFocusMode && (
-          <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between pointer-events-none">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              aria-label="Back"
-              className="pointer-events-auto shrink-0 w-[52px] h-[52px] rounded-full bg-white/45 backdrop-blur-md text-slate-700/90 border border-white/50 shadow-[0_2px_8px_rgba(15,23,42,0.08)] flex items-center justify-center active:scale-95 hover:bg-white/65 transition-all cursor-pointer"
-            >
-              <ChevronLeft className="w-[30px] h-[30px]" strokeWidth={2.25} />
-            </button>
-            <button
-              type="button"
-              onClick={toggleFocusMode}
-              aria-label="Show controls"
-              title="Show controls"
-              className="pointer-events-auto flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] rounded-full bg-white/45 backdrop-blur-md text-slate-700/90 border border-white/50 shadow-[0_2px_8px_rgba(15,23,42,0.08)] text-xs font-bold active:scale-95 hover:bg-white/65 transition-all cursor-pointer"
-            >
-              <Minimize2 className="w-4 h-4" />
-              <span>Controls</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            aria-label="Back"
+            className={`absolute top-3 left-3 z-30 shrink-0 w-[52px] h-[52px] rounded-full bg-white/45 backdrop-blur-md text-slate-700/90 border border-white/50 shadow-[0_2px_8px_rgba(15,23,42,0.08)] flex items-center justify-center active:scale-95 hover:bg-white/65 transition-all cursor-pointer ${
+              focusChromeVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <ChevronLeft className="w-[30px] h-[30px]" strokeWidth={2.25} />
+          </button>
         )}
 
         {/* --- MAIN DOUBLE-PAGE TEXTBOOK SPREAD --- */}
-        <main className={`textbook-spread flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-5 relative overflow-hidden bg-orange-100/10 rounded-2xl p-3 border border-orange-100/30 transition-all duration-300 ${isFocusMode ? 'mt-0' : 'mt-3'}`}>
+        <main className={`textbook-spread flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 relative overflow-hidden transition-all duration-300 ${
+          isFocusMode
+            ? 'textbook-spread-focus mt-0 gap-2 p-2 rounded-xl border border-orange-100/25 bg-[#FFFAF1]'
+            : 'gap-5 mt-3 p-3 rounded-2xl border border-orange-100/30 bg-orange-100/10'
+        }`}>
           
           {/* Ring binder division effect in landscape mode to resemble physical workbook */}
+          {!isFocusMode && (
           <div className="hidden lg:flex absolute left-1/2 top-4 bottom-4 w-1 bg-amber-800/10 -translate-x-1/2 z-20 flex-col justify-around py-6 pointer-events-none">
             {[...Array(9)].map((_, i) => (
               <div key={i} className="w-6 h-4 bg-gradient-to-r from-orange-300 via-amber-400 to-amber-600 rounded-full border border-amber-900/15 -ml-[11px] shadow-[0_1.5px_3px_rgba(0,0,0,0.15)]" />
             ))}
           </div>
+          )}
 
           {/* =========================================
               LEFT PAGE: TEXTBOOK CORES / READING SPREADS
               ========================================= */}
-          <section className="textbook-left-page-shell rounded-2xl flex flex-col p-4 relative transition-all duration-300 shadow-sm bg-[#FDFDFB] border border-orange-100/60 text-slate-800 md:mr-1">
+          <section className={`textbook-left-page-shell flex flex-col relative transition-all duration-300 bg-[#FDFDFB] text-slate-800 ${
+            isFocusMode
+              ? 'p-3 rounded-xl shadow-sm border border-orange-100/50 md:mr-0'
+              : 'rounded-2xl p-4 shadow-sm border border-orange-100/60 md:mr-1'
+          }`}>
 
-            <div className={`textbook-left-content flex-1 flex flex-col min-h-0 overflow-hidden py-1 ${isFocusMode ? 'pb-9' : ''}`}>
+            <div className="textbook-left-content flex-1 flex flex-col min-h-0 overflow-hidden py-1">
               {/* Textbook left page — lesson header + scene */}
               <div className="textbook-left-header relative mb-2 shrink-0">
                 <div className="textbook-wave-band flex items-end gap-3 pr-[58px] min-h-[72px]">
@@ -1129,11 +1178,9 @@ export default function FunChineseInteractiveEbook() {
                     <h2 className="textbook-lesson-title" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
                       {currentLesson.title}
                     </h2>
-                    {pinyinVisible && (
-                      <p className="text-[11px] text-sky-800/80 font-semibold mt-0.5" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>
-                        {currentLesson.pinyin}
-                      </p>
-                    )}
+                    <p className="text-[11px] text-sky-800/80 font-semibold mt-0.5" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>
+                      {currentLesson.pinyin}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -1273,136 +1320,65 @@ export default function FunChineseInteractiveEbook() {
           {/* =========================================
               RIGHT PAGE: ADAPTIVE INTERACTION MODES
               ========================================= */}
-          <section className="textbook-right-page-shell rounded-2xl flex flex-col p-4 bg-[#FDFDFB] border border-orange-100/60 shadow-sm text-slate-800 min-h-0 overflow-hidden md:ml-1 relative">
+          <section className={`textbook-right-page-shell flex flex-col bg-[#FDFDFB] text-slate-800 min-h-0 overflow-hidden relative ${
+            isFocusMode
+              ? 'p-3 rounded-xl border border-orange-100/50 shadow-sm md:ml-0'
+              : 'rounded-2xl p-4 border border-orange-100/60 shadow-sm md:ml-1'
+          }`}>
             
-            <div className={`flex-1 min-h-0 overflow-y-auto ${isFocusMode ? 'pb-9' : ''}`}>
-            {mode === 'read' || mode === 'repeat' ? (
-              <div className="flex-1 flex flex-col min-h-0 textbook-right-page">
-                <div className="textbook-right-header shrink-0 select-none">
-                  <span className="textbook-right-header-icon" aria-hidden="true">☁</span>
-                  <span className="textbook-right-header-title" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
-                    {currentLesson.id} {currentLesson.title}
-                  </span>
-                </div>
-
-                <div className="textbook-right-card shrink-0">
-                  <h3 className="textbook-section-title">New Words</h3>
-                  <div className="textbook-vocab-grid">
-                    {currentLesson.vocabList.map((vocab, vIdx) => (
-                      <button
-                        key={vIdx}
-                        type="button"
-                        onClick={() => speakZH(vocab.chinese, `vocab-${vIdx}`)}
-                        className={`textbook-vocab-item ${
-                          activePlayingKey === `vocab-${vIdx}` ? 'textbook-vocab-item-active' : ''
-                        }`}
-                      >
-                        <span className="textbook-vocab-num">{vIdx + 1}.</span>
-                        <span className="min-w-0 flex-1">
-                          <span className="textbook-vocab-pinyin">{vocab.pinyin}</span>
-                          <span className="textbook-vocab-char" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{vocab.chinese}</span>
-                          {aiAssistEnabled && (
-                            <span className="textbook-vocab-en">{vocab.english}</span>
-                          )}
-                          {mode === 'repeat' && showReadHighlights && renderTextbookListenChip(vocab.chinese, `vocab-listen-${vIdx}`)}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="textbook-patterns-section">
-                    <h3 className="textbook-section-title shrink-0">Sentence Patterns</h3>
-                    <div className="textbook-pattern-grid">
-                      {currentLesson.textbookLeft.sentences.map((sentence, sIdx) => {
-                        const isActive =
-                          activeBubble?.sentenceId === sentence.id ||
-                          activePlayingKey === `sentence-${sentence.id}`;
-                        return (
-                          <button
-                            key={sentence.id}
-                            type="button"
-                            onClick={() => handleReadSentenceTap(sentence)}
-                            className={`textbook-pattern-item w-full text-left ${isActive ? 'textbook-pattern-item-active' : ''}`}
-                          >
-                            <span className="textbook-pattern-num">{sIdx + 1}.</span>
-                            <span className="min-w-0 flex-1">
-                              <span className="textbook-pattern-pinyin">{sentence.pinyin}</span>
-                              <span className="textbook-pattern-char" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
-                                {sentence.chinese}
-                              </span>
-                              {aiAssistEnabled && (
-                                <span className="textbook-pattern-en">{sentence.english}</span>
-                              )}
-                              {mode === 'repeat' && showReadHighlights && renderTextbookListenChip(sentence.chinese, `pattern-listen-${sentence.id}`)}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="textbook-listen-practice shrink-0">
-                  <p className="textbook-listen-title">
-                    <span className="textbook-listen-number">1</span>
-                    <span>Listen and write Pinyin.</span>
-                    <span className="text-slate-400 font-medium">听一听，写拼音。</span>
-                  </p>
-                  <div className="textbook-pinyin-table" aria-hidden="true">
-                    {['A', 'B'].map((row) => (
-                      <div className="textbook-pinyin-row" key={row}>
-                        <div className="textbook-pinyin-label">{row}</div>
-                        {[1, 2, 3, 4, 5, 6].map((num) => (
-                          <div className="textbook-pinyin-cell" key={`${row}-${num}`}>
-                            <span>{num}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <p className="shrink-0 mt-auto pt-2 text-[10px] text-slate-500 select-none leading-snug">
-                  Tap to Read — Tap any word or sentence to hear pronunciation. Use the left page for word-level practice.
-                </p>
-              </div>
-            ) : mode === 'shadow' ? (
-              <div className="flex-1 flex flex-col min-h-0">
+            {mode === 'shadow' ? (
+              <>
                 <div className="flex items-center justify-between border-b pb-2 border-orange-100/80 mb-2 select-none shrink-0">
-                  <h3 className="font-extrabold text-[#2C2925] text-sm flex items-center gap-2">
-                    <span className="p-1 bg-pink-100 text-pink-600 rounded-lg text-xs">🎙️</span>
-                    <span>Shadow Reading</span>
+                  <h3 className="font-extrabold text-[#2C2925] text-sm flex items-center gap-2 min-w-0">
+                    <span className="p-1 bg-pink-100 text-pink-600 rounded-lg text-xs shrink-0">🎙️</span>
+                    <span className="truncate">Shadow Reading</span>
                     {selectedShadowIds.length > 0 && (
-                      <span className="text-[10px] bg-pink-100 px-2 py-0.5 rounded-full text-pink-700 font-mono font-bold">
+                      <span className="text-[10px] bg-pink-100 px-2 py-0.5 rounded-full text-pink-700 font-mono font-bold shrink-0">
                         {selectedShadowIds.length}
                       </span>
                     )}
                   </h3>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={shadowSelectAllEnabled}
-                    onClick={toggleShadowSelectAll}
-                    title="Select all lines on this page"
-                    className={`min-h-[32px] px-2.5 rounded-lg text-[10px] font-bold border transition-colors ${
-                      shadowSelectAllEnabled
-                        ? 'bg-pink-100 border-pink-300 text-pink-700'
-                        : 'bg-[#FAF8F5] border-orange-100 text-slate-500 hover:bg-orange-50'
-                    }`}
-                  >
-                    Select all
-                  </button>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={startShadowTraining}
+                      disabled={!canShadowAll}
+                      title={canShadowAll ? 'Start shadow reading for selected lines' : 'Select 2+ lines, or turn on Select all'}
+                      className={`min-h-[36px] px-2.5 rounded-lg text-[10px] font-bold border transition-colors flex items-center gap-1 ${
+                        canShadowAll
+                          ? 'bg-pink-600 border-pink-500 text-white hover:bg-pink-500'
+                          : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <Mic className="w-3 h-3" />
+                      <span>Shadow All</span>
+                    </button>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={shadowSelectAllEnabled}
+                      onClick={toggleShadowSelectAll}
+                      title="Select all lines on this page"
+                      className={`min-h-[36px] px-2.5 rounded-lg text-[10px] font-bold border transition-colors ${
+                        shadowSelectAllEnabled
+                          ? 'bg-pink-100 border-pink-300 text-pink-700'
+                          : 'bg-[#FAF8F5] border-orange-100 text-slate-500 hover:bg-orange-50'
+                      }`}
+                    >
+                      Select all
+                    </button>
+                  </div>
                 </div>
 
-                {selectedShadowSentences.length === 0 ? (
-                  <div className="flex-1 flex flex-col justify-center items-center px-3 select-none">
-                    <div className="bg-pink-50/70 rounded-2xl border border-dashed border-pink-200 p-6 text-xs text-slate-400 w-full text-center">
-                      Tap lines on the left, or turn on Select all
+                <div className="textbook-right-scroll flex-1 min-h-0 overflow-y-auto">
+                  {selectedShadowSentences.length === 0 ? (
+                    <div className="flex flex-col justify-center items-center px-3 py-8 select-none min-h-[200px]">
+                      <div className="bg-pink-50/70 rounded-2xl border border-dashed border-pink-200 p-6 text-xs text-slate-400 w-full text-center">
+                        Tap lines on the left, or turn on Select all
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-0.5">
+                  ) : (
+                    <div className="space-y-2.5 pr-0.5 pb-2">
                       {selectedShadowSentences.map((sentence, idx) => {
                         const score = shadowSentenceScores[sentence.id];
                         return (
@@ -1468,19 +1444,96 @@ export default function FunChineseInteractiveEbook() {
                         );
                       })}
                     </div>
+                  )}
+                </div>
+              </>
+            ) : (
+            <div className="textbook-right-scroll flex-1 min-h-0 overflow-y-auto">
+            {mode === 'read' || mode === 'repeat' ? (
+              <div className="flex-1 flex flex-col min-h-0 textbook-right-page">
+                <div className="textbook-right-header shrink-0 select-none">
+                  <span className="textbook-right-header-icon" aria-hidden="true">☁</span>
+                  <span className="textbook-right-header-title" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
+                    {currentLesson.id} {currentLesson.title}
+                  </span>
+                </div>
 
-                    <div className="mt-3 pt-2.5 border-t border-orange-100/60 shrink-0 select-none">
+                <div className="textbook-right-card shrink-0">
+                  <h3 className="textbook-section-title">New Words</h3>
+                  <div className="textbook-vocab-grid">
+                    {currentLesson.vocabList.map((vocab, vIdx) => (
                       <button
+                        key={vIdx}
                         type="button"
-                        onClick={startShadowTraining}
-                        className="w-full min-h-[48px] py-2.5 bg-pink-600 hover:bg-pink-500 text-white font-extrabold rounded-xl shadow-md flex items-center justify-center gap-2 text-xs"
+                        onClick={() => speakZH(vocab.chinese, `vocab-${vIdx}`)}
+                        className={`textbook-vocab-item ${
+                          activePlayingKey === `vocab-${vIdx}` ? 'textbook-vocab-item-active' : ''
+                        }`}
                       >
-                        <Mic className="w-4 h-4" />
-                        <span>Start Training</span>
+                        <span className="textbook-vocab-num">{vIdx + 1}.</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="textbook-vocab-pinyin">{vocab.pinyin}</span>
+                          <span className="textbook-vocab-char" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{vocab.chinese}</span>
+                          <span className="textbook-vocab-en">{vocab.english}</span>
+                          {mode === 'repeat' && showReadHighlights && renderTextbookListenChip(vocab.chinese, `vocab-listen-${vIdx}`)}
+                        </span>
                       </button>
+                    ))}
+                  </div>
+
+                  <div className="textbook-patterns-section">
+                    <h3 className="textbook-section-title shrink-0">Sentence Patterns</h3>
+                    <div className="textbook-pattern-grid">
+                      {currentLesson.textbookLeft.sentences.map((sentence, sIdx) => {
+                        const isActive =
+                          activeBubble?.sentenceId === sentence.id ||
+                          activePlayingKey === `sentence-${sentence.id}`;
+                        return (
+                          <button
+                            key={sentence.id}
+                            type="button"
+                            onClick={() => handleReadSentenceTap(sentence)}
+                            className={`textbook-pattern-item w-full text-left ${isActive ? 'textbook-pattern-item-active' : ''}`}
+                          >
+                            <span className="textbook-pattern-num">{sIdx + 1}.</span>
+                            <span className="min-w-0 flex-1">
+                              <span className="textbook-pattern-pinyin">{sentence.pinyin}</span>
+                              <span className="textbook-pattern-char" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
+                                {sentence.chinese}
+                              </span>
+                              <span className="textbook-pattern-en">{sentence.english}</span>
+                              {mode === 'repeat' && showReadHighlights && renderTextbookListenChip(sentence.chinese, `pattern-listen-${sentence.id}`)}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
-                  </>
-                )}
+                  </div>
+                </div>
+
+                <div className="textbook-listen-practice shrink-0">
+                  <p className="textbook-listen-title">
+                    <span className="textbook-listen-number">1</span>
+                    <span>Listen and write Pinyin.</span>
+                    <span className="text-slate-400 font-medium">听一听，写拼音。</span>
+                  </p>
+                  <div className="textbook-pinyin-table" aria-hidden="true">
+                    {['A', 'B'].map((row) => (
+                      <div className="textbook-pinyin-row" key={row}>
+                        <div className="textbook-pinyin-label">{row}</div>
+                        {[1, 2, 3, 4, 5, 6].map((num) => (
+                          <div className="textbook-pinyin-cell" key={`${row}-${num}`}>
+                            <span>{num}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="shrink-0 mt-auto pt-2 text-[10px] text-slate-500 select-none leading-snug">
+                  Tap to Read — Tap any word or sentence to hear pronunciation. Use the left page for word-level practice.
+                </p>
               </div>
             ) : (
               // Condition B: Render Standard Exercise panels with 5 custom tabs
@@ -1603,9 +1656,7 @@ export default function FunChineseInteractiveEbook() {
                       </div>
 
                       <div className="bg-[#FDFDFB] rounded-2xl p-4 border border-orange-100 text-center shadow-sm">
-                        {aiAssistEnabled && (
                           <span className="text-slate-400 italic font-serif text-xs block mb-2">"{currentLesson.fillBlank.english}"</span>
-                        )}
                         <div className="text-lg font-extrabold tracking-wide text-slate-800" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
                           你叫什么{' '}
                           <span className="inline-block min-w-[4rem] px-2 py-0.5 border-b-2 border-dashed border-orange-400 text-orange-700">
@@ -1613,11 +1664,9 @@ export default function FunChineseInteractiveEbook() {
                           </span>
                           ？
                         </div>
-                        {showPinyin && (
                           <span className="text-xs text-slate-400 font-mono block mt-2">
                             nǐ jiào shénme ___ ?
                           </span>
-                        )}
                       </div>
 
                       <div className="mt-3 flex gap-2">
@@ -1727,9 +1776,7 @@ export default function FunChineseInteractiveEbook() {
                                 <span className="text-[10px] text-orange-600 block font-extrabold select-none">{chat.name}：</span>
                                 
                                 <p className="text-xs font-extrabold text-slate-800 mt-0.5" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{chat.bubbleText}</p>
-                                {showPinyin && (
-                                  <p className="text-[9px] text-slate-400 font-mono font-semibold mt-0.5">{chat.pinyin}</p>
-                                )}
+                                <p className="text-[9px] text-slate-400 font-mono font-semibold mt-0.5">{chat.pinyin}</p>
 
                                 {/* Action bar for roleplay mic */}
                                 <div className="mt-2 flex items-center justify-between border-t pt-1.5 border-orange-100/50 select-none">
@@ -1925,6 +1972,7 @@ export default function FunChineseInteractiveEbook() {
             )}
 
             </div>
+            )}
 
             {isFocusMode && (
               <div className="absolute inset-x-4 bottom-3 pt-2 border-t border-orange-100/50 flex items-end justify-end gap-2 pointer-events-none select-none">
@@ -1939,8 +1987,8 @@ export default function FunChineseInteractiveEbook() {
 
         {/* Minimal functional footer */}
         {!isFocusMode && (
-        <footer className="mt-3 flex items-center justify-between text-sm text-slate-400 border-t border-orange-100/60 pt-3 z-10 select-none">
-          <div className="flex items-center gap-2 text-xs font-semibold shrink-0">
+        <footer className="mt-3 grid grid-cols-3 items-center text-sm text-slate-400 border-t border-orange-100/60 pt-3 z-10 select-none">
+          <div className="flex items-center gap-2 text-xs font-semibold justify-self-start">
             <span>Reading speed:</span>
             <span className="font-extrabold text-orange-700 font-mono text-sm px-2.5 py-1 bg-orange-100 rounded-full border border-orange-200/20">{formatVoiceSpeedLabel(voiceSpeed)}</span>
           </div>
@@ -1950,15 +1998,37 @@ export default function FunChineseInteractiveEbook() {
             onClick={toggleFocusMode}
             aria-label="Focus reading"
             title="Hide controls for full-page reading"
-            className="flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-full bg-orange-100 hover:bg-orange-200 text-orange-800 border border-orange-200/50 text-xs font-bold transition-colors cursor-pointer"
+            className="justify-self-center flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-full bg-orange-100 hover:bg-orange-200 text-orange-800 border border-orange-200/50 text-xs font-bold transition-colors cursor-pointer"
           >
             <Maximize2 className="w-4 h-4" />
             <span>Focus</span>
           </button>
 
-          <span className="text-xs text-slate-500 font-mono font-semibold shrink-0">
+          <span className="text-xs text-slate-500 font-mono font-semibold justify-self-end text-right">
             Pages {leftPageNum}–{rightPageNum} of {totalPages}
           </span>
+        </footer>
+        )}
+
+        {/* Focus mode footer — Controls overlay at bottom center, no layout space */}
+        {isFocusMode && (
+        <footer
+          className={`absolute bottom-0 left-0 right-0 grid grid-cols-3 items-center text-sm text-slate-400 border-t border-orange-100/60 pt-3 pb-3 px-4 z-30 select-none transition-opacity duration-300 bg-gradient-to-t from-[#FAF8F5] via-[#FAF8F5]/95 to-transparent ${
+            focusChromeVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+        >
+          <div aria-hidden="true" />
+          <button
+            type="button"
+            onClick={toggleFocusMode}
+            aria-label="Show controls"
+            title="Show controls"
+            className="justify-self-center flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-full bg-orange-100 hover:bg-orange-200 text-orange-800 border border-orange-200/50 text-xs font-bold transition-colors cursor-pointer"
+          >
+            <Minimize2 className="w-4 h-4" />
+            <span>Controls</span>
+          </button>
+          <div aria-hidden="true" />
         </footer>
         )}
 
@@ -2084,170 +2154,195 @@ export default function FunChineseInteractiveEbook() {
 
         {/* 1. AUDIO RECORDING FOLLOW-READ EVAL MODAL (跟读弹窗) */}
         {followModal.isOpen && (
-          <div id="follow-read-modal" className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-fade-in">
-            <div className="bg-[#FDFDFB] border border-orange-200/80 rounded-3xl p-6 max-w-sm w-full shadow-2xl text-left relative mt-4">
-              
-              <button
-                onClick={() => {
-                  if (followRecordState === 'recording') handleStopRecording();
-                  setFollowModal(prev => ({ ...prev, isOpen: false }));
-                }}
-                className="absolute top-4 right-4 bg-orange-100 hover:bg-orange-200 text-orange-700 p-1 rounded-full transition-colors cursor-pointer shadow-sm border border-orange-200/30"
-              >
-                <X className="w-4 h-4" />
-              </button>
+          <div id="follow-read-modal" className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[680px] overflow-hidden flex flex-col md:flex-row min-h-[340px] relative">
 
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xl">🎙️</span>
-                <span className="text-xs font-extrabold text-orange-700 tracking-wide uppercase">
-                  {followModal.shadowSession ? 'Shadow Reading · AI Score' : 'Speak & Score'}
-                </span>
-                {followModal.shadowSession && (
-                  <span className="text-[10px] text-slate-400 font-mono ml-auto">
-                    {shadowSessionIndex + 1}/{shadowSessionQueue.length}
-                  </span>
-                )}
-              </div>
-
-              {/* Character Focus text */}
-              <div className="bg-[#FAF7F1] rounded-2xl p-4 text-center border border-orange-100 my-4 shadow-inner">
-                <ruby className="text-3xl font-extrabold text-slate-800 tracking-widest block py-2 select-none">
-                  {followModal.text}
-                  <rt className="text-amber-800 text-xs font-semibold font-mono block pt-1 tracking-tight">{pinyinVisible ? followModal.pinyin : ''}</rt>
-                </ruby>
-                {aiAssistEnabled && (
-                  <p className="text-xs text-slate-400 italic mt-1 font-serif">"{followModal.english}"</p>
-                )}
-              </div>
-
-              {/* Main recording control center */}
-              <div className="my-5 flex flex-col items-center justify-center min-h-[140px] select-none">
-                
-                {followRecordState === 'idle' && (
-                  <div className="text-center">
-                    <p className="text-xs text-slate-400 mb-4 font-medium">Allow microphone access, then tap to record your pronunciation.</p>
-                    <button
-                      onClick={handleStartRecording}
-                      className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold rounded-2xl flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/10 cursor-pointer text-xs min-h-[48px]"
-                    >
-                      <Mic className="w-4 h-4 animate-pulse text-emerald-100" />
-                      <span>Start Recording</span>
-                    </button>
-                  </div>
-                )}
-
-                {followRecordState === 'recording' && (
-                  <div className="text-center w-full">
-                    <p className="text-xs text-rose-500 font-extrabold animate-pulse mb-3">Recording…</p>
-                    
-                    {/* Animated Volume Audio Waveform */}
-                    <div className="h-12 flex items-center justify-center gap-1 px-4 my-2">
-                      {[...Array(10)].map((_, i) => {
-                        const h = micAmplitude > 0 ? Math.max(8, micAmplitude * (0.2 + Math.random() * 0.8)) : 8;
-                        return (
-                          <div 
-                            key={i} 
-                            style={{ height: `${h}px` }}
-                            className="w-1.5 bg-gradient-to-t from-orange-500 to-amber-400 rounded-full transition-all duration-100 shadow" 
-                          />
-                        );
-                      })}
-                    </div>
-
-                    <p className="text-[10px] text-slate-400 mt-2">Up to 4 seconds, or tap stop when finished.</p>
-                    <button
-                      onClick={handleStopRecording}
-                      className="mt-4 px-4 py-1.5 min-h-[36px] bg-rose-600 hover:bg-rose-500 rounded-xl text-[10px] font-extrabold text-white transition-all cursor-pointer shadow-sm shadow-rose-600/10"
-                    >
-                      Stop & Evaluate
-                    </button>
-                  </div>
-                )}
-
-                {followRecordState === 'evaluating' && (
-                  <div className="text-center">
-                    <div className="inline-block relative">
-                      <div className="w-10 h-10 rounded-full border-4 border-orange-500 border-t-transparent animate-spin" />
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500 absolute inset-0 m-auto animate-bounce" />
-                    </div>
-                    <p className="text-xs text-orange-700 font-extrabold mt-4 animate-pulse">AI analyzing pronunciation…</p>
-                    <p className="text-[9px] text-slate-400 mt-1">Accuracy · Tones · Fluency</p>
-                  </div>
-                )}
-
-                {followRecordState === 'result' && (
-                  <div className="text-center w-full">
-                    
-                    {/* Stars visual reward */}
-                    <div className="flex items-center justify-center gap-1 text-amber-500 my-1">
-                      {[...Array(5)].map((_, i) => {
-                        const filled = i < Math.ceil(evalResultScore / 20);
-                        return <Star key={i} className={`w-6 h-6 fill-current ${filled ? 'text-[#F59E0B] animate-bounce' : 'text-slate-200'}`} style={{ animationDelay: `${i*100}ms` }} />;
-                      })}
-                    </div>
-
-                    <div className="text-xs font-extrabold text-slate-700 mt-1">Score: <span className="text-xl text-emerald-600 font-mono font-extrabold">{evalResultScore}</span></div>
-                    <p className="text-xs text-[#2C2925] font-extrabold mt-1">
-                      {evalResultScore >= 95 ? 'Excellent — native-like clarity!' :
-                       evalResultScore >= 90 ? 'Great job — tones are on point!' : 'Good effort — keep practicing!'}
+              {/* Left — sentence / word display */}
+              <section className="flex-1 bg-[#E8E8E8] p-5 md:p-6 flex items-center gap-3 min-h-[180px] md:min-h-0">
+                <button
+                  type="button"
+                  onClick={() => speakZH(followModal.text)}
+                  className="shrink-0 w-11 h-11 rounded-xl bg-white/80 hover:bg-white border border-slate-200/60 flex items-center justify-center text-slate-600 shadow-sm transition-colors cursor-pointer"
+                  aria-label="Listen"
+                >
+                  <Volume2 className="w-5 h-5" />
+                </button>
+                <div className="flex-1 text-center min-w-0 px-1">
+                  {followModal.pinyin && (
+                    <p className="text-sm text-slate-600 font-semibold mb-1.5 leading-snug" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>
+                      {followModal.pinyin}
                     </p>
+                  )}
+                  <p
+                    className="text-3xl md:text-4xl font-bold text-slate-800 leading-snug break-words"
+                    style={{ fontFamily: 'KaiTi, STKaiti, serif' }}
+                  >
+                    {followModal.text}
+                  </p>
+                  {followModal.english && (
+                    <p className="text-xs text-slate-500 italic mt-2 leading-snug">"{followModal.english}"</p>
+                  )}
+                </div>
+              </section>
 
-                    {/* Speech subdimensions details */}
-                    <div className="grid grid-cols-3 gap-2 bg-[#FAF7F1] p-2.5 rounded-xl border border-orange-100 my-3 text-[9px] font-bold">
-                      <div>
-                        <span className="text-slate-450 block font-normal">Accuracy</span>
-                        <span className="text-emerald-600 font-extrabold font-mono">{evalResultScore - 1}%</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-455 block font-normal">Tones</span>
-                        <span className="text-[#F59E0B] font-extrabold font-mono">{evalResultScore >= 92 ? "95%" : "89%"}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-460 block font-normal">Fluency</span>
-                        <span className="text-orange-600 font-extrabold font-mono">{evalResultScore}%</span>
-                      </div>
-                    </div>
+              {/* Right — record & score */}
+              <section className="flex-1 p-5 md:p-6 flex flex-col bg-[#FAFAFA] border-t md:border-t-0 md:border-l border-slate-200/50 relative min-h-[260px]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (followRecordState === 'recording') handleStopRecording();
+                    setFollowModal((prev) => ({ ...prev, isOpen: false }));
+                  }}
+                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer z-10"
+                  aria-label="Close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
 
-                    {/* Playback simulation */}
-                    <div className="flex gap-2 justify-center mt-4">
-                      <button
-                        onClick={() => {
-                          setIsMyVoicePlaying(true);
-                          speakZH(followModal.text); // TTS simulated replay
-                          setTimeout(() => setIsMyVoicePlaying(false), 2000);
-                        }}
-                        className={`px-4 py-1.5 text-[10px] font-extrabold rounded-lg flex items-center gap-1 transition-colors cursor-pointer ${
-                          isMyVoicePlaying ? 'bg-amber-600 text-white shadow-sm' : 'bg-[#FAF8F5] hover:bg-orange-50 border border-orange-200/30 text-slate-700'
-                        }`}
-                      >
-                        <Volume2 className="w-3 h-3 text-orange-600" />
-                        <span>{isMyVoicePlaying ? 'Playing…' : 'My recording'}</span>
-                      </button>
+                <div className="text-center pt-1 pb-3 shrink-0">
+                  <h3 className="text-sm font-bold text-slate-700">
+                    {followModal.shadowSession ? 'Shadow Reading' : 'Speak & Score'}
+                  </h3>
+                  {followModal.shadowSession && (
+                    <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                      {shadowSessionIndex + 1} / {shadowSessionQueue.length}
+                    </p>
+                  )}
+                </div>
 
-                      <button
-                        onClick={handleStartRecording}
-                        className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-[10px] font-extrabold text-white rounded-lg flex items-center gap-1 cursor-pointer transition-colors shadow-sm shadow-emerald-500/10"
-                      >
-                        <RefreshCw className="w-3 h-3" />
-                        <span>Retry</span>
-                      </button>
-                    </div>
-
-                    {followModal.shadowSession && (
+                <div className="flex-1 flex flex-col items-center justify-center select-none min-h-0">
+                  {followRecordState === 'idle' && (
+                    <div className="text-center">
                       <button
                         type="button"
-                        onClick={advanceShadowSession}
-                        className="w-full mt-3 min-h-[44px] py-2.5 bg-pink-600 hover:bg-pink-500 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-1.5"
+                        onClick={handleStartRecording}
+                        className="w-[72px] h-[72px] rounded-full bg-[#ECECEC] hover:bg-slate-200 border border-slate-200/80 flex flex-col items-center justify-center gap-0.5 mx-auto transition-colors cursor-pointer shadow-sm"
                       >
-                        {shadowSessionIndex + 1 >= shadowSessionQueue.length ? 'View Session Report' : 'Next line ▶'}
+                        <Mic className="w-6 h-6 text-slate-600" />
                       </button>
-                    )}
+                      <p className="text-[11px] text-slate-500 font-semibold mt-3">Tap to record</p>
+                    </div>
+                  )}
 
-                  </div>
-                )}
+                  {followRecordState === 'recording' && (
+                    <div className="text-center w-full px-2">
+                      <p className="text-xs text-rose-500 font-bold animate-pulse mb-3">Recording…</p>
+                      <div className="h-12 flex items-center justify-center gap-1 px-2">
+                        {[...Array(10)].map((_, i) => {
+                          const h = micAmplitude > 0 ? Math.max(8, micAmplitude * (0.2 + Math.random() * 0.8)) : 8;
+                          return (
+                            <div
+                              key={i}
+                              style={{ height: `${h}px` }}
+                              className="w-1.5 bg-gradient-to-t from-orange-500 to-amber-400 rounded-full transition-all duration-100"
+                            />
+                          );
+                        })}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleStopRecording}
+                        className="mt-4 px-5 py-2 min-h-[40px] bg-rose-600 hover:bg-rose-500 rounded-xl text-xs font-bold text-white cursor-pointer"
+                      >
+                        Stop & Score
+                      </button>
+                    </div>
+                  )}
 
-              </div>
+                  {followRecordState === 'evaluating' && (
+                    <div className="text-center">
+                      <div className="inline-block relative">
+                        <div className="w-10 h-10 rounded-full border-4 border-orange-400 border-t-transparent animate-spin" />
+                      </div>
+                      <p className="text-xs text-slate-600 font-semibold mt-4">Analyzing…</p>
+                    </div>
+                  )}
 
+                  {followRecordState === 'result' && (
+                    <div className="w-full flex flex-col items-center">
+                      <div className="flex items-center justify-center gap-0.5 mb-2">
+                        {[...Array(5)].map((_, i) => {
+                          const filled = i < Math.ceil(evalResultScore / 20);
+                          return (
+                            <Star
+                              key={i}
+                              className={`w-5 h-5 ${filled ? 'text-orange-400 fill-orange-400' : 'text-slate-200 fill-slate-200'}`}
+                            />
+                          );
+                        })}
+                      </div>
+
+                      <div className="text-5xl font-extrabold text-slate-800 font-mono leading-none my-1">
+                        {evalResultScore}
+                      </div>
+                      <p className="text-xs text-slate-600 font-medium mb-4 text-center px-2">
+                        {evalResultScore >= 95
+                          ? 'Excellent — native-like clarity!'
+                          : evalResultScore >= 90
+                            ? 'Great job — tones are on point!'
+                            : 'Good effort — keep practicing!'}
+                      </p>
+
+                      <div className="w-full grid grid-cols-3 gap-0 bg-[#ECECEC] rounded-xl py-2.5 px-1 mb-5 text-center">
+                        <div>
+                          <span className="text-[10px] text-slate-500 block">Accuracy</span>
+                          <span className="text-sm font-bold text-slate-800 font-mono">{evalResultScore - 1}%</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-500 block">Tone</span>
+                          <span className="text-sm font-bold text-slate-800 font-mono">
+                            {evalResultScore >= 92 ? 95 : evalResultScore - 1}%
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-500 block">Fluency</span>
+                          <span className="text-sm font-bold text-slate-800 font-mono">{evalResultScore}%</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-center gap-8 mb-4">
+                        <button
+                          type="button"
+                          onClick={handleStartRecording}
+                          className="flex flex-col items-center gap-1.5 cursor-pointer group"
+                        >
+                          <span className="w-14 h-14 rounded-full bg-[#ECECEC] group-hover:bg-slate-200 border border-slate-200/80 flex items-center justify-center transition-colors">
+                            <Mic className="w-5 h-5 text-slate-600" />
+                          </span>
+                          <span className="text-[10px] font-semibold text-slate-600">Rerecord</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsMyVoicePlaying(true);
+                            speakZH(followModal.text);
+                            setTimeout(() => setIsMyVoicePlaying(false), 2000);
+                          }}
+                          className="flex flex-col items-center gap-1.5 cursor-pointer group"
+                        >
+                          <span className={`w-14 h-14 rounded-full border border-slate-200/80 flex items-center justify-center transition-colors ${
+                            isMyVoicePlaying ? 'bg-orange-100' : 'bg-[#ECECEC] group-hover:bg-slate-200'
+                          }`}>
+                            <Play className="w-5 h-5 text-slate-600 ml-0.5" />
+                          </span>
+                          <span className="text-[10px] font-semibold text-slate-600">Play</span>
+                        </button>
+                      </div>
+
+                      {followModal.shadowSession && (
+                        <button
+                          type="button"
+                          onClick={advanceShadowSession}
+                          className="w-full min-h-[44px] py-2.5 bg-[#ECECEC] hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-sm flex items-center justify-center gap-1.5 transition-colors"
+                        >
+                          {shadowSessionIndex + 1 >= shadowSessionQueue.length ? 'View Report' : 'Next line'}
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </section>
             </div>
           </div>
         )}
@@ -2438,86 +2533,65 @@ export default function FunChineseInteractiveEbook() {
               </button>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto py-1">
-              {/* Setting 1: Voice Speed */}
-              <div className="my-5 select-none">
-                <div className="flex items-center justify-between mb-2.5">
-                  <label className="text-xs text-slate-500 uppercase tracking-wider font-extrabold">
-                    Speech playback speed
-                  </label>
-                  <span className="text-sm font-extrabold text-orange-700 font-mono px-2.5 py-1 bg-orange-100 rounded-full border border-orange-200/30">
-                    {formatVoiceSpeedLabel(voiceSpeed)}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={VOICE_SPEED_STEPS.length - 1}
-                  step={1}
-                  value={voiceSpeedIndex}
-                  onChange={(e) => setVoiceSpeed(VOICE_SPEED_STEPS[Number(e.target.value)])}
-                  style={{ '--speed-progress': `${(voiceSpeedIndex / (VOICE_SPEED_STEPS.length - 1)) * 100}%` } as CSSProperties}
-                  className="voice-speed-range w-full"
-                  aria-label="Speech playback speed"
-                />
-                <div className="flex justify-between mt-2 px-0.5">
-                  {VOICE_SPEED_STEPS.map((step) => (
-                    <button
-                      key={step}
-                      type="button"
-                      onClick={() => setVoiceSpeed(step)}
-                      className={`min-w-[36px] min-h-[36px] text-xs font-bold rounded-lg transition-colors ${
-                        voiceSpeed === step
-                          ? 'text-orange-700 bg-orange-100'
-                          : 'text-slate-400 hover:text-slate-600'
-                      }`}
-                    >
-                      {step}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <div className="flex-1 min-h-0 overflow-y-auto py-1 space-y-5">
 
-              {/* Setting 2: Pinyin */}
-              <div className="my-4 border-t pt-4 border-orange-100 select-none">
-                <div className="flex items-center justify-between gap-3">
-                  <label className="text-xs text-slate-500 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
-                    <Languages className="w-4 h-4 text-sky-600" />
-                    <span>Pinyin display</span>
-                  </label>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={showPinyin}
-                    onClick={() => setShowPinyin(!showPinyin)}
-                    className={`shrink-0 w-12 h-7 rounded-full flex items-center p-0.5 transition-colors duration-300 ${showPinyin ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'}`}
-                  >
-                    <div className="bg-white w-6 h-6 rounded-full shadow" />
-                  </button>
+              {/* Tap to Read · Repeat Range · Shadow Reading */}
+              <section className="select-none">
+                <div className="mb-3 px-2.5 py-2 rounded-xl bg-orange-50/80 border border-orange-100/80">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Applies to</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[#FCFAF0] text-amber-700 border border-orange-200/40">📖 Tap to Read</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[#FCFAF0] text-sky-700 border border-orange-200/40">🔁 Repeat Range</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[#FCFAF0] text-pink-700 border border-orange-200/40">🎙️ Shadow Reading</span>
+                  </div>
                 </div>
-              </div>
-
-              {/* Setting 3: Translation */}
-              <div className="my-4 border-t pt-4 border-orange-100 select-none">
-                <div className="flex items-center justify-between gap-3">
-                  <label className="text-xs text-slate-500 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-violet-500" />
-                    <span>Show translation</span>
-                  </label>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={aiAssistEnabled}
-                    onClick={() => setAiAssistEnabled(!aiAssistEnabled)}
-                    className={`shrink-0 w-12 h-7 rounded-full flex items-center p-0.5 transition-colors duration-300 ${aiAssistEnabled ? 'bg-violet-600 justify-end' : 'bg-slate-300 justify-start'}`}
-                  >
-                    <div className="bg-white w-6 h-6 rounded-full shadow" />
-                  </button>
+                <div>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <label className="text-xs text-slate-500 uppercase tracking-wider font-extrabold">
+                      Speech playback speed
+                    </label>
+                    <span className="text-sm font-extrabold text-orange-700 font-mono px-2.5 py-1 bg-orange-100 rounded-full border border-orange-200/30">
+                      {formatVoiceSpeedLabel(voiceSpeed)}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={VOICE_SPEED_STEPS.length - 1}
+                    step={1}
+                    value={voiceSpeedIndex}
+                    onChange={(e) => setVoiceSpeed(VOICE_SPEED_STEPS[Number(e.target.value)])}
+                    style={{ '--speed-progress': `${(voiceSpeedIndex / (VOICE_SPEED_STEPS.length - 1)) * 100}%` } as CSSProperties}
+                    className="voice-speed-range w-full"
+                    aria-label="Speech playback speed"
+                  />
+                  <div className="flex justify-between mt-2 px-0.5">
+                    {VOICE_SPEED_STEPS.map((step) => (
+                      <button
+                        key={step}
+                        type="button"
+                        onClick={() => setVoiceSpeed(step)}
+                        className={`min-w-[36px] min-h-[36px] text-xs font-bold rounded-lg transition-colors ${
+                          voiceSpeed === step
+                            ? 'text-orange-700 bg-orange-100'
+                            : 'text-slate-400 hover:text-slate-600'
+                        }`}
+                      >
+                        {step}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </section>
 
-              {/* Setting 4: Tap-read marker */}
-              <div className="my-4 border-t pt-4 border-orange-100 select-none">
+              {/* Tap to Read */}
+              <section className="select-none border-t border-orange-100 pt-4">
+                <div className="mb-3 px-2.5 py-2 rounded-xl bg-amber-50/70 border border-amber-100/80">
+                  <p className="text-xs font-extrabold text-amber-700 flex items-center gap-1.5">
+                    <span>📖</span>
+                    <span>Tap to Read</span>
+                  </p>
+                </div>
                 <div className="flex items-center justify-between gap-3">
                   <label className="text-xs text-slate-500 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
                     <SquareDashed className="w-4 h-4 text-orange-500" />
@@ -2533,18 +2607,58 @@ export default function FunChineseInteractiveEbook() {
                     <div className="bg-white w-6 h-6 rounded-full shadow" />
                   </button>
                 </div>
-              </div>
+              </section>
+
+              {/* Shadow Reading */}
+              <section className="select-none border-t border-orange-100 pt-4">
+                <div className="mb-3 px-2.5 py-2 rounded-xl bg-pink-50/70 border border-pink-100/80">
+                  <p className="text-xs font-extrabold text-pink-700 flex items-center gap-1.5">
+                    <span>🎙️</span>
+                    <span>Shadow Reading</span>
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="text-xs text-slate-500 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                      <Languages className="w-4 h-4 text-sky-600" />
+                      <span>Pinyin display</span>
+                    </label>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={showPinyin}
+                      onClick={() => setShowPinyin(!showPinyin)}
+                      className={`shrink-0 w-12 h-7 rounded-full flex items-center p-0.5 transition-colors duration-300 ${showPinyin ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'}`}
+                    >
+                      <div className="bg-white w-6 h-6 rounded-full shadow" />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="text-xs text-slate-500 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-violet-500" />
+                      <span>Show translation</span>
+                    </label>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={aiAssistEnabled}
+                      onClick={() => setAiAssistEnabled(!aiAssistEnabled)}
+                      className={`shrink-0 w-12 h-7 rounded-full flex items-center p-0.5 transition-colors duration-300 ${aiAssistEnabled ? 'bg-violet-600 justify-end' : 'bg-slate-300 justify-start'}`}
+                    >
+                      <div className="bg-white w-6 h-6 rounded-full shadow" />
+                    </button>
+                  </div>
+                </div>
+              </section>
             </div>
 
             <div className="pt-4 border-t border-orange-100 select-none shrink-0">
               <button
                 onClick={() => {
                   setVoiceSpeed(1.0);
-                  setShowPinyin(true);
+                  setShowPinyin(false);
                   setAiAssistEnabled(false);
-                  setShowReadHighlights(true);
-                  setCurrentLessonId(1);
-                  switchMode('read');
+                  setShowReadHighlights(false);
                   setShowSettings(false);
                 }}
                 className="w-full min-h-[44px] py-2.5 bg-slate-100 text-slate-600 border border-slate-200 rounded-xl text-sm hover:bg-slate-200 font-bold"
