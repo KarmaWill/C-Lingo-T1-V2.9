@@ -112,16 +112,59 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const bottomNavHeight = is960 ? 96 : (is2000x1200 ? 158 : (is1920x1125 ? 146 : 124))
   const totalTopHeight = (showSystemBar ? systemBarHeight : 0) + (showTopBanner ? topBannerHeight : 0)
 
+  const SHELL_BG = '#000000'
+
+  const shellBrand = (
+    <Box
+      sx={{
+        flexShrink: 0,
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        py: { xs: 1.25, md: 1.75 },
+        px: 2,
+        backgroundColor: SHELL_BG,
+      }}
+    >
+      <Box
+        component="img"
+        src="/branding/clingo-aios-logo.png"
+        alt="C-Lingo AIOS T1"
+        sx={{
+          height: { xs: 28, sm: 34, md: 40 },
+          width: 'auto',
+          maxWidth: 'min(420px, 72vw)',
+          objectFit: 'contain',
+          userSelect: 'none',
+          pointerEvents: 'none',
+          display: 'block',
+        }}
+      />
+    </Box>
+  )
+
   return (
     <Box sx={{ 
       width: '100vw',
       height: '100vh',
-      display: 'flex', 
+      display: 'flex',
+      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#1a1a1a', 
+      backgroundColor: SHELL_BG, 
       overflow: 'hidden'
     }}>
+      <Box
+        sx={{
+          flex: 1,
+          width: '100%',
+          minHeight: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
       {/* 1920x1125: wrapper with scaled size so layout fits viewport and no scroll */}
       {is1920x1125 ? (
         <Box
@@ -227,6 +270,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
       </Box>
       </>
       )}
+      </Box>
+      {shellBrand}
     </Box>
   )
 }
