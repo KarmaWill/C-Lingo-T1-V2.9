@@ -11,6 +11,8 @@ interface MainLayoutProps {
 
 const DESIGN_1920 = 1920
 const DESIGN_1125 = 1125
+/** Bottom logo bar + breathing room (px) — keeps C-Lingo brand visible */
+const SHELL_BRAND_RESERVE = 76
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation()
@@ -21,19 +23,30 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const is2000x1200 = screenSize === '2000x1200'
   const is1920x1125 = screenSize === '1920x1125'
 
-  // Viewport size for 1920x1125 scale-to-fit (see full page on screen)
-  const [viewport, setViewport] = useState({ w: typeof window !== 'undefined' ? window.innerWidth : DESIGN_1920, h: typeof window !== 'undefined' ? window.innerHeight : DESIGN_1125 })
+  // Viewport size for scale-to-fit (iPad + bottom logo)
+  const [viewport, setViewport] = useState({
+    w: typeof window !== 'undefined' ? window.innerWidth : screenWidth,
+    h: typeof window !== 'undefined' ? window.innerHeight : screenHeight,
+  })
   useEffect(() => {
-    if (!is1920x1125) return
     const onResize = () => setViewport({ w: window.innerWidth, h: window.innerHeight })
     onResize()
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
-  }, [is1920x1125])
+  }, [])
 
   const scale1920 = is1920x1125
-    ? Math.min(1, viewport.w / DESIGN_1920, viewport.h / DESIGN_1125)
+    ? Math.min(1, viewport.w / DESIGN_1920, (viewport.h - SHELL_BRAND_RESERVE) / DESIGN_1125)
     : 1
+
+  const breakpointDeviceScale =
+    viewport.w < 600 ? 0.35 : viewport.w < 900 ? 0.6 : viewport.w < 1200 ? 0.85 : 1
+  const fitDeviceScale = Math.min(
+    breakpointDeviceScale,
+    (viewport.h - SHELL_BRAND_RESERVE - 12) / screenHeight,
+    (viewport.w - 24) / screenWidth,
+  )
+  const deviceScale = Math.max(0.28, fitDeviceScale)
   
   const isCameraPage = location.pathname === '/camera'
   const isAIPage = location.pathname === '/ai-chat'
@@ -122,7 +135,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        py: { xs: 1.25, md: 1.75 },
+        py: { xs: 1, md: 1.25 },
         px: 2,
         backgroundColor: SHELL_BG,
       }}
@@ -151,18 +164,31 @@ export default function MainLayout({ children }: MainLayoutProps) {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'flex-start',
       backgroundColor: SHELL_BG, 
       overflow: 'hidden'
     }}>
       <Box
+        id="shell-stage"
         sx={{
           flex: 1,
           width: '100%',
           minHeight: 0,
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
+        }}
+      >
+      <Box
+        sx={{
+          mt: 'auto',
+          mb: 1.5,
+          flexShrink: 0,
+          width: '100%',
+          display: 'flex',
           justifyContent: 'center',
+          alignItems: 'flex-end',
+          maxHeight: `calc(100% - 8px)`,
         }}
       >
       {/* 1920x1125: wrapper with scaled size so layout fits viewport and no scroll */}
@@ -226,6 +252,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
       ) : (
       <>
       {/* iPad/Tablet Container: non-1920x1125（含 2000x1200 原比例） */}
+      <Box
+        sx={{
+          width: screenWidth * deviceScale,
+          height: screenHeight * deviceScale,
+          position: 'relative',
+          flexShrink: 0,
+        }}
+      >
       <Box 
         id="ipad-container"
         sx={{
@@ -234,14 +268,16 @@ export default function MainLayout({ children }: MainLayoutProps) {
           display: 'flex',
           flexDirection: 'column',
           backgroundColor: '#FFF8F0',
-          position: 'relative',
+          position: 'absolute',
+          top: 0,
+          left: 0,
           overflow: 'hidden',
           boxShadow: '0 0 100px rgba(0,0,0,0.5)', 
           borderRadius: is960 ? '18px' : (is2000x1200 ? '28px' : '24px'), 
           border: is960 ? '10px solid #333' : (is2000x1200 ? '14px solid #333' : '12px solid #333'),
           boxSizing: 'border-box',
-          transform: { xs: 'scale(0.35)', sm: 'scale(0.6)', md: 'scale(0.85)', lg: 'scale(1)' },
-          transformOrigin: 'center center'
+          transform: `scale(${deviceScale})`,
+          transformOrigin: 'top left',
         }}>
         {showSystemBar && <SystemStatusBar />}
         {showTopBanner && <TopBanner />}
@@ -268,8 +304,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </Box>
         {showBottomNav && <BottomNavigator />}
       </Box>
+      </Box>
       </>
       )}
+      </Box>
       </Box>
       {shellBrand}
     </Box>
