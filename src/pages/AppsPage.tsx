@@ -61,86 +61,47 @@ export default function AppsPage() {
 
   const cardRadius = is960 ? '18px' : is1920x1125 ? '28px' : '24px';
   const barRadius = is960 ? '12px' : '14px';
-  const tileRadius = is960 ? '14px' : '18px';
-  const tileMinH = is960 ? 62 : 76;
-
-  // 略小于 1 的缩放避免裁切；top center 让缩放后相对主区域水平居中（避免仅靠左上原点导致整体偏左）
-  const SCALE = 1;
+  const tileRadius = is960 ? '16px' : '20px';
+  const tileLabelSize = is960 ? '0.82rem' : '0.96rem';
+  const tileIconBox = is960 ? 34 : 40;
+  const tileIconSize = is960 ? 20 : 24;
+  const tilePadX = is960 ? 1.15 : 1.4;
+  const tilePadY = is960 ? 1.05 : 1.25;
 
   return (
-    <Box sx={{ 
-      height: '100%', 
-      minHeight: 0,
-      overflow: 'hidden', 
-      boxSizing: 'border-box', 
-      bgcolor: is1920x1125 ? '#FBF9F6' : '#FFF8F0',
-      display: 'flex',
-      alignItems: 'flex-start',
-      justifyContent: 'center',
-      width: '100%',
-    }}>
-      <Box sx={{ 
-        width: '100%',
-        maxWidth: '100%',
+    <>
+    <Box
+      sx={{
         height: '100%',
         minHeight: 0,
         overflow: 'hidden',
-        flexShrink: 0,
-        transform: `scale(${SCALE})`,
-        transformOrigin: 'top center',
         boxSizing: 'border-box',
-      }}>
-        <Box sx={{ 
-          height: '100%',
-          minHeight: 0,
-          overflow: 'auto',
-          px: { xs: is960 ? 2 : (is1920x1125 ? 4 : 3), md: is960 ? 2 : 3 },
-          py: is960 ? 1.4 : (is1920x1125 ? 3 : 2),
-          boxSizing: 'border-box', 
-          display: 'flex',
-          flexDirection: 'column',
-        }}>
-          <Box sx={{ 
-            flex: '1 1 0',
-            minHeight: 0,
-            overflow: 'hidden',
-            width: '100%',
-            maxWidth: '100%',
-            px: { xs: is960 ? 1 : (is1920x1125 ? 2 : 1.5), md: is960 ? 1.5 : 2.5 },
-            display: 'flex',
-            flexDirection: 'column',
-          }}>
-            {/* Explore Apps + Settings：左侧铺满，右侧靠右；工具卡片集中在右侧 Settings 内 */}
-            <Box
-              sx={{
-                flex: '1 1 0',
-                minHeight: 0,
-                width: '100%',
-                maxWidth: is960 ? 900 : 940,
-                display: 'flex',
-                flexDirection: { xs: 'column', md: 'row' },
-                gap: is960 ? 1.2 : 1.8,
-                alignItems: 'stretch',
-                justifyContent: { xs: 'stretch', md: 'center' },
-                mx: 'auto',
-              }}
-            >
+        bgcolor: is1920x1125 ? '#FBF9F6' : '#FFF8F0',
+        p: is960 ? 2 : (is1920x1125 ? 4 : 3),
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 2.45fr) minmax(0, 1fr)' },
+        gridTemplateRows: { xs: 'auto auto', md: 'minmax(0, 1fr)' },
+        gap: is960 ? 1.25 : 1.5,
+        alignItems: 'stretch',
+      }}
+    >
               <Box
                 sx={{
-                  flex: { md: '1 1 0' },
                   minWidth: 0,
-                  minHeight: { md: 360 },
+                  minHeight: { xs: 360, md: 0 },
+                  height: { md: '100%' },
                   bgcolor: 'white',
                   borderRadius: cardRadius,
-                  p: is960 ? 1.5 : (is1920x1125 ? 2.5 : 2),
+                  p: is960 ? 1.35 : (is1920x1125 ? 2.25 : 1.85),
                   boxShadow: '0 12px 28px rgba(15,23,42,0.08)',
                   border: '1px solid rgba(0,0,0,0.04)',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: is960 ? 1.15 : 1.45,
+                  gap: is960 ? 0.9 : 1.1,
+                  overflow: 'hidden',
                 }}
               >
-                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1rem' : (is1920x1125 ? '1.4rem' : '1.2rem'), color: '#111827' }}>
+                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.08rem' : (is1920x1125 ? '1.45rem' : '1.28rem'), color: '#111827', flexShrink: 0 }}>
                   Explore Apps
                 </Typography>
 
@@ -159,31 +120,46 @@ export default function AppsPage() {
                     minWidth: 0,
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 1 : 1.25, minWidth: 0 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 1 : 1.25, minWidth: 0, flex: 1 }}>
                     <AccessAlarmOutlinedIcon sx={{ fontSize: is960 ? 28 : 32, color: '#64748B', flexShrink: 0 }} />
-                    <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 0.85 : 1.15, flexWrap: 'wrap', minWidth: 0 }}>
                       <Typography
                         sx={{
                           fontSize: is960 ? '1.35rem' : (is1920x1125 ? '1.75rem' : '1.55rem'),
                           fontWeight: 900,
                           color: '#111827',
                           fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                          lineHeight: 1.05,
+                          lineHeight: 1.1,
                           letterSpacing: '-0.02em',
+                          flexShrink: 0,
                         }}
                       >
                         {timeString}
                       </Typography>
-                      <Typography
+                      <Box
                         sx={{
-                          fontSize: is960 ? '0.62rem' : '0.74rem',
-                          fontWeight: 600,
-                          color: '#64748B',
-                          mt: 0.35,
+                          px: is960 ? 1 : 1.25,
+                          py: is960 ? 0.4 : 0.5,
+                          borderRadius: barRadius,
+                          bgcolor: '#E2E8F0',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          flexShrink: 0,
                         }}
                       >
-                        {dateInfo.month} {dateInfo.day} · {dateInfo.weekday}
-                      </Typography>
+                        <Typography
+                          sx={{
+                            fontSize: is960 ? '0.68rem' : '0.78rem',
+                            fontWeight: 800,
+                            color: '#334155',
+                            lineHeight: 1.2,
+                            letterSpacing: '0.01em',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {dateInfo.month} {dateInfo.day} · {dateInfo.weekday}
+                        </Typography>
+                      </Box>
                     </Box>
                   </Box>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: is960 ? 0.65 : 0.85, flexShrink: 0, justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
@@ -224,13 +200,15 @@ export default function AppsPage() {
                   </Box>
                 </Box>
 
-                {/* App grid — matches reference layout: compact top row + large writing card. */}
+                {/* App grid — fills remaining panel height */}
                 <Box
                   sx={{
+                    flex: 1,
+                    minHeight: is960 ? 280 : 320,
                     display: 'grid',
                     gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                    gridTemplateRows: `${tileMinH}px ${tileMinH}px ${tileMinH}px`,
-                    gap: is960 ? 0.85 : 1.05,
+                    gridTemplateRows: 'repeat(3, minmax(0, 1fr))',
+                    gap: is960 ? 0.9 : 1.1,
                     alignItems: 'stretch',
                   }}
                 >
@@ -256,41 +234,41 @@ export default function AppsPage() {
                         }
                         sx={{
                           borderRadius: tileRadius,
-                          px: is960 ? 1 : 1.2,
-                          py: is960 ? 0.9 : 1.1,
+                          px: tilePadX,
+                          py: tilePadY,
                           bgcolor: app.bg,
                           color: 'white',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'flex-start',
-                          gap: is960 ? 0.7 : 0.9,
-                          minHeight: tileMinH,
+                          gap: is960 ? 0.85 : 1,
+                          minHeight: 0,
+                          height: '100%',
                           transition: 'transform 0.15s',
                           '&:active': { transform: 'scale(0.97)' },
                         }}
                       >
                         <Box
                           sx={{
-                            width: is960 ? 24 : 28,
-                            height: is960 ? 24 : 28,
-                            borderRadius: is960 ? '8px' : '10px',
-                            bgcolor: 'rgba(255,255,255,0.18)',
+                            width: tileIconBox,
+                            height: tileIconBox,
+                            borderRadius: is960 ? '10px' : '12px',
+                            bgcolor: 'rgba(255,255,255,0.2)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             flexShrink: 0,
                           }}
                         >
-                          <Icon sx={{ fontSize: is960 ? 15 : 17 }} />
+                          <Icon sx={{ fontSize: tileIconSize }} />
                         </Box>
                         <Typography
                           sx={{
                             fontWeight: 850,
-                            fontSize: is960 ? '0.68rem' : '0.8rem',
+                            fontSize: tileLabelSize,
                             textAlign: 'left',
-                            lineHeight: 1.2,
+                            lineHeight: 1.25,
                             wordBreak: 'break-word',
-                            hyphens: 'auto',
                           }}
                         >
                           {app.label}
@@ -305,7 +283,7 @@ export default function AppsPage() {
                       gridColumn: '1 / 2',
                       gridRow: '2 / 4',
                       borderRadius: tileRadius,
-                      p: is960 ? 1.2 : 1.5,
+                      p: is960 ? 1.35 : 1.65,
                       bgcolor: '#FFC72C',
                       color: 'white',
                       display: 'flex',
@@ -313,21 +291,22 @@ export default function AppsPage() {
                       alignItems: 'flex-start',
                       justifyContent: 'space-between',
                       minHeight: 0,
+                      height: '100%',
                       position: 'relative',
                       overflow: 'hidden',
                       transition: 'transform 0.15s',
                       '&:active': { transform: 'scale(0.97)' },
                     }}
                   >
-                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.98rem' : '1.18rem', lineHeight: 1.16, textAlign: 'left' }}>
+                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.12rem' : '1.32rem', lineHeight: 1.18, textAlign: 'left', zIndex: 1 }}>
                       Character<br />Writing
                     </Typography>
                     <EditNoteIcon
                       sx={{
                         position: 'absolute',
-                        right: is960 ? 14 : 18,
-                        bottom: is960 ? 10 : 14,
-                        fontSize: is960 ? 80 : 104,
+                        right: is960 ? 10 : 14,
+                        bottom: is960 ? 6 : 10,
+                        fontSize: is960 ? 92 : 118,
                         color: 'rgba(255,255,255,0.82)',
                         transform: 'rotate(-10deg)',
                       }}
@@ -335,10 +314,10 @@ export default function AppsPage() {
                     <Box
                       sx={{
                         position: 'absolute',
-                        right: is960 ? 38 : 46,
-                        top: is960 ? 32 : 40,
+                        right: is960 ? 34 : 42,
+                        top: is960 ? 28 : 34,
                         color: 'rgba(255,255,255,0.88)',
-                        fontSize: is960 ? '1.15rem' : '1.45rem',
+                        fontSize: is960 ? '1.35rem' : '1.6rem',
                         fontWeight: 900,
                       }}
                     >
@@ -357,23 +336,24 @@ export default function AppsPage() {
                         onClick={() => navigate(app.path)}
                         sx={{
                           borderRadius: tileRadius,
-                          px: is960 ? 1 : 1.2,
-                          py: is960 ? 0.9 : 1.1,
+                          px: tilePadX,
+                          py: tilePadY,
                           bgcolor: app.bg,
                           color: 'white',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'flex-start',
-                          gap: is960 ? 0.7 : 0.9,
-                          minHeight: tileMinH,
+                          gap: is960 ? 0.85 : 1,
+                          minHeight: 0,
+                          height: '100%',
                           transition: 'transform 0.15s',
                           '&:active': { transform: 'scale(0.97)' },
                         }}
                       >
-                        <Box sx={{ width: is960 ? 24 : 28, height: is960 ? 24 : 28, borderRadius: is960 ? '8px' : '10px', bgcolor: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <Icon sx={{ fontSize: is960 ? 15 : 17 }} />
+                        <Box sx={{ width: tileIconBox, height: tileIconBox, borderRadius: is960 ? '10px' : '12px', bgcolor: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Icon sx={{ fontSize: tileIconSize }} />
                         </Box>
-                        <Typography sx={{ fontWeight: 850, fontSize: is960 ? '0.68rem' : '0.8rem', textAlign: 'left', lineHeight: 1.2 }}>
+                        <Typography sx={{ fontWeight: 850, fontSize: tileLabelSize, textAlign: 'left', lineHeight: 1.25 }}>
                           {app.label}
                         </Typography>
                       </ButtonBase>
@@ -387,23 +367,24 @@ export default function AppsPage() {
                     }}
                     sx={{
                       borderRadius: tileRadius,
-                      px: is960 ? 1 : 1.2,
-                      py: is960 ? 0.9 : 1.1,
+                      px: tilePadX,
+                      py: tilePadY,
                       bgcolor: '#263238',
                       color: 'white',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'flex-start',
-                      gap: is960 ? 0.7 : 0.9,
-                      minHeight: tileMinH,
+                      gap: is960 ? 0.85 : 1,
+                      minHeight: 0,
+                      height: '100%',
                       transition: 'transform 0.15s',
                       '&:active': { transform: 'scale(0.97)' },
                     }}
                   >
-                    <Box sx={{ width: is960 ? 24 : 28, height: is960 ? 24 : 28, borderRadius: is960 ? '8px' : '10px', bgcolor: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <CloudDownloadIcon sx={{ fontSize: is960 ? 15 : 17 }} />
+                    <Box sx={{ width: tileIconBox, height: tileIconBox, borderRadius: is960 ? '10px' : '12px', bgcolor: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <CloudDownloadIcon sx={{ fontSize: tileIconSize }} />
                     </Box>
-                    <Typography sx={{ fontWeight: 850, fontSize: is960 ? '0.68rem' : '0.8rem', textAlign: 'left', lineHeight: 1.2 }}>
+                    <Typography sx={{ fontWeight: 850, fontSize: tileLabelSize, textAlign: 'left', lineHeight: 1.25 }}>
                       Downloads
                     </Typography>
                   </ButtonBase>
@@ -415,7 +396,8 @@ export default function AppsPage() {
                     }}
                     sx={{
                       borderRadius: tileRadius,
-                      minHeight: tileMinH,
+                      minHeight: 0,
+                      height: '100%',
                       border: '1px solid #E5E7EB',
                       bgcolor: '#FFFFFF',
                       color: '#94A3B8',
@@ -426,27 +408,22 @@ export default function AppsPage() {
                     }}
                     aria-label="Add more apps"
                   >
-                    <AddIcon sx={{ fontSize: is960 ? 30 : 34 }} />
+                    <AddIcon sx={{ fontSize: is960 ? 36 : 42 }} />
                   </ButtonBase>
                 </Box>
               </Box>
               <Box
                 sx={{
-                  flex: { xs: '1 1 auto', md: '0 0 min(344px, 36%)' },
-                  width: { xs: '100%', md: 'auto' },
-                  minWidth: { md: 300 },
-                  maxWidth: { md: 360 },
-                  ml: { md: 'auto' },
-                  alignSelf: 'stretch',
+                  minWidth: 0,
+                  minHeight: { xs: 320, md: 0 },
+                  height: { md: '100%' },
                   bgcolor: 'white',
                   borderRadius: is960 ? '20px' : (is1920x1125 ? '28px' : '24px'),
-                  p: is960 ? 1.5 : (is1920x1125 ? 3 : 2.5),
+                  p: is960 ? 1.35 : (is1920x1125 ? 2.5 : 2),
                   boxShadow: '0 12px 28px rgba(15,23,42,0.08)',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: is960 ? 1 : 1.5,
-                  minHeight: 0,
-                  maxHeight: { md: '100%' },
+                  gap: is960 ? 0.85 : 1.15,
                   overflow: 'hidden',
                 }}
               >
@@ -556,7 +533,7 @@ export default function AppsPage() {
                         lineHeight: 1.3,
                       }}
                     >
-                      {blueLightFilter ? 'Warm screen — easier on your eyes' : 'Warm tint · 20-20-20 reminder'}
+                      {blueLightFilter ? 'Warm tint · eye care' : 'Warm tint · 20-20-20'}
                     </Typography>
                   </Box>
                   <Switch
@@ -686,11 +663,10 @@ export default function AppsPage() {
               </ButtonBase>
             </Box>
           </Box>
-                  </Box>
                 </Box>
               </Box>
-            </Box>
-          </Box>
+              </Box>
+    </Box>
 
       {/* Clock Modal */}
       {showClock && (
@@ -826,9 +802,6 @@ export default function AppsPage() {
         </Box>
       )}
 
-      </Box>
-      </Box>
-
       {/* Toast Notification */}
       <Snackbar
         open={showToast}
@@ -850,6 +823,6 @@ export default function AppsPage() {
           {toastMessage}
         </Alert>
       </Snackbar>
-    </Box>
+    </>
   );
 }

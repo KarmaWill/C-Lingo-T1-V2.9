@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, type MouseEvent, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { saveSpeakingLatestScore } from '../../hsk/speakingScore';
 import './funChineseInteractiveEbook.css';
 import {
   Volume2, Play, Pause, Mic, Settings, Tv,
@@ -729,6 +730,19 @@ export default function FunChineseInteractiveEbook() {
 
   const filteredShadowSentences = getFilteredShadowSentences();
 
+  useEffect(() => {
+    if (!shadowSessionReportOpen || shadowSessionQueue.length === 0) return;
+    const lines = shadowSessionQueue
+      .map((id) => currentLesson.textbookLeft.sentences.find((s) => s.id === id))
+      .filter((s): s is SentenceItem => s != null);
+    const scored = lines.filter((s) => shadowSentenceScores[s.id] != null);
+    if (scored.length === 0) return;
+    const avg = Math.round(
+      scored.reduce((sum, s) => sum + shadowSentenceScores[s.id], 0) / scored.length,
+    );
+    saveSpeakingLatestScore(avg);
+  }, [shadowSessionReportOpen, shadowSessionQueue, shadowSentenceScores, currentLesson]);
+
   const canShadowAll =
     selectedShadowIds.length > 0 &&
     (shadowSelectAllEnabled || selectedShadowIds.length >= 2);
@@ -916,6 +930,7 @@ export default function FunChineseInteractiveEbook() {
       const score = 88 + Math.floor(Math.random() * 11);
       setEvalResultScore(score);
       setFollowRecordState('result');
+      saveSpeakingLatestScore(score);
       setFollowModal((prev) => {
         if (prev.sentenceId) {
           setShadowSentenceScores((scores) => {

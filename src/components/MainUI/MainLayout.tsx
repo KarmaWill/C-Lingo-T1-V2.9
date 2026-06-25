@@ -1,9 +1,12 @@
 import { ReactNode, useState, useEffect } from 'react'
-import { Box } from '@mui/material'
+import { Box, ButtonBase } from '@mui/material'
 import { useLocation } from 'react-router-dom'
 import BottomNavigator from './BottomNavigator'
 import TopBanner from './TopBanner'
 import SystemStatusBar from './SystemStatusBar'
+import ShellSloganHeadline from './ShellSloganHeadline'
+import ShellTopBarProductLinks from './ShellTopBarProductLinks'
+import IpadDeviceShell from './IpadDeviceShell'
 
 interface MainLayoutProps {
   children: ReactNode
@@ -11,11 +14,16 @@ interface MainLayoutProps {
 
 const DESIGN_1920 = 1920
 const DESIGN_1125 = 1125
-/** Bottom logo bar + breathing room (px) — keeps C-Lingo brand visible */
-const SHELL_BRAND_RESERVE = 76
+/** Top + bottom chrome bars (px) — symmetric frame for centered iPad */
+const SHELL_BAR_RESERVE = 72
+const SHELL_CHROME_RESERVE = SHELL_BAR_RESERVE * 2
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation()
+
+  const openExternal = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
   
   // Read screen size from environment variable
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768'
@@ -36,14 +44,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
   }, [])
 
   const scale1920 = is1920x1125
-    ? Math.min(1, viewport.w / DESIGN_1920, (viewport.h - SHELL_BRAND_RESERVE) / DESIGN_1125)
+    ? Math.min(1, viewport.w / DESIGN_1920, (viewport.h - SHELL_CHROME_RESERVE) / DESIGN_1125)
     : 1
 
   const breakpointDeviceScale =
     viewport.w < 600 ? 0.35 : viewport.w < 900 ? 0.6 : viewport.w < 1200 ? 0.85 : 1
   const fitDeviceScale = Math.min(
     breakpointDeviceScale,
-    (viewport.h - SHELL_BRAND_RESERVE - 12) / screenHeight,
+    (viewport.h - SHELL_CHROME_RESERVE - 12) / screenHeight,
     (viewport.w - 24) / screenWidth,
   )
   const deviceScale = Math.max(0.28, fitDeviceScale)
@@ -119,55 +127,122 @@ export default function MainLayout({ children }: MainLayoutProps) {
   
   // Calculate scaled heights based on screen size
   const is960 = screenSize === '960x540'
+  const hardwareProtrusion = is960 ? 10 : 12
   const systemBarHeight = is960 ? 24 : (is2000x1200 ? 44 : (is1920x1125 ? 40 : 32))
   const topBannerHeight = is960 ? 56 : (is2000x1200 ? 110 : (is1920x1125 ? 100 : 80))
   // Reserve space for BottomNavigator: 4-dot tab indicator + dock + camera (absolute bottom)
   const bottomNavHeight = is960 ? 96 : (is2000x1200 ? 158 : (is1920x1125 ? 146 : 124))
   const totalTopHeight = (showSystemBar ? systemBarHeight : 0) + (showTopBanner ? topBannerHeight : 0)
 
-  const SHELL_BG = '#000000'
+  const shellBackdropSx = {
+    position: 'relative' as const,
+    background: `
+      radial-gradient(ellipse 48% 70% at 50% 0%, rgba(185, 255, 90, 0.2) 0%, transparent 72%),
+      linear-gradient(135deg, #004735, #006D50)
+    `,
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      background: 'radial-gradient(ellipse 60% 100% at 50% 50%, rgba(246, 200, 58, 0.16) 0%, transparent 70%)',
+      pointerEvents: 'none',
+      zIndex: 0,
+    },
+    '& > *': {
+      position: 'relative',
+      zIndex: 1,
+    },
+  }
+
+  const shellBarBaseSx = {
+    flexShrink: 0,
+    width: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+    px: 2,
+    minHeight: SHELL_BAR_RESERVE,
+    boxSizing: 'border-box' as const,
+    backgroundColor: 'transparent',
+  }
+
+  const shellTopBarSx = {
+    ...shellBarBaseSx,
+    position: 'relative' as const,
+    alignItems: 'flex-end',
+    pt: 0.5,
+    pb: 0.75,
+  }
+
+  const shellBottomBarSx = {
+    ...shellBarBaseSx,
+    alignItems: 'flex-start',
+    pt: 0.75,
+    pb: 0.5,
+  }
+
+  const shellTopBar = (
+    <Box id="shell-top-bar" sx={shellTopBarSx}>
+      <ShellSloganHeadline
+        onClick={() => openExternal('https://dashboard-app-sable-tau.vercel.app/#c6')}
+      />
+      <ShellTopBarProductLinks
+        onOpenAdmin={() => openExternal('https://nsk-back-end.vercel.app/')}
+        onOpenScanPen={() => openExternal('https://c-lingo-scan-pen.vercel.app/')}
+      />
+    </Box>
+  )
 
   const shellBrand = (
-    <Box
-      sx={{
-        flexShrink: 0,
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        py: { xs: 1, md: 1.25 },
-        px: 2,
-        backgroundColor: SHELL_BG,
-      }}
-    >
-      <Box
-        component="img"
-        src="/branding/clingo-aios-logo.png"
-        alt="C-Lingo AIOS T1"
+    <Box id="shell-bottom-bar" sx={shellBottomBarSx}>
+      <ButtonBase
+        onClick={() => openExternal('https://www.clingoaios.com/')}
+        aria-label="C-Lingo AIOS — Visit clingoaios.com"
         sx={{
-          height: { xs: 28, sm: 34, md: 40 },
-          width: 'auto',
-          maxWidth: 'min(420px, 72vw)',
-          objectFit: 'contain',
-          userSelect: 'none',
-          pointerEvents: 'none',
           display: 'block',
+          borderRadius: 0,
+          p: 0,
+          m: 0,
+          minWidth: 0,
+          lineHeight: 0,
+          cursor: 'pointer',
+          flexShrink: 0,
+          bgcolor: 'transparent',
+          '&:hover': { opacity: 0.92 },
+          '&:active': { transform: 'scale(0.98)' },
         }}
-      />
+      >
+        <Box
+          component="img"
+          className="footer-brand-logo"
+          src="/branding/c-lingo-logo-footer-shell.png"
+          alt="C-Lingo AIOS"
+          draggable={false}
+          sx={{
+            height: '44px',
+            width: 'auto',
+            maxWidth: 'none',
+            objectFit: 'contain',
+            display: 'block',
+            pointerEvents: 'none',
+            userSelect: 'none',
+          }}
+        />
+      </ButtonBase>
     </Box>
   )
 
   return (
     <Box sx={{ 
+      ...shellBackdropSx,
       width: '100vw',
       height: '100vh',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'flex-start',
-      backgroundColor: SHELL_BG, 
       overflow: 'hidden'
     }}>
+      {shellTopBar}
       <Box
         id="shell-stage"
         sx={{
@@ -177,18 +252,16 @@ export default function MainLayout({ children }: MainLayoutProps) {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
       <Box
         sx={{
-          mt: 'auto',
-          mb: 1.5,
           flexShrink: 0,
           width: '100%',
           display: 'flex',
           justifyContent: 'center',
-          alignItems: 'flex-end',
-          maxHeight: `calc(100% - 8px)`,
+          alignItems: 'center',
         }}
       >
       {/* 1920x1125: wrapper with scaled size so layout fits viewport and no scroll */}
@@ -196,32 +269,21 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <Box
           sx={{
             width: DESIGN_1920 * scale1920,
-            height: DESIGN_1125 * scale1920,
+            height: DESIGN_1125 * scale1920 + hardwareProtrusion * scale1920,
             flexShrink: 0,
-            overflow: 'hidden',
+            overflow: 'visible',
             display: 'flex',
             alignItems: 'flex-start',
-            justifyContent: 'flex-start'
+            justifyContent: 'flex-start',
+            pt: `${hardwareProtrusion * scale1920}px`,
           }}
         >
-          <Box
-            id="ipad-container"
-            sx={{
-              width: DESIGN_1920,
-              height: DESIGN_1125,
-              flexShrink: 0,
-              transform: `scale(${scale1920})`,
-              transformOrigin: 'top left',
-              display: 'flex',
-              flexDirection: 'column',
-              backgroundColor: '#FFF8F0',
-              position: 'relative',
-              overflow: 'hidden',
-              boxShadow: '0 0 100px rgba(0,0,0,0.5)',
-              borderRadius: '32px',
-              border: '16px solid #333',
-              boxSizing: 'border-box'
-            }}
+          <IpadDeviceShell
+            width={DESIGN_1920}
+            height={DESIGN_1125}
+            sizeTier="1920"
+            transform={`scale(${scale1920})`}
+            transformOrigin="top left"
           >
             {showSystemBar && <SystemStatusBar />}
             {showTopBanner && <TopBanner />}
@@ -247,7 +309,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
               {children}
             </Box>
             {showBottomNav && <BottomNavigator />}
-          </Box>
+          </IpadDeviceShell>
         </Box>
       ) : (
       <>
@@ -255,37 +317,28 @@ export default function MainLayout({ children }: MainLayoutProps) {
       <Box
         sx={{
           width: screenWidth * deviceScale,
-          height: screenHeight * deviceScale,
+          height: screenHeight * deviceScale + hardwareProtrusion * deviceScale,
           position: 'relative',
           flexShrink: 0,
+          overflow: 'visible',
+          pt: `${hardwareProtrusion * deviceScale}px`,
         }}
       >
-      <Box 
-        id="ipad-container"
-        sx={{
-          width: screenWidth,
-          height: screenHeight,
-          display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: '#FFF8F0',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          overflow: 'hidden',
-          boxShadow: '0 0 100px rgba(0,0,0,0.5)', 
-          borderRadius: is960 ? '18px' : (is2000x1200 ? '28px' : '24px'), 
-          border: is960 ? '10px solid #333' : (is2000x1200 ? '14px solid #333' : '12px solid #333'),
-          boxSizing: 'border-box',
-          transform: `scale(${deviceScale})`,
-          transformOrigin: 'top left',
-        }}>
+      <IpadDeviceShell
+        width={screenWidth}
+        height={screenHeight}
+        sizeTier={is960 ? '960' : is2000x1200 ? '2000' : 'default'}
+        transform={`scale(${deviceScale})`}
+        transformOrigin="top left"
+        position="absolute"
+      >
         {showSystemBar && <SystemStatusBar />}
         {showTopBanner && <TopBanner />}
         <Box
-        component="main"
+          component="main"
           id="main-content-area"
-        sx={{
-          flexGrow: 1,
+          sx={{
+            flexGrow: 1,
             position: isCoveringMain ? 'absolute' : 'relative',
             inset: isCoveringMain ? 0 : 'auto',
             zIndex: isCoveringMain ? 1200 : 1,
@@ -298,12 +351,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
             overflowY: 'hidden',
             backgroundColor: '#FFF8F0',
             transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-        }}
-      >
-        {children}
+          }}
+        >
+          {children}
         </Box>
         {showBottomNav && <BottomNavigator />}
-      </Box>
+      </IpadDeviceShell>
       </Box>
       </>
       )}

@@ -1,18 +1,97 @@
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { Box, Typography, ButtonBase } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import MicIcon from '@mui/icons-material/Mic';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
-import { HSK_SKILL_DRILLS } from '../hsk/hskSkillDrills';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import TuneIcon from '@mui/icons-material/Tune';
+import type { ReactNode } from 'react';
+import HubScoreBadge from '../components/HubScoreBadge';
+import { loadDiagnosticBestScore, DIAGNOSTIC_PASS_LINE } from '../hsk/diagnosticScore';
+import { loadSpeakingLatestScore, SPEAKING_PASS_LINE } from '../hsk/speakingScore';
 
-const HSK_LEVELS = [1, 2, 3, 4, 5, 6] as const;
+function CardMetaBadge({
+  children,
+  is960,
+  tone = 'neutral',
+}: {
+  children: ReactNode;
+  is960: boolean;
+  tone?: 'rose' | 'violet' | 'neutral';
+}) {
+  const tones = {
+    rose: { bg: '#FEE2E2', color: '#BE123C' },
+    violet: { bg: '#EDE9FE', color: '#6D28D9' },
+    neutral: { bg: '#F3F4F6', color: '#6B7280' },
+  };
+  const t = tones[tone];
+  return (
+    <Typography
+      component="span"
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        bgcolor: t.bg,
+        color: t.color,
+        fontWeight: 800,
+        fontSize: is960 ? '0.68rem' : '0.78rem',
+        letterSpacing: '0.02em',
+        px: is960 ? 1 : 1.15,
+        py: is960 ? 0.45 : 0.5,
+        borderRadius: is960 ? '8px' : '10px',
+        lineHeight: 1.2,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {children}
+    </Typography>
+  );
+}
+
+function GlassTag({ children, is960 }: { children: ReactNode; is960: boolean }) {
+  return (
+    <Box
+      component="span"
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        px: is960 ? 1.1 : 1.35,
+        py: is960 ? 0.45 : 0.55,
+        borderRadius: '999px',
+        bgcolor: 'rgba(255,255,255,0.2)',
+        border: '1px solid rgba(255,255,255,0.38)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        color: '#FFFFFF',
+        fontWeight: 800,
+        fontSize: is960 ? '0.72rem' : '0.84rem',
+        letterSpacing: '0.03em',
+        lineHeight: 1.2,
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
 
 export default function HSKTestPage() {
   const navigate = useNavigate();
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
   const is960 = screenSize === '960x540';
   const is1920x1125 = screenSize === '1920x1125';
+  const [diagnosticScore, setDiagnosticScore] = useState<number | undefined>(() => loadDiagnosticBestScore());
+  const [speakingScore, setSpeakingScore] = useState<number | undefined>(() => loadSpeakingLatestScore());
+
+  useEffect(() => {
+    const refreshScores = () => {
+      setDiagnosticScore(loadDiagnosticBestScore());
+      setSpeakingScore(loadSpeakingLatestScore());
+    };
+    refreshScores();
+    window.addEventListener('focus', refreshScores);
+    return () => window.removeEventListener('focus', refreshScores);
+  }, []);
 
   const cardRadius = is960 ? '16px' : '22px';
   /** 小圆角按钮 / 标签，与卡片大圆角区分，偏硬朗 */
@@ -89,47 +168,20 @@ export default function HSKTestPage() {
                 border: '1px solid rgba(0,0,0,0.04)',
               }}
             >
-              <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'flex-start', flexShrink: 0 }}>
-                <Box
-                  sx={{
-                    width: is960 ? 44 : 52,
-                    height: is960 ? 44 : 52,
-                    borderRadius: '14px',
-                    bgcolor: '#FCE7F3',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <SearchIcon sx={{ color: '#E11D48', fontSize: is960 ? 26 : 30 }} />
-                </Box>
+              <Box sx={{ display: 'flex', gap: is960 ? 1 : 1.25, alignItems: 'center', flexShrink: 0, minHeight: is960 ? 50 : 62 }}>
+                <HubScoreBadge score={diagnosticScore} is960={is960} passLine={DIAGNOSTIC_PASS_LINE} />
                 <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.88rem' : '1.02rem', color: '#1F2937', mb: 0.5, lineHeight: 1.25 }}>
+                  <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.1rem' : '1.28rem', color: '#1F2937', lineHeight: 1.2 }}>
                     Diagnostic Test
-                  </Typography>
-                  <Typography sx={{ fontSize: is960 ? '0.62rem' : '0.75rem', color: '#6B7280', lineHeight: 1.4 }}>
-                    25 Questions | 25 Min
                   </Typography>
                 </Box>
               </Box>
               <Box sx={{ mt: 'auto', pt: 1.25, width: '100%' }}>
-                <Typography
-                  sx={{
-                    display: 'inline-block',
-                    mb: 1,
-                    bgcolor: '#FEE2E2',
-                    color: '#B91C1C',
-                    fontWeight: 800,
-                    fontSize: is960 ? '0.5rem' : '0.58rem',
-                    letterSpacing: '0.06em',
-                    px: 1,
-                    py: 0.35,
-                    borderRadius: hardRadius,
-                  }}
-                >
-                  HIGHLY RECOMMENDED
-                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
+                  <CardMetaBadge is960={is960} tone="rose">
+                    25 Questions · 25 Min
+                  </CardMetaBadge>
+                </Box>
                 <ButtonBase
                   onClick={() => navigate('/hsk-prep-test')}
                   sx={{
@@ -173,47 +225,20 @@ export default function HSKTestPage() {
                 border: '1px solid rgba(0,0,0,0.04)',
               }}
             >
-              <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'flex-start', flexShrink: 0 }}>
-                <Box
-                  sx={{
-                    width: is960 ? 44 : 52,
-                    height: is960 ? 44 : 52,
-                    borderRadius: '14px',
-                    bgcolor: 'rgba(124, 58, 237, 0.12)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <MicIcon sx={{ color: '#6D28D9', fontSize: is960 ? 26 : 30 }} />
-                </Box>
+              <Box sx={{ display: 'flex', gap: is960 ? 1 : 1.25, alignItems: 'center', flexShrink: 0, minHeight: is960 ? 50 : 62 }}>
+                <HubScoreBadge score={speakingScore} is960={is960} passLine={SPEAKING_PASS_LINE} />
                 <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.88rem' : '1.02rem', color: '#1F2937', mb: 0.5, lineHeight: 1.25 }}>
+                  <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.1rem' : '1.28rem', color: '#1F2937', lineHeight: 1.2 }}>
                     AI Speaking Rater
-                  </Typography>
-                  <Typography sx={{ fontSize: is960 ? '0.62rem' : '0.75rem', color: '#6B7280', lineHeight: 1.4 }}>
-                    Pronunciation & fluency feedback
                   </Typography>
                 </Box>
               </Box>
               <Box sx={{ mt: 'auto', pt: 1.25, width: '100%' }}>
-                <Typography
-                  sx={{
-                    display: 'inline-block',
-                    mb: 1,
-                    bgcolor: 'rgba(245, 158, 11, 0.2)',
-                    color: '#B45309',
-                    fontWeight: 800,
-                    fontSize: is960 ? '0.5rem' : '0.58rem',
-                    letterSpacing: '0.06em',
-                    px: 1,
-                    py: 0.35,
-                    borderRadius: hardRadius,
-                  }}
-                >
-                  USES CREDITS
-                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
+                  <CardMetaBadge is960={is960} tone="violet">
+                    AI Feedback
+                  </CardMetaBadge>
+                </Box>
                 <ButtonBase
                   onClick={() => navigate('/hsk-oral-review')}
                   sx={{
@@ -236,79 +261,133 @@ export default function HSKTestPage() {
           </Box>
         </Box>
 
-        {/* Mock Exam — one entrance per HSK level (2×3) */}
-        <Box
+        {/* Mock Exam — single premium entrance → level & paper selection */}
+        <ButtonBase
+          onClick={() => navigate('/hsk-prep-training')}
           sx={{
             ...cardShell,
-            bgcolor: 'white',
-            p: pad,
-            borderRadius: cardRadius,
-            boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
-            border: '1px solid rgba(0,0,0,0.04)',
             textAlign: 'left',
-            minHeight: 0,
+            borderRadius: cardRadius,
+            overflow: 'hidden',
+            alignItems: 'stretch',
+            '&:active': { transform: 'scale(0.99)' },
           }}
         >
-          <Box sx={{ display: 'flex', gap: 1.5, mb: 1, flexShrink: 0, alignItems: 'flex-start' }}>
-            <Box
-              sx={{
-                width: is960 ? 44 : 52,
-                height: is960 ? 44 : 52,
-                borderRadius: '14px',
-                bgcolor: '#FEF9C3',
-                border: '1px solid rgba(234, 179, 8, 0.35)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <EmojiEventsIcon sx={{ color: '#CA8A04', fontSize: is960 ? 26 : 30 }} />
-            </Box>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.95rem' : '1.1rem', color: '#111827', mb: 0.5 }}>
-                Mock Exam
-              </Typography>
-              <Typography sx={{ fontSize: is960 ? '0.65rem' : '0.8rem', color: '#6B7280', lineHeight: 1.45 }}>
-                Full HSK-style simulation with real exam conditions.
-              </Typography>
-            </Box>
-          </Box>
           <Box
             sx={{
-              flex: 1,
-              minHeight: 0,
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-              gridAutoRows: 'minmax(0, 1fr)',
-              gap: is960 ? 1 : 1.25,
-              pt: 0.5,
+              ...cardShell,
+              p: goStudyPad,
+              borderRadius: cardRadius,
+              background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+              boxShadow: '0 16px 40px rgba(217, 119, 6, 0.38)',
+              justifyContent: 'space-between',
+              position: 'relative',
+              isolation: 'isolate',
             }}
           >
-            {HSK_LEVELS.map((lvl) => (
-              <ButtonBase
-                key={lvl}
-                onClick={() => navigate(`/hsk-prep-training?level=${lvl}`)}
+            <Box
+              sx={{
+                position: 'absolute',
+                top: is960 ? -34 : -46,
+                right: is960 ? -26 : -34,
+                width: is960 ? 110 : 148,
+                height: is960 ? 110 : 148,
+                borderRadius: '50%',
+                bgcolor: 'rgba(255,255,255,0.16)',
+                zIndex: 0,
+              }}
+            />
+            <Box
+              sx={{
+                position: 'absolute',
+                right: is960 ? 16 : 24,
+                bottom: is960 ? 18 : 24,
+                width: is960 ? 92 : 124,
+                height: is960 ? 54 : 68,
+                borderRadius: '999px',
+                border: '1px solid rgba(255,255,255,0.22)',
+                transform: 'rotate(-12deg)',
+                zIndex: 0,
+              }}
+            />
+            <Box sx={{ display: 'flex', gap: is960 ? 1.75 : 2, flexShrink: 0, alignItems: 'flex-start' }}>
+              <EmojiEventsIcon
                 sx={{
-                  minHeight: is960 ? 48 : 52,
-                  borderRadius: hardRadius,
-                  border: '1px solid #E5E7EB',
+                  color: '#FFFFFF',
+                  fontSize: is960 ? 36 : 44,
+                  flexShrink: 0,
+                  mt: 0.25,
+                  opacity: 0.98,
+                  zIndex: 1,
+                }}
+              />
+              <Box sx={{ minWidth: 0, zIndex: 1 }}>
+                <Typography
+                  sx={{
+                    fontWeight: 900,
+                    fontSize: is960 ? '1.05rem' : '1.35rem',
+                    color: '#FFFFFF',
+                    mb: is960 ? 0.75 : 1,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  Mock Exam
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: is960 ? '0.75rem' : '0.95rem',
+                    fontWeight: 500,
+                    color: '#FFFFFF',
+                    lineHeight: 1.45,
+                    opacity: 0.95,
+                  }}
+                >
+                  Authentic HSK exam environment simulation.
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: is960 ? 36 : 44,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: is960 ? 1.25 : 1.5,
+                pt: is960 ? 1.5 : 2,
+                pb: is960 ? 0.25 : 0.5,
+                zIndex: 1,
+              }}
+            >
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.6, minWidth: 0 }}>
+                <GlassTag is960={is960}>HSK 1–9</GlassTag>
+                <GlassTag is960={is960}>Official & C-Lingo</GlassTag>
+              </Box>
+              <Box
+                component="span"
+                sx={{
+                  width: is960 ? 56 : 64,
+                  height: is960 ? 56 : 64,
+                  minWidth: is960 ? 56 : 64,
+                  minHeight: is960 ? 56 : 64,
+                  borderRadius: '50%',
                   bgcolor: '#FFFFFF',
-                  color: '#111827',
-                  fontWeight: 800,
-                  fontSize: is960 ? '0.82rem' : '0.95rem',
-                  letterSpacing: '-0.01em',
+                  color: '#D97706',
+                  display: 'flex',
+                  alignItems: 'center',
                   justifyContent: 'center',
-                  '&:active': { transform: 'scale(0.98)', bgcolor: '#F9FAFB' },
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.14)',
+                  pointerEvents: 'none',
                 }}
               >
-                HSK {lvl}
-              </ButtonBase>
-            ))}
+                <ArrowForwardIcon sx={{ fontSize: is960 ? 26 : 30 }} />
+              </Box>
+            </Box>
           </Box>
-        </Box>
+        </ButtonBase>
 
-        {/* HSK Go Study — reference: purple→blue gradient, large radius, centered circular “Go” */}
+        {/* Grammar Study — grammar-point training, opens a learning path map */}
         <ButtonBase
           onClick={() => navigate('/hsk-go-study')}
           sx={{
@@ -378,7 +457,7 @@ export default function HSKTestPage() {
                     lineHeight: 1.2,
                   }}
                 >
-                  HSK Go Study
+                  Grammar Study
                 </Typography>
                 <Typography
                   sx={{
@@ -389,7 +468,7 @@ export default function HSKTestPage() {
                     opacity: 0.95,
                   }}
                 >
-                  Targeted practice for HSK topics and grammar points.
+                  Step-by-step grammar path.
                 </Typography>
               </Box>
             </Box>
@@ -407,18 +486,9 @@ export default function HSKTestPage() {
                 zIndex: 1,
               }}
             >
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
-                  <Typography sx={{ color: 'rgba(255,255,255,0.78)', fontSize: is960 ? '0.62rem' : '0.72rem', fontWeight: 800 }}>
-                    Current focus
-                  </Typography>
-                  <Typography sx={{ color: 'white', fontSize: is960 ? '0.62rem' : '0.72rem', fontWeight: 900 }}>
-                    68%
-                  </Typography>
-                </Box>
-                <Box sx={{ height: is960 ? 5 : 6, borderRadius: '999px', bgcolor: 'rgba(255,255,255,0.20)', overflow: 'hidden' }}>
-                  <Box sx={{ width: '68%', height: '100%', borderRadius: '999px', bgcolor: '#FFFFFF' }} />
-                </Box>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.6, minWidth: 0 }}>
+                <GlassTag is960={is960}>HSK 1–6</GlassTag>
+                <GlassTag is960={is960}>Grammar</GlassTag>
               </Box>
               <Box
                 component="span"
@@ -430,8 +500,6 @@ export default function HSKTestPage() {
                   borderRadius: '50%',
                   bgcolor: '#FFFFFF',
                   color: '#3B59F6',
-                  fontWeight: 900,
-                  fontSize: is960 ? '1.15rem' : '1.3rem',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -439,88 +507,137 @@ export default function HSKTestPage() {
                   pointerEvents: 'none',
                 }}
               >
-                Go
+                <ArrowForwardIcon sx={{ fontSize: is960 ? 26 : 30 }} />
               </Box>
             </Box>
           </Box>
         </ButtonBase>
 
-        {/* Specialized drills — six HSK mock question-type entrances (design doc §第二步) */}
-        <Box
+        {/* Specialized drills — single premium entrance → drill-type selection */}
+        <ButtonBase
+          onClick={() => navigate('/hsk-skill-drill')}
           sx={{
             ...cardShell,
-            bgcolor: 'white',
-            p: pad,
-            borderRadius: cardRadius,
-            boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
-            border: '1px solid rgba(0,0,0,0.04)',
             textAlign: 'left',
-            minHeight: 0,
+            borderRadius: cardRadius,
+            overflow: 'hidden',
+            alignItems: 'stretch',
+            '&:active': { transform: 'scale(0.99)' },
           }}
         >
-          <Box sx={{ mb: 1, flexShrink: 0 }}>
-            <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.95rem' : '1.1rem', color: '#1F2937' }}>
-              Specialized drills
-            </Typography>
-          </Box>
           <Box
             sx={{
-              flex: 1,
-              minHeight: 0,
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-              gridAutoRows: 'minmax(0, 1fr)',
-              gap: is960 ? 1 : 1.25,
-              pt: 0.5,
+              ...cardShell,
+              p: goStudyPad,
+              borderRadius: cardRadius,
+              background: 'linear-gradient(135deg, #10B981 0%, #047857 100%)',
+              boxShadow: '0 16px 40px rgba(4, 120, 87, 0.36)',
+              justifyContent: 'space-between',
+              position: 'relative',
+              isolation: 'isolate',
             }}
           >
-            {HSK_SKILL_DRILLS.map((drill) => {
-              const accent = drill.section === 'listening' ? '#0369A1' : '#047857';
-              return (
-                <ButtonBase
-                  key={drill.id}
-                  onClick={() => navigate(`/hsk-skill-drill?type=${drill.id}`)}
+            <Box
+              sx={{
+                position: 'absolute',
+                top: is960 ? -34 : -46,
+                right: is960 ? -26 : -34,
+                width: is960 ? 110 : 148,
+                height: is960 ? 110 : 148,
+                borderRadius: '50%',
+                bgcolor: 'rgba(255,255,255,0.14)',
+                zIndex: 0,
+              }}
+            />
+            <Box
+              sx={{
+                position: 'absolute',
+                right: is960 ? 16 : 24,
+                bottom: is960 ? 18 : 24,
+                width: is960 ? 92 : 124,
+                height: is960 ? 54 : 68,
+                borderRadius: '999px',
+                border: '1px solid rgba(255,255,255,0.22)',
+                transform: 'rotate(-12deg)',
+                zIndex: 0,
+              }}
+            />
+            <Box sx={{ display: 'flex', gap: is960 ? 1.75 : 2, flexShrink: 0, alignItems: 'flex-start' }}>
+              <TuneIcon
+                sx={{
+                  color: '#FFFFFF',
+                  fontSize: is960 ? 36 : 44,
+                  flexShrink: 0,
+                  mt: 0.25,
+                  opacity: 0.98,
+                  zIndex: 1,
+                }}
+              />
+              <Box sx={{ minWidth: 0, zIndex: 1 }}>
+                <Typography
                   sx={{
-                    minHeight: is960 ? 56 : 60,
-                    borderRadius: hardRadius,
-                    border: '1px solid #E5E7EB',
-                    bgcolor: '#FFFFFF',
-                    justifyContent: 'center',
-                    flexDirection: 'column',
-                    gap: 0.35,
-                    px: 0.75,
-                    py: 0.75,
-                    '&:active': { transform: 'scale(0.98)', bgcolor: '#F9FAFB' },
+                    fontWeight: 900,
+                    fontSize: is960 ? '1.05rem' : '1.35rem',
+                    color: '#FFFFFF',
+                    mb: is960 ? 0.75 : 1,
+                    lineHeight: 1.2,
                   }}
                 >
-                  <Typography
-                    sx={{
-                      fontWeight: 800,
-                      fontSize: is960 ? '0.68rem' : '0.78rem',
-                      color: '#111827',
-                      lineHeight: 1.25,
-                      textAlign: 'center',
-                    }}
-                  >
-                    {drill.label}
-                  </Typography>
-                  <Typography
-                    sx={{
-                      fontWeight: 700,
-                      fontSize: is960 ? '0.5rem' : '0.55rem',
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase',
-                      color: accent,
-                      textAlign: 'center',
-                    }}
-                  >
-                    {drill.section === 'listening' ? 'Listening' : 'Reading'} · {drill.levelsHint}
-                  </Typography>
-                </ButtonBase>
-              );
-            })}
+                  Specialized drills
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: is960 ? '0.75rem' : '0.95rem',
+                    fontWeight: 500,
+                    color: '#FFFFFF',
+                    lineHeight: 1.45,
+                    opacity: 0.95,
+                  }}
+                >
+                  Listening, Reading, Writing
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: is960 ? 36 : 44,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: is960 ? 1.25 : 1.5,
+                pt: is960 ? 1.5 : 2,
+                pb: is960 ? 0.25 : 0.5,
+                zIndex: 1,
+              }}
+            >
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.6, minWidth: 0 }}>
+                <GlassTag is960={is960}>HSK 1–9</GlassTag>
+                <GlassTag is960={is960}>19 Question Types</GlassTag>
+              </Box>
+              <Box
+                component="span"
+                sx={{
+                  width: is960 ? 56 : 64,
+                  height: is960 ? 56 : 64,
+                  minWidth: is960 ? 56 : 64,
+                  minHeight: is960 ? 56 : 64,
+                  borderRadius: '50%',
+                  bgcolor: '#FFFFFF',
+                  color: '#047857',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.14)',
+                  pointerEvents: 'none',
+                }}
+              >
+                <ArrowForwardIcon sx={{ fontSize: is960 ? 26 : 30 }} />
+              </Box>
+            </Box>
           </Box>
-        </Box>
+        </ButtonBase>
       </Box>
     </Box>
   );

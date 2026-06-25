@@ -7,12 +7,22 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { CURRENT_LESSON } from '../mock/lessonData';
 import { Question, ExerciseType } from '../types/lesson';
+import { saveDiagnosticBestScore } from '../hsk/diagnosticScore';
 
 interface QuestionResult {
   question: Question;
   userAnswer: string | null;
   isCorrect: boolean;
   questionIndex: number;
+}
+
+function computeDiagnosticScore(results: QuestionResult[]) {
+  const correctCount = results.filter((r) => r.isCorrect).length;
+  return Math.round((correctCount / results.length) * 100);
+}
+
+function persistDiagnosticScore(results: QuestionResult[]) {
+  saveDiagnosticBestScore(computeDiagnosticScore(results));
 }
 
 export default function HSKMockExamPage() {
@@ -40,7 +50,7 @@ export default function HSKMockExamPage() {
   const [questionResults, setQuestionResults] = useState<QuestionResult[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState(5 * 60); // 5 minutes (design: Time Left 05:00)
+  const [timeRemaining, setTimeRemaining] = useState(25 * 60); // 25 minutes
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set());
@@ -72,6 +82,7 @@ export default function HSKMockExamPage() {
           });
           setQuestionResults(checkedResults);
           setIsSubmitted(true);
+          persistDiagnosticScore(checkedResults);
           checkedResults.forEach(result => {
             localStorage.setItem(`question_${result.question.id}_result`, JSON.stringify({
               userAnswer: result.userAnswer,
@@ -131,6 +142,7 @@ export default function HSKMockExamPage() {
     setQuestionResults(checkedResults);
     setIsSubmitted(true);
     setShowResult(true);
+    persistDiagnosticScore(checkedResults);
     
     // Save results to localStorage
     checkedResults.forEach(result => {

@@ -1,11 +1,18 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Box, Typography, ButtonBase } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import { getSkillDrillMeta } from '../hsk/hskSkillDrills';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import HeadphonesIcon from '@mui/icons-material/Headphones';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import { getSkillDrillMeta, HSK_SKILL_DRILLS } from '../hsk/hskSkillDrills';
+
+function sectionLabelFor(section: 'listening' | 'reading') {
+  return section === 'listening' ? 'Listening' : 'Reading';
+}
 
 export default function HSKSkillDrillPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const type = searchParams.get('type');
   const meta = getSkillDrillMeta(type);
 
@@ -15,6 +22,117 @@ export default function HSKSkillDrillPage() {
 
   const sectionColor = meta?.section === 'listening' ? '#0369A1' : '#047857';
   const sectionLabel = meta?.section === 'listening' ? 'Listening' : 'Reading';
+
+  // 无 type 参数：展示题型选择页
+  if (!type) {
+    return (
+      <Box sx={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#FFF8F0', overflow: 'hidden' }}>
+        <Box
+          sx={{
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: is960 ? 1.5 : 2,
+            p: is960 ? 2 : is1920x1125 ? 3 : 2.5,
+            borderBottom: '1px solid rgba(0,0,0,0.06)',
+            bgcolor: 'rgba(255,255,255,0.92)',
+          }}
+        >
+          <ButtonBase
+            onClick={() => navigate('/hsk-test')}
+            sx={{
+              width: is960 ? 44 : 48,
+              height: is960 ? 44 : 48,
+              borderRadius: '50%',
+              bgcolor: 'rgba(0,0,0,0.05)',
+              color: '#374151',
+              flexShrink: 0,
+              '&:active': { bgcolor: 'rgba(0,0,0,0.1)' },
+            }}
+          >
+            <ChevronLeftIcon sx={{ fontSize: is960 ? 22 : 26 }} />
+          </ButtonBase>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.05rem' : '1.35rem', color: '#111827', lineHeight: 1.2 }}>
+              Specialized drills
+            </Typography>
+            <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.85rem', color: '#64748B', mt: 0.35, fontWeight: 600 }}>
+              Pick a question type to practice
+            </Typography>
+          </Box>
+        </Box>
+
+        <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', p: is960 ? 2 : 3, boxSizing: 'border-box' }}>
+          <Box
+            sx={{
+              maxWidth: 960,
+              mx: 'auto',
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
+              gap: is960 ? 1.5 : 2,
+            }}
+          >
+            {HSK_SKILL_DRILLS.map((drill) => {
+              const accent = drill.section === 'listening' ? '#0369A1' : '#047857';
+              const tintBg = drill.section === 'listening' ? 'rgba(3,105,161,0.08)' : 'rgba(4,120,87,0.08)';
+              const Icon = drill.section === 'listening' ? HeadphonesIcon : MenuBookIcon;
+              return (
+                <ButtonBase
+                  key={drill.id}
+                  onClick={() => setSearchParams({ type: drill.id })}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: is960 ? 1.5 : 2,
+                    p: is960 ? 1.75 : 2.25,
+                    borderRadius: is960 ? '16px' : '20px',
+                    bgcolor: '#FFFFFF',
+                    border: '1px solid rgba(0,0,0,0.06)',
+                    boxShadow: '0 6px 18px rgba(15,23,42,0.06)',
+                    textAlign: 'left',
+                    '&:active': { transform: 'scale(0.99)', bgcolor: '#FAFAFA' },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: is960 ? 48 : 56,
+                      height: is960 ? 48 : 56,
+                      borderRadius: is960 ? '14px' : '16px',
+                      bgcolor: tintBg,
+                      color: accent,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Icon sx={{ fontSize: is960 ? 26 : 30 }} />
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.95rem' : '1.08rem', color: '#111827', lineHeight: 1.25, mb: 0.35 }}>
+                      {drill.label}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontWeight: 800,
+                        fontSize: is960 ? '0.6rem' : '0.68rem',
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        color: accent,
+                      }}
+                    >
+                      {sectionLabelFor(drill.section)} · {drill.levelsHint}
+                    </Typography>
+                  </Box>
+                  <ArrowForwardIcon sx={{ fontSize: is960 ? 20 : 22, color: '#9CA3AF', flexShrink: 0 }} />
+                </ButtonBase>
+              );
+            })}
+          </Box>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -39,7 +157,7 @@ export default function HSKSkillDrillPage() {
         }}
       >
         <ButtonBase
-          onClick={() => navigate('/hsk-test')}
+          onClick={() => setSearchParams({})}
           sx={{
             width: is960 ? 44 : 48,
             height: is960 ? 44 : 48,

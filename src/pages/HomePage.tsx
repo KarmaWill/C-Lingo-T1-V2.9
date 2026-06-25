@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Grid, ButtonBase } from '@mui/material';
+import { Box, Typography, ButtonBase } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import StyleIcon from '@mui/icons-material/Style';
@@ -16,30 +16,72 @@ export default function HomePage() {
     navigate('/lesson/1');
   };
 
+  const sideCardSx = {
+    p: is960 ? 1.35 : 2.25,
+    borderRadius: is960 ? '16px' : '24px',
+    color: 'white',
+    position: 'relative' as const,
+    overflow: 'hidden',
+    minHeight: 0,
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    cursor: 'pointer',
+    transition: '0.3s',
+    boxSizing: 'border-box' as const,
+    '&:active': { transform: 'scale(0.98)' },
+  };
+
+  const sideArrowSx = {
+    zIndex: 1,
+    bgcolor: 'rgba(255,255,255,0.2)',
+    width: is960 ? 44 : 64,
+    height: is960 ? 44 : 64,
+    borderRadius: is960 ? '14px' : '20px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backdropFilter: 'blur(10px)',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+    flexShrink: 0,
+  };
+
   return (
-    <Box sx={{ 
-      p: is960 ? 2 : 4,
-      height: '100%', 
-      width: '100%',
-      overflow: 'hidden', 
-      display: 'flex', 
-      flexDirection: 'column', 
-      boxSizing: 'border-box',
-      position: 'relative'
-    }}>
-      {/* Main Integrated Grid */}
-      <Grid container spacing={is960 ? 2 : 3} sx={{ flexGrow: 1, height: '100%', overflow: 'hidden', boxSizing: 'border-box', width: '100%', m: 0 }}>
-        {/* Left Column: Hero Card */}
-        <Grid item xs={12} lg={8} sx={{ height: '100%', boxSizing: 'border-box', overflow: 'hidden', p: 0 }}>
+    <Box
+      sx={{
+        p: is960 ? 2 : 3,
+        height: '100%',
+        width: '100%',
+        minHeight: 0,
+        overflow: 'hidden',
+        boxSizing: 'border-box',
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 2.45fr) minmax(0, 1fr)' },
+        gridTemplateRows: { xs: 'minmax(220px, 1fr) auto', lg: 'minmax(0, 1fr)' },
+        gap: is960 ? 1.25 : 1.5,
+        alignItems: 'stretch',
+      }}
+    >
+      {/* Hero — current lesson */}
+      <Box
+        sx={{
+          minWidth: 0,
+          minHeight: 0,
+          height: { lg: '100%' },
+          boxSizing: 'border-box',
+          overflow: 'hidden',
+        }}
+      >
           <Box
             sx={{
               position: 'relative',
               height: '100%',
-              borderRadius: is960 ? '28px' : '40px',
+              minHeight: is960 ? 220 : 280,
+              borderRadius: is960 ? '24px' : '32px',
               overflow: 'hidden',
               border: is960 ? '3px solid white' : '4px solid white',
               boxShadow: '0 15px 40px rgba(0,0,0,0.08)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
           >
             {/* 老师图片 - 铺满整个卡片 */}
@@ -147,153 +189,51 @@ export default function HomePage() {
               </Box>
             </Box>
           </Box>
-        </Grid>
+      </Box>
 
-        {/* Right Column: Cards Stack */}
-        <Grid item xs={12} lg={4} sx={{ height: '100%', boxSizing: 'border-box', overflow: 'hidden', p: 0, minHeight: 0 }}>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateRows: 'repeat(3, minmax(0, 1fr))',
-              gap: is960 ? 1.75 : 2.5,
-              height: '100%',
-              minHeight: 0,
-              boxSizing: 'border-box',
-              overflow: 'hidden',
-            }}
-          >
-            {/* AI Tutor — 原 Practice */}
-            <Box 
-              onClick={() => navigate('/ai-chat')}
-              sx={{ 
-                bgcolor: '#8B5CF6', 
-                p: is960 ? 1.75 : 3.5, 
-                borderRadius: is960 ? '18px' : '32px', 
-                color: 'white', 
-                position: 'relative', 
-                overflow: 'hidden', 
-                minHeight: 0,
-                height: '100%',
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-                transition: '0.3s',
-                boxSizing: 'border-box',
-                '&:active': { transform: 'scale(0.98)' }
-              }}
-            >
-              <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: is960 ? 0.85 : 1.25, flex: 1, minWidth: 0 }}>
-                <SmartToyIcon sx={{ fontSize: is960 ? 20 : 30, opacity: 0.95, flexShrink: 0 }} />
-                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.82rem' : '1.2rem', lineHeight: 1.25, minWidth: 0 }}>AI Tutor</Typography>
+      {/* Side shortcuts — equal height stack */}
+      <Box
+        sx={{
+          minWidth: 0,
+          minHeight: 0,
+          height: { lg: '100%' },
+          display: 'grid',
+          gridTemplateRows: 'repeat(3, minmax(0, 1fr))',
+          gap: is960 ? 1.1 : 1.35,
+          boxSizing: 'border-box',
+          overflow: 'hidden',
+        }}
+      >
+            <Box onClick={() => navigate('/ai-chat')} sx={{ ...sideCardSx, bgcolor: '#8B5CF6' }}>
+              <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: is960 ? 0.85 : 1.15, flex: 1, minWidth: 0 }}>
+                <SmartToyIcon sx={{ fontSize: is960 ? 22 : 32, opacity: 0.95, flexShrink: 0 }} />
+                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.9rem' : '1.22rem', lineHeight: 1.25, minWidth: 0 }}>AI Tutor</Typography>
               </Box>
-              <Box sx={{ 
-                zIndex: 1,
-                bgcolor: 'rgba(255,255,255,0.2)', 
-                width: is960 ? 40 : 72, 
-                height: is960 ? 40 : 72, 
-                borderRadius: is960 ? '14px' : '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backdropFilter: 'blur(10px)',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
-                flexShrink: 0
-              }}>
-                <ArrowForwardIcon sx={{ fontSize: is960 ? 18 : 32 }} />
+              <Box sx={sideArrowSx}>
+                <ArrowForwardIcon sx={{ fontSize: is960 ? 20 : 28 }} />
               </Box>
             </Box>
 
-            {/* Flashcards */}
-            <Box
-              onClick={() => navigate('/lingo-flash')}
-              sx={{
-                bgcolor: '#0D9488',
-                p: is960 ? 1.75 : 3.5,
-                borderRadius: is960 ? '18px' : '32px',
-                color: 'white',
-                position: 'relative',
-                overflow: 'hidden',
-                minHeight: 0,
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-                transition: '0.3s',
-                boxSizing: 'border-box',
-                '&:active': { transform: 'scale(0.98)' },
-              }}
-            >
-              <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: is960 ? 0.85 : 1.25, flex: 1, minWidth: 0 }}>
-                <StyleIcon sx={{ fontSize: is960 ? 20 : 30, opacity: 0.95, flexShrink: 0 }} />
-                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.82rem' : '1.2rem', lineHeight: 1.25, minWidth: 0 }}>Flashcards</Typography>
+            <Box onClick={() => navigate('/lingo-flash')} sx={{ ...sideCardSx, bgcolor: '#0D9488' }}>
+              <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: is960 ? 0.85 : 1.15, flex: 1, minWidth: 0 }}>
+                <StyleIcon sx={{ fontSize: is960 ? 22 : 32, opacity: 0.95, flexShrink: 0 }} />
+                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.9rem' : '1.22rem', lineHeight: 1.25, minWidth: 0 }}>Flashcards</Typography>
               </Box>
-              <Box
-                sx={{
-                  zIndex: 1,
-                  bgcolor: 'rgba(255,255,255,0.2)',
-                  width: is960 ? 40 : 72,
-                  height: is960 ? 40 : 72,
-                  borderRadius: is960 ? '14px' : '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backdropFilter: 'blur(10px)',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
-                  flexShrink: 0,
-                }}
-              >
-                <ArrowForwardIcon sx={{ fontSize: is960 ? 18 : 32 }} />
+              <Box sx={sideArrowSx}>
+                <ArrowForwardIcon sx={{ fontSize: is960 ? 20 : 28 }} />
               </Box>
             </Box>
 
-            {/* Grammar Puzzle */}
-            <Box
-              onClick={() => navigate('/grammar-puzzle')}
-              sx={{
-                bgcolor: '#0E7490',
-                p: is960 ? 1.75 : 3.5,
-                borderRadius: is960 ? '18px' : '32px',
-                color: 'white',
-                position: 'relative',
-                overflow: 'hidden',
-                minHeight: 0,
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-                transition: '0.3s',
-                boxSizing: 'border-box',
-                '&:active': { transform: 'scale(0.98)' },
-              }}
-            >
-              <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: is960 ? 0.85 : 1.25, flex: 1, minWidth: 0 }}>
-                <ExtensionIcon sx={{ fontSize: is960 ? 20 : 30, opacity: 0.95, flexShrink: 0 }} />
-                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.82rem' : '1.2rem', lineHeight: 1.25, minWidth: 0 }}>Sentence Snap</Typography>
+            <Box onClick={() => navigate('/grammar-puzzle')} sx={{ ...sideCardSx, bgcolor: '#0E7490' }}>
+              <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: is960 ? 0.85 : 1.15, flex: 1, minWidth: 0 }}>
+                <ExtensionIcon sx={{ fontSize: is960 ? 22 : 32, opacity: 0.95, flexShrink: 0 }} />
+                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.9rem' : '1.22rem', lineHeight: 1.25, minWidth: 0 }}>Sentence Snap</Typography>
               </Box>
-              <Box
-                sx={{
-                  zIndex: 1,
-                  bgcolor: 'rgba(255,255,255,0.2)',
-                  width: is960 ? 40 : 72,
-                  height: is960 ? 40 : 72,
-                  borderRadius: is960 ? '14px' : '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backdropFilter: 'blur(10px)',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
-                  flexShrink: 0,
-                }}
-              >
-                <ArrowForwardIcon sx={{ fontSize: is960 ? 18 : 32 }} />
+              <Box sx={sideArrowSx}>
+                <ArrowForwardIcon sx={{ fontSize: is960 ? 20 : 28 }} />
               </Box>
             </Box>
-          </Box>
-        </Grid>
-      </Grid>
+      </Box>
     </Box>
   );
 }
