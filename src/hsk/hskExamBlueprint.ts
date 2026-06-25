@@ -254,13 +254,23 @@ export interface GeneratedExamQuestion {
   question: string;
   options: string[];
   correctAnswer: string;
-  /** text = 文字四选一；image = 图片三选一；image-match = 图片库 + 多题匹配 */
-  displayMode: 'text' | 'image' | 'image-match';
+  /** text = 文字四选一；image = 图片三选一；image-match = 图片库 + 多题匹配；text-composite = 共享音频 + 多题文字选择 */
+  displayMode: 'text' | 'image' | 'image-match' | 'text-composite';
   optionImages?: string[];
+  /** 复合题共享题干（如 L02 对话 / L04 长文） */
+  sharedPrompt?: string;
 }
 
 const IMAGE_TEMPLATE_CODES = new Set<HskTemplateCode>(['L01', 'R08']);
 const IMAGE_MATCH_TEMPLATE_CODES = new Set<HskTemplateCode>(['L03']);
+/** L02 / L04 / L05 — 一段音频对应多道文字选择题 */
+const COMPOSITE_TEXT_LISTENING_CODES = new Set<HskTemplateCode>(['L02', 'L04', 'L05']);
+
+const COMPOSITE_SHARED_PROMPTS: Partial<Record<HskTemplateCode, string>> = {
+  L02: 'Listen to the dialogue and answer questions 11–15.',
+  L04: 'Listen to the long passage and answer questions based on it.',
+  L05: 'Listen to the interview and answer questions based on it.',
+};
 
 /** L03 等题型：共享 A–E 图片库 */
 export const MOCK_IMAGE_MATCH_BANK = [
@@ -307,13 +317,24 @@ const MOCK_IMAGE_OPTION_SETS: Omit<
 
 const MOCK_OPTION_SETS: Omit<
   GeneratedExamQuestion,
-  'id' | 'number' | 'section' | 'partNumber' | 'templateCode' | 'templateLabel' | 'isComposite' | 'displayMode' | 'optionImages'
+  'id' | 'number' | 'section' | 'partNumber' | 'templateCode' | 'templateLabel' | 'isComposite' | 'displayMode' | 'optionImages' | 'sharedPrompt'
 >[] = [
   { question: '你好吗？', options: ['Hello', 'Goodbye', 'Thank you', 'Sorry'], correctAnswer: 'Hello' },
   { question: '谢谢', options: ['Please', 'Thank you', 'Sorry', 'Excuse me'], correctAnswer: 'Thank you' },
   { question: '我爱你', options: ['I love you', 'I hate you', 'I miss you', 'I like you'], correctAnswer: 'I love you' },
   { question: '再见', options: ['Hello', 'Goodbye', 'See you', 'Welcome'], correctAnswer: 'Goodbye' },
   { question: '对不起', options: ['Thank you', 'Sorry', 'Please', 'Excuse me'], correctAnswer: 'Sorry' },
+];
+
+const MOCK_L04_SUB_ITEMS: Omit<
+  GeneratedExamQuestion,
+  'id' | 'number' | 'section' | 'partNumber' | 'templateCode' | 'templateLabel' | 'isComposite' | 'displayMode' | 'optionImages' | 'sharedPrompt'
+>[] = [
+  { question: '男的主要做什么？', options: ['去商店', '去学校', '回家', '去公司'], correctAnswer: '去学校' },
+  { question: '女的喜欢什么？', options: ['音乐', '运动', '看书', '旅行'], correctAnswer: '看书' },
+  { question: '他们什么时候见面？', options: ['今天', '明天', '周末', '下个月'], correctAnswer: '周末' },
+  { question: '对话发生在哪儿？', options: ['家里', '学校', '咖啡厅', '公园'], correctAnswer: '学校' },
+  { question: '女的觉得怎么样？', options: ['很高兴', '有点累', '非常忙', '不太满意'], correctAnswer: '有点累' },
 ];
 
 export function generateQuestionsFromBlueprint(
@@ -359,6 +380,25 @@ export function generateQuestionsFromBlueprint(
           correctAnswer: mock.correctAnswer,
           displayMode: 'image',
           optionImages: mock.optionImages,
+        });
+      } else if (p.isComposite && COMPOSITE_TEXT_LISTENING_CODES.has(p.templateCode)) {
+        const subIdx = (n - p.questionStart) % MOCK_L04_SUB_ITEMS.length;
+        const mock = p.templateCode === 'L04'
+          ? MOCK_L04_SUB_ITEMS[subIdx]
+          : MOCK_OPTION_SETS[(n - 1) % MOCK_OPTION_SETS.length];
+        questions.push({
+          id: `${paperId}-q${n}`,
+          number: n,
+          section: p.section,
+          partNumber: p.partNumber,
+          templateCode: p.templateCode,
+          templateLabel: TEMPLATE_LABELS[p.templateCode],
+          isComposite: true,
+          sharedPrompt: COMPOSITE_SHARED_PROMPTS[p.templateCode],
+          question: mock.question,
+          options: mock.options,
+          correctAnswer: mock.correctAnswer,
+          displayMode: 'text-composite',
         });
       } else {
         const mock = MOCK_OPTION_SETS[(n - 1) % MOCK_OPTION_SETS.length];

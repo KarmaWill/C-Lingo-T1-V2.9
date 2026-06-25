@@ -1096,7 +1096,7 @@ function ExamIntroScreen({
 
 interface ExamNavGroup {
   indices: number[];
-  isImageMatch: boolean;
+  groupKind: 'single' | 'image-match' | 'text-composite';
 }
 
 interface SidebarSlot {
@@ -1105,25 +1105,30 @@ interface SidebarSlot {
   label: string;
 }
 
+function isGroupedDisplayMode(mode: Question['displayMode']): mode is 'image-match' | 'text-composite' {
+  return mode === 'image-match' || mode === 'text-composite';
+}
+
 function buildExamNavGroups(questions: Question[]): ExamNavGroup[] {
   const groups: ExamNavGroup[] = [];
   let i = 0;
   while (i < questions.length) {
     const q = questions[i];
-    if (q.displayMode === 'image-match') {
+    if (isGroupedDisplayMode(q.displayMode)) {
       const partKey = `${q.section}-${q.partNumber}`;
+      const groupKind = q.displayMode;
       const indices: number[] = [];
       while (
         i < questions.length
-        && questions[i].displayMode === 'image-match'
+        && questions[i].displayMode === groupKind
         && `${questions[i].section}-${questions[i].partNumber}` === partKey
       ) {
         indices.push(i);
         i += 1;
       }
-      groups.push({ indices, isImageMatch: true });
+      groups.push({ indices, groupKind });
     } else {
-      groups.push({ indices: [i], isImageMatch: false });
+      groups.push({ indices: [i], groupKind: 'single' });
       i += 1;
     }
   }
@@ -1139,7 +1144,7 @@ function isNavGroupComplete(
     .map((idx) => answers[questions[idx].id])
     .filter((value) => Boolean(value));
   if (groupAnswers.length !== group.indices.length) return false;
-  if (group.isImageMatch) {
+  if (group.groupKind === 'image-match') {
     return new Set(groupAnswers).size === groupAnswers.length;
   }
   return true;
@@ -1150,12 +1155,13 @@ function buildSidebarSlots(indices: number[], questions: Question[]): SidebarSlo
   let i = 0;
   while (i < indices.length) {
     const q = questions[indices[i]];
-    if (q.displayMode === 'image-match') {
+    if (isGroupedDisplayMode(q.displayMode)) {
       const partKey = `${q.section}-${q.partNumber}`;
+      const groupMode = q.displayMode;
       const slotIndices: number[] = [];
       while (
         i < indices.length
-        && questions[indices[i]].displayMode === 'image-match'
+        && questions[indices[i]].displayMode === groupMode
         && `${questions[indices[i]].section}-${questions[indices[i]].partNumber}` === partKey
       ) {
         slotIndices.push(indices[i]);
@@ -1190,12 +1196,16 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
   const examNavGroups = useMemo(() => buildExamNavGroups(paper.questions), [paper.questions]);
   const currentNavGroupIndex = examNavGroups.findIndex((g) => g.indices.includes(currentQuestionIndex));
   const currentNavGroup = examNavGroups[Math.max(0, currentNavGroupIndex)];
-  const isImageMatchGroup = currentNavGroup?.isImageMatch ?? false;
-  const groupQuestions = isImageMatchGroup
+  const isImageMatchGroup = currentNavGroup?.groupKind === 'image-match';
+  const isTextCompositeGroup = currentNavGroup?.groupKind === 'text-composite';
+  const isGroupedQuestion = isImageMatchGroup || isTextCompositeGroup;
+  const groupQuestions = isGroupedQuestion
     ? currentNavGroup.indices.map((idx) => paper.questions[idx])
     : [paper.questions[currentQuestionIndex]];
 
-  const currentQuestion = paper.questions[currentQuestionIndex];
+  const currentQuestion = isTextCompositeGroup
+    ? groupQuestions[activeSubIndex]
+    : paper.questions[currentQuestionIndex];
   const selectedAnswer = answers[currentQuestion.id];
   const matchImages = groupQuestions[0]?.optionImages ?? [];
 
@@ -1252,6 +1262,13 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
 
   const handleSelectAnswer = (answer: string, questionId = currentQuestion.id) => {
     setAnswers((prev) => ({ ...prev, [questionId]: answer }));
+
+    if (isTextCompositeGroup) {
+      const groupLen = groupQuestions.length;
+      if (activeSubIndex < groupLen - 1) {
+        setActiveSubIndex((prev) => prev + 1);
+      }
+    }
   };
 
   const handleAssignMatchLetter = (letter: string) => {
@@ -1310,7 +1327,7 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
   );
   const isCurrentGroupComplete = isNavGroupComplete(currentNavGroup, paper.questions, answers);
   const isListening = currentQuestion.section === 'listening';
-  const isImageOptions = !isImageMatchGroup && currentQuestion.displayMode === 'image';
+  const isImageOptions = !isGroupedQuestion && currentQuestion.displayMode === 'image';
   const currentPartKey = `${currentQuestion.section}-${currentQuestion.partNumber}`;
   const timeLabel = `${Math.floor(timeRemaining / 60)}:${(timeRemaining % 60).toString().padStart(2, '0')}`;
   const examTitle = paper.source === 'official'
@@ -1320,7 +1337,7 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
   const examTeal = '#5BBFAF';
   const examTealDark = '#49A995';
   const isLastGroup = currentNavGroupIndex >= examNavGroups.length - 1;
-  const groupRangeLabel = isImageMatchGroup
+  const groupRangeLabel = isGroupedQuestion
     ? `Questions ${groupQuestions[0].number}–${groupQuestions[groupQuestions.length - 1].number}`
     : `Question ${currentQuestion.number}`;
 
@@ -1537,7 +1554,7 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
               <Typography sx={{ fontSize: is960 ? '1.05rem' : '1.18rem', fontWeight: 800, color: '#111827' }}>
                 {groupRangeLabel}
               </Typography>
-              {isImageMatchGroup && isListening && (
+              {isGroupedQuestion && isListening && (
                 <ButtonBase
                   sx={{
                     width: is960 ? 40 : 44,
@@ -1681,6 +1698,132 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                             {subAnswer || ' '}
                           </Typography>
                         </Box>
+                      </ButtonBase>
+                    );
+                  })}
+                </Box>
+              </Box>
+            ) : isTextCompositeGroup ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 2 : 2.5, maxWidth: 900 }}>
+                {groupQuestions[0]?.sharedPrompt && (
+                  <Typography sx={{ fontSize: is960 ? '0.92rem' : '1.02rem', fontWeight: 600, color: '#64748B', lineHeight: 1.45 }}>
+                    {groupQuestions[0].sharedPrompt}
+                  </Typography>
+                )}
+
+                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                  <ButtonBase
+                    sx={{
+                      width: is960 ? 64 : 72,
+                      height: is960 ? 64 : 72,
+                      borderRadius: is960 ? '18px' : '20px',
+                      bgcolor: '#FB923C',
+                      color: '#FFFFFF',
+                      boxShadow: '0 8px 20px rgba(251,146,60,0.38)',
+                      '&:active': { transform: 'scale(0.95)', bgcolor: '#F97316' },
+                    }}
+                  >
+                    <VolumeUpIcon sx={{ fontSize: is960 ? 32 : 36 }} />
+                  </ButtonBase>
+                </Box>
+
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: is960 ? 0.75 : 1 }}>
+                  {groupQuestions.map((q, subIdx) => {
+                    const isActive = activeSubIndex === subIdx;
+                    const answered = !!answers[q.id];
+                    return (
+                      <ButtonBase
+                        key={q.id}
+                        onClick={() => setActiveSubIndex(subIdx)}
+                        sx={{
+                          minWidth: is960 ? 44 : 48,
+                          minHeight: is960 ? 44 : 48,
+                          px: 1.25,
+                          borderRadius: '12px',
+                          bgcolor: isActive ? '#3B82F6' : answered ? '#DBEAFE' : '#F1F5F9',
+                          color: isActive ? '#FFFFFF' : answered ? '#2563EB' : '#64748B',
+                          fontWeight: 800,
+                          fontSize: is960 ? '0.85rem' : '0.95rem',
+                          border: isActive ? 'none' : '1px solid #E2E8F0',
+                          '&:active': { transform: 'scale(0.98)' },
+                        }}
+                      >
+                        {q.number}
+                      </ButtonBase>
+                    );
+                  })}
+                </Box>
+
+                <Typography
+                  sx={{
+                    fontSize: is960 ? '1.15rem' : '1.35rem',
+                    fontWeight: 800,
+                    color: '#111827',
+                    lineHeight: 1.45,
+                  }}
+                >
+                  {currentQuestion.number}. {currentQuestion.question}
+                </Typography>
+
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${Math.min(currentQuestion.options.length, 4)}, minmax(0, 1fr))`,
+                    gap: is960 ? 1.25 : 1.75,
+                  }}
+                >
+                  {currentQuestion.options.map((option, idx) => {
+                    const isSelected = selectedAnswer === option;
+                    const letter = String.fromCharCode(65 + idx);
+                    return (
+                      <ButtonBase
+                        key={idx}
+                        onClick={() => handleSelectAnswer(option, currentQuestion.id)}
+                        sx={{
+                          position: 'relative',
+                          minHeight: is960 ? 120 : 148,
+                          bgcolor: '#FFFFFF',
+                          border: isSelected ? `3px solid ${examTeal}` : '2px solid #E5E7EB',
+                          borderRadius: is960 ? '16px' : '20px',
+                          boxShadow: isSelected ? '0 8px 24px rgba(91,191,175,0.18)' : '0 2px 8px rgba(15,23,42,0.04)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          p: is960 ? 1.5 : 2,
+                          textAlign: 'center',
+                          '&:active': { transform: 'scale(0.98)' },
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: is960 ? 10 : 12,
+                            left: is960 ? 10 : 12,
+                            width: is960 ? 28 : 32,
+                            height: is960 ? 28 : 32,
+                            borderRadius: '8px',
+                            bgcolor: isSelected ? examTeal : '#F1F5F9',
+                            color: isSelected ? '#FFFFFF' : '#64748B',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 900,
+                            fontSize: is960 ? '0.82rem' : '0.92rem',
+                          }}
+                        >
+                          {letter}
+                        </Box>
+                        <Typography
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: is960 ? '0.95rem' : '1.08rem',
+                            color: isSelected ? '#0F766E' : '#374151',
+                            lineHeight: 1.35,
+                            px: 1,
+                          }}
+                        >
+                          {option}
+                        </Typography>
                       </ButtonBase>
                     );
                   })}
