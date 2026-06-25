@@ -1,47 +1,65 @@
-# NSK 2.0 - Chinese Learning Platform
+# C-Lingo AIOS Tablet 1 Version 2.9
 
-A modern, interactive Chinese learning platform designed for teenagers (12+) with gamified learning experiences.
+Interactive prototype for **C-Lingo AIOS Tablet 1** — a tablet-first Chinese learning experience for teenagers (12+), wrapped in a device shell with hardware-style controls and product chrome.
+
+**Product name (consistent wording):** C-Lingo AIOS Tablet 1 Version 2.9  
+**Browser title:** C-Lingo AIOS T1  
+**Default viewport:** 1024×768 (iPad landscape)
+
+## Overview
+
+C-Lingo AIOS Tablet 1 Version 2.9 is the front-end shell and learning hub for the C-Lingo AIOS ecosystem. The app renders inside an iPad-style device frame with:
+
+- **Boot splash** — black screen with C-Lingo cover logo; tap or auto-enter
+- **Screen off / wake** — hardware-style sleep button; wake layer reuses the cover logo
+- **Volume controls** — top-edge hardware keys with on-screen HUD
+- **Shell chrome** — top slogan bar, bottom brand bar, and quick links to related products
+
+### Shell quick links
+
+| Control | Label | Destination |
+|---------|-------|---------------|
+| Top slogan | Beyond Language. To Bigger Worlds. | [Product roadmap](https://dashboard-app-sable-tau.vercel.app/#c6) |
+| Top right | C-Lingo Admin | [Admin console](https://nsk-back-end.vercel.app/) |
+| Top right | C-Lingo ScanPen | [ScanPen demo](https://c-lingo-scan-pen.vercel.app/) |
+| Bottom center | C-Lingo AIOS | [clingoaios.com](https://www.clingoaios.com/) |
 
 ## Features
 
-### Core Learning System
-- **Fun Chinese Hub** - Spiral learning system based on scaffolding theory
-- **Vocabulary Cards** - Interactive flashcards with HSK levels, tones, and multi-language support
-- **Knowledge Cards** - Dialogue, grammar, and pattern cards
-- **Practice Exercises** - Tone recognition and word matching games
-- **Character Writing** - Step-by-step Chinese character writing practice with Tian Zi Ge (田字格)
+### Core learning
+- **Fun Chinese Hub** — spiral learning based on scaffolding theory
+- **Vocabulary cards** — HSK levels, tones, multi-language support
+- **Knowledge cards** — dialogue, grammar, and pattern cards
+- **Practice exercises** — tone recognition and word matching
+- **Character writing** — trace → guided trace → write from memory (田字格)
 
-### Library System
-- **Bookshelf** - Manage and read Chinese textbooks
-- **Book Selection** - Browse and download learning materials
-- **Reading Progress** - Track your learning journey
+### Library & culture
+- **Bookshelf** — Chinese textbooks with reading progress
+- **Book selection** — browse and download learning materials
+- **Culture map** — interactive exploration of Chinese culture
 
-### Culture Exploration
-- **Interactive Map** - Explore Chinese culture and landmarks
-- **Cultural Content** - Learn about Chinese traditions and history
+### Specialized tools
+- **HSK preparation** — mock exams and practice tests (Official & C-Lingo)
+- **Mini games** — LingoFlash, Grammar Puzzle, Syntax Snap
+- **AI Class Studio** — AI tutor, flashcards, sentence practice
+- **Camera tools** — OCR and translation (where enabled)
 
-### Specialized Tools
-- **HSK Preparation** - Mock exams and practice tests
-- **Mini Games** - LingoFlash, Grammar Puzzle, Syntax Snap
-- **AI Chat** - Practice conversations with AI tutor
-- **Camera Tools** - OCR and translation features
+## Tech stack
 
-## Tech Stack
-
-- **Frontend Framework:** React 18 + TypeScript
-- **UI Library:** Material-UI (MUI)
-- **State Management:** Redux Toolkit + Zustand
+- **Framework:** React 18 + TypeScript
+- **UI:** Material-UI (MUI) + Tailwind CSS (selected modules)
+- **State:** Redux Toolkit + Zustand
 - **Routing:** React Router v6
 - **Animation:** Framer Motion
-- **Build Tool:** Vite
-- **Styling:** Emotion (CSS-in-JS)
+- **Build:** Vite
 
-## Getting Started
+## Getting started
 
 ### Prerequisites
-- Node.js 16+ and npm
 
-### Installation
+- Node.js **22.x** and npm
+
+### Install
 
 ```bash
 npm install
@@ -49,116 +67,101 @@ npm install
 
 ### Development
 
-Run the development server:
+Default — **C-Lingo AIOS Tablet 1** at 1024×768:
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3001](http://localhost:3001) in your browser.
 
-### Multi-Resolution Development
+### Multi-resolution dev
 
-For testing different screen sizes:
+Test other tablet sizes supported by C-Lingo AIOS Tablet 1 Version 2.9:
 
 ```bash
-# 960x540 resolution
+# 960×540
 npm run dev:960
 
-# 1920x1125 resolution  
+# 1920×1125
 npm run dev:1920
 
-# Run all resolutions concurrently
+# 2000×1200
+npm run dev:2000
+
+# Run 1024, 960, and 1920 concurrently
 npm run dev:all
 ```
 
-### Build for Production
+| Resolution | Port |
+|------------|------|
+| 1024×768 (default) | 3001 |
+| 960×540 | 3002 |
+| 1920×1125 | 3003 |
+| 2000×1200 | 3001 |
+
+LAN access: `npm run dev:lan` — use your machine’s local IP on the same Wi‑Fi (see terminal hints for iPad testing).
+
+### Production build
 
 ```bash
 npm run build
 npm run preview
 ```
 
-## Environment Configuration
+## Environment
 
-Create a `.env` file (see `.env.example`):
+Copy `.env.example` to `.env`:
 
 ```env
+VITE_API_BASE_URL=http://localhost:3000
 VITE_SCREEN_SIZE=1024x768
 ```
 
-## Project Structure
+`VITE_SCREEN_SIZE` drives the simulated tablet resolution inside the C-Lingo AIOS Tablet 1 shell.
+
+## Project structure
 
 ```
 src/
-├── components/          # Reusable components
-│   └── MainUI/         # Main layout components
-├── pages/              # Page components
-│   ├── HomePage.tsx
-│   ├── FunChineseHubPage.tsx
-│   ├── FunChineseLessonPage.tsx
-│   ├── CharacterWritingPage.tsx
-│   ├── LibraryPage.tsx
-│   └── CultureMapPage.tsx
-├── store/              # State management
-├── App.tsx             # Main application
-└── main.tsx            # Entry point
+├── assets/              # Brand assets (cover logo, glass logo, ScanPen tile, etc.)
+├── components/
+│   └── MainUI/          # Device shell, splash, layout, navigation
+├── pages/               # Hub, lessons, library, HSK, games, etc.
+├── store/               # Redux / Zustand state
+├── App.tsx
+└── main.tsx
+public/
+└── branding/            # Shell footer and shared brand images
 ```
 
-## Key Features Implementation
+## Learning flow (Fun Chinese)
 
-### Responsive Design
-- Supports multiple iPad resolutions: 960x540, 1024x768, 1920x1125, 2000x1200
-- Optimized for touch interactions
-- Smooth animations and transitions
+1. **Warmup** — scene intro and objectives  
+2. **Learn** — vocabulary with pronunciation  
+3. **Knowledge cards** — dialogue, grammar, patterns  
+4. **Practice** — interactive exercises  
+5. **Complete** — summary and next steps  
 
-### Learning Flow
-1. **Warmup** - Scene introduction and learning objectives
-2. **Learn** - Vocabulary cards with pronunciation
-3. **Knowledge Cards** - Dialogue, grammar, and pattern explanation
-4. **Practice** - Interactive exercises
-5. **Complete** - Summary and next steps
+## Design notes
 
-### Character Writing System
-- Three-step writing practice: Trace → Trace without guide → Write from memory
-- Tian Zi Ge (田字格) grid system
-- Stroke order guidance
-- Character information panel
+- **Target users:** Teenagers (12+) in Southeast Asia and Western markets  
+- **UI language:** English first; additional locales planned  
+- **Interaction:** iPad touch targets, single-screen hub where possible  
+- **Tone:** Gamified, not childish — clean, international app aesthetic  
 
 ## Deployment
 
-### Deploy to Vercel
+Deploy the built `dist/` folder to any static host (e.g. Vercel). Set `VITE_SCREEN_SIZE` and `VITE_API_BASE_URL` in the project environment.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=YOUR_GITHUB_URL)
+## Version
 
-1. Connect your GitHub repository to Vercel
-2. Configure environment variables in Vercel Dashboard
-3. Deploy automatically on push to main branch
-
-## Development Roadmap
-
-- [x] Project initialization
-- [x] Main UI implementation
-- [x] Fun Chinese learning system
-- [x] Character writing practice
-- [x] Library and book system
-- [x] Culture exploration map
-- [ ] AI chat integration
-- [ ] HSK preparation system
-- [ ] User authentication
-- [ ] Progress persistence
-- [ ] Performance optimization
-
-## Contributing
-
-This is a private educational project. For questions or suggestions, please contact the project team.
+| Field | Value |
+|-------|--------|
+| Product | C-Lingo AIOS Tablet 1 |
+| Version | 2.9 |
+| Package | `nsk-horizon-local-agent` |
 
 ## License
 
-Copyright (c) 2026 NSK Education. All rights reserved.
-
----
-
-**Target Users:** Teenagers (12+) in Southeast Asia and Western countries learning Chinese  
-**Languages:** English, Vietnamese, Thai, Indonesian (more coming soon)  
-**Design Philosophy:** Gamified but not childish, clean and modern interface
+Copyright © 2026 C-Lingo / NSK Education. All rights reserved.
