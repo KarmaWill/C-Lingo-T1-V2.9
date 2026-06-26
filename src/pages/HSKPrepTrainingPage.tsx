@@ -1327,13 +1327,14 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
   );
   const isCurrentGroupComplete = isNavGroupComplete(currentNavGroup, paper.questions, answers);
   const isListening = currentQuestion.section === 'listening';
+  const isPinyinTextOptions = currentQuestion.displayMode === 'pinyin-text';
   const isImageOptions = !isGroupedQuestion && currentQuestion.displayMode === 'image';
   const currentPartKey = `${currentQuestion.section}-${currentQuestion.partNumber}`;
   const timeLabel = `${Math.floor(timeRemaining / 60)}:${(timeRemaining % 60).toString().padStart(2, '0')}`;
   const examTitle = paper.source === 'official'
     ? `HSK ${paper.level} Official Mock`
     : `HSK ${paper.level} Practice Test`;
-  const optionColumns = isImageOptions ? 3 : Math.min(currentQuestion.options.length, 4);
+  const optionColumns = isImageOptions ? 3 : isPinyinTextOptions ? 2 : Math.min(currentQuestion.options.length, 4);
   const examTeal = '#5BBFAF';
   const examTealDark = '#49A995';
   const isLastGroup = currentNavGroupIndex >= examNavGroups.length - 1;
@@ -1831,18 +1832,20 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
               </Box>
             ) : (
               <>
-                <Typography
-                  sx={{
-                    fontSize: is960 ? '1.15rem' : '1.35rem',
-                    fontWeight: 800,
-                    color: '#111827',
-                    mb: isListening ? (is960 ? 1.5 : 2) : (is960 ? 2.5 : 3),
-                    lineHeight: 1.45,
-                    maxWidth: 900,
-                  }}
-                >
-                  {currentQuestion.question}
-                </Typography>
+                {currentQuestion.question ? (
+                  <Typography
+                    sx={{
+                      fontSize: is960 ? '1.15rem' : '1.35rem',
+                      fontWeight: 800,
+                      color: '#111827',
+                      mb: isListening ? (is960 ? 1.5 : 2) : (is960 ? 2.5 : 3),
+                      lineHeight: 1.45,
+                      maxWidth: 900,
+                    }}
+                  >
+                    {currentQuestion.question}
+                  </Typography>
+                ) : null}
 
                 {isListening && (
                   <Box sx={{ display: 'flex', justifyContent: 'center', mb: is960 ? 2.5 : 3 }}>
@@ -1867,22 +1870,25 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                     display: 'grid',
                     gridTemplateColumns: `repeat(${optionColumns}, minmax(0, 1fr))`,
                     gap: is960 ? 1.25 : 1.75,
-                    maxWidth: isImageOptions ? 640 : optionColumns >= 4 ? '100%' : 720,
-                    mx: isImageOptions ? 'auto' : 0,
+                    maxWidth: isImageOptions ? 640 : isPinyinTextOptions ? 560 : optionColumns >= 4 ? '100%' : 720,
+                    mx: isImageOptions || isPinyinTextOptions ? 'auto' : 0,
                   }}
                 >
                   {currentQuestion.options.map((option, idx) => {
                     const isSelected = selectedAnswer === option;
                     const letter = String.fromCharCode(65 + idx);
                     const imageSrc = currentQuestion.optionImages?.[idx];
+                    const pinyinLabel = currentQuestion.optionLabels?.[idx];
                     return (
                       <ButtonBase
                         key={idx}
                         onClick={() => handleSelectAnswer(option)}
                         sx={{
                           position: 'relative',
-                          aspectRatio: '1',
-                          minHeight: is960 ? (isImageOptions ? 140 : 120) : (isImageOptions ? 168 : 148),
+                          aspectRatio: isPinyinTextOptions ? '1.15 / 1' : '1',
+                          minHeight: is960
+                            ? (isImageOptions ? 140 : isPinyinTextOptions ? 132 : 120)
+                            : (isImageOptions ? 168 : isPinyinTextOptions ? 156 : 148),
                           bgcolor: '#FFFFFF',
                           border: isSelected ? `3px solid ${examTeal}` : '2px solid #E5E7EB',
                           borderRadius: is960 ? '16px' : '20px',
@@ -1896,27 +1902,29 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                           '&:active': { transform: 'scale(0.98)' },
                         }}
                       >
-                        <Box
-                          sx={{
-                            position: 'absolute',
-                            top: is960 ? 10 : 12,
-                            left: is960 ? 10 : 12,
-                            width: is960 ? 28 : 32,
-                            height: is960 ? 28 : 32,
-                            borderRadius: '8px',
-                            bgcolor: isImageOptions ? '#F1F5F9' : isSelected ? examTeal : '#F1F5F9',
-                            color: isImageOptions ? '#64748B' : isSelected ? '#FFFFFF' : '#64748B',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 900,
-                            fontSize: is960 ? '0.82rem' : '0.92rem',
-                            zIndex: 1,
-                            border: isImageOptions ? '1px solid #E2E8F0' : 'none',
-                          }}
-                        >
-                          {letter}
-                        </Box>
+                        {!isPinyinTextOptions && (
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: is960 ? 10 : 12,
+                              left: is960 ? 10 : 12,
+                              width: is960 ? 28 : 32,
+                              height: is960 ? 28 : 32,
+                              borderRadius: '8px',
+                              bgcolor: isImageOptions ? '#F1F5F9' : isSelected ? examTeal : '#F1F5F9',
+                              color: isImageOptions ? '#64748B' : isSelected ? '#FFFFFF' : '#64748B',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 900,
+                              fontSize: is960 ? '0.82rem' : '0.92rem',
+                              zIndex: 1,
+                              border: isImageOptions ? '1px solid #E2E8F0' : 'none',
+                            }}
+                          >
+                            {letter}
+                          </Box>
+                        )}
                         {isImageOptions && imageSrc ? (
                           <Box
                             component="img"
@@ -1930,6 +1938,29 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                               boxSizing: 'border-box',
                             }}
                           />
+                        ) : isPinyinTextOptions && pinyinLabel ? (
+                          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: is960 ? 0.75 : 1, px: 1 }}>
+                            <Typography
+                              sx={{
+                                fontSize: is960 ? '0.88rem' : '1rem',
+                                fontWeight: 600,
+                                color: '#64748B',
+                                lineHeight: 1.3,
+                              }}
+                            >
+                              {pinyinLabel.pinyin}
+                            </Typography>
+                            <Typography
+                              sx={{
+                                fontSize: is960 ? '1.2rem' : '1.42rem',
+                                fontWeight: 800,
+                                color: isSelected ? '#0F766E' : '#111827',
+                                lineHeight: 1.25,
+                              }}
+                            >
+                              {pinyinLabel.text}
+                            </Typography>
+                          </Box>
                         ) : (
                           <Typography
                             sx={{

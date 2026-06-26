@@ -86,7 +86,7 @@ function sumParts(parts: HskExamPartDef[], section: ExamSectionKind) {
 const HSK1_OFFICIAL_PARTS: HskExamPartDef[] = [
   part('listening', 1, 'L01', 1, 5),
   part('listening', 2, 'L03', 6, 10),
-  part('listening', 3, 'L02', 11, 15, true),
+  part('listening', 3, 'L04', 11, 15),
   part('listening', 4, 'L03', 16, 20),
   part('reading', 1, 'R01', 21, 25, true),
   part('reading', 2, 'R02', 26, 30, true),
@@ -98,7 +98,7 @@ const HSK1_OFFICIAL_PARTS: HskExamPartDef[] = [
 const HAPPY_CHINESE_MIDTERM_PARTS: HskExamPartDef[] = [
   part('listening', 1, 'L06', 1, 5),
   part('listening', 2, 'L01', 6, 10),
-  part('listening', 3, 'L02', 11, 15, true),
+  part('listening', 3, 'L04', 11, 15),
   part('listening', 4, 'L03', 16, 20),
   part('reading', 1, 'R08', 21, 25),
   part('reading', 2, 'R01', 26, 30, true),
@@ -254,21 +254,23 @@ export interface GeneratedExamQuestion {
   question: string;
   options: string[];
   correctAnswer: string;
-  /** text = 文字四选一；image = 图片三选一；image-match = 图片库 + 多题匹配；text-composite = 共享音频 + 多题文字选择 */
-  displayMode: 'text' | 'image' | 'image-match' | 'text-composite';
+  /** text = 文字四选一；image = 图片三选一；image-match = 图片库 + 多题匹配；text-composite = 共享音频 + 多题文字选择；pinyin-text = 拼音 + 汉字卡片（L04） */
+  displayMode: 'text' | 'image' | 'image-match' | 'text-composite' | 'pinyin-text';
   optionImages?: string[];
-  /** 复合题共享题干（如 L02 对话 / L04 长文） */
+  /** L04 等题型：选项拼音 + 汉字 */
+  optionLabels?: { pinyin: string; text: string }[];
+  /** 复合题共享题干（如 L02 对话） */
   sharedPrompt?: string;
 }
 
 const IMAGE_TEMPLATE_CODES = new Set<HskTemplateCode>(['L01', 'R08']);
 const IMAGE_MATCH_TEMPLATE_CODES = new Set<HskTemplateCode>(['L03']);
-/** L02 / L04 / L05 — 一段音频对应多道文字选择题 */
-const COMPOSITE_TEXT_LISTENING_CODES = new Set<HskTemplateCode>(['L02', 'L04', 'L05']);
+const L04_PINYIN_OPTION_CODE = new Set<HskTemplateCode>(['L04']);
+/** L02 / L05 — 一段音频对应多道文字选择题（L04 为独立单题） */
+const COMPOSITE_TEXT_LISTENING_CODES = new Set<HskTemplateCode>(['L02', 'L05']);
 
 const COMPOSITE_SHARED_PROMPTS: Partial<Record<HskTemplateCode, string>> = {
   L02: 'Listen to the dialogue and answer questions 11–15.',
-  L04: 'Listen to the long passage and answer questions based on it.',
   L05: 'Listen to the interview and answer questions based on it.',
 };
 
@@ -326,17 +328,6 @@ const MOCK_OPTION_SETS: Omit<
   { question: '对不起', options: ['Thank you', 'Sorry', 'Please', 'Excuse me'], correctAnswer: 'Sorry' },
 ];
 
-const MOCK_L04_SUB_ITEMS: Omit<
-  GeneratedExamQuestion,
-  'id' | 'number' | 'section' | 'partNumber' | 'templateCode' | 'templateLabel' | 'isComposite' | 'displayMode' | 'optionImages' | 'sharedPrompt'
->[] = [
-  { question: '男的主要做什么？', options: ['去商店', '去学校', '回家', '去公司'], correctAnswer: '去学校' },
-  { question: '女的喜欢什么？', options: ['音乐', '运动', '看书', '旅行'], correctAnswer: '看书' },
-  { question: '他们什么时候见面？', options: ['今天', '明天', '周末', '下个月'], correctAnswer: '周末' },
-  { question: '对话发生在哪儿？', options: ['家里', '学校', '咖啡厅', '公园'], correctAnswer: '学校' },
-  { question: '女的觉得怎么样？', options: ['很高兴', '有点累', '非常忙', '不太满意'], correctAnswer: '有点累' },
-];
-
 export function generateQuestionsFromBlueprint(
   paperId: string,
   blueprint: HskLevelBlueprint,
@@ -381,11 +372,25 @@ export function generateQuestionsFromBlueprint(
           displayMode: 'image',
           optionImages: mock.optionImages,
         });
+      } else if (L04_PINYIN_OPTION_CODE.has(p.templateCode)) {
+        // L04 — 独立单题，交互与 L01 图片三选一一致
+        const mock = MOCK_IMAGE_OPTION_SETS[(n - p.questionStart) % MOCK_IMAGE_OPTION_SETS.length];
+        questions.push({
+          id: `${paperId}-q${n}`,
+          number: n,
+          section: p.section,
+          partNumber: p.partNumber,
+          templateCode: p.templateCode,
+          templateLabel: TEMPLATE_LABELS[p.templateCode],
+          isComposite: false,
+          question: mock.question,
+          options: mock.options,
+          correctAnswer: mock.correctAnswer,
+          displayMode: 'image',
+          optionImages: mock.optionImages,
+        });
       } else if (p.isComposite && COMPOSITE_TEXT_LISTENING_CODES.has(p.templateCode)) {
-        const subIdx = (n - p.questionStart) % MOCK_L04_SUB_ITEMS.length;
-        const mock = p.templateCode === 'L04'
-          ? MOCK_L04_SUB_ITEMS[subIdx]
-          : MOCK_OPTION_SETS[(n - 1) % MOCK_OPTION_SETS.length];
+        const mock = MOCK_OPTION_SETS[(n - 1) % MOCK_OPTION_SETS.length];
         questions.push({
           id: `${paperId}-q${n}`,
           number: n,
