@@ -1,10 +1,12 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, Typography, ButtonBase } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import StyleIcon from '@mui/icons-material/Style';
+import { resolveBackPath } from '../utils/navigateBack';
 
 export default function FlashcardPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
   const is960 = screenSize === '960x540';
   const is1920x1125 = screenSize === '1920x1125';
@@ -22,7 +24,7 @@ export default function FlashcardPage() {
       }}
     >
       <ButtonBase
-        onClick={() => navigate('/')}
+        onClick={() => navigate(resolveBackPath(location), { replace: true })}
         sx={{
           position: 'absolute',
           top: is960 ? 12 : 20,

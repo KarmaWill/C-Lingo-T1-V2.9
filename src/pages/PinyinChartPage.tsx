@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, Typography, ButtonBase } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import { resolveBackPath } from '../utils/navigateBack';
 
 export default function PinyinChartPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Read screen size from environment variable
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768'
@@ -45,7 +47,7 @@ export default function PinyinChartPage() {
       }}>
         {/* Back Button */}
         <ButtonBase
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(resolveBackPath(location), { replace: true })}
           sx={{
             position: 'absolute',
             left: 0,

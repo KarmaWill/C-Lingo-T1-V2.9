@@ -36,6 +36,9 @@ export default function HSKGoStudyPlaceholderPage() {
 
   const accent = '#3B59F6'
   const nodeSize = is960 ? 64 : 76
+  const headerPadX = is960 ? 1.75 : 2.25
+  const headerPadY = is960 ? 1 : 1.25
+  const backBtnSize = is960 ? 44 : 48
   // 三列蛇形布局：0=左, 1=中, 2=右, 1=中 …
   const columnFor = (idx: number) => {
     const pattern = [0, 1, 2, 1]
@@ -48,11 +51,13 @@ export default function HSKGoStudyPlaceholderPage() {
     <Box
       sx={{
         height: '100%',
+        width: '100%',
         minHeight: 0,
         display: 'flex',
         flexDirection: 'column',
         bgcolor: '#FFF8F0',
         boxSizing: 'border-box',
+        overflow: 'hidden',
       }}
     >
       {/* Header */}
@@ -60,36 +65,41 @@ export default function HSKGoStudyPlaceholderPage() {
         sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: 1.5,
-          px: is960 ? 2 : 3,
-          py: is960 ? 1.5 : 2,
+          gap: is960 ? 1.25 : 1.5,
+          px: headerPadX,
+          py: headerPadY,
           flexShrink: 0,
           borderBottom: '1px solid rgba(0,0,0,0.06)',
           bgcolor: 'white',
+          boxSizing: 'border-box',
+          minHeight: backBtnSize + headerPadY * 2,
         }}
       >
         <ButtonBase
           onClick={() => navigate('/hsk-test')}
           sx={{
-            minHeight: 48,
-            minWidth: 48,
+            width: backBtnSize,
+            height: backBtnSize,
+            minWidth: backBtnSize,
+            minHeight: backBtnSize,
             borderRadius: '50%',
             bgcolor: '#F1F5F9',
             color: '#475569',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            flexShrink: 0,
             '&:active': { transform: 'scale(0.95)', bgcolor: '#E2E8F0' },
           }}
           aria-label="Back"
         >
-          <ChevronLeftIcon sx={{ fontSize: is960 ? 26 : 28 }} />
+          <ChevronLeftIcon sx={{ fontSize: is960 ? 24 : 26 }} />
         </ButtonBase>
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.1rem' : '1.35rem', color: '#0F172A', lineHeight: 1.2 }}>
-            Grammar Study
+          <Typography noWrap sx={{ fontWeight: 900, fontSize: is960 ? '1.05rem' : '1.28rem', color: '#0F172A', lineHeight: 1.2 }}>
+            Grammar Snap
           </Typography>
-          <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', color: '#64748B', fontWeight: 600 }}>
+          <Typography noWrap sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', color: '#64748B', fontWeight: 600 }}>
             {doneCount}/{GRAMMAR_PATH.length} grammar points mastered
           </Typography>
         </Box>
@@ -98,10 +108,11 @@ export default function HSKGoStudyPlaceholderPage() {
             display: 'flex',
             alignItems: 'center',
             gap: 0.6,
-            px: is960 ? 1.1 : 1.4,
-            py: is960 ? 0.5 : 0.6,
+            px: is960 ? 1 : 1.25,
+            py: is960 ? 0.45 : 0.55,
             borderRadius: '999px',
             bgcolor: '#EEF2FF',
+            flexShrink: 0,
           }}
         >
           <StarIcon sx={{ fontSize: is960 ? 16 : 18, color: accent }} />

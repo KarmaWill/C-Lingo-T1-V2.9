@@ -3,7 +3,7 @@
  * Dashboard → LearningSession → SessionComplete
  */
 import { useState, useCallback, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { Box, Typography, ButtonBase, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -35,76 +35,13 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined';
 import { getFunChineseFlashWordsForHub } from '../utils/funChineseUnitVocab';
+import { resolveBackPath } from '../utils/navigateBack';
+import { LINGOFLASH_SAVED_IDS_KEY } from '../utils/favoritesHub';
+import { LINGO_FLASH_DECK, type LingoFlashWord } from '../data/lingoFlashDeck';
 
-/* ─────────────────────────────────── types ─────────────────────────────────── */
-interface Word {
-  id: string;
-  word: string;
-  phonetic: string;
-  translation: string;
-  definition: string;
-  exampleEn: string;
-  exampleCn: string;
-  memoryAid?: string;
-}
+type Word = LingoFlashWord;
+const DECK: Word[] = LINGO_FLASH_DECK;
 
-/* ─────────────────────────────────── data ──────────────────────────────────── */
-const DECK: Word[] = [
-  {
-    id: '1',
-    word: '你好',
-    phonetic: 'nǐ hǎo',
-    translation: 'Hello · 你好',
-    definition: 'A common greeting used when meeting people.',
-    exampleEn: 'She smiled and said "nǐ hǎo" to everyone.',
-    exampleCn: '她对每个人微笑着说"你好"。',
-    memoryAid: 'nǐ = you, hǎo = good → "You good?" → Hello!',
-  },
-  {
-    id: '2',
-    word: '谢谢',
-    phonetic: 'xiè xie',
-    translation: 'Thank you · 谢谢',
-    definition: 'Expression of gratitude, used universally.',
-    exampleEn: '"Xièxie" — he bowed after receiving the gift.',
-    exampleCn: '他收到礼物后鞠躬说"谢谢"。',
-    memoryAid: 'xiè + xiè — the syllable repeats, doubling the thanks.',
-  },
-  {
-    id: '3',
-    word: '名字',
-    phonetic: 'míng zi',
-    translation: 'Name · 名字',
-    definition: 'The word or words by which a person is known.',
-    exampleEn: 'What is your míng zi?',
-    exampleCn: '你的名字是什么？',
-    memoryAid: 'míng (明 bright) + zi (字 character) → a bright character = your name.',
-  },
-  {
-    id: '4',
-    word: '电话',
-    phonetic: 'diàn huà',
-    translation: 'Phone · 电话',
-    definition: 'A telephone or phone call.',
-    exampleEn: 'Can I have your diàn huà number?',
-    exampleCn: '我可以有你的电话号码吗？',
-    memoryAid: 'diàn (电 electricity) + huà (话 speech) → electric speech = phone.',
-  },
-  {
-    id: '5',
-    word: '家',
-    phonetic: 'jiā',
-    translation: 'Home · 家',
-    definition: 'The place where one lives; family.',
-    exampleEn: 'Wǒ de jiā shì zài Shànghǎi.',
-    exampleCn: '我的家在上海。',
-    memoryAid: 'jiā looks like a roof over a pig — ancient symbol for household.',
-  },
-];
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   Flashcard
-   ═══════════════════════════════════════════════════════════════════════════════ */
 function Flashcard({
   word,
   isFlipped,
@@ -591,9 +528,6 @@ const BOOKS = [
   { title: 'HSK 3 High-Frequency', count: 1200, gradient: 'linear-gradient(135deg,#EC4899,#DB2777)' },
 ];
 
-const LINGOFLASH_SAVED_IDS_KEY = 'lingoflash-saved-word-ids';
-
-// 词书库：预设词书
 const VOCAB_LIBRARY = [
   { id: 'hsk1', title: 'HSK 1 标准词汇', count: 150, level: 'HSK 1', icon: <SchoolIcon />, gradient: 'linear-gradient(135deg,#10B981,#0D9488)', desc: '基础日常用语' },
   { id: 'hsk2', title: 'HSK 2 标准词汇', count: 300, level: 'HSK 2', icon: <SchoolIcon />, gradient: 'linear-gradient(135deg,#3B82F6,#6366F1)', desc: '初级交流词汇' },
@@ -1030,12 +964,14 @@ function VocabLibraryModal({ onClose, is960 }: { onClose: () => void; is960: boo
 function Dashboard({
   onStart,
   onStartReview,
+  onBack,
   is960,
   savedCount,
   onOpenSaved,
 }: {
   onStart: () => void;
   onStartReview: () => void;
+  onBack: () => void;
   is960: boolean;
   savedCount: number;
   onOpenSaved: () => void;
@@ -1065,10 +1001,7 @@ function Dashboard({
         <Box sx={{ position: 'absolute', top: is960 ? 11 : 14, left: is960 ? 10 : 14, zIndex: 30 }}>
           <ButtonBase
             type="button"
-            onClick={() => {
-              console.log('[LingoFlash] Back to /AI');
-              window.location.href = '/AI';
-            }}
+            onClick={onBack}
             sx={{ minWidth: 44, minHeight: 44, borderRadius: '50%', bgcolor: 'rgba(0,0,0,0.05)', color: '#374151', '&:active': { bgcolor: 'rgba(0,0,0,0.1)' } }}
           >
             <ChevronLeftIcon sx={{ fontSize: 26 }} />
@@ -1700,6 +1633,7 @@ function SavedWordsDialog({
    ═══════════════════════════════════════════════════════════════════════════════ */
 export default function LingoFlashPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
   const is960 = screenSize === '960x540';
@@ -1746,6 +1680,10 @@ export default function LingoFlashPage() {
     setView('dashboard');
   }, [navigate]);
 
+  const handleBackFromDashboard = useCallback(() => {
+    navigate(resolveBackPath(location), { replace: true });
+  }, [location, navigate]);
+
   const handleStartLearning = useCallback(() => {
     setLearningWords(DECK);
     setView('learning');
@@ -1771,6 +1709,7 @@ export default function LingoFlashPage() {
           <Dashboard
             onStart={handleStartLearning}
             onStartReview={handleStartReview}
+            onBack={handleBackFromDashboard}
             is960={is960}
             savedCount={savedWordIds.length}
             onOpenSaved={() => setSavedDialogOpen(true)}

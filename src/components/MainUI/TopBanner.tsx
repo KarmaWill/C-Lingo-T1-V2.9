@@ -2,11 +2,7 @@ import { useState } from 'react'
 import { AppBar, Toolbar, Typography, Box, Avatar, ButtonBase, MenuItem, Menu } from '@mui/material'
 import { KeyboardArrowDown } from '@mui/icons-material'
 import { useNavigate, useLocation } from 'react-router-dom'
-
-const LANGUAGES = [
-  { name: '中文', flag: '🇨🇳', label: 'CN' },
-  { name: 'English', flag: '🇺🇸', label: 'EN' },
-];
+import { useLocale } from '../../context/LocaleContext'
 
 const COURSES = [
   'AI Class Studio',
@@ -60,12 +56,7 @@ const UNITS_BY_LEVEL: Record<string, string[]> = {
 export default function TopBanner() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [currentLang, setCurrentLang] = useState('English')
-  
-  // Map language name to display label
-  const getLangLabel = (name: string) => {
-    return name === '中文' ? 'CN' : 'EN'
-  }
+  const { locale, locales, setLocaleId } = useLocale()
   const [isLangOpen, setIsLangOpen] = useState(false)
   
   // Read screen size from environment variable
@@ -90,7 +81,7 @@ export default function TopBanner() {
   const [levelAnchor, setLevelAnchor] = useState<null | HTMLElement>(null);
   const [unitAnchor, setUnitAnchor] = useState<null | HTMLElement>(null);
   
-  const activeLang = LANGUAGES.find(l => l.name === currentLang)
+  const activeLang = locale
 
   const isHomePage = location.pathname === '/AI' || location.pathname === '/'
   const isTextbooksPage = location.pathname === '/Home' || location.pathname === '/library'
@@ -104,8 +95,8 @@ export default function TopBanner() {
     location.pathname === '/library' ? 'Chinese Textbooks' :
     location.pathname === '/specialized' ? 'Specialized Tracks' :
     location.pathname === '/camera' ? 'Camera Tools' :
-    location.pathname === '/apps' ? 'Applications' :
-    location.pathname === '/ai-chat' ? 'AI Tutor' :
+    location.pathname === '/apps' ? 'Explore Device' :
+    location.pathname === '/ai-chat' ? 'Speaking Tutor' :
     location.pathname === '/hsk-test' ? 'HSK Preparation' :
     location.pathname.startsWith('/lesson/') ? 'AI Class Studio' : 'NSK 1.0'
 
@@ -466,18 +457,18 @@ export default function TopBanner() {
                 '&:active': { bgcolor: '#E5E7EB' }
               }}
             >
-              <Typography sx={{ fontSize: '1.25rem' }}>{activeLang?.flag}</Typography>
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 900, color: '#4B5563' }}>{getLangLabel(currentLang)}</Typography>
+              <Typography sx={{ fontSize: '1.25rem' }}>{activeLang.flag}</Typography>
+              <Typography sx={{ fontSize: '0.75rem', fontWeight: 900, color: '#4B5563' }}>{activeLang.label}</Typography>
               <Typography sx={{ fontSize: '0.625rem', color: '#9CA3AF', transform: isLangOpen ? 'rotate(180deg)' : 'none', transition: '0.3s' }}>▼</Typography>
             </ButtonBase>
 
             {isLangOpen && (
-              <Box sx={{ position: 'absolute', top: '100%', right: 0, mt: 1.5, width: 200, bgcolor: 'white', border: '1px solid #E5E7EB', borderRadius: '24px', p: 1, zIndex: 1100, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
+              <Box sx={{ position: 'absolute', top: '100%', right: 0, mt: 1.5, width: 220, bgcolor: 'white', border: '1px solid #E5E7EB', borderRadius: '24px', p: 1, zIndex: 1100, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
                 <Typography sx={{ px: 2, py: 1, fontSize: '9px', fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', mb: 1, borderBottom: '1px solid #F3F4F6' }}>Language Switch</Typography>
-                {LANGUAGES.map(l => (
+                {locales.map((l) => (
                   <ButtonBase
-                    key={l.name}
-                    onClick={() => { setCurrentLang(l.name); setIsLangOpen(false); }}
+                    key={l.id}
+                    onClick={() => { setLocaleId(l.id); setIsLangOpen(false); }}
                     sx={{
                       width: '100%',
                       display: 'flex',
@@ -487,12 +478,12 @@ export default function TopBanner() {
                       py: 1.5,
                       borderRadius: '12px',
                       justifyContent: 'flex-start',
-                      bgcolor: currentLang === l.name ? '#00B4A00A' : 'transparent',
+                      bgcolor: locale.id === l.id ? '#00B4A00A' : 'transparent',
                       '&:active': { bgcolor: '#F9FAFB' }
                     }}
                   >
                     <Typography sx={{ fontSize: '1.25rem' }}>{l.flag}</Typography>
-                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 900, color: currentLang === l.name ? '#00B4A0' : '#4B5563' }}>{l.name}</Typography>
+                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 900, color: locale.id === l.id ? '#00B4A0' : '#4B5563', fontFamily: l.fontFamily }}>{l.name}</Typography>
                   </ButtonBase>
                 ))}
               </Box>

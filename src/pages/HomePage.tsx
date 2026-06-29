@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, ButtonBase } from '@mui/material';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
-import StyleIcon from '@mui/icons-material/Style';
-import ExtensionIcon from '@mui/icons-material/Extension';
+import ChatBubbleRoundedIcon from '@mui/icons-material/ChatBubbleRounded';
+import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded';
+import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -17,7 +19,7 @@ export default function HomePage() {
   };
 
   const sideCardSx = {
-    p: is960 ? 1.35 : 2.25,
+    p: is960 ? '1.35rem 0.45rem 1.35rem 1.35rem' : '2.25rem 0.75rem 2.25rem 2.25rem',
     borderRadius: is960 ? '16px' : '24px',
     color: 'white',
     position: 'relative' as const,
@@ -46,6 +48,87 @@ export default function HomePage() {
     boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
     flexShrink: 0,
   };
+
+  const sideNextSx = {
+    zIndex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    flexShrink: 0,
+    color: 'rgba(255,255,255,0.92)',
+    width: is960 ? 14 : 18,
+    height: is960 ? 44 : 64,
+    mr: is960 ? -0.45 : -0.85,
+    transform: is960 ? 'translateX(2px)' : 'translateX(4px)',
+  };
+
+  const speakingTutorIcon = (
+    <Box sx={{ position: 'relative', width: is960 ? 28 : 36, height: is960 ? 28 : 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <SmartToyIcon sx={{ fontSize: is960 ? 24 : 31, opacity: 0.96 }} />
+      <ChatBubbleRoundedIcon
+        sx={{
+          position: 'absolute',
+          right: is960 ? -3 : -4,
+          bottom: is960 ? -2 : -3,
+          fontSize: is960 ? 11 : 14,
+          color: '#FFF7ED',
+          filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.18))',
+        }}
+      />
+    </Box>
+  );
+
+  const readingBuddyIcon = (
+    <Box sx={{ position: 'relative', width: is960 ? 30 : 38, height: is960 ? 30 : 38, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <MenuBookRoundedIcon sx={{ fontSize: is960 ? 25 : 32, opacity: 0.96 }} />
+      <Box
+        sx={{
+          position: 'absolute',
+          right: is960 ? -4 : -5,
+          top: is960 ? -3 : -4,
+          width: is960 ? 18 : 22,
+          height: is960 ? 18 : 22,
+          borderRadius: '8px',
+          bgcolor: 'rgba(255,255,255,0.9)',
+          color: '#2563EB',
+          fontSize: is960 ? '0.48rem' : '0.58rem',
+          fontWeight: 950,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 3px 8px rgba(0,0,0,0.16)',
+          letterSpacing: '-0.05em',
+        }}
+      >
+        AI
+      </Box>
+    </Box>
+  );
+
+  const classGeneratorIcon = (
+    <Box sx={{ position: 'relative', width: is960 ? 30 : 38, height: is960 ? 30 : 38, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <AutoAwesomeRoundedIcon sx={{ fontSize: is960 ? 28 : 36, opacity: 0.98 }} />
+      <Box
+        sx={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -46%)',
+          fontSize: is960 ? '0.46rem' : '0.56rem',
+          fontWeight: 950,
+          color: '#791F87',
+          bgcolor: 'rgba(255,255,255,0.92)',
+          borderRadius: '6px',
+          px: 0.35,
+          lineHeight: 1.25,
+          letterSpacing: '-0.06em',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+        }}
+      >
+        AI
+      </Box>
+    </Box>
+  );
 
   return (
     <Box
@@ -101,6 +184,36 @@ export default function HomePage() {
             {/* 整体压暗 + 底部加深，提升文字可读性 */}
             <Box sx={{ position: 'absolute', inset: 0, background: 'rgba(12, 16, 24, 0.24)', zIndex: 2 }} />
             <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.64) 0%, rgba(0,0,0,0.28) 42%, transparent 70%)', zIndex: 2 }} />
+
+            <ButtonBase
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate('/course-intro', { state: { from: '/AI' } });
+              }}
+              aria-label="Lesson overview"
+              sx={{
+                position: 'absolute',
+                top: is960 ? 16 : 32,
+                right: is960 ? 16 : 32,
+                zIndex: 4,
+                minWidth: 44,
+                minHeight: 44,
+                px: is960 ? 1.25 : 1.5,
+                borderRadius: is960 ? '12px' : '16px',
+                bgcolor: 'rgba(255,255,255,0.16)',
+                color: '#FFF9EA',
+                border: '1px solid rgba(255,255,255,0.38)',
+                backdropFilter: 'blur(12px)',
+                boxShadow: '0 10px 24px rgba(0,0,0,0.22)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.75,
+                '&:active': { transform: 'scale(0.96)', bgcolor: 'rgba(255,255,255,0.22)' },
+              }}
+            >
+              <InfoOutlinedIcon sx={{ fontSize: is960 ? 20 : 22 }} />
+              <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.78rem', fontWeight: 800, letterSpacing: '0.02em' }}>About</Typography>
+            </ButtonBase>
 
             <Box sx={{ position: 'absolute', top: is960 ? 16 : 32, left: is960 ? 16 : 32, display: 'flex', flexDirection: 'column', gap: is960 ? 1 : 2, zIndex: 3 }}>
               {/* 词汇和句型标签 - 玻璃拟态 */}
@@ -204,33 +317,68 @@ export default function HomePage() {
           overflow: 'hidden',
         }}
       >
-            <Box onClick={() => navigate('/ai-chat')} sx={{ ...sideCardSx, bgcolor: '#8B5CF6' }}>
-              <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: is960 ? 0.85 : 1.15, flex: 1, minWidth: 0 }}>
-                <SmartToyIcon sx={{ fontSize: is960 ? 22 : 32, opacity: 0.95, flexShrink: 0 }} />
-                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.9rem' : '1.22rem', lineHeight: 1.25, minWidth: 0 }}>AI Tutor</Typography>
+            <Box onClick={() => navigate('/ai-chat')} sx={{ ...sideCardSx, bgcolor: '#F97316' }}>
+              <Box sx={{ position: 'relative', zIndex: 1, flex: 1, minWidth: 0, pr: is960 ? 0.75 : 1 }}>
+                <Typography
+                  component="div"
+                  sx={{
+                    fontWeight: 900,
+                    fontSize: is960 ? '0.9rem' : '1.22rem',
+                    lineHeight: 1.2,
+                    minWidth: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <span>Speaking</span>
+                  <span>Tutor</span>
+                </Typography>
               </Box>
               <Box sx={sideArrowSx}>
-                <ArrowForwardIcon sx={{ fontSize: is960 ? 20 : 28 }} />
+                {speakingTutorIcon}
+              </Box>
+              <Box sx={sideNextSx} aria-hidden>
+                <ChevronRightIcon sx={{ fontSize: is960 ? 22 : 28 }} />
               </Box>
             </Box>
 
-            <Box onClick={() => navigate('/lingo-flash')} sx={{ ...sideCardSx, bgcolor: '#0D9488' }}>
-              <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: is960 ? 0.85 : 1.15, flex: 1, minWidth: 0 }}>
-                <StyleIcon sx={{ fontSize: is960 ? 22 : 32, opacity: 0.95, flexShrink: 0 }} />
-                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.9rem' : '1.22rem', lineHeight: 1.25, minWidth: 0 }}>Flashcards</Typography>
+            <Box
+              onClick={() => navigate('/reading-buddy')}
+              sx={{ ...sideCardSx, bgcolor: '#2563EB' }}
+            >
+              <Box sx={{ position: 'relative', zIndex: 1, flex: 1, minWidth: 0, pr: is960 ? 0.75 : 1 }}>
+                <Typography
+                  component="div"
+                  sx={{
+                    fontWeight: 900,
+                    fontSize: is960 ? '0.9rem' : '1.22rem',
+                    lineHeight: 1.2,
+                    minWidth: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <span>Reading</span>
+                  <span>Buddy</span>
+                </Typography>
               </Box>
               <Box sx={sideArrowSx}>
-                <ArrowForwardIcon sx={{ fontSize: is960 ? 20 : 28 }} />
+                {readingBuddyIcon}
+              </Box>
+              <Box sx={sideNextSx} aria-hidden>
+                <ChevronRightIcon sx={{ fontSize: is960 ? 22 : 28 }} />
               </Box>
             </Box>
 
-            <Box onClick={() => navigate('/grammar-puzzle')} sx={{ ...sideCardSx, bgcolor: '#0E7490' }}>
-              <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: is960 ? 0.85 : 1.15, flex: 1, minWidth: 0 }}>
-                <ExtensionIcon sx={{ fontSize: is960 ? 22 : 32, opacity: 0.95, flexShrink: 0 }} />
-                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.9rem' : '1.22rem', lineHeight: 1.25, minWidth: 0 }}>Sentence Snap</Typography>
+            <Box onClick={() => navigate('/grammar-puzzle')} sx={{ ...sideCardSx, bgcolor: '#791F87' }}>
+              <Box sx={{ position: 'relative', zIndex: 1, flex: 1, minWidth: 0, pr: is960 ? 0.75 : 1 }}>
+                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.9rem' : '1.22rem', lineHeight: 1.25, minWidth: 0 }}>Class Generator</Typography>
               </Box>
               <Box sx={sideArrowSx}>
-                <ArrowForwardIcon sx={{ fontSize: is960 ? 20 : 28 }} />
+                {classGeneratorIcon}
+              </Box>
+              <Box sx={sideNextSx} aria-hidden>
+                <ChevronRightIcon sx={{ fontSize: is960 ? 22 : 28 }} />
               </Box>
             </Box>
       </Box>

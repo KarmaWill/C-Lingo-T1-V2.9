@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PinyinRubyText from '../components/PinyinRubyText';
 
 // ============================================================
 // TYPES
@@ -97,14 +98,14 @@ const deleteHistoryItem = (id: string): void => {
 // MOCK DATA & SERVICES
 // ============================================================
 const mockOCRResult = {
-  original: "今天天气很好",
-  pinyin: "jīn tiān tiān qì hěn hǎo",
-  translation: "The weather is very nice today",
+  original: "我爱学中文",
+  pinyin: "wǒ ài xué zhōng wén",
+  translation: "I love learning Chinese",
   words: [
-    { chinese: "今天", pinyin: "jīn tiān", meaning: "today", partOfSpeech: "noun" },
-    { chinese: "天气", pinyin: "tiān qì", meaning: "weather", partOfSpeech: "noun" },
-    { chinese: "很", pinyin: "hěn", meaning: "very", partOfSpeech: "adverb" },
-    { chinese: "好", pinyin: "hǎo", meaning: "good/nice", partOfSpeech: "adjective" },
+    { chinese: "我", pinyin: "wǒ", meaning: "I / me", partOfSpeech: "pronoun" },
+    { chinese: "爱", pinyin: "ài", meaning: "love", partOfSpeech: "verb" },
+    { chinese: "学", pinyin: "xué", meaning: "learn / study", partOfSpeech: "verb" },
+    { chinese: "中文", pinyin: "zhōng wén", meaning: "Chinese language", partOfSpeech: "noun" },
   ]
 };
 
@@ -174,6 +175,33 @@ const FingerIcon = () => (
   </svg>
 );
 
+const FingerTapFeatureIcon = () => (
+  <div className="relative w-8 h-8">
+    <svg className="absolute inset-0 w-8 h-8 text-white drop-shadow-lg" viewBox="0 0 32 32" fill="none">
+      <path
+        d="M13.8 25.2 11.2 9.6c-.18-1.1.98-1.93 1.95-1.4l13.3 7.3c1 .55.93 2.02-.12 2.48l-5.08 2.2-2.3 5.04c-.48 1.04-1.98.96-2.48-.07l-1.05-2.16-1.62 2.2Z"
+        fill="url(#fingerTapGradient)"
+        stroke="white"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <path d="M20.5 20.5 27 27" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
+      <circle cx="8" cy="7" r="1.7" fill="white" opacity="0.92" />
+      <path d="M5 15h4M15 4l-2.5 3M3.5 10l3 1.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" opacity="0.9" />
+      <defs>
+        <linearGradient id="fingerTapGradient" x1="10.8" y1="7.9" x2="24.6" y2="25.8" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#FFFFFF" />
+          <stop offset="1" stopColor="#A7F3D0" />
+        </linearGradient>
+      </defs>
+    </svg>
+    <div className="absolute -right-1 -top-1 rounded-md bg-white/90 px-1 text-[8px] font-black tracking-[-0.04em] text-emerald-700 shadow-lg">
+      AR
+    </div>
+    <div className="absolute -bottom-1 left-0 h-1 w-7 rounded-full bg-emerald-200/70 blur-[2px]" />
+  </div>
+);
+
 const HistoryIcon = () => (
   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -188,9 +216,49 @@ interface VisionCoreProps {
   onScan: (imageData: string) => void;
 }
 
+const FrameResizeIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+    <path strokeLinecap="round" d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+  </svg>
+);
+
+interface FrameRect {
+  width: number;
+  height: number;
+  x: number;
+  y: number;
+}
+
+const FRAME_LIMITS = {
+  minWidth: 140,
+  minHeight: 120,
+  maxWidth: 440,
+  maxHeight: 430,
+};
+
+const DEFAULT_FRAME: FrameRect = {
+  width: FRAME_LIMITS.maxWidth,
+  height: FRAME_LIMITS.maxHeight,
+  x: 0,
+  y: 0,
+};
+
+type FrameDragMode = 'move' | 'nw' | 'ne' | 'sw' | 'se';
+
+const clampFrame = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
 const VisionCore: React.FC<VisionCoreProps> = ({ isScanning, onScan }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isReady, setIsReady] = useState(false);
+  const [frame, setFrame] = useState<FrameRect>(DEFAULT_FRAME);
+  const [isFocusAdjusting, setIsFocusAdjusting] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef<{
+    mode: FrameDragMode;
+    startX: number;
+    startY: number;
+    startFrame: FrameRect;
+  } | null>(null);
 
   useEffect(() => {
     // Simulate camera initialization
@@ -200,6 +268,76 @@ const VisionCore: React.FC<VisionCoreProps> = ({ isScanning, onScan }) => {
     }, 600);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    const handlePointerMove = (event: PointerEvent) => {
+      const drag = dragRef.current;
+      if (!drag) return;
+
+      const dx = event.clientX - drag.startX;
+      const dy = event.clientY - drag.startY;
+      const start = drag.startFrame;
+      let { width, height, x, y } = start;
+
+      switch (drag.mode) {
+        case 'move':
+          setFrame({ ...start, x: start.x + dx, y: start.y + dy });
+          return;
+        case 'se':
+          width = clampFrame(start.width + dx, FRAME_LIMITS.minWidth, FRAME_LIMITS.maxWidth);
+          height = clampFrame(start.height + dy, FRAME_LIMITS.minHeight, FRAME_LIMITS.maxHeight);
+          break;
+        case 'sw':
+          width = clampFrame(start.width - dx, FRAME_LIMITS.minWidth, FRAME_LIMITS.maxWidth);
+          height = clampFrame(start.height + dy, FRAME_LIMITS.minHeight, FRAME_LIMITS.maxHeight);
+          x = start.x + dx / 2;
+          break;
+        case 'ne':
+          width = clampFrame(start.width + dx, FRAME_LIMITS.minWidth, FRAME_LIMITS.maxWidth);
+          height = clampFrame(start.height - dy, FRAME_LIMITS.minHeight, FRAME_LIMITS.maxHeight);
+          y = start.y + dy / 2;
+          break;
+        case 'nw':
+          width = clampFrame(start.width - dx, FRAME_LIMITS.minWidth, FRAME_LIMITS.maxWidth);
+          height = clampFrame(start.height - dy, FRAME_LIMITS.minHeight, FRAME_LIMITS.maxHeight);
+          x = start.x + dx / 2;
+          y = start.y + dy / 2;
+          break;
+        default:
+          return;
+      }
+
+      setFrame({ width, height, x, y });
+    };
+
+    const handlePointerUp = () => {
+      dragRef.current = null;
+      setIsDragging(false);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
+    };
+  }, []);
+
+  const startFrameDrag = (event: React.PointerEvent, mode: FrameDragMode) => {
+    if (!isFocusAdjusting || isScanning) return;
+    event.preventDefault();
+    event.stopPropagation();
+    dragRef.current = {
+      mode,
+      startX: event.clientX,
+      startY: event.clientY,
+      startFrame: { ...frame },
+    };
+    setIsDragging(true);
+  };
 
   // Draw a mock camera view with animated elements
   const drawMockCamera = () => {
@@ -223,23 +361,36 @@ const VisionCore: React.FC<VisionCoreProps> = ({ isScanning, onScan }) => {
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw mock "book page" with Chinese text
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-      ctx.fillRect(240, 180, 800, 360);
-      
-      ctx.strokeStyle = 'rgba(16, 185, 129, 0.3)';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(240, 180, 800, 360);
+      // Draw a clean book page: white paper, black Kai-style Chinese text.
+      const pageX = 250;
+      const pageY = 170;
+      const pageW = 780;
+      const pageH = 390;
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.32)';
+      ctx.shadowBlur = 28;
+      ctx.shadowOffsetY = 18;
+      ctx.fillStyle = '#FFFDF7';
+      ctx.fillRect(pageX, pageY, pageW, pageH);
+      ctx.restore();
 
-      // Mock Chinese characters
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-      ctx.font = 'bold 80px "Noto Sans SC", sans-serif';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.12)';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(pageX, pageY, pageW, pageH);
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.08)';
+      for (let i = 0; i < 5; i += 1) {
+        ctx.fillRect(pageX + 88, pageY + 112 + i * 48, pageW - 176, 1.5);
+      }
+
+      ctx.fillStyle = '#111827';
+      ctx.font = 'bold 92px "KaiTi", "STKaiti", "SimKai", "Noto Serif SC", serif';
       ctx.textAlign = 'center';
-      ctx.fillText('你好世界', canvas.width / 2, canvas.height / 2 - 40);
+      ctx.fillText('我爱学中文', canvas.width / 2, canvas.height / 2 - 18);
       
-      ctx.font = '32px "Noto Sans SC", sans-serif';
-      ctx.fillStyle = 'rgba(16, 185, 129, 0.7)';
-      ctx.fillText('Nǐ hǎo shì jiè', canvas.width / 2, canvas.height / 2 + 40);
+      ctx.font = '28px "Google Sans", "Roboto", sans-serif';
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.42)';
+      ctx.fillText('wǒ ài xué zhōng wén', canvas.width / 2, canvas.height / 2 + 54);
 
       // Subtle scan lines effect
       for (let i = 0; i < canvas.height; i += 4) {
@@ -285,21 +436,61 @@ const VisionCore: React.FC<VisionCoreProps> = ({ isScanning, onScan }) => {
       {isReady && (
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/40" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className={`relative w-[70%] max-w-[420px] h-[280px] transition-all duration-500 ${isScanning ? 'scale-105' : 'scale-100'}`}>
-              {/* Corner Brackets - Smaller and more elegant */}
-              <div className={`absolute top-0 left-0 w-10 h-10 border-t-3 border-l-3 rounded-tl-xl transition-all duration-300 ${isScanning ? 'border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.6)]' : 'border-white/30'}`} style={{borderWidth: '3px'}} />
-              <div className={`absolute top-0 right-0 w-10 h-10 border-t-3 border-r-3 rounded-tr-xl transition-all duration-300 ${isScanning ? 'border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.6)]' : 'border-white/30'}`} style={{borderWidth: '3px'}} />
-              <div className={`absolute bottom-0 left-0 w-10 h-10 border-b-3 border-l-3 rounded-bl-xl transition-all duration-300 ${isScanning ? 'border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.6)]' : 'border-white/30'}`} style={{borderWidth: '3px'}} />
-              <div className={`absolute bottom-0 right-0 w-10 h-10 border-b-3 border-r-3 rounded-br-xl transition-all duration-300 ${isScanning ? 'border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.6)]' : 'border-white/30'}`} style={{borderWidth: '3px'}} />
+          <div className="absolute inset-0">
+            <div
+              className={`absolute ${isDragging ? '' : 'transition-all duration-300'} ${isScanning ? 'scale-105' : 'scale-100'}`}
+              style={{
+                left: `calc(50% + ${frame.x}px)`,
+                top: `calc(50% + ${frame.y}px)`,
+                width: frame.width,
+                height: frame.height,
+                transform: 'translate(-50%, -50%)',
+              }}
+            >
+              {/* Draggable border + move area */}
+              <div
+                className={`absolute inset-0 rounded-xl ${isFocusAdjusting ? 'pointer-events-auto cursor-move touch-none' : 'pointer-events-none'} ${
+                  isFocusAdjusting ? 'border-2 border-emerald-400/55 shadow-[0_0_24px_rgba(16,185,129,0.18)]' : ''
+                }`}
+                onPointerDown={(event) => startFrameDrag(event, 'move')}
+              />
+
+              {/* Corner Brackets */}
+              <div className={`absolute top-0 left-0 w-10 h-10 border-t-3 border-l-3 rounded-tl-xl pointer-events-none transition-all duration-300 ${isScanning || isFocusAdjusting ? 'border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.6)]' : 'border-white/30'}`} style={{ borderWidth: '3px' }} />
+              <div className={`absolute top-0 right-0 w-10 h-10 border-t-3 border-r-3 rounded-tr-xl pointer-events-none transition-all duration-300 ${isScanning || isFocusAdjusting ? 'border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.6)]' : 'border-white/30'}`} style={{ borderWidth: '3px' }} />
+              <div className={`absolute bottom-0 left-0 w-10 h-10 border-b-3 border-l-3 rounded-bl-xl pointer-events-none transition-all duration-300 ${isScanning || isFocusAdjusting ? 'border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.6)]' : 'border-white/30'}`} style={{ borderWidth: '3px' }} />
+              <div className={`absolute bottom-0 right-0 w-10 h-10 border-b-3 border-r-3 rounded-br-xl pointer-events-none transition-all duration-300 ${isScanning || isFocusAdjusting ? 'border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.6)]' : 'border-white/30'}`} style={{ borderWidth: '3px' }} />
+
+              {/* Corner drag handles */}
+              {isFocusAdjusting && !isScanning && (
+                <>
+                  {([
+                    { mode: 'nw' as const, className: '-top-5 -left-5 cursor-nwse-resize' },
+                    { mode: 'ne' as const, className: '-top-5 -right-5 cursor-nesw-resize' },
+                    { mode: 'sw' as const, className: '-bottom-5 -left-5 cursor-nesw-resize' },
+                    { mode: 'se' as const, className: '-bottom-5 -right-5 cursor-nwse-resize' },
+                  ]).map(({ mode, className }) => (
+                    <div
+                      key={mode}
+                      role="presentation"
+                      onPointerDown={(event) => startFrameDrag(event, mode)}
+                      className={`absolute w-11 h-11 rounded-full bg-emerald-400/90 border-2 border-white shadow-lg shadow-emerald-500/30 pointer-events-auto touch-none ${className}`}
+                    />
+                  ))}
+                </>
+              )}
               
               {/* Scanning Line */}
               {isScanning && <div className="absolute left-4 right-4 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent animate-scan shadow-[0_0_10px_rgba(52,211,153,1)]" />}
               
               {/* Center Text */}
-              <div className="absolute inset-0 flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <span className={`text-xs tracking-wider font-medium transition-all ${isScanning ? 'text-emerald-400' : 'text-white/40'}`}>
-                  {isScanning ? 'Scanning Data...' : '将文字对准此处'}
+                  {isScanning
+                    ? 'Scanning Data...'
+                    : isFocusAdjusting
+                      ? 'Drag corners to resize · Drag frame to move'
+                      : 'Align text inside the frame'}
                 </span>
               </div>
             </div>
@@ -307,25 +498,43 @@ const VisionCore: React.FC<VisionCoreProps> = ({ isScanning, onScan }) => {
         </div>
       )}
 
-      {/* Capture Button - Camera shutter style */}
+      {/* Focus button — top-right, same level as back button */}
       {isReady && (
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-30">
+        <button
+          type="button"
+          onClick={() => setIsFocusAdjusting((prev) => !prev)}
+          title="Adjust focus frame size"
+          aria-label="Adjust focus frame size"
+          className={`absolute top-6 right-6 z-50 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
+            isFocusAdjusting
+              ? 'bg-emerald-500/25 border border-emerald-400/50 text-emerald-200 shadow-lg shadow-emerald-500/15'
+              : 'bg-black/40 backdrop-blur-xl border border-white/10 text-white/90 hover:bg-black/60 hover:scale-110'
+          } shadow-2xl`}
+        >
+          <FrameResizeIcon className="w-5 h-5" />
+        </button>
+      )}
+
+      {/* Shutter button — horizontally centered on canvas */}
+      {isReady && (
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30">
           <button 
             onClick={captureFrame} 
             disabled={isScanning} 
             className={`group relative flex items-center justify-center w-20 h-20 rounded-full transition-all duration-300 ${
               isScanning 
-                ? 'bg-emerald-500/80 scale-95' 
-                : 'bg-white/90 hover:bg-white hover:scale-105 active:scale-95'
-            } shadow-2xl shadow-black/30`}
+                ? 'bg-emerald-500/85 scale-95' 
+                : 'bg-white/95 hover:bg-white hover:scale-105 active:scale-95'
+            } shadow-2xl shadow-black/35`}
           >
+            <div className={`absolute inset-0 rounded-full border-4 border-white/20 ${isScanning ? 'animate-ping opacity-20' : ''}`} />
             <div className={`w-16 h-16 rounded-full border-4 flex items-center justify-center transition-all ${
-              isScanning ? 'border-white/50' : 'border-slate-800'
+              isScanning ? 'border-white/55' : 'border-slate-900'
             }`}>
               {isScanning ? (
                 <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"/>
               ) : (
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-800">
+                <svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-900">
                   <circle cx="12" cy="12" r="3"/>
                   <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
                 </svg>
@@ -358,29 +567,22 @@ interface OCRResultViewProps {
 const OCRResultView: React.FC<OCRResultViewProps> = ({ result }) => {
   return (
     <div className="space-y-4 animate-fadeIn">
-      {/* Original Text - 显示中文 */}
+      {/* Original + ruby pinyin (GB/T 16159 word segmentation) */}
       <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl p-5 border border-slate-700/50">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-3">
           <div className="w-2 h-2 rounded-full bg-emerald-500"/>
-          <span className="text-xs text-slate-500 uppercase tracking-wider font-medium">原文</span>
+          <span className="text-xs text-slate-500 uppercase tracking-wider font-medium">Original</span>
         </div>
-        <p className="text-2xl font-bold text-white leading-relaxed tracking-wide" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-          {result.original}
-        </p>
-      </div>
-
-      {/* Pinyin Display - 显示拼音 */}
-      <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/30">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="text-xs text-slate-500 uppercase tracking-wider font-medium">拼音</span>
-        </div>
-        <p className="text-lg text-emerald-400 font-mono tracking-widest">{result.pinyin}</p>
+        <PinyinRubyText
+          original={result.original}
+          words={result.words}
+        />
       </div>
 
       {/* Translation Display - 显示用户母语 */}
       <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/30">
         <div className="flex items-center gap-2 mb-1.5">
-          <span className="text-xs text-slate-500 uppercase tracking-wider font-medium">翻译</span>
+          <span className="text-xs text-slate-500 uppercase tracking-wider font-medium">Translation</span>
         </div>
         <p className="text-base text-slate-200">{result.translation}</p>
       </div>
@@ -453,7 +655,7 @@ const VoiceTranslation: React.FC<VoiceTranslationProps> = ({ onResult }) => {
           {formatTime(timer)}
         </p>
         <p className="text-slate-500 text-sm">
-          {loading ? '正在翻译...' : isRecording ? '正在录音，再次点击停止...' : '点击开始语音输入'}
+          {loading ? 'Translating...' : isRecording ? 'Recording. Tap again to stop.' : 'Tap to start voice input'}
         </p>
       </div>
 
@@ -556,7 +758,7 @@ const TextTranslation: React.FC<TextTranslationProps> = ({ onResult }) => {
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="输入要翻译的中文或英文..."
+          placeholder="Enter Chinese or English to translate..."
           className="w-full h-32 px-4 py-3 bg-slate-800/60 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 resize-none focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all text-base"
         />
         <span className="absolute bottom-3 right-3 text-xs text-slate-600">
@@ -578,7 +780,7 @@ const TextTranslation: React.FC<TextTranslationProps> = ({ onResult }) => {
         ) : (
           <>
             <TranslateIcon />
-            翻译
+            Translate
           </>
         )}
       </button>
@@ -601,6 +803,7 @@ interface FingerTapModeProps {
 
 const FingerTapMode: React.FC<FingerTapModeProps> = ({ onExit }) => {
   const [showGuide, setShowGuide] = useState(true);
+  const [demoStep, setDemoStep] = useState<'mirror' | 'finger' | 'reading'>('mirror');
   const [detectedItems, setDetectedItems] = useState<Array<{ x: number; y: number; text: string; pinyin: string; trans: string }>>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -643,41 +846,145 @@ const FingerTapMode: React.FC<FingerTapModeProps> = ({ onExit }) => {
     }
   }, [showGuide]);
 
+  const demoClips = [
+    {
+      id: 'mirror' as const,
+      label: 'Mirror setup',
+      title: 'Mirror aligned',
+      subtitle: 'Position the 45° mirror so the camera can see the desk.',
+      accent: 'emerald',
+    },
+    {
+      id: 'finger' as const,
+      label: 'Finger tracking',
+      title: 'Finger detected',
+      subtitle: 'The camera tracks where the fingertip lands on the page.',
+      accent: 'cyan',
+    },
+    {
+      id: 'reading' as const,
+      label: 'AR reading',
+      title: 'Instant reading',
+      subtitle: 'Tap a word to hear pronunciation and see meaning instantly.',
+      accent: 'violet',
+    },
+  ];
+  const activeDemo = demoClips.find((clip) => clip.id === demoStep) ?? demoClips[0];
+
   // Guide Screen
   if (showGuide) {
     return (
-      <div className="absolute inset-0 z-[60] bg-slate-950 flex items-center justify-center p-12 overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
-        <div className="max-w-4xl w-full grid grid-cols-1 lg:grid-cols-2 gap-16 items-center animate-fadeIn">
-          <div className="space-y-8">
-            <div className="space-y-4">
-              <span className="inline-block px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-widest rounded-full">Hardware Setup Required</span>
-              <h1 className="text-5xl lg:text-6xl font-black text-white leading-tight">指读模式引导</h1>
-              <p className="text-xl text-slate-400 leading-relaxed">
-                进入 AR 指读模式前，请在摄像头前方安装 <span className="text-emerald-400 font-bold">FingerTap 45° 倒相镜</span> 硬件。它能帮助摄像头"看见"桌面上您的手指所指向的内容。
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-slate-900 border border-white/5 rounded-2xl flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-bold">1</div>
-                <span className="text-sm text-slate-300 font-medium">吸附底座</span>
+      <div className="absolute inset-0 z-[60] bg-[#07111f] flex items-center justify-center p-8 overflow-hidden">
+        <div className="absolute -top-32 -right-20 w-[520px] h-[520px] bg-emerald-400/15 rounded-full blur-[110px]" />
+        <div className="absolute -bottom-40 -left-24 w-[480px] h-[480px] bg-cyan-500/10 rounded-full blur-[120px]" />
+        <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-[0.92fr_1.08fr] gap-8 items-center animate-fadeIn">
+          <div className="relative rounded-[2rem] border border-white/10 bg-white/[0.055] p-7 shadow-2xl shadow-black/30 backdrop-blur-2xl">
+            <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/60 to-transparent" />
+            <div className="space-y-5">
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.9)]" />
+                Hardware Tutorial
               </div>
-              <div className="p-4 bg-slate-900 border border-white/5 rounded-2xl flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-bold">2</div>
-                <span className="text-sm text-slate-300 font-medium">安装反光镜</span>
+              <div>
+                <h1 className="text-4xl lg:text-5xl font-black text-white leading-[0.98] tracking-[-0.04em]">
+                  Fingertap<br />Reading
+                </h1>
+                <p className="mt-4 text-base text-slate-300 leading-relaxed">
+                  Use the 45° mirror to let the camera read the desktop area, then point at words in a book to hear pronunciation and see instant translation.
+                </p>
               </div>
             </div>
-            <button onClick={() => setShowGuide(false)} className="w-full py-5 bg-white text-slate-950 font-black text-xl rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-white/10">
-              已安装，开启 AR 视界
-            </button>
-            <button onClick={onExit} className="w-full text-slate-500 font-bold hover:text-white transition-colors">
-              返回普通模式
-            </button>
+
+            <div className="mt-7 space-y-3">
+              <div className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-slate-950/45 p-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-400 text-lg font-black text-slate-950 shadow-lg shadow-emerald-500/20">1</div>
+                <div>
+                  <p className="text-sm font-black text-white">Position the mirror</p>
+                  <p className="mt-0.5 text-xs leading-snug text-slate-400">Place the FingerTap mirror in front of the camera at the marked angle.</p>
+                </div>
+              </div>
+              <div className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-slate-950/45 p-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-300 text-lg font-black text-slate-950 shadow-lg shadow-cyan-500/20">2</div>
+                <div>
+                  <p className="text-sm font-black text-white">Tap to read</p>
+                  <p className="mt-0.5 text-xs leading-snug text-slate-400">Point at any word on the page to trigger AR reading support.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-7 grid grid-cols-[1fr_auto] gap-3">
+              <button onClick={() => setShowGuide(false)} className="rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-950 shadow-2xl shadow-white/10 transition-all hover:scale-[1.02] active:scale-95">
+                Start Fingertap Reading
+              </button>
+              <button onClick={onExit} className="rounded-2xl border border-white/10 px-4 py-4 text-sm font-black text-slate-400 transition-colors hover:text-white">
+                Exit
+              </button>
+            </div>
           </div>
-          <div className="relative hidden lg:block">
-            <div className="aspect-square bg-slate-900 rounded-[3rem] border border-white/10 flex items-center justify-center relative group overflow-hidden">
-              <div className="w-32 h-48 bg-slate-800 rounded-lg transform rotate-45 skew-x-12 animate-float border border-white/20 shadow-2xl" />
-              <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+          <div className="relative">
+            <div className="relative aspect-video overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900 shadow-2xl shadow-emerald-950/30">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(52,211,153,0.28),transparent_34%),linear-gradient(135deg,#111827_0%,#0f172a_55%,#042f2e_100%)]" />
+              <div className="absolute left-6 top-5 flex items-center gap-2 rounded-full bg-black/35 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200 backdrop-blur-md">
+                <span className="h-2 w-2 rounded-full bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.9)]" />
+                Demo Video · {activeDemo.label}
+              </div>
+
+              <div className="absolute inset-x-10 bottom-8 h-36 rounded-2xl border border-white/15 bg-white/12 shadow-2xl shadow-black/25 backdrop-blur-sm rotate-[-2deg]" />
+              <div className={`absolute left-[24%] top-[32%] h-24 w-40 rounded-xl border rotate-[18deg] shadow-[0_0_30px_rgba(52,211,153,0.18)] transition-all ${
+                demoStep === 'mirror'
+                  ? 'border-emerald-300/70 bg-emerald-300/20 scale-105'
+                  : 'border-emerald-300/25 bg-emerald-300/10'
+              }`}>
+                <div className="absolute inset-x-4 top-7 h-1 rounded-full bg-white/35" />
+                <div className="absolute inset-x-5 top-12 h-1 rounded-full bg-white/25" />
+                <div className="absolute inset-x-7 top-17 h-1 rounded-full bg-white/20" />
+              </div>
+              <div className={`absolute right-[19%] top-[38%] h-28 w-9 origin-bottom rotate-[-30deg] rounded-full bg-gradient-to-b from-orange-100 to-orange-300 shadow-2xl shadow-black/25 transition-all ${
+                demoStep === 'finger' ? 'scale-110 shadow-cyan-300/30' : ''
+              }`}>
+                <div className="absolute -top-2 left-1/2 h-5 w-5 -translate-x-1/2 rounded-full bg-orange-100" />
+              </div>
+              <div className={`absolute left-[48%] top-[53%] h-12 w-32 rounded-full border blur-[1px] transition-all ${
+                demoStep === 'finger'
+                  ? 'border-cyan-300/70 bg-cyan-300/20 scale-110'
+                  : 'border-emerald-300/50 bg-emerald-300/15'
+              }`} />
+              <div className={`absolute left-[45%] top-[51%] rounded-xl border px-3 py-2 text-xs font-black text-white shadow-xl backdrop-blur transition-all ${
+                demoStep === 'reading'
+                  ? 'border-violet-300/70 bg-violet-950/85 scale-110'
+                  : 'border-emerald-300/50 bg-slate-950/75'
+              }`}>
+                你好 · nǐ hǎo
+                <p className="mt-0.5 text-[10px] font-semibold text-emerald-300">hello</p>
+              </div>
+
+              <div className="absolute bottom-5 left-6 right-6 rounded-2xl border border-white/10 bg-black/35 p-4 backdrop-blur-md">
+                <p className="text-sm font-black text-white">{activeDemo.title}</p>
+                <p className="mt-1 text-xs leading-snug text-slate-300">{activeDemo.subtitle}</p>
+              </div>
+
+              <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_0%,rgba(255,255,255,0.04)_50%,transparent_100%)] bg-[length:100%_8px] opacity-40" />
+              <button onClick={() => setShowGuide(false)} className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/20 text-white shadow-2xl backdrop-blur-md transition-all hover:scale-110 active:scale-95" aria-label="Play demo and start">
+                <svg className="ml-1 h-7 w-7" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </button>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+              {demoClips.map((clip) => (
+                <button
+                  key={clip.id}
+                  onClick={() => setDemoStep(clip.id)}
+                  className={`rounded-2xl border px-3 py-2 text-[10px] font-bold uppercase tracking-[0.08em] transition-all active:scale-95 ${
+                    demoStep === clip.id
+                      ? 'border-emerald-300/55 bg-emerald-300/15 text-white shadow-lg shadow-emerald-950/30'
+                      : 'border-white/10 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08] hover:text-white'
+                  }`}
+                >
+                  {clip.title}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -711,7 +1018,7 @@ const FingerTapMode: React.FC<FingerTapModeProps> = ({ onExit }) => {
       </div>
 
       <button onClick={onExit} className="absolute bottom-12 left-1/2 -translate-x-1/2 px-12 py-5 bg-white/10 backdrop-blur-3xl border border-white/20 text-white font-black text-xl rounded-full hover:bg-white/20 hover:scale-105 transition-all active:scale-95 shadow-2xl">
-        退出指读模式
+        Exit Fingertap Reading
       </button>
     </div>
   );
@@ -770,18 +1077,18 @@ const HistoryManagementView: React.FC<HistoryManagementViewProps> = ({ onSelectH
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (minutes < 1) return '刚刚';
-    if (minutes < 60) return `${minutes}分钟前`;
-    if (hours < 24) return `${hours}小时前`;
-    if (days < 7) return `${days}天前`;
-    return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes} min ago`;
+    if (hours < 24) return `${hours} hr ago`;
+    if (days < 7) return `${days} days ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   const getTypeLabel = (type: string) => {
     switch (type) {
-      case 'ocr': return '拍摄';
-      case 'voice': return '语音';
-      case 'text': return '文本';
+      case 'ocr': return 'Camera';
+      case 'voice': return 'Voice';
+      case 'text': return 'Text';
       default: return type;
     }
   };
@@ -796,7 +1103,7 @@ const HistoryManagementView: React.FC<HistoryManagementViewProps> = ({ onSelectH
   };
 
   const handleClear = () => {
-    if (window.confirm('确定要清空所有历史记录吗？')) {
+    if (window.confirm('Clear all history items?')) {
       clearHistory();
       setHistory([]);
       setRefreshKey(prev => prev + 1);
@@ -813,7 +1120,7 @@ const HistoryManagementView: React.FC<HistoryManagementViewProps> = ({ onSelectH
         <div className="opacity-20 scale-75">
           <HistoryIcon />
         </div>
-        <p className="text-sm font-medium tracking-wide text-center px-4 text-slate-500">暂无历史记录</p>
+        <p className="text-sm font-medium tracking-wide text-center px-4 text-slate-500">No history yet</p>
       </div>
     );
   }
@@ -823,7 +1130,7 @@ const HistoryManagementView: React.FC<HistoryManagementViewProps> = ({ onSelectH
       {/* Header with Filter and Clear */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-bold text-slate-300">历史记录 ({filteredHistory.length})</h3>
+          <h3 className="text-sm font-bold text-slate-300">History ({filteredHistory.length})</h3>
           {/* Filter Buttons */}
           <div className="flex gap-1 bg-slate-800/40 p-1 rounded-lg">
             {(['all', 'ocr', 'voice', 'text'] as const).map((type) => (
@@ -836,7 +1143,7 @@ const HistoryManagementView: React.FC<HistoryManagementViewProps> = ({ onSelectH
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                {type === 'all' ? '全部' : getTypeLabel(type)}
+                {type === 'all' ? 'All' : getTypeLabel(type)}
               </button>
             ))}
           </div>
@@ -845,7 +1152,7 @@ const HistoryManagementView: React.FC<HistoryManagementViewProps> = ({ onSelectH
           onClick={handleClear}
           className="text-xs text-slate-500 hover:text-red-400 transition-colors px-2 py-1 rounded"
         >
-          清空
+          Clear
         </button>
       </div>
 
@@ -853,7 +1160,7 @@ const HistoryManagementView: React.FC<HistoryManagementViewProps> = ({ onSelectH
       <div className="space-y-2 max-h-[calc(100vh-250px)] overflow-y-auto custom-scrollbar">
         {filteredHistory.length === 0 ? (
           <div className="text-center py-8 text-slate-500 text-sm">
-            没有{filterType === 'all' ? '' : getTypeLabel(filterType)}历史记录
+            No {filterType === 'all' ? '' : getTypeLabel(filterType).toLowerCase()} history
           </div>
         ) : (
           filteredHistory.map((item) => (
@@ -865,13 +1172,13 @@ const HistoryManagementView: React.FC<HistoryManagementViewProps> = ({ onSelectH
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (window.confirm('确定要删除这条历史记录吗？')) {
+                  if (window.confirm('Delete this history item?')) {
                     deleteHistoryItem(item.id);
                     setRefreshKey(prev => prev + 1);
                   }
                 }}
                 className="absolute top-2 right-2 w-6 h-6 rounded-full bg-red-500/20 hover:bg-red-500/40 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10"
-                title="删除"
+                title="Delete"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -882,7 +1189,7 @@ const HistoryManagementView: React.FC<HistoryManagementViewProps> = ({ onSelectH
               <button
                 onClick={() => onSelectHistory && onSelectHistory(item)}
                 className="w-full text-left pr-8 active:scale-[0.98] transition-transform"
-                title="点击查看完整结果"
+                title="View full result"
               >
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${getTypeColor(item.type)}`}>
@@ -919,10 +1226,10 @@ interface TranslationHubProps {
 
 const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChange, ocrResult, error, isFullScreen = false, onHistorySelect, onExit }) => {
   const modes = [
-    { id: 'ocr', label: '相机', icon: <CameraIcon /> },
-    { id: 'voice', label: '语音', icon: <MicIcon /> },
-    { id: 'text', label: '文本', icon: <TextIcon /> },
-    { id: 'history', label: '历史', icon: <HistoryIcon /> },
+    { id: 'ocr', label: 'Camera', icon: <CameraIcon /> },
+    { id: 'voice', label: 'Voice', icon: <MicIcon /> },
+    { id: 'text', label: 'Text', icon: <TextIcon /> },
+    { id: 'history', label: 'History', icon: <HistoryIcon /> },
   ];
 
   return (
@@ -932,7 +1239,7 @@ const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChang
         <button
           onClick={onExit}
           className="absolute top-6 left-6 z-50 w-12 h-12 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/90 hover:bg-black/60 hover:scale-110 transition-all shadow-2xl"
-          title="返回首页"
+          title="Back to home"
         >
           <BackIcon />
         </button>
@@ -943,17 +1250,24 @@ const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChang
         <div className="p-6 pb-3">
           <button
             onClick={() => onModeChange('fingertap')}
-            className="w-full relative group overflow-hidden bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-4 text-left transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-emerald-500/20 active:scale-95"
+            className="w-full relative group overflow-hidden rounded-2xl border border-emerald-300/20 bg-[linear-gradient(135deg,rgba(5,150,105,0.95),rgba(13,148,136,0.92)_48%,rgba(15,23,42,0.95))] p-4 text-left transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-emerald-500/20 active:scale-95"
           >
             <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-12 translate-x-12 blur-2xl group-hover:bg-white/20 transition-all" />
-            <div className="relative z-10 flex items-center justify-between">
-              <div className="space-y-0.5">
-                <span className="text-white/70 text-[9px] font-bold uppercase tracking-wider">New Feature</span>
-                <h3 className="text-lg font-black text-white italic">Fingertap Reading</h3>
-                <p className="text-emerald-100/70 text-xs">AR 智慧指读模式</p>
+            <div className="absolute bottom-0 left-0 h-px w-full bg-gradient-to-r from-transparent via-emerald-200/50 to-transparent" />
+            <div className="relative z-10 flex items-center gap-3">
+              <div className="w-14 h-14 rounded-2xl bg-white/12 flex items-center justify-center backdrop-blur-md border border-white/20 shadow-inner shadow-white/10 group-hover:bg-white/15 group-hover:border-white/30 transition-all shrink-0">
+                <FingerTapFeatureIcon />
               </div>
-              <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20">
-                <FingerIcon />
+              <div className="min-w-0 flex-1">
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/25 bg-white/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.16em] text-emerald-100">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-200 shadow-[0_0_8px_rgba(167,243,208,0.85)]" />
+                  Hardware Tutorial
+                </div>
+                <h3 className="mt-1.5 text-lg font-black text-white italic leading-tight">Fingertap Reading</h3>
+                <p className="text-emerald-50/75 text-xs leading-snug">Mirror setup · AR guided fingertip reading</p>
+              </div>
+              <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-[10px] font-black text-white/85 sm:flex">
+                AR
               </div>
             </div>
           </button>
@@ -974,7 +1288,7 @@ const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChang
               }`}
             >
               {m.icon}
-              {m.label}
+              <span className="sr-only">{m.label}</span>
             </button>
           ))}
         </div>
@@ -996,7 +1310,7 @@ const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChang
             ocrResult ? (
               <OCRResultView result={ocrResult} />
             ) : (
-              <WelcomeState icon={<CameraIcon className="w-14 h-14"/>} text="请扫描书籍或文档内容" />
+              <WelcomeState icon={<CameraIcon className="w-14 h-14"/>} text="Scan a book or document to begin" />
             )
           )}
           {activeMode === 'voice' && (
@@ -1052,7 +1366,7 @@ export default function CameraPage() {
       });
     } catch (err) {
       console.error("OCR Error:", err);
-      setError("识别失败，请确保文字清晰且光线充足。");
+      setError("Recognition failed. Make sure the text is clear and well lit.");
     } finally {
       setIsScanning(false);
     }
@@ -1064,7 +1378,6 @@ export default function CameraPage() {
 
   const handleModeChange = (newMode: string) => {
     setMode(newMode);
-    // 文本和语音模式时，进入全屏
     if (newMode === 'text' || newMode === 'voice') {
       setIsFullScreen(true);
     } else {
@@ -1114,21 +1427,20 @@ export default function CameraPage() {
           ) : (
             <>
               <VisionCore isScanning={isScanning} onScan={handleScan} />
-              
-              {/* Exit Button - Always visible to return to home */}
+
               <button
                 onClick={handleExitToHome}
                 className="absolute top-6 left-6 z-50 w-12 h-12 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/90 hover:bg-black/60 hover:scale-110 transition-all shadow-2xl"
+                title="Back to home"
               >
                 <BackIcon />
               </button>
 
-              {/* Scanning Overlay */}
               {isScanning && (
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-40 flex flex-col items-center justify-center">
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-40 flex flex-col items-center justify-center pointer-events-none">
                   <div className="relative">
-                    <div className="w-16 h-16 border-3 border-emerald-500/20 rounded-full" style={{borderWidth: '3px'}} />
-                    <div className="absolute inset-0 w-16 h-16 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" style={{borderWidth: '3px'}} />
+                    <div className="w-16 h-16 border-3 border-emerald-500/20 rounded-full" style={{ borderWidth: '3px' }} />
+                    <div className="absolute inset-0 w-16 h-16 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" style={{ borderWidth: '3px' }} />
                   </div>
                   <p className="mt-4 text-emerald-400 font-bold text-sm tracking-widest uppercase animate-pulse">Scanning Data...</p>
                 </div>

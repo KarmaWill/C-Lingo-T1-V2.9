@@ -19,44 +19,54 @@ export default function HSKSkillDrillPage() {
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
   const is960 = screenSize === '960x540';
   const is1920x1125 = screenSize === '1920x1125';
+  const headerPadX = is960 ? 1.75 : is1920x1125 ? 2.5 : 2.25;
+  const headerPadY = is960 ? 1 : is1920x1125 ? 1.35 : 1.25;
+  const backBtnSize = is960 ? 44 : 48;
 
   const sectionColor = meta?.section === 'listening' ? '#0369A1' : '#047857';
   const sectionLabel = meta?.section === 'listening' ? 'Listening' : 'Reading';
 
+  const drillHeaderSx = {
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    gap: is960 ? 1.25 : 1.5,
+    px: headerPadX,
+    py: headerPadY,
+    borderBottom: '1px solid rgba(0,0,0,0.06)',
+    bgcolor: 'rgba(255,255,255,0.92)',
+    boxSizing: 'border-box' as const,
+    minHeight: backBtnSize + headerPadY * 2,
+  };
+
+  const drillBackBtnSx = {
+    width: backBtnSize,
+    height: backBtnSize,
+    minWidth: backBtnSize,
+    minHeight: backBtnSize,
+    borderRadius: '50%',
+    bgcolor: 'rgba(0,0,0,0.05)',
+    color: '#374151',
+    flexShrink: 0,
+    '&:active': { bgcolor: 'rgba(0,0,0,0.1)' },
+  };
+
   // 无 type 参数：展示题型选择页
   if (!type) {
     return (
-      <Box sx={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#FFF8F0', overflow: 'hidden' }}>
-        <Box
-          sx={{
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            gap: is960 ? 1.5 : 2,
-            p: is960 ? 2 : is1920x1125 ? 3 : 2.5,
-            borderBottom: '1px solid rgba(0,0,0,0.06)',
-            bgcolor: 'rgba(255,255,255,0.92)',
-          }}
-        >
+      <Box sx={{ height: '100%', width: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: '#FFF8F0', overflow: 'hidden', boxSizing: 'border-box' }}>
+        <Box sx={drillHeaderSx}>
           <ButtonBase
             onClick={() => navigate('/hsk-test')}
-            sx={{
-              width: is960 ? 44 : 48,
-              height: is960 ? 44 : 48,
-              borderRadius: '50%',
-              bgcolor: 'rgba(0,0,0,0.05)',
-              color: '#374151',
-              flexShrink: 0,
-              '&:active': { bgcolor: 'rgba(0,0,0,0.1)' },
-            }}
+            sx={drillBackBtnSx}
           >
-            <ChevronLeftIcon sx={{ fontSize: is960 ? 22 : 26 }} />
+            <ChevronLeftIcon sx={{ fontSize: is960 ? 22 : 24 }} />
           </ButtonBase>
           <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.05rem' : '1.35rem', color: '#111827', lineHeight: 1.2 }}>
+            <Typography noWrap sx={{ fontWeight: 900, fontSize: is960 ? '1.05rem' : '1.28rem', color: '#111827', lineHeight: 1.2 }}>
               Specialized drills
             </Typography>
-            <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.85rem', color: '#64748B', mt: 0.35, fontWeight: 600 }}>
+            <Typography noWrap sx={{ fontSize: is960 ? '0.72rem' : '0.85rem', color: '#64748B', mt: 0.25, fontWeight: 600 }}>
               Pick a question type to practice
             </Typography>
           </Box>
@@ -139,42 +149,27 @@ export default function HSKSkillDrillPage() {
       sx={{
         height: '100%',
         width: '100%',
+        minHeight: 0,
         display: 'flex',
         flexDirection: 'column',
         bgcolor: '#FFF8F0',
         overflow: 'hidden',
+        boxSizing: 'border-box',
       }}
     >
-      <Box
-        sx={{
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          gap: is960 ? 1.5 : 2,
-          p: is960 ? 2 : is1920x1125 ? 3 : 2.5,
-          borderBottom: '1px solid rgba(0,0,0,0.06)',
-          bgcolor: 'rgba(255,255,255,0.92)',
-        }}
-      >
+      <Box sx={drillHeaderSx}>
         <ButtonBase
           onClick={() => setSearchParams({})}
-          sx={{
-            width: is960 ? 44 : 48,
-            height: is960 ? 44 : 48,
-            borderRadius: '50%',
-            bgcolor: 'rgba(0,0,0,0.05)',
-            color: '#374151',
-            flexShrink: 0,
-            '&:active': { bgcolor: 'rgba(0,0,0,0.1)' },
-          }}
+          sx={drillBackBtnSx}
         >
-          <ChevronLeftIcon sx={{ fontSize: is960 ? 22 : 26 }} />
+          <ChevronLeftIcon sx={{ fontSize: is960 ? 22 : 24 }} />
         </ButtonBase>
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography
+            noWrap
             sx={{
               fontWeight: 900,
-              fontSize: is960 ? '1.05rem' : is1920x1125 ? '1.65rem' : '1.35rem',
+              fontSize: is960 ? '1.05rem' : is1920x1125 ? '1.45rem' : '1.28rem',
               color: '#111827',
               lineHeight: 1.2,
             }}
@@ -182,7 +177,7 @@ export default function HSKSkillDrillPage() {
             {meta ? meta.title : 'Specialized drill'}
           </Typography>
           {meta && (
-            <Typography sx={{ fontSize: is960 ? '0.7rem' : '0.8rem', color: '#64748B', mt: 0.35, fontWeight: 600 }}>
+            <Typography noWrap sx={{ fontSize: is960 ? '0.7rem' : '0.8rem', color: '#64748B', mt: 0.25, fontWeight: 600 }}>
               Typical levels: {meta.levelsHint}
             </Typography>
           )}

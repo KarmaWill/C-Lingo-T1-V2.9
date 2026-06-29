@@ -11,13 +11,13 @@ import TrophyIcon from '@mui/icons-material/EmojiEvents';
 import StyleIcon from '@mui/icons-material/Style';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import QuizIcon from '@mui/icons-material/Quiz';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import CloseIcon from '@mui/icons-material/Close';
 import LockIcon from '@mui/icons-material/Lock';
 import HeadphonesIcon from '@mui/icons-material/Headphones';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import ReplayIcon from '@mui/icons-material/Replay';
 import LayersIcon from '@mui/icons-material/Layers';
 import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
@@ -82,7 +82,6 @@ export default function FunChineseHubPage() {
   const googleSansFamily = '"Google Sans","Product Sans","Roboto","Arial",sans-serif';
 
   const unitComplete = useMemo(() => lessons.every((l) => l.status === 'completed'), [lessons]);
-  const completedLessonCount = useMemo(() => lessons.filter((l) => l.status === 'completed').length, [lessons]);
 
   const tools: Tool[] = [
     {
@@ -109,7 +108,7 @@ export default function FunChineseHubPage() {
   const showUnitGateHint = () => {
     setSnackbar({
       open: true,
-      message: `Complete all lessons in this unit to unlock the Knowledge Toolbox and ${FUN_CHINESE_UNIT1_PODCAST_TITLE}.`,
+      message: `Complete all 3 in this unit to unlock the Knowledge Toolbox and ${FUN_CHINESE_UNIT1_PODCAST_TITLE}.`,
     });
   };
 
@@ -184,8 +183,6 @@ export default function FunChineseHubPage() {
   const handleFeedback = () => {
     setSnackbar({ open: true, message: 'Thanks! Unit feedback will open here in a later build.' });
   };
-
-  const totalLessonCount = lessons.length;
 
   return (
     <Box
@@ -314,68 +311,88 @@ export default function FunChineseHubPage() {
           sx={{
             display: 'flex',
             alignItems: 'center',
-            gap: is960 ? 0.85 : 1,
+            gap: is960 ? 0.75 : 0.9,
             flexShrink: 0,
+            height: is960 ? 48 : 54,
+            px: is960 ? 0.6 : 0.75,
+            py: 0.5,
+            borderRadius: is960 ? '18px' : '22px',
+            bgcolor: 'rgba(255,255,255,0.72)',
+            border: '1px solid rgba(226,232,240,0.88)',
+            boxShadow: '0 18px 44px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.88)',
+            backdropFilter: 'blur(18px)',
           }}
         >
           <Box
             sx={{
-              height: headerActionSize,
+              height: is960 ? 38 : 44,
               boxSizing: 'border-box',
-              px: is960 ? 1.35 : 1.65,
-              bgcolor: '#F8FAFC',
-              borderRadius: is960 ? '16px' : '20px',
-              border: '1px solid #E2E8F0',
+              px: is960 ? 1.35 : 1.55,
+              bgcolor: 'linear-gradient(135deg, rgba(20,184,166,0.12), rgba(99,102,241,0.08))',
+              borderRadius: is960 ? '14px' : '16px',
+              border: '1px solid rgba(20,184,166,0.14)',
               display: 'flex',
               alignItems: 'center',
               gap: is960 ? 0.85 : 1,
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.75)',
             }}
           >
-            <AccessTimeIcon sx={{ fontSize: is960 ? 18 : 20, color: '#14B8A6', flexShrink: 0 }} />
-            <Typography sx={{ fontWeight: 850, fontSize: is960 ? '0.78rem' : '0.88rem', color: '#334155', whiteSpace: 'nowrap' }}>
-              24 min
-            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: is960 ? 68 : 78 }}>
+              <Typography sx={{ mb: 0.35, fontWeight: 900, fontSize: is960 ? '0.5rem' : '0.56rem', color: '#0F766E', lineHeight: 1, whiteSpace: 'nowrap', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+                Studied
+              </Typography>
+              <Typography sx={{ fontWeight: 950, fontSize: is960 ? '0.86rem' : '0.98rem', color: '#0F172A', lineHeight: 1, whiteSpace: 'nowrap', letterSpacing: '-0.03em' }}>
+                24 min
+              </Typography>
+            </Box>
             <Box sx={{ width: '1px', alignSelf: 'stretch', bgcolor: '#E2E8F0', my: 0.15 }} />
             <ButtonBase
               onClick={handleUploadData}
               disabled={uploading}
               aria-label="Upload learning data"
               sx={{
-                minWidth: is960 ? 36 : 40,
-                minHeight: is960 ? 36 : 40,
-                borderRadius: '12px',
+                width: is960 ? 34 : 38,
+                height: is960 ? 34 : 38,
+                minWidth: is960 ? 34 : 38,
+                minHeight: is960 ? 34 : 38,
+                borderRadius: is960 ? '12px' : '14px',
                 color: uploading ? '#94A3B8' : '#0F766E',
-                bgcolor: uploading ? '#F1F5F9' : 'rgba(20,184,166,0.1)',
+                bgcolor: uploading ? '#F1F5F9' : 'rgba(20,184,166,0.13)',
                 flexShrink: 0,
-                '&:active': { transform: uploading ? 'none' : 'scale(0.96)' },
+                transition: 'all 180ms ease',
+                '&:hover': { bgcolor: uploading ? '#F1F5F9' : 'rgba(20,184,166,0.18)' },
+                '&:active': { transform: uploading ? 'none' : 'scale(0.94)' },
               }}
             >
-              <CloudUploadOutlinedIcon sx={{ fontSize: is960 ? 20 : 22 }} />
+              <CloudUploadOutlinedIcon sx={{ fontSize: is960 ? 18 : 20 }} />
             </ButtonBase>
           </Box>
           <ButtonBase
             onClick={handleFeedback}
             aria-label="Feedback"
             sx={{
-              width: headerActionSize,
-              height: headerActionSize,
-              minWidth: headerActionSize,
-              minHeight: headerActionSize,
-              maxWidth: headerActionSize,
-              maxHeight: headerActionSize,
+              width: is960 ? 38 : 44,
+              height: is960 ? 38 : 44,
+              minWidth: is960 ? 38 : 44,
+              minHeight: is960 ? 38 : 44,
+              maxWidth: is960 ? 38 : 44,
+              maxHeight: is960 ? 38 : 44,
               boxSizing: 'border-box',
               p: 0,
               flexShrink: 0,
-              bgcolor: '#F8FAFC',
-              borderRadius: is960 ? '14px' : '16px',
-              border: '1px solid #E2E8F0',
+              bgcolor: 'linear-gradient(135deg, rgba(99,102,241,0.14), rgba(168,85,247,0.12))',
+              borderRadius: is960 ? '15px' : '18px',
+              border: '1px solid rgba(99,102,241,0.18)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.75)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              '&:active': { transform: 'scale(0.98)', bgcolor: '#F1F5F9' },
+              transition: 'all 180ms ease',
+              '&:hover': { bgcolor: 'linear-gradient(135deg, rgba(99,102,241,0.18), rgba(168,85,247,0.15))' },
+              '&:active': { transform: 'scale(0.94)' },
             }}
           >
-            <RateReviewOutlinedIcon sx={{ fontSize: is960 ? 20 : 22, color: '#6366F1' }} />
+            <RateReviewOutlinedIcon sx={{ fontSize: is960 ? 20 : 22, color: '#4F46E5' }} />
           </ButtonBase>
         </Box>
       </Box>
@@ -418,37 +435,22 @@ export default function FunChineseHubPage() {
                 <Typography sx={{ fontSize: is960 ? '1.12rem' : '1.35rem', color: '#0F172A', fontWeight: 900, letterSpacing: '-0.03em' }}>
                   Lessons
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 0.85 : 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 0.35 : 0.45 }}>
-                    {lessons.map((lesson) => {
-                      const completed = lesson.status === 'completed';
-                      return (
-                        <TrophyIcon
-                          key={lesson.id}
-                          aria-label={completed ? `Lesson ${lesson.id} completed` : `Lesson ${lesson.id} not completed`}
-                          sx={{
-                            fontSize: is960 ? 20 : 24,
-                            color: completed ? '#F59E0B' : '#CBD5E1',
-                            filter: completed ? 'drop-shadow(0 1px 2px rgba(245,158,11,0.35))' : 'none',
-                            transition: 'color 0.2s ease',
-                          }}
-                        />
-                      );
-                    })}
-                  </Box>
-                  <Box
-                    sx={{
-                      px: is960 ? 1.1 : 1.25,
-                      py: is960 ? 0.45 : 0.55,
-                      borderRadius: '999px',
-                      bgcolor: '#F1F5F9',
-                      border: '1px solid #E2E8F0',
-                    }}
-                  >
-                    <Typography sx={{ fontSize: is960 ? '0.76rem' : '0.86rem', color: '#475569', fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>
-                      {completedLessonCount}/{totalLessonCount}
-                    </Typography>
-                  </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 0.35 : 0.45 }}>
+                  {lessons.map((lesson) => {
+                    const completed = lesson.status === 'completed';
+                    return (
+                      <TrophyIcon
+                        key={lesson.id}
+                        aria-label={completed ? `Lesson ${lesson.id} completed` : `Lesson ${lesson.id} not completed`}
+                        sx={{
+                          fontSize: is960 ? 20 : 24,
+                          color: completed ? '#F59E0B' : '#CBD5E1',
+                          filter: completed ? 'drop-shadow(0 1px 2px rgba(245,158,11,0.35))' : 'none',
+                          transition: 'color 0.2s ease',
+                        }}
+                      />
+                    );
+                  })}
                 </Box>
               </Box>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 1.5 : 2 }}>
@@ -526,26 +528,58 @@ export default function FunChineseHubPage() {
                           e.stopPropagation();
                           handleStartLesson(lesson.id, lesson.status);
                         }}
+                        disabled={lesson.status === 'locked'}
+                        aria-label={
+                          lesson.status === 'completed'
+                            ? `Review lesson ${lesson.id}`
+                            : lesson.status === 'current'
+                              ? `Start lesson ${lesson.id}`
+                              : `Lesson ${lesson.id} locked`
+                        }
                         sx={{
                           flexShrink: 0,
                           display: 'inline-flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          minWidth: is960 ? 100 : 112,
-                          px: is960 ? 2 : 2.25,
-                          py: is960 ? 0.85 : 1,
-                          borderRadius: is960 ? '12px' : '14px',
-                          bgcolor: lesson.status === 'current' ? orange : '#E2E8F0',
-                          color: lesson.status === 'current' ? 'white' : '#64748B',
-                          fontSize: is960 ? '0.82rem' : '0.92rem',
-                          fontWeight: 800,
-                          boxShadow: lesson.status === 'current' ? `0 4px 12px ${orange}40` : 'none',
+                          width: is960 ? 38 : 44,
+                          height: is960 ? 38 : 44,
+                          minWidth: is960 ? 38 : 44,
+                          borderRadius: '50%',
+                          bgcolor:
+                            lesson.status === 'completed'
+                              ? 'rgba(20,184,166,0.12)'
+                              : lesson.status === 'current'
+                                ? orange
+                                : '#E2E8F0',
+                          color:
+                            lesson.status === 'completed'
+                              ? '#0F766E'
+                              : lesson.status === 'current'
+                                ? 'white'
+                                : '#64748B',
+                          boxShadow:
+                            lesson.status === 'current'
+                              ? `0 8px 18px ${orange}42`
+                              : lesson.status === 'completed'
+                                ? '0 4px 12px rgba(20,184,166,0.16)'
+                                : 'none',
                           '&:hover': {
-                            bgcolor: lesson.status === 'current' ? '#FF6B3D' : '#CBD5E1',
+                            bgcolor:
+                              lesson.status === 'completed'
+                                ? 'rgba(20,184,166,0.18)'
+                                : lesson.status === 'current'
+                                  ? '#FF6B3D'
+                                  : '#E2E8F0',
                           },
                         }}
                       >
-                        {lesson.status === 'completed' ? 'Review' : lesson.status === 'current' ? 'Start' : 'Locked'}
+                        {lesson.status === 'completed' ? (
+                          <ReplayIcon sx={{ fontSize: is960 ? 19 : 21 }} />
+                        ) : lesson.status === 'current' ? (
+                          <PlayArrowIcon sx={{ fontSize: is960 ? 22 : 24 }} />
+                        ) : (
+                          <LockIcon sx={{ fontSize: is960 ? 18 : 20 }} />
+                        )}
                       </ButtonBase>
                     </Box>
                   </Box>
@@ -586,8 +620,8 @@ export default function FunChineseHubPage() {
                   }}
                 >
                   <LockIcon sx={{ fontSize: 36, color: 'rgba(255,255,255,0.85)' }} />
-                  <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.88rem' : '0.95rem', color: 'rgba(255,255,255,0.92)', maxWidth: 280 }}>
-                    Complete all lessons to unlock audio reading
+                  <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.88rem' : '0.95rem', color: 'rgba(255,255,255,0.92)', maxWidth: 300 }}>
+                    Complete all 3 to unlock the AI podcast
                   </Typography>
                 </Box>
               )}
@@ -623,13 +657,13 @@ export default function FunChineseHubPage() {
                   </Box>
                     <Box sx={{ minWidth: 0 }}>
                       <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.02rem' : '1.22rem', lineHeight: 1.08, letterSpacing: '-0.04em', fontFamily: googleSansFamily }}>
-                        AI Talk
+                        {FUN_CHINESE_UNIT1_PODCAST_TITLE}
                       </Typography>
                     <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.82rem', color: 'rgba(255,255,255,0.76)', fontWeight: 650, mt: 0.35, fontFamily: googleSansFamily, maxWidth: 380 }}>
-                      How to say hello?
+                      {FUN_CHINESE_UNIT1_PODCAST_TAGLINE}
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: is960 ? 0.75 : 0.95 }}>
-                      {['3 min', 'Bilingual'].map((tag) => (
+                      {['3 min', 'Bilingual', FUN_CHINESE_UNIT1_PODCAST_BADGE].map((tag) => (
                         <Box
                           key={tag}
                           sx={{
@@ -679,9 +713,9 @@ export default function FunChineseHubPage() {
                   }}
                 >
                   {unitComplete ? (
-                    'Start'
+                    <PlayArrowIcon sx={{ fontSize: is960 ? 20 : 22 }} />
                   ) : (
-                    'Locked'
+                    <LockIcon sx={{ fontSize: is960 ? 18 : 20 }} />
                   )}
                 </ButtonBase>
               </Box>
@@ -698,19 +732,50 @@ export default function FunChineseHubPage() {
               boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
               display: 'flex',
               flexDirection: 'column',
+              position: 'relative',
             }}
           >
-            <Typography
+            <Box
               sx={{
-                fontSize: is960 ? '0.82rem' : '0.92rem',
-                fontWeight: 800,
-                color: '#94A3B8',
-                letterSpacing: '0.1em',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 1.5,
                 mb: is960 ? 2 : 2.5,
               }}
             >
-              Knowledge Toolbox
-            </Typography>
+              <Typography
+                sx={{
+                  fontSize: is960 ? '0.82rem' : '0.92rem',
+                  fontWeight: 800,
+                  color: '#94A3B8',
+                  letterSpacing: '0.1em',
+                }}
+              >
+                Knowledge Toolbox
+              </Typography>
+              {!unitComplete && (
+                <Box
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.65,
+                    px: is960 ? 1 : 1.15,
+                    py: is960 ? 0.45 : 0.55,
+                    borderRadius: '999px',
+                    bgcolor: '#F1F5F9',
+                    border: '1px solid #E2E8F0',
+                    color: '#64748B',
+                    flexShrink: 0,
+                  }}
+                >
+                  <LockIcon sx={{ fontSize: is960 ? 13 : 15 }} />
+                  <Typography sx={{ fontSize: is960 ? '0.58rem' : '0.66rem', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+                    Finish All 3
+                  </Typography>
+                </Box>
+              )}
+            </Box>
             <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: is960 ? 1.5 : 2 }}>
               {tools.map((tool) => {
                 const unlocked = unitComplete;
@@ -780,21 +845,6 @@ export default function FunChineseHubPage() {
                           20
                         </Box>
                       )}
-                      {!unlocked && (
-                        <LockIcon
-                          sx={{
-                            position: 'absolute',
-                            bottom: -2,
-                            right: -2,
-                            fontSize: 18,
-                            color: '#0F172A',
-                            bgcolor: 'white',
-                            borderRadius: '50%',
-                            p: 0.25,
-                            boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
-                          }}
-                        />
-                      )}
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.95rem' : '1.08rem', color: '#1E293B', lineHeight: 1.2, fontFamily: googleSansFamily }}>
@@ -846,18 +896,6 @@ export default function FunChineseHubPage() {
                   } : {},
                 }}
               >
-                {!unitComplete && (
-                  <LockIcon
-                    sx={{
-                      position: 'absolute',
-                      top: is960 ? 8 : 10,
-                      right: is960 ? 8 : 10,
-                      fontSize: 16,
-                      color: '#94A3B8',
-                      zIndex: 2,
-                    }}
-                  />
-                )}
                 <MenuBookIcon sx={{ fontSize: is960 ? 26 : 32, color: unitComplete ? 'white' : '#94A3B8', flexShrink: 0 }} />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', color: unitComplete ? 'rgba(255,255,255,0.85)' : '#94A3B8', fontWeight: 800, fontFamily: googleSansFamily, mb: 0.2 }}>
@@ -866,11 +904,6 @@ export default function FunChineseHubPage() {
                   <Typography sx={{ fontSize: is960 ? '0.98rem' : '1.12rem', color: unitComplete ? 'white' : '#64748B', fontWeight: 900, lineHeight: 1.15, fontFamily: googleSansFamily }}>
                     Lesson Resources
                   </Typography>
-                  {!unitComplete && (
-                    <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.76rem', color: '#94A3B8', fontWeight: 650, mt: 0.35, fontFamily: googleSansFamily }}>
-                      Complete all lessons to unlock
-                    </Typography>
-                  )}
                 </Box>
                 {unitComplete && (
                   <ChevronRightIcon sx={{ fontSize: is960 ? 20 : 24, color: 'rgba(255,255,255,0.85)', flexShrink: 0 }} />

@@ -457,7 +457,7 @@ export default function HSKTestPage() {
                     lineHeight: 1.2,
                   }}
                 >
-                  Grammar Study
+                  Grammar Snap
                 </Typography>
                 <Typography
                   sx={{
@@ -468,7 +468,7 @@ export default function HSKTestPage() {
                     opacity: 0.95,
                   }}
                 >
-                  Step-by-step grammar path.
+                  Step-by-step grammar study path.
                 </Typography>
               </Box>
             </Box>

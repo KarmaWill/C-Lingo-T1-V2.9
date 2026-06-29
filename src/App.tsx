@@ -1,6 +1,8 @@
+import { useMemo } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
+import { LocaleProvider, useLocale } from './context/LocaleContext'
 import MainLayout from './components/MainUI/MainLayout'
 import HomePage from './pages/HomePage'
 import LessonPage from './pages/LessonPage'
@@ -36,15 +38,31 @@ import FunChineseCardCollectionPage from './pages/FunChineseCardCollectionPage'
 import FunChineseLessonPage from './pages/FunChineseLessonPage'
 import FunChineseIntensivePage from './pages/FunChineseIntensivePage'
 import CharacterWritingPage from './pages/CharacterWritingPage'
+import CharacterWritingHubPage from './pages/CharacterWritingHubPage'
+import CharacterWritingModulePage from './pages/CharacterWritingModulePage'
 import FunChineseTeacherGuidePage from './pages/FunChineseTeacherGuidePage'
+import FavoritesPage from './pages/FavoritesPage'
 import CultureMapPage from './pages/CultureMapPage'
 import HSKGoStudyPlaceholderPage from './pages/HSKGoStudyPlaceholderPage'
 import AudioReadingRoutePage from './pages/AudioReadingRoutePage'
 import CultureVideoRoutePage from './pages/CultureVideoRoutePage'
+import ParentalControlsPage from './pages/ParentalControlsPage'
+import NskAppStorePage from './pages/NskAppStorePage'
+import JxwAppStorePage from './pages/JxwAppStorePage'
+import AppsCatalogPage from './pages/AppsCatalogPage'
+import AndroidAppPickerPage from './pages/AndroidAppPickerPage'
+import AndroidHomePage from './pages/AndroidHomePage'
+import AndroidSettingsPage from './pages/AndroidSettingsPage'
+import LanguagePacksPage from './pages/LanguagePacksPage'
+import ContentCachePage from './pages/ContentCachePage'
+import AppUpdatesPage from './pages/AppUpdatesPage'
+import CourseIntroPage from './pages/CourseIntroPage'
+import ReadingBuddyPage from './pages/ReadingBuddyPage'
+import ReadingBuddyReaderPage from './pages/ReadingBuddyReaderPage'
 
-const theme = createTheme({
+const baseThemeOptions = {
   palette: {
-    mode: 'light',
+    mode: 'light' as const,
     primary: {
       main: '#00B4A0',
       light: '#4285f4',
@@ -66,9 +84,6 @@ const theme = createTheme({
       secondary: '#636E72',
     },
   },
-  typography: {
-    fontFamily: '"Google Sans", "Roboto", "Helvetica", "Arial", sans-serif',
-  },
   shape: {
     borderRadius: 24,
   },
@@ -81,10 +96,29 @@ const theme = createTheme({
         },
       },
     },
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          fontFamily: 'var(--app-font-family, "Google Sans", "Roboto", sans-serif)',
+        },
+      },
+    },
   },
-})
+}
 
-function App() {
+function ThemedApp() {
+  const { locale } = useLocale()
+  const theme = useMemo(
+    () =>
+      createTheme({
+        ...baseThemeOptions,
+        typography: {
+          fontFamily: locale.fontFamily,
+        },
+      }),
+    [locale.fontFamily]
+  )
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -107,14 +141,32 @@ function App() {
               <Route path="/library/hub/fun-chinese/intensive" element={<FunChineseIntensivePage />} />
               <Route path="/library/hub/fun-chinese/teacher-guide" element={<FunChineseTeacherGuidePage />} />
               <Route path="/library/hub/fun-chinese/lesson/:lessonId" element={<FunChineseLessonPage />} />
+              <Route path="/favorites" element={<FavoritesPage />} />
               <Route path="/library/hub/culture" element={<CultureMapPage />} />
-              <Route path="/character-writing/:character" element={<CharacterWritingPage />} />
+              <Route path="/character-writing" element={<CharacterWritingHubPage />} />
+              <Route path="/character-writing/strokes" element={<CharacterWritingModulePage />} />
+              <Route path="/character-writing/radicals" element={<CharacterWritingModulePage />} />
+              <Route path="/character-writing/structure" element={<CharacterWritingModulePage />} />
+              <Route path="/character-writing/practice/:character" element={<CharacterWritingPage />} />
               <Route path="/library/hub/:hubId" element={<LibraryHubPlaceholderPage />} />
               <Route path="/library/read/:bookId" element={<BookReaderPage />} />
               <Route path="/specialized" element={<SpecializedTracksPage />} />
               <Route path="/camera" element={<CameraPage />} />
               <Route path="/apps" element={<AppsPage />} />
+              <Route path="/parental-controls" element={<ParentalControlsPage />} />
+              <Route path="/nsk-app-store" element={<NskAppStorePage />} />
+              <Route path="/jxw-app-store" element={<JxwAppStorePage />} />
+              <Route path="/apps-catalog" element={<AppsCatalogPage />} />
+              <Route path="/android-app-picker" element={<AndroidAppPickerPage />} />
+              <Route path="/android/home" element={<AndroidHomePage />} />
+              <Route path="/android/settings" element={<AndroidSettingsPage />} />
+              <Route path="/system/language-packs" element={<LanguagePacksPage />} />
+              <Route path="/system/content-cache" element={<ContentCachePage />} />
+              <Route path="/system/app-updates" element={<AppUpdatesPage />} />
+              <Route path="/course-intro" element={<CourseIntroPage />} />
               <Route path="/ai-chat" element={<AIChatPage />} />
+              <Route path="/reading-buddy" element={<ReadingBuddyPage />} />
+              <Route path="/reading-buddy/:docId" element={<ReadingBuddyReaderPage />} />
           <Route path="/lesson/:id" element={<LessonPage />} />
           <Route path="/profile" element={<ProfilePage />} />
               <Route path="/profile/edit" element={<ProfileEditPage />} />
@@ -141,6 +193,14 @@ function App() {
         } />
       </Routes>
     </ThemeProvider>
+  )
+}
+
+function App() {
+  return (
+    <LocaleProvider>
+      <ThemedApp />
+    </LocaleProvider>
   )
 }
 

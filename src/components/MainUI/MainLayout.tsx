@@ -76,6 +76,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isHSKPrepTrainingPage = location.pathname === '/hsk-prep-training'
   const isHSKSkillDrillPage = location.pathname === '/hsk-skill-drill'
   const isHSKOralReviewPage = location.pathname === '/hsk-oral-review'
+  const isGrammarSnapPage =
+    location.pathname === '/hsk-go-study' || location.pathname.startsWith('/hsk-go-study/')
   const isLibraryBookSelectionPage = location.pathname === '/library/select-books'
   const isStartingLearningPage = location.pathname === '/starting-learning'
   const isFunChineseTeacherGuidePage = location.pathname === '/library/hub/fun-chinese/teacher-guide'
@@ -85,6 +87,19 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isFunChineseLessonPage = location.pathname.startsWith('/library/hub/fun-chinese/lesson')
   const isCultureMapPage = location.pathname === '/library/hub/culture'
   const isCharacterWritingPage = location.pathname.startsWith('/character-writing')
+  const isFavoritesPage = location.pathname === '/favorites'
+  const isParentalControlsPage = location.pathname === '/parental-controls'
+  const isNskAppStorePage = location.pathname === '/nsk-app-store'
+  const isJxwAppStorePage = location.pathname === '/jxw-app-store'
+  const isAppsCatalogPage = location.pathname === '/apps-catalog'
+  const isAndroidAppPickerPage = location.pathname === '/android-app-picker'
+  const isAndroidHomePage = location.pathname === '/android/home'
+  const isAndroidSettingsPage = location.pathname === '/android/settings'
+  const isLanguagePacksPage = location.pathname === '/system/language-packs'
+  const isContentCachePage = location.pathname === '/system/content-cache'
+  const isAppUpdatesPage = location.pathname === '/system/app-updates'
+  const isCourseIntroPage = location.pathname === '/course-intro'
+  const isReadingBuddyPage = location.pathname === '/reading-buddy' || location.pathname.startsWith('/reading-buddy/')
   /** 全屏覆盖主区域（无顶栏留白）；LingoFlash/GrammarPuzzle/HSKPrepTraining/LibraryBookSelection 单独：保留系统状态栏高度，主内容在其下方 */
   const isCoveringMain =
     isCameraPage ||
@@ -101,9 +116,29 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isHSKMockExamPage ||
     isAudioReadingPage ||
     isCultureVideoRoutePage ||
+    isFavoritesPage ||
+    isParentalControlsPage ||
+    isNskAppStorePage ||
+    isJxwAppStorePage ||
+    isAppsCatalogPage ||
+    isAndroidAppPickerPage ||
+    isAndroidHomePage ||
+    isAndroidSettingsPage ||
+    isLanguagePacksPage ||
+    isContentCachePage ||
+    isAppUpdatesPage ||
+    isCourseIntroPage ||
+    isHSKOralReviewPage ||
+    isReadingBuddyPage
+  const hideChromeNav =
+    isCoveringMain ||
+    isLingoFlashPage ||
+    isGrammarPuzzlePage ||
+    isSyntaxSnapPage ||
+    isHSKPrepTrainingPage ||
     isHSKSkillDrillPage ||
-    isHSKOralReviewPage
-  const hideChromeNav = isCoveringMain || isLingoFlashPage || isGrammarPuzzlePage || isSyntaxSnapPage || isHSKPrepTrainingPage || isLibraryBookSelectionPage || isStartingLearningPage || isFunChineseTeacherGuidePage || isFunChineseHubPage || isFunChineseCardCollectionPage || isFunChineseIntensivePage || isFunChineseLessonPage || isCultureMapPage || isCharacterWritingPage
+    isGrammarSnapPage ||
+    isLibraryBookSelectionPage || isStartingLearningPage || isFunChineseTeacherGuidePage || isFunChineseHubPage || isFunChineseCardCollectionPage || isFunChineseIntensivePage || isFunChineseLessonPage || isCultureMapPage || isCharacterWritingPage
 
   // 主四 tab + LingoFlash + GrammarPuzzle + SyntaxSnap + HSKPrepTraining + LibraryBookSelection + FunChineseHub + FunChineseLesson + CultureMap + CharacterWriting：显示系统状态栏；其它全屏页不显示
   const showSystemBar =
@@ -114,6 +149,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isHSKPrepTrainingPage ||
     isHSKSkillDrillPage ||
     isHSKOralReviewPage ||
+    isGrammarSnapPage ||
     isLibraryBookSelectionPage ||
     isFunChineseHubPage ||
     isFunChineseCardCollectionPage ||
@@ -133,6 +169,50 @@ export default function MainLayout({ children }: MainLayoutProps) {
   // Reserve space for BottomNavigator: 4-dot tab indicator + dock + camera (absolute bottom)
   const bottomNavHeight = is960 ? 96 : (is2000x1200 ? 158 : (is1920x1125 ? 146 : 124))
   const totalTopHeight = (showSystemBar ? systemBarHeight : 0) + (showTopBanner ? topBannerHeight : 0)
+  const mainChromeBottom = showBottomNav ? bottomNavHeight : 0
+  /** SystemStatusBar is absolute; immersive pages must start below it. */
+  const coverTopOffset = isCoveringMain && showSystemBar ? systemBarHeight : 0
+  /** Status bar only (no TopBanner): pad main content — margin-top is unreliable in flex + absolute overlay. */
+  const statusBarOnlyLayout = showSystemBar && !showTopBanner && !isCoveringMain
+
+  const mainContentAreaSx = {
+    flexGrow: 1,
+    position: isCoveringMain ? ('absolute' as const) : ('relative' as const),
+    zIndex: isCoveringMain ? 1200 : 1,
+    width: '100%',
+    minHeight: 0,
+    overflowX: 'hidden' as const,
+    overflowY: 'hidden' as const,
+    backgroundColor: '#FFF8F0',
+    transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+    boxSizing: 'border-box' as const,
+    ...(isCoveringMain
+      ? {
+          top: coverTopOffset,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: coverTopOffset ? `calc(100% - ${coverTopOffset}px)` : '100%',
+          mt: 0,
+          mb: 0,
+          pt: 0,
+        }
+      : statusBarOnlyLayout
+        ? {
+            inset: 'auto',
+            mt: 0,
+            pt: `${systemBarHeight}px`,
+            height: '100%',
+            mb: mainChromeBottom ? `${mainChromeBottom}px` : 0,
+          }
+        : {
+            inset: 'auto',
+            pt: 0,
+            height: `calc(100% - ${totalTopHeight + mainChromeBottom}px)`,
+            mt: `${totalTopHeight}px`,
+            mb: mainChromeBottom ? `${mainChromeBottom}px` : 0,
+          }),
+  }
 
   const shellBackdropSx = {
     position: 'relative' as const,
@@ -290,21 +370,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
             <Box
               component="main"
               id="main-content-area"
-              sx={{
-                flexGrow: 1,
-                position: isCoveringMain ? 'absolute' : 'relative',
-                inset: isCoveringMain ? 0 : 'auto',
-                zIndex: isCoveringMain ? 1200 : 1,
-                width: '100%',
-                height: isCoveringMain
-                  ? '100%'
-                  : `calc(100% - ${totalTopHeight + (showBottomNav ? bottomNavHeight : 0)}px)`,
-                mt: isCoveringMain ? 0 : `${totalTopHeight}px`,
-                mb: showBottomNav ? `${bottomNavHeight}px` : 0,
-                overflowY: 'hidden',
-                backgroundColor: '#FFF8F0',
-                transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-              }}
+              sx={mainContentAreaSx}
             >
               {children}
             </Box>
@@ -337,21 +403,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <Box
           component="main"
           id="main-content-area"
-          sx={{
-            flexGrow: 1,
-            position: isCoveringMain ? 'absolute' : 'relative',
-            inset: isCoveringMain ? 0 : 'auto',
-            zIndex: isCoveringMain ? 1200 : 1,
-            width: '100%',
-            height: isCoveringMain
-              ? '100%'
-              : `calc(100% - ${totalTopHeight + (showBottomNav ? bottomNavHeight : 0)}px)`,
-            mt: isCoveringMain ? 0 : `${totalTopHeight}px`,
-            mb: showBottomNav ? `${bottomNavHeight}px` : 0,
-            overflowY: 'hidden',
-            backgroundColor: '#FFF8F0',
-            transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-          }}
+          sx={mainContentAreaSx}
         >
           {children}
         </Box>

@@ -2,11 +2,12 @@
  * Character Writing Practice Page - 汉字书写训练页面
  */
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Box, Typography, ButtonBase } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import InfoIcon from '@mui/icons-material/InfoOutlined';
+import { resolveBackPath } from '../utils/navigateBack';
 
 // 汉字笔画信息（示例数据）
 const CHARACTER_INFO: Record<string, {
@@ -20,10 +21,26 @@ const CHARACTER_INFO: Record<string, {
   '我': { strokes: 7, structure: '独体字', components: ['我'], tip: '斜钩要有力，撇捺要舒展' },
   '很': { strokes: 9, structure: '左右结构', components: ['彳', '艮'], tip: '左窄右宽，右侧要紧凑' },
   '吗': { strokes: 6, structure: '左右结构', components: ['口', '马'], tip: '左小右大，马字要舒展' },
+  '一': { strokes: 1, structure: '独体字', components: ['一'], tip: '从左到右，平稳写横' },
+  '十': { strokes: 2, structure: '独体字', components: ['十'], tip: '先横后竖，交叉居中' },
+  '人': { strokes: 2, structure: '独体字', components: ['人'], tip: '撇捺要舒展对称' },
+  '大': { strokes: 3, structure: '独体字', components: ['大'], tip: '横撇后捺，重心稳定' },
+  '下': { strokes: 3, structure: '独体字', components: ['下'], tip: '横竖点后点，结构紧凑' },
+  '地': { strokes: 6, structure: '左右结构', components: ['土', '也'], tip: '左窄右宽，提画有力' },
+  '口': { strokes: 3, structure: '独体字', components: ['口'], tip: '先竖后横折，最后封口' },
+  '小': { strokes: 3, structure: '独体字', components: ['小'], tip: '竖钩居中，两点对称' },
+  '河': { strokes: 8, structure: '左右结构', components: ['氵', '可'], tip: '三点水紧凑，右部舒展' },
+  '树': { strokes: 9, structure: '左中右结构', components: ['木', '对'], tip: '木字旁略窄，右部对齐' },
+  '说': { strokes: 9, structure: '左右结构', components: ['讠', '兑'], tip: '言字旁窄，右部稳定' },
+  '打': { strokes: 5, structure: '左右结构', components: ['扌', '丁'], tip: '提手旁上提，右部靠下' },
+  '字': { strokes: 6, structure: '上下结构', components: ['宀', '子'], tip: '宝盖头覆盖，子部居中' },
+  '国': { strokes: 8, structure: '包围结构', components: ['囗', '玉'], tip: '外框先立，内芯居中' },
+  '班': { strokes: 10, structure: '左中右结构', components: ['王', '分'], tip: '三部分等距，中线对齐' },
 };
 
 export default function CharacterWritingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { character } = useParams<{ character: string }>();
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
   const is960 = screenSize === '960x540';
@@ -41,8 +58,7 @@ export default function CharacterWritingPage() {
     if (step < 3) {
       setStep((step + 1) as 1 | 2 | 3);
     } else {
-      // 完成第3步后返回生词学习页面
-      navigate(-1);
+      navigate(resolveBackPath(location, { defaultPath: '/character-writing' }), { replace: true });
     }
   };
 
@@ -97,7 +113,7 @@ export default function CharacterWritingPage() {
       </Box>
 
       <ButtonBase
-        onClick={() => navigate(-1)}
+        onClick={() => navigate(resolveBackPath(location, { defaultPath: '/character-writing' }), { replace: true })}
         aria-label="Close writing practice"
         sx={{
           position: 'absolute',

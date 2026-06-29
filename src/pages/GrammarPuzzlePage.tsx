@@ -153,8 +153,8 @@ function HubView({ onNavigate, onBack, completedCount, points, is960 }: { onNavi
         transition={{ type: 'spring', damping: 12 }}
       >
         <Box sx={{ position: 'relative', display: 'inline-block', mb: 4 }}>
-          <Typography sx={{ fontSize: is960 ? '2.35rem' : '3.1rem', fontWeight: 900, color: '#268BD2', mb: 1, letterSpacing: '-0.01em' }}>
-            Sentence Snap
+          <Typography sx={{ fontSize: is960 ? '2.35rem' : '3.1rem', fontWeight: 900, color: '#791F87', mb: 1, letterSpacing: '-0.01em' }}>
+            Class Generator
           </Typography>
           <Box
             sx={{

@@ -734,7 +734,7 @@ export default function FunChineseLessonPage() {
               {shouldShowWriting && (
                 <ButtonBase
                   onClick={() => {
-                    navigate(`/character-writing/${encodeURIComponent(currentVocab.chinese)}`);
+                    navigate(`/character-writing/practice/${encodeURIComponent(currentVocab.chinese)}`);
                   }}
                   sx={{
                     width: is960 ? 162 : 206,
