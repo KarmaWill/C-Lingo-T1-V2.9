@@ -1,0 +1,73 @@
+{
+  "nav": {
+    "library": "Perpustakaan",
+    "learn": "Belajar",
+    "hsk": "HSK",
+    "explore": "Teroka"
+  },
+  "program": {
+    "hubTitle": "AI Class Studio",
+    "tracks": {
+      "c-lingo": "C-Lingo Chinese",
+      "hsk-standard": "HSK Standard",
+      "business-chinese": "Bahasa Cina Perniagaan"
+    },
+    "badge": {
+      "onlineOnly": "Dalam talian sahaja",
+      "officialExam": "Peperiksaan rasmi",
+      "premium": "Premium"
+    }
+  },
+  "topBanner": {
+    "languageSwitch": "Tukar Bahasa",
+    "offline": "Luar talian",
+    "onlineOnly": "Dalam talian sahaja",
+    "pages": {
+      "aiClassStudio": "AI Class Studio",
+      "chineseTextbooks": "Buku Teks Cina",
+      "specializedTracks": "Laluan Khusus",
+      "cameraTools": "Alat Kamera",
+      "exploreDevice": "Teroka Peranti",
+      "speakingTutor": "Tutor Bertutur",
+      "hskPreparation": "Persediaan HSK",
+      "nsk": "NSK 1.0"
+    }
+  },
+  "business": {
+    "eyebrow": "PENGETAHUAN PERNIAGAAN",
+    "heroTitle": "BCT 1 | Mesyuarat: Pembukaan & Agenda",
+    "points": "Mata",
+    "modules": "Modul",
+    "mins": "MIN",
+    "moduleMastery": "Penguasaan Modul",
+    "startSession": "Mula Sesi",
+    "about": "Perihal",
+    "scenarioDialogue1": "Senario",
+    "scenarioDialogue2": "Dialog",
+    "documentTools1": "Dokumen",
+    "documentTools2": "Alat",
+    "enterprisePlatform1": "Perusahaan",
+    "enterprisePlatform2": "Platform",
+    "topics": {
+      "meeting": "Mesyuarat",
+      "negotiation": "Rundingan",
+      "email": "E-mel",
+      "presentation": "Persembahan",
+      "interview": "Temuduga",
+      "networking": "Rangkaian"
+    }
+  },
+  "hsk": {
+    "eyebrow": "KURSUS HSK STANDARD",
+    "heroTitle": "HSK 1 | Topik 1: Sapaan & Perkenalan",
+    "words": "Perkataan",
+    "patterns": "Corak",
+    "topicMastery": "Penguasaan Topik HSK",
+    "speakingPro1": "AI Bertutur",
+    "speakingPro2": "Pro",
+    "writingTraining1": "Penulisan",
+    "writingTraining2": "Latihan",
+    "studyWork1": "Belajar & Kerja",
+    "studyWork2": "di China"
+  }
+}

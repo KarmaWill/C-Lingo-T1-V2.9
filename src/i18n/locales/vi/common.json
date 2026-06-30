@@ -1,0 +1,73 @@
+{
+  "nav": {
+    "library": "Thư viện",
+    "learn": "Học",
+    "hsk": "HSK",
+    "explore": "Khám phá"
+  },
+  "program": {
+    "hubTitle": "AI Class Studio",
+    "tracks": {
+      "c-lingo": "C-Lingo Chinese",
+      "hsk-standard": "HSK Standard",
+      "business-chinese": "Tiếng Trung Thương mại"
+    },
+    "badge": {
+      "onlineOnly": "Chỉ trực tuyến",
+      "officialExam": "Kỳ thi chính thức",
+      "premium": "Premium"
+    }
+  },
+  "topBanner": {
+    "languageSwitch": "Chuyển ngôn ngữ",
+    "offline": "Ngoại tuyến",
+    "onlineOnly": "Chỉ trực tuyến",
+    "pages": {
+      "aiClassStudio": "AI Class Studio",
+      "chineseTextbooks": "Sách giáo khoa tiếng Trung",
+      "specializedTracks": "Lộ trình chuyên biệt",
+      "cameraTools": "Công cụ camera",
+      "exploreDevice": "Khám phá thiết bị",
+      "speakingTutor": "Gia sư nói",
+      "hskPreparation": "Luyện thi HSK",
+      "nsk": "NSK 1.0"
+    }
+  },
+  "business": {
+    "eyebrow": "KIẾN THỨC THƯƠNG MẠI",
+    "heroTitle": "BCT 1 | Cuộc họp: Mở đầu & Chương trình",
+    "points": "Điểm",
+    "modules": "Mô-đun",
+    "mins": "PHÚT",
+    "moduleMastery": "Mức thành thạo",
+    "startSession": "Bắt đầu",
+    "about": "Giới thiệu",
+    "scenarioDialogue1": "Kịch bản",
+    "scenarioDialogue2": "Hội thoại",
+    "documentTools1": "Tài liệu",
+    "documentTools2": "Công cụ",
+    "enterprisePlatform1": "Doanh nghiệp",
+    "enterprisePlatform2": "Nền tảng",
+    "topics": {
+      "meeting": "Cuộc họp",
+      "negotiation": "Đàm phán",
+      "email": "Email",
+      "presentation": "Thuyết trình",
+      "interview": "Phỏng vấn",
+      "networking": "Kết nối"
+    }
+  },
+  "hsk": {
+    "eyebrow": "KHÓA HSK STANDARD",
+    "heroTitle": "HSK 1 | Chủ đề 1: Chào hỏi & Giới thiệu",
+    "words": "Từ",
+    "patterns": "Mẫu câu",
+    "topicMastery": "Thành thạo chủ đề HSK",
+    "speakingPro1": "AI Nói",
+    "speakingPro2": "Pro",
+    "writingTraining1": "Viết",
+    "writingTraining2": "Luyện tập",
+    "studyWork1": "Học & Làm việc",
+    "studyWork2": "tại Trung Quốc"
+  }
+}

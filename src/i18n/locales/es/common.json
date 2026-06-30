@@ -1,0 +1,73 @@
+{
+  "nav": {
+    "library": "Biblioteca",
+    "learn": "Aprender",
+    "hsk": "HSK",
+    "explore": "Explorar"
+  },
+  "program": {
+    "hubTitle": "AI Class Studio",
+    "tracks": {
+      "c-lingo": "C-Lingo Chinese",
+      "hsk-standard": "HSK Standard",
+      "business-chinese": "Chino de Negocios"
+    },
+    "badge": {
+      "onlineOnly": "Solo en línea",
+      "officialExam": "Examen oficial",
+      "premium": "Premium"
+    }
+  },
+  "topBanner": {
+    "languageSwitch": "Cambiar idioma",
+    "offline": "Sin conexión",
+    "onlineOnly": "Solo en línea",
+    "pages": {
+      "aiClassStudio": "AI Class Studio",
+      "chineseTextbooks": "Libros de chino",
+      "specializedTracks": "Rutas especializadas",
+      "cameraTools": "Herramientas de cámara",
+      "exploreDevice": "Explorar dispositivo",
+      "speakingTutor": "Tutor de conversación",
+      "hskPreparation": "Preparación HSK",
+      "nsk": "NSK 1.0"
+    }
+  },
+  "business": {
+    "eyebrow": "CONOCIMIENTO DE NEGOCIOS",
+    "heroTitle": "BCT 1 | Reunión: Apertura y agenda",
+    "points": "Puntos",
+    "modules": "Módulos",
+    "mins": "MIN",
+    "moduleMastery": "Dominio del módulo",
+    "startSession": "Iniciar sesión",
+    "about": "Acerca de",
+    "scenarioDialogue1": "Escenario",
+    "scenarioDialogue2": "Diálogo",
+    "documentTools1": "Documento",
+    "documentTools2": "Herramientas",
+    "enterprisePlatform1": "Empresa",
+    "enterprisePlatform2": "Plataforma",
+    "topics": {
+      "meeting": "Reunión",
+      "negotiation": "Negociación",
+      "email": "Correo",
+      "presentation": "Presentación",
+      "interview": "Entrevista",
+      "networking": "Networking"
+    }
+  },
+  "hsk": {
+    "eyebrow": "CURSO HSK STANDARD",
+    "heroTitle": "HSK 1 | Tema 1: Saludos y presentación",
+    "words": "Palabras",
+    "patterns": "Patrones",
+    "topicMastery": "Dominio del tema HSK",
+    "speakingPro1": "AI Speaking",
+    "speakingPro2": "Pro",
+    "writingTraining1": "Escritura",
+    "writingTraining2": "Entrenamiento",
+    "studyWork1": "Estudiar y trabajar",
+    "studyWork2": "en China"
+  }
+}

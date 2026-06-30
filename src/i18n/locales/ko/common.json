@@ -1,0 +1,73 @@
+{
+  "nav": {
+    "library": "라이브러리",
+    "learn": "학습",
+    "hsk": "HSK",
+    "explore": "탐색"
+  },
+  "program": {
+    "hubTitle": "AI Class Studio",
+    "tracks": {
+      "c-lingo": "C-Lingo Chinese",
+      "hsk-standard": "HSK Standard",
+      "business-chinese": "비즈니스 중국어"
+    },
+    "badge": {
+      "onlineOnly": "온라인 전용",
+      "officialExam": "공식 시험",
+      "premium": "프리미엄"
+    }
+  },
+  "topBanner": {
+    "languageSwitch": "언어 전환",
+    "offline": "오프라인",
+    "onlineOnly": "온라인 전용",
+    "pages": {
+      "aiClassStudio": "AI Class Studio",
+      "chineseTextbooks": "중국어 교재",
+      "specializedTracks": "전문 트랙",
+      "cameraTools": "카메라 도구",
+      "exploreDevice": "기기 탐색",
+      "speakingTutor": "스피킹 튜터",
+      "hskPreparation": "HSK 준비",
+      "nsk": "NSK 1.0"
+    }
+  },
+  "business": {
+    "eyebrow": "비즈니스 지식",
+    "heroTitle": "BCT 1 | 회의: 오프닝 및 의제",
+    "points": "포인트",
+    "modules": "모듈",
+    "mins": "분",
+    "moduleMastery": "모듈 숙련도",
+    "startSession": "세션 시작",
+    "about": "소개",
+    "scenarioDialogue1": "시나리오",
+    "scenarioDialogue2": "대화",
+    "documentTools1": "문서",
+    "documentTools2": "도구",
+    "enterprisePlatform1": "기업",
+    "enterprisePlatform2": "플랫폼",
+    "topics": {
+      "meeting": "회의",
+      "negotiation": "협상",
+      "email": "이메일",
+      "presentation": "프레젠테이션",
+      "interview": "면접",
+      "networking": "네트워킹"
+    }
+  },
+  "hsk": {
+    "eyebrow": "HSK STANDARD 코스",
+    "heroTitle": "HSK 1 | 토픽 1: 인사 및 자기소개",
+    "words": "단어",
+    "patterns": "패턴",
+    "topicMastery": "HSK 토픽 숙련도",
+    "speakingPro1": "AI 스피킹",
+    "speakingPro2": "Pro",
+    "writingTraining1": "쓰기",
+    "writingTraining2": "훈련",
+    "studyWork1": "중국 유학",
+    "studyWork2": "및 취업"
+  }
+}

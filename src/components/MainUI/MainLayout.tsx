@@ -7,6 +7,7 @@ import SystemStatusBar from './SystemStatusBar'
 import ShellSloganHeadline from './ShellSloganHeadline'
 import ShellTopBarProductLinks from './ShellTopBarProductLinks'
 import IpadDeviceShell from './IpadDeviceShell'
+import { getChromeThemeFromPath } from '../../data/programTracks'
 
 interface MainLayoutProps {
   children: ReactNode
@@ -100,6 +101,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isAppUpdatesPage = location.pathname === '/system/app-updates'
   const isCourseIntroPage = location.pathname === '/course-intro'
   const isReadingBuddyPage = location.pathname === '/reading-buddy' || location.pathname.startsWith('/reading-buddy/')
+  const isHSKStandardSubPage = location.pathname.startsWith('/hsk-standard/')
+  const isBusinessChineseSubPage = location.pathname.startsWith('/business-chinese/')
   /** 全屏覆盖主区域（无顶栏留白）；LingoFlash/GrammarPuzzle/HSKPrepTraining/LibraryBookSelection 单独：保留系统状态栏高度，主内容在其下方 */
   const isCoveringMain =
     isCameraPage ||
@@ -138,11 +141,11 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isHSKPrepTrainingPage ||
     isHSKSkillDrillPage ||
     isGrammarSnapPage ||
-    isLibraryBookSelectionPage || isStartingLearningPage || isFunChineseTeacherGuidePage || isFunChineseHubPage || isFunChineseCardCollectionPage || isFunChineseIntensivePage || isFunChineseLessonPage || isCultureMapPage || isCharacterWritingPage
+    isLibraryBookSelectionPage || isStartingLearningPage || isFunChineseTeacherGuidePage || isFunChineseHubPage || isFunChineseCardCollectionPage || isFunChineseIntensivePage || isFunChineseLessonPage || isCultureMapPage || isCharacterWritingPage || isHSKStandardSubPage || isBusinessChineseSubPage
 
   // 主四 tab + LingoFlash + GrammarPuzzle + SyntaxSnap + HSKPrepTraining + LibraryBookSelection + FunChineseHub + FunChineseLesson + CultureMap + CharacterWriting：显示系统状态栏；其它全屏页不显示
   const showSystemBar =
-    ['/', '/AI', '/Home', '/library', '/specialized', '/apps', '/hsk-test'].includes(location.pathname) || 
+    ['/', '/AI', '/Home', '/library', '/specialized', '/apps', '/hsk-test', '/hsk-standard', '/business-chinese'].includes(location.pathname) || 
     isLingoFlashPage || 
     isGrammarPuzzlePage || 
     isSyntaxSnapPage ||
@@ -156,7 +159,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isFunChineseIntensivePage ||
     isFunChineseLessonPage ||
     isCultureMapPage ||
-    isCharacterWritingPage
+    isCharacterWritingPage ||
+    isHSKStandardSubPage ||
+    isBusinessChineseSubPage
 
   const showTopBanner = !hideChromeNav
   const showBottomNav = !hideChromeNav
@@ -175,6 +180,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
   /** Status bar only (no TopBanner): pad main content — margin-top is unreliable in flex + absolute overlay. */
   const statusBarOnlyLayout = showSystemBar && !showTopBanner && !isCoveringMain
 
+  const chromeTheme = getChromeThemeFromPath(location.pathname)
+
   const mainContentAreaSx = {
     flexGrow: 1,
     position: isCoveringMain ? ('absolute' as const) : ('relative' as const),
@@ -183,7 +190,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     minHeight: 0,
     overflowX: 'hidden' as const,
     overflowY: 'hidden' as const,
-    backgroundColor: '#FFF8F0',
+    backgroundColor: chromeTheme.mainBg,
     transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
     boxSizing: 'border-box' as const,
     ...(isCoveringMain
@@ -362,6 +369,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
             width={DESIGN_1920}
             height={DESIGN_1125}
             sizeTier="1920"
+            screenBg={chromeTheme.screenBg}
             transform={`scale(${scale1920})`}
             transformOrigin="top left"
           >
@@ -394,6 +402,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         width={screenWidth}
         height={screenHeight}
         sizeTier={is960 ? '960' : is2000x1200 ? '2000' : 'default'}
+        screenBg={chromeTheme.screenBg}
         transform={`scale(${deviceScale})`}
         transformOrigin="top left"
         position="absolute"

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useMemo } from 'react'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { Box } from '@mui/material'
 import { LessonStage, Unit, Stage } from '../types/lesson'
-import { CURRENT_LESSON } from '../mock/lessonData'
+import { getLessonById } from '../data/lessonCatalog'
 
 // 子组件
 import VideoStage from '../components/Lesson/VideoStage'
@@ -16,11 +16,19 @@ import { HSKDrillStage, DigitalHumanStage, HanziStage } from '../components/Less
 export default function LessonPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  
+  const location = useLocation()
+  const lesson = useMemo(() => getLessonById(id), [id])
+
   // 核心状态管理
   const [stage, setStage] = useState<LessonStage | Stage>(LessonStage.HOME)
-  const [currentUnit, setCurrentUnit] = useState<Unit>(CURRENT_LESSON.units[0])
+  const [currentUnit, setCurrentUnit] = useState<Unit>(lesson.units[0])
   const [completedUnits, setCompletedUnits] = useState<string[]>([])
+
+  useEffect(() => {
+    setCurrentUnit(lesson.units[0])
+    setCompletedUnits([])
+    setStage(LessonStage.HOME)
+  }, [lesson])
 
   // 模拟进入逻辑：检查是否已经看过视频
   useEffect(() => {
@@ -39,12 +47,14 @@ export default function LessonPage() {
     setStage(LessonStage.UNIT_SELECTION);
   };
 
+  const backFrom = (location.state as { from?: string } | null)?.from
+
   const renderContent = () => {
     switch (stage) {
       case LessonStage.VIDEO:
         return (
           <VideoStage 
-            lesson={CURRENT_LESSON} 
+            lesson={lesson} 
             onComplete={() => setStage(LessonStage.UNIT_SELECTION)} 
           />
         )
@@ -52,14 +62,14 @@ export default function LessonPage() {
       case LessonStage.UNIT_SELECTION: // Hub
         return (
           <UnitSelectionStage 
-            lesson={CURRENT_LESSON}
+            lesson={lesson}
             completedUnitIds={completedUnits}
             onSelectUnit={(unit) => {
               setCurrentUnit(unit)
               setStage(LessonStage.UNIT_LEARNING)
             }}
-            onSelectCulture={() => navigate('/culture-content')}
-            onSelectUpsell={() => navigate('/ai-chat')}
+            onSelectCulture={() => navigate('/culture-content', { state: { from: backFrom, lessonId: id } })}
+            onSelectUpsell={() => navigate('/ai-chat', { state: { from: backFrom } })}
           />
         )
 
@@ -84,7 +94,7 @@ export default function LessonPage() {
       case LessonStage.CULTURE_VIDEO: // Bonus Class
         return (
           <CultureVideoStage 
-            data={CURRENT_LESSON.cultureVideo}
+            data={lesson.cultureVideo}
             onBack={() => setStage(LessonStage.UNIT_SELECTION)}
           />
         )
@@ -95,7 +105,7 @@ export default function LessonPage() {
             onBack={() => setStage(LessonStage.UNIT_SELECTION)}
             onSelectFeature={(feature) => {
               if (feature === Stage.PREMIUM_AI) {
-                navigate('/ai-chat')
+                navigate('/ai-chat', { state: { from: backFrom } })
               } else {
                 setStage(feature as any)
               }

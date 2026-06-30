@@ -81,7 +81,7 @@ const BOOKS: Book[] = [
   {
     id: 'happy-cn',
     title: 'Happy Chinese',
-    cover: buildSeriesCover('HAPPY CHINESE', 'Volume 1', 'Starter Textbook', '#14B8A6', '#0F766E'),
+    cover: '/images/happy-chinese-vol1-cover.png',
     hsk: 1,
     progress: 0,
     category: 'Textbook',
@@ -185,9 +185,8 @@ export default function LibraryPage() {
     const pageBg = '#FDF6E9';
     const funOrange = '#FF7A45';
     const teal = '#14B8A6';
-    const lessonCoverImage = '/images/lesson-1-who-is-he.jpg';
-    const bookshelfCoverImage =
-      buildSeriesCover('HAPPY CHINESE', 'Volume 1', 'Starter Textbook', '#14B8A6', '#0F766E');
+    const lessonCoverImage = '/images/library-hero.png';
+    const bookshelfCoverImage = '/images/happy-chinese-vol1-cover.png';
 
     return (
       <Box
@@ -271,7 +270,7 @@ export default function LibraryPage() {
                   width: '100%',
                   height: '100%',
                   objectFit: 'cover',
-                  objectPosition: 'center 38%',
+                  objectPosition: '50% 38%',
                 }}
               />
               <Box
@@ -700,14 +699,15 @@ export default function LibraryPage() {
                   <Box
                     sx={{
                       position: 'absolute',
-                      left: is960 ? 10 : 14,
-                      right: is960 ? 68 : 84,
+                      left: 0,
                       bottom: is960 ? 112 : 132,
                       bgcolor: 'rgba(36, 58, 74, 0.58)',
                       backdropFilter: 'blur(3px)',
-                      borderRadius: is960 ? '10px' : '12px',
+                      borderRadius: is960 ? '0 10px 10px 0' : '0 12px 12px 0',
                       px: is960 ? 1 : 1.25,
                       py: is960 ? 0.7 : 0.9,
+                      width: 'fit-content',
+                      maxWidth: '72%',
                     }}
                   >
                     <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.88rem' : '1.02rem', color: 'white', lineHeight: 1.3 }}>
@@ -716,23 +716,6 @@ export default function LibraryPage() {
                     <Typography sx={{ fontWeight: 700, fontSize: is960 ? '0.72rem' : '0.82rem', color: 'rgba(255,255,255,0.95)' }}>
                       Volume 1
                     </Typography>
-                  </Box>
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      right: is960 ? 10 : 14,
-                      top: is960 ? 124 : 148,
-                      bgcolor: '#1787D9',
-                      color: 'white',
-                      borderRadius: is960 ? '12px' : '14px',
-                      px: is960 ? 0.95 : 1.15,
-                      py: is960 ? 0.45 : 0.58,
-                      fontSize: is960 ? '0.58rem' : '0.68rem',
-                      fontWeight: 800,
-                      boxShadow: '0 6px 14px rgba(0,0,0,0.2)',
-                    }}
-                  >
-                    Book 1
                   </Box>
                   <Typography
                     sx={{

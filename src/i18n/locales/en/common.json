@@ -1,0 +1,73 @@
+{
+  "nav": {
+    "library": "Library",
+    "learn": "Learn",
+    "hsk": "HSK",
+    "explore": "Explore"
+  },
+  "program": {
+    "hubTitle": "AI Class Studio",
+    "tracks": {
+      "c-lingo": "C-Lingo Chinese",
+      "hsk-standard": "HSK Standard",
+      "business-chinese": "Business Chinese"
+    },
+    "badge": {
+      "onlineOnly": "Online only",
+      "officialExam": "Official exam",
+      "premium": "Premium"
+    }
+  },
+  "topBanner": {
+    "languageSwitch": "Language Switch",
+    "offline": "Offline",
+    "onlineOnly": "Online only",
+    "pages": {
+      "aiClassStudio": "AI Class Studio",
+      "chineseTextbooks": "Chinese Textbooks",
+      "specializedTracks": "Specialized Tracks",
+      "cameraTools": "Camera Tools",
+      "exploreDevice": "Explore Device",
+      "speakingTutor": "Speaking Tutor",
+      "hskPreparation": "HSK Preparation",
+      "nsk": "NSK 1.0"
+    }
+  },
+  "business": {
+    "eyebrow": "BUSINESS KNOWLEDGE",
+    "heroTitle": "BCT 1 | Meeting: Opening & Agenda",
+    "points": "Points",
+    "modules": "Modules",
+    "mins": "MINS",
+    "moduleMastery": "Module Mastery",
+    "startSession": "Start Session",
+    "about": "About",
+    "scenarioDialogue1": "Scenario",
+    "scenarioDialogue2": "Dialogue",
+    "documentTools1": "Document",
+    "documentTools2": "Tools",
+    "enterprisePlatform1": "Enterprise",
+    "enterprisePlatform2": "Platform",
+    "topics": {
+      "meeting": "Meeting",
+      "negotiation": "Negotiation",
+      "email": "Email",
+      "presentation": "Presentation",
+      "interview": "Interview",
+      "networking": "Networking"
+    }
+  },
+  "hsk": {
+    "eyebrow": "HSK STANDARD COURSE",
+    "heroTitle": "HSK 1 | Topic 1: Greetings & Self Introduction",
+    "words": "Words",
+    "patterns": "Patterns",
+    "topicMastery": "HSK Topic Mastery",
+    "speakingPro1": "AI Speaking",
+    "speakingPro2": "Pro",
+    "writingTraining1": "Writing",
+    "writingTraining2": "Training",
+    "studyWork1": "Study & Work",
+    "studyWork2": "in China"
+  }
+}

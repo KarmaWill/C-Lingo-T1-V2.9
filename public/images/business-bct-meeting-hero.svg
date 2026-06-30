@@ -1,0 +1,121 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="800" fill="#0B0B0B"/>
+  <rect width="1200" height="800" fill="url(#roomLight)"/>
+
+  <g opacity="0.85">
+    <path d="M92 150H1108V608H92V150Z" fill="#101010"/>
+    <path d="M92 150H1108" stroke="#D4A853" stroke-opacity="0.22" stroke-width="3"/>
+    <path d="M92 608H1108" stroke="#D4A853" stroke-opacity="0.18" stroke-width="2"/>
+    <path d="M170 150V608" stroke="#D4A853" stroke-opacity="0.07" stroke-width="2"/>
+    <path d="M1012 150V608" stroke="#D4A853" stroke-opacity="0.07" stroke-width="2"/>
+  </g>
+
+  <g opacity="0.9">
+    <path d="M112 178H288V585H112V178Z" fill="url(#windowLeft)"/>
+    <path d="M912 178H1088V585H912V178Z" fill="url(#windowRight)"/>
+    <path d="M128 486C170 454 211 456 260 486" stroke="#D4A853" stroke-opacity="0.16" stroke-width="4" stroke-linecap="round"/>
+    <path d="M936 496C978 456 1026 458 1068 496" stroke="#D4A853" stroke-opacity="0.16" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="196" cy="266" r="42" fill="#D4A853" fill-opacity="0.08"/>
+    <circle cx="1000" cy="298" r="58" fill="#D4A853" fill-opacity="0.07"/>
+  </g>
+
+  <g filter="url(#screenShadow)">
+    <rect x="360" y="118" width="480" height="252" rx="28" fill="#171717" stroke="#D4A853" stroke-opacity="0.38" stroke-width="2"/>
+    <rect x="392" y="150" width="416" height="188" rx="20" fill="url(#screenGradient)"/>
+    <path d="M430 294C485 246 534 260 580 226C626 192 690 202 760 166" stroke="#D4A853" stroke-opacity="0.72" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="430" cy="294" r="9" fill="#D4A853"/>
+    <circle cx="580" cy="226" r="9" fill="#D4A853"/>
+    <circle cx="760" cy="166" r="9" fill="#D4A853"/>
+    <rect x="424" y="316" width="86" height="8" rx="4" fill="#F5F0E8" fill-opacity="0.32"/>
+    <rect x="540" y="316" width="86" height="8" rx="4" fill="#F5F0E8" fill-opacity="0.22"/>
+    <rect x="656" y="316" width="86" height="8" rx="4" fill="#F5F0E8" fill-opacity="0.28"/>
+    <rect x="773" y="316" width="28" height="8" rx="4" fill="#D4A853" fill-opacity="0.6"/>
+  </g>
+
+  <g filter="url(#tableShadow)">
+    <path d="M225 540C276 468 388 426 528 426H682C822 426 932 468 982 540L898 704H309L225 540Z" fill="url(#tableGradient)" stroke="#D4A853" stroke-opacity="0.24" stroke-width="2"/>
+    <path d="M309 704H898L846 760H362L309 704Z" fill="#090909" stroke="#D4A853" stroke-opacity="0.16" stroke-width="2"/>
+    <path d="M354 552H848" stroke="#D4A853" stroke-opacity="0.24" stroke-width="3" stroke-linecap="round"/>
+    <path d="M432 622H772" stroke="#D4A853" stroke-opacity="0.12" stroke-width="2" stroke-linecap="round"/>
+  </g>
+
+  <g filter="url(#paperShadow)">
+    <rect x="470" y="474" width="144" height="92" rx="10" transform="rotate(-6 470 474)" fill="#F5F0E8"/>
+    <rect x="494" y="500" width="82" height="7" rx="3.5" transform="rotate(-6 494 500)" fill="#151515" fill-opacity="0.34"/>
+    <rect x="497" y="524" width="104" height="6" rx="3" transform="rotate(-6 497 524)" fill="#151515" fill-opacity="0.2"/>
+    <rect x="500" y="544" width="70" height="6" rx="3" transform="rotate(-6 500 544)" fill="#D4A853" fill-opacity="0.76"/>
+
+    <rect x="618" y="462" width="156" height="100" rx="11" transform="rotate(5 618 462)" fill="#F5F0E8"/>
+    <rect x="648" y="489" width="96" height="7" rx="3.5" transform="rotate(5 648 489)" fill="#151515" fill-opacity="0.33"/>
+    <rect x="646" y="514" width="112" height="6" rx="3" transform="rotate(5 646 514)" fill="#151515" fill-opacity="0.18"/>
+    <rect x="644" y="536" width="76" height="6" rx="3" transform="rotate(5 644 536)" fill="#D4A853" fill-opacity="0.72"/>
+  </g>
+
+  <g filter="url(#peopleShadow)">
+    <g>
+      <path d="M342 506C356 444 390 414 432 414C474 414 508 444 522 506H342Z" fill="#111111" stroke="#D4A853" stroke-opacity="0.28" stroke-width="2"/>
+      <circle cx="432" cy="368" r="44" fill="#2B2113"/>
+      <path d="M394 369C412 340 452 336 473 368" stroke="#D4A853" stroke-opacity="0.32" stroke-width="8" stroke-linecap="round"/>
+      <path d="M365 496C392 470 425 462 458 472" stroke="#D4A853" stroke-opacity="0.18" stroke-width="5" stroke-linecap="round"/>
+      <rect x="386" y="446" width="92" height="20" rx="10" fill="#D4A853" fill-opacity="0.16"/>
+    </g>
+
+    <g>
+      <path d="M674 506C690 438 730 404 780 404C830 404 870 438 886 506H674Z" fill="#121212" stroke="#D4A853" stroke-opacity="0.32" stroke-width="2"/>
+      <circle cx="780" cy="354" r="50" fill="#302313"/>
+      <path d="M735 356C756 322 803 318 827 355" stroke="#D4A853" stroke-opacity="0.38" stroke-width="9" stroke-linecap="round"/>
+      <path d="M704 496C740 462 784 456 824 472" stroke="#D4A853" stroke-opacity="0.2" stroke-width="5" stroke-linecap="round"/>
+      <rect x="729" y="436" width="104" height="22" rx="11" fill="#D4A853" fill-opacity="0.18"/>
+    </g>
+  </g>
+
+  <g opacity="0.72">
+    <rect x="820" y="508" width="92" height="54" rx="12" fill="#0D0D0D" stroke="#D4A853" stroke-opacity="0.28"/>
+    <path d="M837 545L856 526L872 538L893 516" stroke="#D4A853" stroke-opacity="0.72" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="902" cy="516" r="4" fill="#D4A853"/>
+  </g>
+
+  <g opacity="0.65">
+    <circle cx="322" cy="126" r="4" fill="#D4A853"/>
+    <circle cx="870" cy="108" r="5" fill="#D4A853"/>
+    <circle cx="1040" cy="654" r="3" fill="#D4A853"/>
+    <circle cx="168" cy="642" r="4" fill="#D4A853"/>
+  </g>
+
+  <defs>
+    <radialGradient id="roomLight" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(602 282) rotate(90) scale(548 742)">
+      <stop stop-color="#3A2A0E" stop-opacity="0.95"/>
+      <stop offset="0.48" stop-color="#14110A"/>
+      <stop offset="1" stop-color="#070707"/>
+    </radialGradient>
+    <linearGradient id="windowLeft" x1="112" y1="178" x2="288" y2="585" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E1A12"/>
+      <stop offset="1" stop-color="#090909"/>
+    </linearGradient>
+    <linearGradient id="windowRight" x1="912" y1="178" x2="1088" y2="585" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#211A0F"/>
+      <stop offset="1" stop-color="#090909"/>
+    </linearGradient>
+    <linearGradient id="screenGradient" x1="392" y1="150" x2="808" y2="338" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#232323"/>
+      <stop offset="0.55" stop-color="#151515"/>
+      <stop offset="1" stop-color="#2B1F0E"/>
+    </linearGradient>
+    <linearGradient id="tableGradient" x1="604" y1="426" x2="604" y2="704" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2B2111"/>
+      <stop offset="1" stop-color="#0B0B0B"/>
+    </linearGradient>
+    <filter id="screenShadow" x="320" y="78" width="560" height="332" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="28" stdDeviation="22" flood-color="#000000" flood-opacity="0.48"/>
+    </filter>
+    <filter id="tableShadow" x="185" y="386" width="837" height="414" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="34" stdDeviation="26" flood-color="#000000" flood-opacity="0.62"/>
+    </filter>
+    <filter id="peopleShadow" x="310" y="292" width="608" height="246" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="20" stdDeviation="16" flood-color="#000000" flood-opacity="0.52"/>
+    </filter>
+    <filter id="paperShadow" x="440" y="432" width="370" height="168" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="12" stdDeviation="8" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+</svg>

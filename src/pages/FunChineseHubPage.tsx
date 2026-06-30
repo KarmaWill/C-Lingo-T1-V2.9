@@ -7,14 +7,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Box, Typography, ButtonBase, Snackbar, Alert } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import TrophyIcon from '@mui/icons-material/EmojiEvents';
-import StyleIcon from '@mui/icons-material/Style';
-import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
-import QuizIcon from '@mui/icons-material/Quiz';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import CloseIcon from '@mui/icons-material/Close';
 import LockIcon from '@mui/icons-material/Lock';
-import HeadphonesIcon from '@mui/icons-material/Headphones';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ReplayIcon from '@mui/icons-material/Replay';
@@ -24,7 +19,7 @@ import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import { uploadFunChineseOfflineData } from '../utils/funChineseOfflineSync';
 import { buildHubLessons, loadCompletedLessonIds, type HubLessonStatus } from '../utils/funChineseUnitProgress';
 import {
-  FUN_CHINESE_UNIT1_PODCAST_BADGE,
+  FUN_CHINESE_UNIT1_PODCAST_STATUS,
   FUN_CHINESE_UNIT1_PODCAST_TAGLINE,
   FUN_CHINESE_UNIT1_PODCAST_TITLE,
 } from '../utils/funChineseUnitPodcastCopy';
@@ -37,11 +32,53 @@ import {
   type FunChineseSavedCard,
 } from '../utils/funChineseCardCollection';
 
-interface Tool {
+interface ToolboxItem {
   id: string;
   title: string;
-  icon: React.ReactNode;
-  color: string;
+  subtitle?: string;
+  icon?: React.ReactNode;
+  iconSrc?: string;
+  accent: string;
+  gradient: string;
+  iconGlow: string;
+  badge?: string;
+  dotted?: boolean;
+}
+
+const googleSansFamily = '"Google Sans","Product Sans","Roboto","Arial",sans-serif';
+
+function OnAirStatusBadge({ is960, label }: { is960: boolean; label: string }) {
+  return (
+    <Box
+      role="status"
+      aria-label={label}
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: is960 ? 22 : 26,
+        minWidth: is960 ? 62 : 70,
+        px: is960 ? 1 : 1.15,
+        borderRadius: '999px',
+        flexShrink: 0,
+        bgcolor: '#E53935',
+      }}
+    >
+      <Typography
+        sx={{
+          fontSize: is960 ? '0.58rem' : '0.66rem',
+          fontWeight: 800,
+          letterSpacing: '0.1em',
+          color: '#FFFFFF',
+          textTransform: 'uppercase',
+          fontFamily: googleSansFamily,
+          lineHeight: 1,
+        }}
+      >
+        {label}
+      </Typography>
+    </Box>
+  );
 }
 
 export default function FunChineseHubPage() {
@@ -79,28 +116,44 @@ export default function FunChineseHubPage() {
   const teal = '#14B8A6';
   const orange = '#FF7A45';
   const pageBg = '#FDF6E9';
-  const googleSansFamily = '"Google Sans","Product Sans","Roboto","Arial",sans-serif';
 
   const unitComplete = useMemo(() => lessons.every((l) => l.status === 'completed'), [lessons]);
 
-  const tools: Tool[] = [
+  const tools: ToolboxItem[] = [
     {
       id: 'flashcard',
       title: 'Flashcards',
-      icon: <StyleIcon sx={{ fontSize: is960 ? 22 : 26 }} />,
-      color: orange,
+      iconSrc: '/images/flashcards-toolbox-icon.png',
+      accent: '#FF8A4C',
+      gradient: 'linear-gradient(90deg, #FFF0E6 0%, #FFFBF7 52%, #FFFFFF 100%)',
+      iconGlow: '0 10px 28px rgba(255,138,76,0.38)',
+      badge: '20',
     },
     {
       id: 'saved',
       title: 'Card Collection',
-      icon: <BookmarkBorderIcon sx={{ fontSize: is960 ? 22 : 26 }} />,
-      color: '#3B82F6',
+      iconSrc: '/images/card-collection-toolbox-icon.png',
+      accent: '#4F8EF7',
+      gradient: 'linear-gradient(90deg, #EAF2FF 0%, #F5F9FF 52%, #FFFFFF 100%)',
+      iconGlow: '0 10px 28px rgba(79,142,247,0.32)',
     },
     {
       id: 'unit_test',
       title: 'Unit Test',
-      icon: <QuizIcon sx={{ fontSize: is960 ? 22 : 26 }} />,
-      color: teal,
+      iconSrc: '/images/unit-test-toolbox-icon.png',
+      accent: '#2EC4B6',
+      gradient: 'linear-gradient(90deg, #E6FAF7 0%, #F2FDFB 52%, #FFFFFF 100%)',
+      iconGlow: '0 10px 28px rgba(46,196,182,0.32)',
+    },
+    {
+      id: 'teacher_guide',
+      title: 'Lesson Resources',
+      subtitle: "· Teacher's Guide",
+      iconSrc: '/images/lesson-resources-toolbox-icon.png',
+      accent: '#9B7FEA',
+      gradient: 'linear-gradient(90deg, #F3EEFF 0%, #FAF8FF 52%, #FFFFFF 100%)',
+      iconGlow: '0 10px 28px rgba(155,127,234,0.32)',
+      dotted: true,
     },
   ];
 
@@ -112,7 +165,7 @@ export default function FunChineseHubPage() {
     });
   };
 
-  const handleToolClick = (tool: Tool) => {
+  const handleToolClick = (tool: ToolboxItem) => {
     if (!unitComplete) {
       showUnitGateHint();
       return;
@@ -123,6 +176,10 @@ export default function FunChineseHubPage() {
     }
     if (tool.id === 'saved') {
       navigate('/library/hub/fun-chinese/card-collection');
+      return;
+    }
+    if (tool.id === 'teacher_guide') {
+      navigate('/library/hub/fun-chinese/teacher-guide');
       return;
     }
     setActiveTool(tool.id);
@@ -439,14 +496,21 @@ export default function FunChineseHubPage() {
                   {lessons.map((lesson) => {
                     const completed = lesson.status === 'completed';
                     return (
-                      <TrophyIcon
+                      <Box
                         key={lesson.id}
-                        aria-label={completed ? `Lesson ${lesson.id} completed` : `Lesson ${lesson.id} not completed`}
+                        component="img"
+                        src="/images/lesson-trophy-icon.png"
+                        alt={completed ? `Lesson ${lesson.id} completed` : `Lesson ${lesson.id} not completed`}
                         sx={{
-                          fontSize: is960 ? 20 : 24,
-                          color: completed ? '#F59E0B' : '#CBD5E1',
-                          filter: completed ? 'drop-shadow(0 1px 2px rgba(245,158,11,0.35))' : 'none',
-                          transition: 'color 0.2s ease',
+                          width: is960 ? 22 : 26,
+                          height: is960 ? 22 : 26,
+                          objectFit: 'contain',
+                          flexShrink: 0,
+                          opacity: completed ? 1 : 0.38,
+                          filter: completed
+                            ? 'drop-shadow(0 1px 2px rgba(245,158,11,0.35))'
+                            : 'grayscale(1) saturate(0)',
+                          transition: 'opacity 0.2s ease, filter 0.2s ease',
                         }}
                       />
                     );
@@ -587,19 +651,30 @@ export default function FunChineseHubPage() {
               </Box>
             </Box>
 
-            {/* Audio Reading Section */}
-            <Box
+            {/* AI Podcast banner */}
+            <ButtonBase
+              onClick={handleIntensiveClick}
+              disabled={!unitComplete}
               sx={{
-                borderRadius: is960 ? '24px' : '30px',
-                p: is960 ? 2.2 : 2.8,
-                bgcolor: '#0F172A',
-                color: 'white',
-                position: 'relative',
+                width: '100%',
+                display: 'block',
+                textAlign: 'left',
+                borderRadius: is960 ? '22px' : '26px',
                 overflow: 'hidden',
-                minHeight: is960 ? 116 : 128,
+                position: 'relative',
+                minHeight: is960 ? 118 : 131,
                 flexShrink: 0,
-                background:
-                  'radial-gradient(circle at 78% 22%, rgba(255,122,69,0.34) 0, rgba(255,122,69,0) 28%), radial-gradient(circle at 28% 92%, rgba(20,184,166,0.28) 0, rgba(20,184,166,0) 32%), linear-gradient(135deg, #111827 0%, #1E293B 52%, #0F766E 100%)',
+                cursor: unitComplete ? 'pointer' : 'default',
+                bgcolor: '#4A76FD',
+                transition: 'transform 0.18s ease, box-shadow 0.18s ease',
+                boxShadow: '0 8px 28px rgba(74,118,253,0.22)',
+                '&:hover': unitComplete
+                  ? {
+                      transform: 'translateY(-1px)',
+                      boxShadow: '0 12px 32px rgba(74,118,253,0.28)',
+                    }
+                  : {},
+                '&:active': unitComplete ? { transform: 'translateY(0)' } : {},
               }}
             >
               {!unitComplete && (
@@ -608,307 +683,357 @@ export default function FunChineseHubPage() {
                     position: 'absolute',
                     inset: 0,
                     zIndex: 4,
-                    bgcolor: 'rgba(15, 23, 42, 0.72)',
-                    backdropFilter: 'blur(8px)',
+                    bgcolor: 'rgba(15, 23, 42, 0.58)',
+                    backdropFilter: 'blur(6px)',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 1.5,
+                    gap: 1.25,
                     px: 3,
                     textAlign: 'center',
                   }}
                 >
-                  <LockIcon sx={{ fontSize: 36, color: 'rgba(255,255,255,0.85)' }} />
-                  <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.88rem' : '0.95rem', color: 'rgba(255,255,255,0.92)', maxWidth: 300 }}>
+                  <LockIcon sx={{ fontSize: 34, color: 'rgba(255,255,255,0.9)' }} />
+                  <Typography
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: is960 ? '0.86rem' : '0.94rem',
+                      color: 'rgba(255,255,255,0.94)',
+                      maxWidth: 300,
+                      fontFamily: googleSansFamily,
+                    }}
+                  >
                     Complete all 3 to unlock the AI podcast
                   </Typography>
                 </Box>
               )}
+
               <Box
                 sx={{
-                  position: 'absolute',
-                  top: -40,
-                  right: -40,
-                  width: 200,
-                  height: 200,
-                  bgcolor: `${orange}28`,
-                  borderRadius: '50%',
-                  filter: 'blur(60px)',
+                  position: 'relative',
+                  zIndex: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  minHeight: is960 ? 118 : 131,
+                  px: is960 ? 2.4 : 3,
+                  py: is960 ? 2 : 2.4,
                 }}
-              />
-              <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: is960 ? 2 : 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
-                  <Box
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: is960 ? 1 : 1.25 }}>
+                  <Typography
                     sx={{
-                      width: is960 ? 52 : 64,
-                      height: is960 ? 52 : 64,
-                      borderRadius: is960 ? '18px' : '22px',
-                      bgcolor: 'rgba(255,255,255,0.16)',
-                      border: '1px solid rgba(255,255,255,0.24)',
-                      backdropFilter: 'blur(12px)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
+                      fontWeight: 800,
+                      fontSize: is960 ? '1.35rem' : '1.55rem',
+                      lineHeight: 1.1,
+                      letterSpacing: '-0.03em',
+                      color: '#FFFFFF',
+                      fontFamily: googleSansFamily,
                     }}
                   >
-                    <HeadphonesIcon sx={{ fontSize: is960 ? 28 : 34 }} />
-                  </Box>
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.02rem' : '1.22rem', lineHeight: 1.08, letterSpacing: '-0.04em', fontFamily: googleSansFamily }}>
-                        {FUN_CHINESE_UNIT1_PODCAST_TITLE}
-                      </Typography>
-                    <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.82rem', color: 'rgba(255,255,255,0.76)', fontWeight: 650, mt: 0.35, fontFamily: googleSansFamily, maxWidth: 380 }}>
-                      {FUN_CHINESE_UNIT1_PODCAST_TAGLINE}
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: is960 ? 0.75 : 0.95 }}>
-                      {['3 min', 'Bilingual', FUN_CHINESE_UNIT1_PODCAST_BADGE].map((tag) => (
-                        <Box
-                          key={tag}
-                          sx={{
-                            px: is960 ? 0.9 : 1.05,
-                            py: 0.3,
-                            borderRadius: '999px',
-                            bgcolor: 'rgba(255,255,255,0.12)',
-                            border: '1px solid rgba(255,255,255,0.18)',
-                            color: 'rgba(255,255,255,0.82)',
-                            fontSize: is960 ? '0.56rem' : '0.64rem',
-                            fontWeight: 800,
-                          }}
-                        >
-                          {tag}
-                        </Box>
-                      ))}
-                    </Box>
-                  </Box>
+                    {FUN_CHINESE_UNIT1_PODCAST_TITLE}
+                  </Typography>
+                  <OnAirStatusBadge is960={is960} label={FUN_CHINESE_UNIT1_PODCAST_STATUS} />
                 </Box>
-                <ButtonBase
-                  onClick={handleIntensiveClick}
+
+                <Box
                   sx={{
-                    position: 'absolute',
-                    right: is960 ? 16 : 20,
-                    top: '50%',
-                    transform: 'translateY(-42%)',
-                    width: is960 ? 104 : 124,
-                    height: is960 ? 40 : 46,
-                    bgcolor: 'white',
-                    color: '#0F172A',
-                    borderRadius: is960 ? '12px' : '14px',
-                    fontSize: is960 ? '0.8rem' : '0.9rem',
-                    fontWeight: 900,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 1,
-                    zIndex: 3,
-                    cursor: unitComplete ? 'pointer' : 'default',
-                    opacity: unitComplete ? 1 : 0.78,
-                    '&:hover': {
-                      bgcolor: unitComplete ? '#F1F5F9' : 'white',
-                    },
-                    '&:active': {
-                      transform: 'translateY(-42%) scale(0.98)',
+                    position: 'relative',
+                    mt: is960 ? 0.85 : 1,
+                    alignSelf: 'flex-start',
+                    maxWidth: '100%',
+                    bgcolor: '#FFFFFF',
+                    borderRadius: is960 ? '14px' : '16px',
+                    px: is960 ? 1.35 : 1.55,
+                    py: is960 ? 0.65 : 0.75,
+                    boxShadow: '0 4px 14px rgba(15,23,42,0.12)',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: is960 ? -5 : -6,
+                      left: is960 ? 18 : 22,
+                      width: is960 ? 10 : 12,
+                      height: is960 ? 10 : 12,
+                      bgcolor: '#FFFFFF',
+                      transform: 'rotate(45deg)',
+                      boxShadow: '-2px -2px 4px rgba(15,23,42,0.04)',
                     },
                   }}
                 >
-                  {unitComplete ? (
-                    <PlayArrowIcon sx={{ fontSize: is960 ? 20 : 22 }} />
-                  ) : (
-                    <LockIcon sx={{ fontSize: is960 ? 18 : 20 }} />
-                  )}
-                </ButtonBase>
+                  <Typography
+                    sx={{
+                      position: 'relative',
+                      zIndex: 1,
+                      fontSize: is960 ? '0.84rem' : '0.94rem',
+                      fontWeight: 700,
+                      color: '#4A76FD',
+                      fontFamily: googleSansFamily,
+                      letterSpacing: '-0.01em',
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {FUN_CHINESE_UNIT1_PODCAST_TAGLINE}
+                  </Typography>
+                </Box>
+
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    left: is960 ? 22 : 26,
+                    bottom: is960 ? 14 : 16,
+                    width: is960 ? 18 : 22,
+                    height: is960 ? 18 : 22,
+                    borderLeft: '2px solid rgba(255,255,255,0.55)',
+                    borderBottom: '2px solid rgba(255,255,255,0.55)',
+                    borderBottomLeftRadius: '2px',
+                    pointerEvents: 'none',
+                  }}
+                />
               </Box>
-            </Box>
+            </ButtonBase>
           </Box>
 
-          {/* Right: Knowledge Tools */}
+          {/* Right: Knowledge Toolbox */}
           <Box
             sx={{
               bgcolor: 'white',
               borderRadius: is960 ? '24px' : '30px',
-              border: '1px solid rgba(0,0,0,0.06)',
-              p: is960 ? 2.5 : 3,
-              boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
+              border: '1px solid rgba(0,0,0,0.05)',
+              p: is960 ? 2.25 : 2.75,
+              boxShadow: '0 8px 28px rgba(15,23,42,0.06)',
               display: 'flex',
               flexDirection: 'column',
-              position: 'relative',
+              minHeight: 0,
+              height: '100%',
             }}
           >
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 1.5,
-                mb: is960 ? 2 : 2.5,
-              }}
-            >
-              <Typography
-                sx={{
-                  fontSize: is960 ? '0.82rem' : '0.92rem',
-                  fontWeight: 800,
-                  color: '#94A3B8',
-                  letterSpacing: '0.1em',
-                }}
-              >
-                Knowledge Toolbox
-              </Typography>
-              {!unitComplete && (
-                <Box
-                  sx={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 0.65,
-                    px: is960 ? 1 : 1.15,
-                    py: is960 ? 0.45 : 0.55,
-                    borderRadius: '999px',
-                    bgcolor: '#F1F5F9',
-                    border: '1px solid #E2E8F0',
-                    color: '#64748B',
-                    flexShrink: 0,
-                  }}
-                >
-                  <LockIcon sx={{ fontSize: is960 ? 13 : 15 }} />
-                  <Typography sx={{ fontSize: is960 ? '0.58rem' : '0.66rem', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                    Finish All 3
+            <Box sx={{ mb: is960 ? 1.75 : 2.25 }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5 }}>
+                <Box>
+                  <Typography
+                    sx={{
+                      fontSize: is960 ? '1.05rem' : '1.22rem',
+                      fontWeight: 900,
+                      color: '#1E293B',
+                      letterSpacing: '-0.02em',
+                      fontFamily: googleSansFamily,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    Knowledge Toolbox
                   </Typography>
+                  <Box
+                    sx={{
+                      mt: 0.75,
+                      width: is960 ? 26 : 32,
+                      height: is960 ? 3 : 4,
+                      borderRadius: '999px',
+                      bgcolor: teal,
+                    }}
+                  />
                 </Box>
-              )}
+                {!unitComplete && (
+                  <Box
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 0.65,
+                      px: is960 ? 1 : 1.15,
+                      py: is960 ? 0.45 : 0.55,
+                      borderRadius: '999px',
+                      bgcolor: '#F1F5F9',
+                      border: '1px solid #E2E8F0',
+                      color: '#64748B',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <LockIcon sx={{ fontSize: is960 ? 13 : 15 }} />
+                    <Typography sx={{ fontSize: is960 ? '0.58rem' : '0.66rem', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+                      Finish All 3
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
             </Box>
-            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: is960 ? 1.5 : 2 }}>
+
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: is960 ? 1.15 : 1.35, minHeight: 0 }}>
               {tools.map((tool) => {
                 const unlocked = unitComplete;
+                const isFeatured = tool.id === 'teacher_guide';
+                const isCustomIcon = Boolean(tool.iconSrc);
+                const iconSize = isCustomIcon
+                  ? (isFeatured ? (is960 ? 68 : 78) : (is960 ? 58 : 68))
+                  : (isFeatured ? (is960 ? 62 : 72) : (is960 ? 50 : 58));
                 return (
                   <ButtonBase
                     key={tool.id}
                     onClick={() => handleToolClick(tool)}
                     sx={{
-                      p: is960 ? 2 : 2.5,
-                      borderRadius: is960 ? '18px' : '22px',
-                      border: '2px solid #F1F5F9',
-                      bgcolor: unlocked ? '#F8FAFC' : '#F1F5F9',
+                      p: isFeatured ? (is960 ? 1.75 : 2.1) : (is960 ? 1.35 : 1.6),
+                      pl: isFeatured ? (is960 ? 1.5 : 1.75) : (is960 ? 1.25 : 1.45),
+                      pr: isFeatured ? (is960 ? 1.35 : 1.6) : (is960 ? 1.15 : 1.35),
+                      borderRadius: isFeatured ? (is960 ? '20px' : '24px') : (is960 ? '18px' : '22px'),
+                      background: unlocked ? tool.gradient : 'linear-gradient(90deg, #F1F5F9 0%, #F8FAFC 100%)',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: is960 ? 1.5 : 2,
+                      gap: isCustomIcon
+                        ? (is960 ? 1.65 : 2)
+                        : isFeatured
+                          ? (is960 ? 1.35 : 1.6)
+                          : (is960 ? 1.15 : 1.35),
                       textAlign: 'left',
-                      transition: 'all 0.2s',
+                      transition: 'transform 0.18s ease, box-shadow 0.18s ease',
                       opacity: unlocked ? 1 : 0.72,
-                      '&:hover': {
-                        bgcolor: unlocked ? 'white' : '#F1F5F9',
-                        borderColor: unlocked ? `${orange}30` : '#E2E8F0',
-                        transform: unlocked ? 'scale(1.02)' : 'none',
-                      },
+                      position: 'relative',
+                      overflow: tool.dotted ? 'hidden' : 'visible',
+                      flex: isFeatured ? 1 : '0 0 auto',
+                      minHeight: isFeatured ? (is960 ? 112 : 132) : (is960 ? 68 : 78),
+                      alignSelf: 'stretch',
+                      '&:hover': unlocked
+                        ? {
+                            transform: 'translateY(-1px)',
+                            boxShadow: '0 10px 24px rgba(15,23,42,0.08)',
+                          }
+                        : {},
+                      '&:active': unlocked ? { transform: 'scale(0.985)' } : {},
+                      ...(tool.dotted && unlocked
+                        ? {
+                            '&::before': {
+                              content: '""',
+                              position: 'absolute',
+                              inset: 0,
+                              backgroundImage: 'radial-gradient(circle, rgba(15,23,42,0.07) 1px, transparent 1px)',
+                              backgroundSize: '10px 10px',
+                              opacity: 0.45,
+                              pointerEvents: 'none',
+                            },
+                          }
+                        : {}),
                     }}
                   >
                     <Box
                       sx={{
-                        width: is960 ? 48 : 56,
-                        height: is960 ? 48 : 56,
-                        borderRadius: is960 ? '14px' : '16px',
-                        bgcolor: unlocked ? tool.color : '#94A3B8',
+                        width: iconSize,
+                        height: iconSize,
+                        borderRadius: tool.iconSrc ? 0 : isFeatured ? (is960 ? '16px' : '18px') : (is960 ? '14px' : '16px'),
+                        bgcolor: tool.iconSrc ? 'transparent' : 'rgba(255,255,255,0.92)',
+                        color: unlocked ? tool.accent : '#94A3B8',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        boxShadow: tool.iconSrc ? 'none' : unlocked ? tool.iconGlow : '0 2px 8px rgba(15,23,42,0.06)',
+                        position: 'relative',
+                        zIndex: 1,
+                        overflow: tool.iconSrc ? 'visible' : 'hidden',
+                        '& .MuiSvgIcon-root': {
+                          fontSize: isFeatured ? (is960 ? 32 : 36) : (is960 ? 26 : 30),
+                        },
+                      }}
+                    >
+                      {tool.iconSrc ? (
+                        <Box
+                          component="img"
+                          src={tool.iconSrc}
+                          alt=""
+                          sx={{
+                            width: isCustomIcon
+                              ? (is960 ? '132%' : '138%')
+                              : isFeatured
+                                ? (is960 ? '112%' : '115%')
+                                : (is960 ? '108%' : '110%'),
+                            height: isCustomIcon
+                              ? (is960 ? '132%' : '138%')
+                              : isFeatured
+                                ? (is960 ? '112%' : '115%')
+                                : (is960 ? '108%' : '110%'),
+                            objectFit: 'contain',
+                            display: 'block',
+                            opacity: unlocked ? 1 : 0.55,
+                            filter: unlocked ? 'none' : 'grayscale(0.35)',
+                          }}
+                        />
+                      ) : (
+                        tool.icon
+                      )}
+                      {tool.badge && (
+                        <Box
+                          aria-label={`${tool.badge} cards to review`}
+                          sx={{
+                            position: 'absolute',
+                            top: is960 ? -10 : -12,
+                            right: is960 ? -18 : -20,
+                            minWidth: is960 ? 42 : 48,
+                            height: is960 ? 26 : 30,
+                            px: is960 ? 0.9 : 1.05,
+                            borderRadius: '999px',
+                            bgcolor: '#F94B4B',
+                            color: 'white',
+                            border: '2.5px solid white',
+                            boxShadow: '0 6px 14px rgba(249,75,75,0.35)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: is960 ? '0.82rem' : '0.92rem',
+                            fontWeight: 900,
+                            lineHeight: 1,
+                            letterSpacing: '-0.03em',
+                            fontFamily: googleSansFamily,
+                          }}
+                        >
+                          {tool.badge}
+                        </Box>
+                      )}
+                    </Box>
+
+                    <Box sx={{ flex: 1, minWidth: 0, zIndex: 1, pl: isCustomIcon ? (is960 ? 0.35 : 0.5) : 0 }}>
+                      <Typography
+                        sx={{
+                          fontWeight: 800,
+                          fontSize: isFeatured ? (is960 ? '1.05rem' : '1.2rem') : (is960 ? '0.92rem' : '1.05rem'),
+                          color: unlocked ? tool.accent : '#94A3B8',
+                          lineHeight: 1.2,
+                          fontFamily: googleSansFamily,
+                        }}
+                      >
+                        {tool.title}
+                      </Typography>
+                      {tool.subtitle && (
+                        <Typography
+                          sx={{
+                            fontSize: isFeatured ? (is960 ? '0.82rem' : '0.9rem') : (is960 ? '0.72rem' : '0.78rem'),
+                            color: unlocked ? '#94A3B8' : '#CBD5E1',
+                            fontWeight: 600,
+                            mt: isFeatured ? 0.45 : 0.25,
+                            fontFamily: googleSansFamily,
+                          }}
+                        >
+                          {tool.subtitle}
+                        </Typography>
+                      )}
+                    </Box>
+
+                    <Box
+                      sx={{
+                        width: isFeatured ? (is960 ? 34 : 38) : (is960 ? 28 : 32),
+                        height: isFeatured ? (is960 ? 34 : 38) : (is960 ? 28 : 32),
+                        borderRadius: '50%',
+                        bgcolor: unlocked ? tool.accent : '#CBD5E1',
                         color: 'white',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0,
-                        boxShadow: unlocked ? `0 6px 16px ${tool.color}40` : 'none',
-                        position: 'relative',
+                        boxShadow: unlocked ? `0 6px 16px ${tool.accent}40` : 'none',
+                        zIndex: 1,
                       }}
                     >
-                      {tool.icon}
-                      {tool.id === 'flashcard' && (
-                        <Box
-                          aria-label="20 cards to review"
-                          sx={{
-                            position: 'absolute',
-                            top: is960 ? -9 : -11,
-                            right: is960 ? -16 : -18,
-                            minWidth: is960 ? 42 : 48,
-                            height: is960 ? 28 : 32,
-                            px: is960 ? 1.05 : 1.2,
-                            borderRadius: '999px',
-                            bgcolor: '#F94B4B',
-                            color: 'white',
-                            border: '2px solid #F8FAFC',
-                            boxShadow: '0 8px 18px rgba(239,68,68,0.26)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: is960 ? '1.12rem' : '1.28rem',
-                            fontWeight: 900,
-                            lineHeight: 1,
-                            letterSpacing: '-0.04em',
-                            fontFamily: googleSansFamily,
-                          }}
-                        >
-                          20
-                        </Box>
-                      )}
+                      <ChevronRightIcon sx={{ fontSize: isFeatured ? (is960 ? 20 : 22) : (is960 ? 18 : 20) }} />
                     </Box>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.95rem' : '1.08rem', color: '#1E293B', lineHeight: 1.2, fontFamily: googleSansFamily }}>
-                        {tool.title}
-                      </Typography>
-                    </Box>
-                    <ChevronRightIcon sx={{ fontSize: is960 ? 20 : 22, color: unlocked ? '#CBD5E1' : '#E2E8F0' }} />
                   </ButtonBase>
                 );
               })}
-            </Box>
-
-            <Box
-              sx={{
-                mt: 'auto',
-                pt: is960 ? 2 : 2.5,
-                borderTop: '1px solid #F1F5F9',
-              }}
-            >
-              <ButtonBase
-                onClick={() => {
-                  if (!unitComplete) {
-                    showUnitGateHint();
-                    return;
-                  }
-                  // TODO: Navigate to PPT viewer page
-                  navigate('/library/hub/fun-chinese/teacher-guide');
-                }}
-                disabled={!unitComplete}
-                sx={{
-                  width: '100%',
-                  p: is960 ? 2 : 2.5,
-                  bgcolor: unitComplete ? 'linear-gradient(135deg, #667EEA 0%, #764BA2 100%)' : '#F1F5F9',
-                  background: unitComplete ? 'linear-gradient(135deg, #667EEA 0%, #764BA2 100%)' : '#F1F5F9',
-                  borderRadius: is960 ? '18px' : '22px',
-                  border: unitComplete ? '1px solid rgba(102,126,234,0.3)' : '1px solid #E2E8F0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                  textAlign: 'left',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  transition: 'all 0.2s',
-                  cursor: unitComplete ? 'pointer' : 'not-allowed',
-                  opacity: unitComplete ? 1 : 0.6,
-                  '&:hover': unitComplete ? {
-                    transform: 'scale(1.02)',
-                    boxShadow: '0 12px 24px rgba(102,126,234,0.3)',
-                  } : {},
-                }}
-              >
-                <MenuBookIcon sx={{ fontSize: is960 ? 26 : 32, color: unitComplete ? 'white' : '#94A3B8', flexShrink: 0 }} />
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', color: unitComplete ? 'rgba(255,255,255,0.85)' : '#94A3B8', fontWeight: 800, fontFamily: googleSansFamily, mb: 0.2 }}>
-                    TEACHER'S GUIDE
-                  </Typography>
-                  <Typography sx={{ fontSize: is960 ? '0.98rem' : '1.12rem', color: unitComplete ? 'white' : '#64748B', fontWeight: 900, lineHeight: 1.15, fontFamily: googleSansFamily }}>
-                    Lesson Resources
-                  </Typography>
-                </Box>
-                {unitComplete && (
-                  <ChevronRightIcon sx={{ fontSize: is960 ? 20 : 24, color: 'rgba(255,255,255,0.85)', flexShrink: 0 }} />
-                )}
-              </ButtonBase>
             </Box>
           </Box>
         </Box>
@@ -960,7 +1085,7 @@ export default function FunChineseHubPage() {
                     width: is960 ? 40 : 44,
                     height: is960 ? 40 : 44,
                     borderRadius: is960 ? '12px' : '14px',
-                    bgcolor: activeToolMeta.color,
+                    bgcolor: activeToolMeta.accent,
                     color: 'white',
                     display: 'flex',
                     alignItems: 'center',

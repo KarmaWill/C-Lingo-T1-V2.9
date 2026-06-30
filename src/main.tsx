@@ -5,6 +5,7 @@ import { Provider } from 'react-redux'
 import { store } from './store/store'
 import App from './App'
 import { getLocaleById, loadStoredLocaleId } from './data/localeConfig'
+import './i18n'
 import './index.css'
 
 const initialLocale = getLocaleById(loadStoredLocaleId())

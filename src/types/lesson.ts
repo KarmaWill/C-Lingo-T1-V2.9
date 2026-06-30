@@ -86,6 +86,9 @@ export interface Lesson {
   videoUrl: string;
   videoDuration?: string;
   hskLevel?: number;
+  /** e.g. "Topic 1 / 8" on video stage */
+  sessionLabel?: string;
+  videoCaption?: { romanization: string; hanzi: string };
   cultureVideo: CultureVideo;
   units: Unit[];
 }

@@ -1,0 +1,73 @@
+{
+  "nav": {
+    "library": "图书",
+    "learn": "学习",
+    "hsk": "HSK",
+    "explore": "探索"
+  },
+  "program": {
+    "hubTitle": "AI 课堂",
+    "tracks": {
+      "c-lingo": "C-Lingo 中文",
+      "hsk-standard": "HSK 标准课程",
+      "business-chinese": "商务中文"
+    },
+    "badge": {
+      "onlineOnly": "仅在线",
+      "officialExam": "官方考试",
+      "premium": "高级版"
+    }
+  },
+  "topBanner": {
+    "languageSwitch": "语言切换",
+    "offline": "离线",
+    "onlineOnly": "仅在线",
+    "pages": {
+      "aiClassStudio": "AI 课堂",
+      "chineseTextbooks": "中文教材",
+      "specializedTracks": "专项课程",
+      "cameraTools": "相机工具",
+      "exploreDevice": "探索设备",
+      "speakingTutor": "口语导师",
+      "hskPreparation": "HSK 备考",
+      "nsk": "NSK 1.0"
+    }
+  },
+  "business": {
+    "eyebrow": "商务知识",
+    "heroTitle": "BCT 1 | 会议：开场与议程",
+    "points": "知识点",
+    "modules": "模块",
+    "mins": "分钟",
+    "moduleMastery": "模块掌握度",
+    "startSession": "开始学习",
+    "about": "简介",
+    "scenarioDialogue1": "场景",
+    "scenarioDialogue2": "对话",
+    "documentTools1": "文档",
+    "documentTools2": "工具",
+    "enterprisePlatform1": "企业",
+    "enterprisePlatform2": "平台",
+    "topics": {
+      "meeting": "会议",
+      "negotiation": "谈判",
+      "email": "邮件",
+      "presentation": "演示",
+      "interview": "面试",
+      "networking": "社交"
+    }
+  },
+  "hsk": {
+    "eyebrow": "HSK 标准课程",
+    "heroTitle": "HSK 1 | 主题 1：问候与自我介绍",
+    "words": "词汇",
+    "patterns": "句型",
+    "topicMastery": "HSK 主题掌握度",
+    "speakingPro1": "AI 口语",
+    "speakingPro2": "专业版",
+    "writingTraining1": "写作",
+    "writingTraining2": "训练",
+    "studyWork1": "在华",
+    "studyWork2": "学习与工作"
+  }
+}

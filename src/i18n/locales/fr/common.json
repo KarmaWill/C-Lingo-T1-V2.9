@@ -1,0 +1,73 @@
+{
+  "nav": {
+    "library": "Bibliothèque",
+    "learn": "Apprendre",
+    "hsk": "HSK",
+    "explore": "Explorer"
+  },
+  "program": {
+    "hubTitle": "AI Class Studio",
+    "tracks": {
+      "c-lingo": "C-Lingo Chinese",
+      "hsk-standard": "HSK Standard",
+      "business-chinese": "Chinois des affaires"
+    },
+    "badge": {
+      "onlineOnly": "En ligne uniquement",
+      "officialExam": "Examen officiel",
+      "premium": "Premium"
+    }
+  },
+  "topBanner": {
+    "languageSwitch": "Changer de langue",
+    "offline": "Hors ligne",
+    "onlineOnly": "En ligne uniquement",
+    "pages": {
+      "aiClassStudio": "AI Class Studio",
+      "chineseTextbooks": "Manuels de chinois",
+      "specializedTracks": "Parcours spécialisés",
+      "cameraTools": "Outils caméra",
+      "exploreDevice": "Explorer l'appareil",
+      "speakingTutor": "Tuteur oral",
+      "hskPreparation": "Préparation HSK",
+      "nsk": "NSK 1.0"
+    }
+  },
+  "business": {
+    "eyebrow": "SAVOIR-FAIRE PROFESSIONNEL",
+    "heroTitle": "BCT 1 | Réunion : Ouverture et ordre du jour",
+    "points": "Points",
+    "modules": "Modules",
+    "mins": "MIN",
+    "moduleMastery": "Maîtrise du module",
+    "startSession": "Commencer",
+    "about": "À propos",
+    "scenarioDialogue1": "Scénario",
+    "scenarioDialogue2": "Dialogue",
+    "documentTools1": "Document",
+    "documentTools2": "Outils",
+    "enterprisePlatform1": "Entreprise",
+    "enterprisePlatform2": "Plateforme",
+    "topics": {
+      "meeting": "Réunion",
+      "negotiation": "Négociation",
+      "email": "E-mail",
+      "presentation": "Présentation",
+      "interview": "Entretien",
+      "networking": "Réseautage"
+    }
+  },
+  "hsk": {
+    "eyebrow": "COURS HSK STANDARD",
+    "heroTitle": "HSK 1 | Thème 1 : Salutations et présentation",
+    "words": "Mots",
+    "patterns": "Modèles",
+    "topicMastery": "Maîtrise du thème HSK",
+    "speakingPro1": "AI Speaking",
+    "speakingPro2": "Pro",
+    "writingTraining1": "Écriture",
+    "writingTraining2": "Entraînement",
+    "studyWork1": "Étudier et travailler",
+    "studyWork2": "en Chine"
+  }
+}

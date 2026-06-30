@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import i18n from '../i18n';
 import {
   APP_LOCALES,
   getLocaleById,
@@ -29,9 +30,13 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     saveStoredLocaleId(localeId);
     applyLocaleToDocument(locale);
+    void i18n.changeLanguage(localeId);
   }, [locale, localeId]);
 
-  const setLocaleId = (id: AppLocaleId) => setLocaleIdState(id);
+  const setLocaleId = (id: AppLocaleId) => {
+    setLocaleIdState(id);
+    void i18n.changeLanguage(id);
+  };
 
   const value = useMemo(
     () => ({ locale, locales: APP_LOCALES, setLocaleId }),

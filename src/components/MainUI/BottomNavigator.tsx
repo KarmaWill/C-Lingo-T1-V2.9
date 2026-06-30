@@ -1,23 +1,26 @@
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Box, ButtonBase, Typography } from '@mui/material'
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded'
 import SmartToyIcon from '@mui/icons-material/SmartToy'
 import SchoolIcon from '@mui/icons-material/School'
 import AppsIcon from '@mui/icons-material/Apps'
 import CameraIcon from '@mui/icons-material/CameraAlt'
+import { getChromeThemeFromPath } from '../../data/programTracks'
 
 // Order: Library first, then Learn, then HSK, then Explore (round button is Camera)
 const navItems = [
-  { label: 'Library', value: '/Home', icon: HomeRoundedIcon },
-  /** Hub: Start Session on home → /lesson/:id */
-  { label: 'Learn', value: '/AI', icon: SmartToyIcon },
-  { label: 'HSK', value: '/hsk-test', icon: SchoolIcon },
-  { label: 'Explore', value: '/apps', icon: AppsIcon },
+  { labelKey: 'nav.library', value: '/Home', icon: HomeRoundedIcon },
+  { labelKey: 'nav.learn', value: '/AI', icon: SmartToyIcon },
+  { labelKey: 'nav.hsk', value: '/hsk-test', icon: SchoolIcon },
+  { labelKey: 'nav.explore', value: '/apps', icon: AppsIcon },
 ]
 
 export default function BottomNavigator() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { t } = useTranslation()
+  const chrome = getChromeThemeFromPath(location.pathname)
 
   const goCamera = () => {
     navigate('/camera')
@@ -44,6 +47,8 @@ export default function BottomNavigator() {
       return (
         location.pathname === '/AI' ||
         location.pathname === '/' ||
+        location.pathname === '/hsk-standard' ||
+        location.pathname === '/business-chinese' ||
         location.pathname.startsWith('/lesson')
       )
     }
@@ -62,6 +67,8 @@ export default function BottomNavigator() {
     }
     return location.pathname === item.value
   }
+
+  const isCameraActive = location.pathname === '/camera'
 
   return (
     <Box
@@ -101,9 +108,9 @@ export default function BottomNavigator() {
                 width: is960 ? 7 : 8,
                 height: is960 ? 7 : 8,
                 borderRadius: '50%',
-                bgcolor: active ? '#00B4A0' : 'rgba(45, 51, 54, 0.2)',
+                bgcolor: active ? chrome.bottomNavAccent : chrome.bottomNavDotInactive,
                 flexShrink: 0,
-                transition: 'background-color 0.25s ease',
+                transition: 'background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
             />
           )
@@ -120,16 +127,17 @@ export default function BottomNavigator() {
       {/* Main Dock */}
       <Box
         sx={{
-          backgroundColor: 'rgba(255, 255, 255, 0.85)',
+          backgroundColor: chrome.bottomNavDockBg,
           backdropFilter: 'blur(25px) saturate(180%)',
-          border: '1px solid rgba(255, 255, 255, 0.4)',
+          border: chrome.bottomNavDockBorder,
           borderRadius: is960 ? '24px' : (is2000x1200 ? '44px' : (is1920x1125 ? '40px' : '32px')),
           height: is960 ? 64 : (is2000x1200 ? 110 : (is1920x1125 ? 100 : 84)),
           display: 'flex',
           alignItems: 'center',
           px: is960 ? 1.5 : (is2000x1200 ? 3 : (is1920x1125 ? 2.5 : 2)),
           gap: is960 ? 0.75 : (is2000x1200 ? 1.75 : (is1920x1125 ? 1.5 : 1)),
-          boxShadow: '0 20px 50px rgba(0,0,0,0.15)',
+          boxShadow: chrome.bottomNavShadow,
+          transition: 'background-color 0.5s, border-color 0.5s, box-shadow 0.5s',
         }}
       >
         {navItems.map((item) => {
@@ -140,6 +148,7 @@ export default function BottomNavigator() {
             <ButtonBase
               key={item.value}
               onClick={() => (item.value === '/camera' ? goCamera() : navigate(item.value))}
+              aria-label={t(item.labelKey)}
               sx={{
                 width: is960 ? 56 : (is2000x1200 ? 96 : (is1920x1125 ? 88 : 72)),
                 height: is960 ? 52 : (is2000x1200 ? 92 : (is1920x1125 ? 84 : 68)),
@@ -148,8 +157,8 @@ export default function BottomNavigator() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: is960 ? '16px' : (is2000x1200 ? '26px' : (is1920x1125 ? '24px' : '20px')),
-                transition: 'all 0.2s ease',
-                color: isSelected ? '#00B4A0' : '#636E72',
+                transition: 'all 0.2s ease, color 0.5s',
+                color: isSelected ? chrome.bottomNavAccent : chrome.bottomNavInactive,
                 gap: 0.5,
                 '&:active': {
                   transform: 'scale(0.9)',
@@ -166,7 +175,8 @@ export default function BottomNavigator() {
                     width: is960 ? 4 : (is2000x1200 ? 7 : (is1920x1125 ? 6 : 5)),
                     height: is960 ? 4 : (is2000x1200 ? 7 : (is1920x1125 ? 6 : 5)),
                     borderRadius: '50%',
-                    bgcolor: '#00B4A0',
+                    bgcolor: chrome.bottomNavAccent,
+                    transition: 'background-color 0.5s',
                   }}
                 />
               )}
@@ -182,16 +192,16 @@ export default function BottomNavigator() {
           width: is960 ? 64 : (is1920x1125 ? 100 : 84),
           height: is960 ? 64 : (is1920x1125 ? 100 : 84),
           borderRadius: is960 ? '24px' : (is1920x1125 ? '40px' : '32px'),
-          backgroundColor: location.pathname === '/camera' ? '#4F46E5' : 'rgba(255, 255, 255, 0.85)',
+          backgroundColor: isCameraActive ? chrome.cameraBtnActiveBg : chrome.cameraBtnBg,
           backdropFilter: 'blur(25px) saturate(180%)',
-          border: '1px solid rgba(255, 255, 255, 0.4)',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.15)',
+          border: chrome.bottomNavDockBorder,
+          boxShadow: chrome.bottomNavShadow,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          color: location.pathname === '/camera' ? 'white' : '#4F46E5',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          color: isCameraActive ? (chrome.cameraBtnActiveBg === '#D4A853' ? '#0D0D0D' : 'white') : chrome.cameraBtnColor,
+          transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
           gap: 0.5,
           '&:active': {
             transform: 'scale(0.9)',

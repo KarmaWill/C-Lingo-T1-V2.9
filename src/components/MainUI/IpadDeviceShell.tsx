@@ -12,6 +12,7 @@ interface IpadDeviceShellProps {
   height: number
   sizeTier: SizeTier
   children: ReactNode
+  screenBg?: string
   transform?: string
   transformOrigin?: string
   position?: 'absolute' | 'relative'
@@ -203,6 +204,7 @@ export default function IpadDeviceShell({
   height,
   sizeTier,
   children,
+  screenBg = '#FFF8F0',
   transform,
   transformOrigin = 'top left',
   position = 'relative',
@@ -303,7 +305,8 @@ export default function IpadDeviceShell({
           height: '100%',
           borderRadius: INNER_RADIUS_BY_TIER[sizeTier],
           overflow: 'hidden',
-          bgcolor: '#FFF8F0',
+          bgcolor: screenBg,
+          transition: 'background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
           boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)',
           display: 'flex',
           flexDirection: 'column',

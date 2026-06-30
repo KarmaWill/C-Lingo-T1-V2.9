@@ -5,6 +5,14 @@ import CssBaseline from '@mui/material/CssBaseline'
 import { LocaleProvider, useLocale } from './context/LocaleContext'
 import MainLayout from './components/MainUI/MainLayout'
 import HomePage from './pages/HomePage'
+import HSKStandardHomePage from './pages/HSKStandardHomePage'
+import HSKStandardSpeakingProPage from './pages/hsk-standard/HSKStandardSpeakingProPage'
+import HSKStandardWritingTrainingPage from './pages/hsk-standard/HSKStandardWritingTrainingPage'
+import HSKStandardStudyWorkChinaPage from './pages/hsk-standard/HSKStandardStudyWorkChinaPage'
+import BusinessChineseHomePage from './pages/BusinessChineseHomePage'
+import BusinessScenarioDialoguePage from './pages/business-chinese/BusinessScenarioDialoguePage'
+import BusinessDocumentToolsPage from './pages/business-chinese/BusinessDocumentToolsPage'
+import BusinessEnterprisePlatformPage from './pages/business-chinese/BusinessEnterprisePlatformPage'
 import LessonPage from './pages/LessonPage'
 import AIChatPage from './pages/AIChatPage'
 import LibraryPage from './pages/LibraryPage'
@@ -132,6 +140,14 @@ function ThemedApp() {
         <Routes>
           <Route path="/" element={<Navigate to="/AI" replace />} />
               <Route path="/AI" element={<HomePage />} />
+              <Route path="/hsk-standard" element={<HSKStandardHomePage />} />
+              <Route path="/hsk-standard/speaking-pro" element={<HSKStandardSpeakingProPage />} />
+              <Route path="/hsk-standard/writing-training" element={<HSKStandardWritingTrainingPage />} />
+              <Route path="/hsk-standard/study-work-china" element={<HSKStandardStudyWorkChinaPage />} />
+              <Route path="/business-chinese" element={<BusinessChineseHomePage />} />
+              <Route path="/business-chinese/scenario-dialogue" element={<BusinessScenarioDialoguePage />} />
+              <Route path="/business-chinese/document-tools" element={<BusinessDocumentToolsPage />} />
+              <Route path="/business-chinese/enterprise-platform" element={<BusinessEnterprisePlatformPage />} />
               <Route path="/Home" element={<LibraryPage />} />
               <Route path="/library" element={<Navigate to="/Home" replace />} />
               <Route path="/library/select-books" element={<LibraryBookSelectionPage />} />

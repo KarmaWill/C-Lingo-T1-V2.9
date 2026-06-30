@@ -1,0 +1,73 @@
+{
+  "nav": {
+    "library": "ライブラリ",
+    "learn": "学習",
+    "hsk": "HSK",
+    "explore": "探索"
+  },
+  "program": {
+    "hubTitle": "AI Class Studio",
+    "tracks": {
+      "c-lingo": "C-Lingo Chinese",
+      "hsk-standard": "HSK Standard",
+      "business-chinese": "ビジネス中国語"
+    },
+    "badge": {
+      "onlineOnly": "オンライン専用",
+      "officialExam": "公式試験",
+      "premium": "プレミアム"
+    }
+  },
+  "topBanner": {
+    "languageSwitch": "言語切替",
+    "offline": "オフライン",
+    "onlineOnly": "オンライン専用",
+    "pages": {
+      "aiClassStudio": "AI Class Studio",
+      "chineseTextbooks": "中国語教科書",
+      "specializedTracks": "専門コース",
+      "cameraTools": "カメラツール",
+      "exploreDevice": "デバイス探索",
+      "speakingTutor": "スピーキングチューター",
+      "hskPreparation": "HSK対策",
+      "nsk": "NSK 1.0"
+    }
+  },
+  "business": {
+    "eyebrow": "ビジネス知識",
+    "heroTitle": "BCT 1 | 会議：オープニングとアジェンダ",
+    "points": "ポイント",
+    "modules": "モジュール",
+    "mins": "分",
+    "moduleMastery": "モジュール習熟度",
+    "startSession": "セッション開始",
+    "about": "概要",
+    "scenarioDialogue1": "シナリオ",
+    "scenarioDialogue2": "会話",
+    "documentTools1": "ドキュメント",
+    "documentTools2": "ツール",
+    "enterprisePlatform1": "企業",
+    "enterprisePlatform2": "プラットフォーム",
+    "topics": {
+      "meeting": "会議",
+      "negotiation": "交渉",
+      "email": "メール",
+      "presentation": "プレゼン",
+      "interview": "面接",
+      "networking": "ネットワーキング"
+    }
+  },
+  "hsk": {
+    "eyebrow": "HSK STANDARD コース",
+    "heroTitle": "HSK 1 | トピック1：挨拶と自己紹介",
+    "words": "語彙",
+    "patterns": "パターン",
+    "topicMastery": "HSKトピック習熟度",
+    "speakingPro1": "AIスピーキング",
+    "speakingPro2": "Pro",
+    "writingTraining1": "ライティング",
+    "writingTraining2": "トレーニング",
+    "studyWork1": "中国での",
+    "studyWork2": "留学と就職"
+  }
+}

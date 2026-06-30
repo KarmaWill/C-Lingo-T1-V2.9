@@ -1,10 +1,11 @@
 import type { AppLocaleId } from '../data/localeConfig';
+import { localeRecord } from '../data/localeConfig';
 import type { ReadingBuddyDocument, ReadingBuddyParagraph, ReadingBuddyWord } from '../data/readingBuddyStorage';
 
 type DictEntry = {
   pinyin: string;
   partOfSpeech?: string;
-  meanings: Record<AppLocaleId, string>;
+  meanings: Parameters<typeof localeRecord>[0];
 };
 
 const DICT: Record<string, DictEntry> = {
@@ -92,17 +93,18 @@ function lookupWord(text: string): ReadingBuddyWord {
     return {
       text,
       pinyin: entry.pinyin,
-      meanings: entry.meanings,
+      meanings: localeRecord(entry.meanings),
       partOfSpeech: entry.partOfSpeech,
     };
   }
 
-  const fallbackMeaning = (en: string): Record<AppLocaleId, string> => ({
-    en,
-    zh: `词条：${text}`,
-    vi: en,
-    ms: en,
-  });
+  const fallbackMeaning = (en: string): Record<AppLocaleId, string> =>
+    localeRecord({
+      en,
+      zh: `词条：${text}`,
+      vi: en,
+      ms: en,
+    });
 
   return {
     text,
@@ -156,12 +158,12 @@ function splitParagraphs(content: string): string[] {
 
 function buildAiSummary(raw: string): Record<AppLocaleId, string> {
   const preview = raw.length > 48 ? `${raw.slice(0, 48)}…` : raw;
-  return {
+  return localeRecord({
     en: `This paragraph introduces: "${preview}". Focus on key vocabulary and read aloud to build fluency.`,
     zh: `本段内容：「${preview}」。建议先分词理解，再跟读练习。`,
     vi: `Đoạn này nói về: "${preview}". Hãy đọc từng từ và luyện đọc to.`,
     ms: `Perenggan ini membincangkan: "${preview}". Fokus pada kosa kata dan baca dengan lantang.`,
-  };
+  });
 }
 
 export function processTextContent(fileName: string, content: string): ReadingBuddyDocument {
@@ -238,12 +240,12 @@ export function readParagraphAloud(text: string, lang = 'zh-CN'): void {
 export function lookupWordWithAi(word: ReadingBuddyWord, locale: AppLocaleId): ReadingBuddyWord {
   if (word.partOfSpeech !== 'unknown') return word;
 
-  const aiMeanings: Record<AppLocaleId, string> = {
+  const aiMeanings = localeRecord({
     en: `AI: "${word.text}" — common character in reading texts. Context helps determine meaning.`,
     zh: `AI 查词：「${word.text}」— 建议结合上下文理解。`,
     vi: `AI: "${word.text}" — ký tự thường gặp, cần xem ngữ cảnh.`,
     ms: `AI: "${word.text}" — aksara biasa, lihat konteks ayat.`,
-  };
+  });
 
   return {
     ...word,

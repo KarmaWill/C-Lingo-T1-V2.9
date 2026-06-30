@@ -97,6 +97,8 @@ export default function ProfilePage() {
 
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
             <Avatar
+              src="/images/nora-avatar.png"
+              alt="Nora"
               sx={{
                 width: is960 ? 88 : 104,
                 height: is960 ? 88 : 104,
@@ -104,23 +106,9 @@ export default function ProfilePage() {
                 boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
                 border: '4px solid rgba(255,255,255,0.45)',
                 mb: 1.5,
+                '& img': { objectFit: 'cover' },
               }}
-            >
-              <Box
-                sx={{
-                  width: '100%',
-                  height: '100%',
-                  background: 'linear-gradient(145deg, #FB923C 0%, #EA580C 100%)',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: is960 ? '2.5rem' : '3rem',
-                }}
-              >
-                🦊
-              </Box>
-            </Avatar>
+            />
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, justifyContent: 'center', mb: 1 }}>
               <Typography sx={{ fontSize: is960 ? '1rem' : '1.15rem', fontWeight: 800, color: 'white' }}>
