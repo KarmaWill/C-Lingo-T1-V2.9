@@ -8,6 +8,8 @@ export interface WritingModule {
   color: string;
   gradient: string;
   itemCount: number;
+  previewChar: string;
+  stepLabel: string;
 }
 
 export interface StrokeLesson {
@@ -46,6 +48,8 @@ export const WRITING_MODULES: WritingModule[] = [
     color: '#2563EB',
     gradient: 'linear-gradient(135deg, #3B82F6, #2563EB)',
     itemCount: 8,
+    previewChar: '一',
+    stepLabel: 'Foundation',
   },
   {
     id: 'radicals',
@@ -55,15 +59,19 @@ export const WRITING_MODULES: WritingModule[] = [
     color: '#0D9488',
     gradient: 'linear-gradient(135deg, #14B8A6, #0D9488)',
     itemCount: 8,
+    previewChar: '氵',
+    stepLabel: 'Components',
   },
   {
     id: 'structure',
     title: 'Structure',
     subtitle: '结构学习',
     description: 'Understand how characters are built from parts.',
-    color: '#F59E0B',
+    color: '#D97706',
     gradient: 'linear-gradient(135deg, #FBBF24, #F59E0B)',
     itemCount: 5,
+    previewChar: '品',
+    stepLabel: 'Composition',
   },
 ];
 

@@ -15,7 +15,8 @@ import AutoStoriesOutlinedIcon from '@mui/icons-material/AutoStoriesOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { resolveBackPath } from '../utils/navigateBack';
 import { applyTone, combineInitialFinal } from '../utils/pinyinCombine';
-import { lookupPinyinSyllable, LOCALE_LABELS } from '../utils/pinyinSyllableLookup';
+import { lookupPinyinSyllable, resolvePinyinMeaning } from '../utils/pinyinSyllableLookup';
+import { useLocale } from '../context/LocaleContext';
 import PinyinRubyText from '../components/PinyinRubyText';
 import PinyinTianziGrid from '../components/PinyinTianziGrid';
 
@@ -38,6 +39,7 @@ function speakPinyin(text: string) {
 export default function PinyinChartPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { locale } = useLocale();
 
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
   const is960 = screenSize === '960x540';
@@ -659,7 +661,7 @@ export default function PinyinChartPage() {
                 px: 1,
               }}
             >
-              {lookupEntry.meaning.en}
+              {resolvePinyinMeaning(lookupEntry.meaning, locale.id)}
             </Typography>
 
             <ButtonBase
@@ -717,6 +719,10 @@ export default function PinyinChartPage() {
                     bgcolor: '#F8FAFC',
                     border: '1px solid #E2E8F0',
                     flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: is960 ? 1 : 1.15,
+                    flexWrap: 'wrap',
                   }}
                 >
                   <PinyinRubyText
@@ -727,22 +733,26 @@ export default function PinyinChartPage() {
                   />
                   <Typography
                     sx={{
-                      mt: 0.75,
-                      fontSize: is960 ? '0.66rem' : '0.72rem',
-                      color: '#475569',
-                      fontWeight: 600,
-                      lineHeight: 1.45,
+                      color: '#CBD5E1',
+                      fontWeight: 300,
+                      fontSize: is960 ? '1rem' : '1.1rem',
+                      lineHeight: 1,
+                      flexShrink: 0,
                     }}
                   >
-                    {(['en', 'zh', 'vi', 'ms'] as const).map((localeId, idx) => (
-                      <Box component="span" key={localeId}>
-                        {idx > 0 ? ' · ' : ''}
-                        <Box component="span" sx={{ color: '#64748B', fontWeight: 800 }}>
-                          {LOCALE_LABELS[localeId]}:
-                        </Box>{' '}
-                        {phraseItem.meanings[localeId]}
-                      </Box>
-                    ))}
+                    |
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: is960 ? '0.78rem' : '0.84rem',
+                      color: '#475569',
+                      fontWeight: 600,
+                      lineHeight: 1.4,
+                      flex: 1,
+                      minWidth: is960 ? 120 : 140,
+                    }}
+                  >
+                    {resolvePinyinMeaning(phraseItem.meanings, locale.id)}
                   </Typography>
                 </Box>
               ))}

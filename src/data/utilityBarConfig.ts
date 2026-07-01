@@ -15,7 +15,7 @@ export const BUILTIN_UTILITY_ITEMS: BuiltinUtilityItem[] = [
 ];
 
 const STORAGE_KEY = 'apps-builtin-utilities-v1';
-const DEFAULT_IDS: BuiltinUtilityId[] = ['alarm', 'calendar', 'daycountdown', 'pomodoro'];
+const DEFAULT_IDS: BuiltinUtilityId[] = ['calendar', 'daycountdown', 'pomodoro'];
 
 export function loadBuiltinUtilityIds(): BuiltinUtilityId[] {
   if (typeof window === 'undefined') return [...DEFAULT_IDS];
@@ -25,7 +25,7 @@ export function loadBuiltinUtilityIds(): BuiltinUtilityId[] {
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [...DEFAULT_IDS];
     return parsed.filter((id): id is BuiltinUtilityId =>
-      typeof id === 'string' && BUILTIN_UTILITY_ITEMS.some((item) => item.id === id)
+      typeof id === 'string' && id !== 'alarm' && BUILTIN_UTILITY_ITEMS.some((item) => item.id === id)
     );
   } catch {
     return [...DEFAULT_IDS];

@@ -187,6 +187,10 @@ function buildFallbackEntry(tonedPinyin: string): PinyinLookupEntry {
   );
 }
 
+export function resolvePinyinMeaning(meanings: PinyinMeanings, localeId: AppLocaleId): string {
+  return meanings[localeId] ?? meanings.en;
+}
+
 export function lookupPinyinSyllable(tonedPinyin: string): PinyinLookupEntry {
   return PINYIN_SYLLABLE_LOOKUP[tonedPinyin] ?? buildFallbackEntry(tonedPinyin);
 }

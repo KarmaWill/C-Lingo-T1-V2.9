@@ -639,9 +639,7 @@ export default function AppsPage() {
                     minWidth: 0,
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 1 : 1.25, minWidth: 0, flex: 1 }}>
-                    <AccessAlarmOutlinedIcon sx={{ fontSize: is960 ? 28 : 32, color: '#64748B', flexShrink: 0 }} />
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 0.85 : 1.15, flexWrap: 'wrap', minWidth: 0 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 0.85 : 1.15, flexWrap: 'wrap', minWidth: 0, flex: 1 }}>
                       <Typography
                         sx={{
                           fontSize: is960 ? '1.35rem' : (is1920x1125 ? '1.75rem' : '1.55rem'),
@@ -679,7 +677,6 @@ export default function AppsPage() {
                           {dateInfo.month} {dateInfo.day} · {dateInfo.weekday}
                         </Typography>
                       </Box>
-                    </Box>
                   </Box>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: is960 ? 0.65 : 0.85, flexShrink: 0, justifyContent: { xs: 'flex-start', sm: 'flex-end' }, alignItems: 'center' }}>
                     {utilityEditMode && (

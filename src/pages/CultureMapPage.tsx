@@ -10,7 +10,6 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import GraphicEqIcon from '@mui/icons-material/GraphicEq';
 import SmartDisplayIcon from '@mui/icons-material/SmartDisplay';
-import TravelExploreIcon from '@mui/icons-material/TravelExplore';
 
 interface HubEntry {
   id: string;
@@ -108,7 +107,7 @@ export default function CultureMapPage() {
           flex: 1,
           display: 'grid',
           gridTemplateRows: 'auto 1fr',
-          gap: is960 ? 2 : 2.5,
+          gap: is960 ? 1.6 : 2,
           p: is960 ? 2 : 3,
           minHeight: 0,
         }}
@@ -116,9 +115,9 @@ export default function CultureMapPage() {
         {/* Page Intro */}
         <Box
           sx={{
-            minHeight: is960 ? 128 : 154,
-            borderRadius: is960 ? '24px' : '30px',
-            p: is960 ? 2.2 : 2.8,
+            minHeight: is960 ? 96 : 118,
+            borderRadius: is960 ? '22px' : '26px',
+            p: is960 ? 1.6 : 2,
             color: 'white',
             background:
               'radial-gradient(circle at 82% 18%, rgba(255,255,255,0.28) 0, rgba(255,255,255,0) 26%), linear-gradient(135deg, #0F172A 0%, #0F766E 54%, #FF7A45 100%)',
@@ -126,8 +125,8 @@ export default function CultureMapPage() {
             overflow: 'hidden',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: is960 ? 2 : 3,
+            justifyContent: 'flex-start',
+            gap: is960 ? 1.6 : 2,
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 1.6 : 2, minWidth: 0 }}>
@@ -135,8 +134,8 @@ export default function CultureMapPage() {
               onClick={() => navigate(-1)}
               aria-label="Back"
               sx={{
-                minHeight: is960 ? 48 : 56,
-                minWidth: is960 ? 48 : 56,
+                minHeight: is960 ? 44 : 48,
+                minWidth: is960 ? 44 : 48,
                 borderRadius: '50%',
                 bgcolor: 'rgba(255,255,255,0.18)',
                 border: '1px solid rgba(255,255,255,0.3)',
@@ -147,51 +146,14 @@ export default function CultureMapPage() {
                 '&:active': { transform: 'scale(0.96)' },
               }}
             >
-              <ChevronLeftIcon sx={{ fontSize: is960 ? 28 : 32 }} />
+              <ChevronLeftIcon sx={{ fontSize: is960 ? 25 : 28 }} />
             </ButtonBase>
             <Box sx={{ maxWidth: is960 ? 560 : 680, minWidth: 0 }}>
-              <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', fontWeight: 900, letterSpacing: '0.14em', opacity: 0.78, mb: 0.9 }}>
+              <Typography sx={{ fontSize: is960 ? '0.66rem' : '0.74rem', fontWeight: 900, letterSpacing: '0.14em', opacity: 0.78, mb: 0.55 }}>
                 CULTURE HUB
               </Typography>
-              <Typography sx={{ fontSize: is960 ? '1.65rem' : '2.05rem', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1.06 }}>
+              <Typography sx={{ fontSize: is960 ? '1.35rem' : '1.68rem', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1.08 }}>
                 Choose a way to explore Chinese culture.
-              </Typography>
-            </Box>
-          </Box>
-          <Box
-            sx={{
-              minWidth: is960 ? 210 : 250,
-              px: is960 ? 2 : 2.5,
-              py: is960 ? 1.4 : 1.7,
-              borderRadius: is960 ? '20px' : '24px',
-              bgcolor: 'rgba(255,255,255,0.15)',
-              border: '1px solid rgba(255,255,255,0.25)',
-              backdropFilter: 'blur(14px)',
-              display: { xs: 'none', sm: 'flex' },
-              alignItems: 'center',
-              gap: 1.4,
-              flexShrink: 0,
-            }}
-          >
-            <Box
-              sx={{
-                width: is960 ? 48 : 58,
-                height: is960 ? 48 : 58,
-                borderRadius: '18px',
-                bgcolor: 'rgba(255,255,255,0.18)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <TravelExploreIcon sx={{ fontSize: is960 ? 28 : 34 }} />
-            </Box>
-            <Box>
-              <Typography sx={{ fontSize: is960 ? '0.7rem' : '0.78rem', fontWeight: 850, opacity: 0.72, mb: 0.3 }}>
-                NEXT UP
-              </Typography>
-              <Typography sx={{ fontSize: is960 ? '0.95rem' : '1.08rem', fontWeight: 900 }}>
-                Podcast · Mindmap · Video
               </Typography>
             </Box>
           </Box>

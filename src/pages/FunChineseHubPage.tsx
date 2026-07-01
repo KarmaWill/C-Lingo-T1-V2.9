@@ -14,6 +14,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ReplayIcon from '@mui/icons-material/Replay';
 import LayersIcon from '@mui/icons-material/Layers';
+import CheckIcon from '@mui/icons-material/Check';
 import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import { uploadFunChineseOfflineData } from '../utils/funChineseOfflineSync';
@@ -81,6 +82,93 @@ function OnAirStatusBadge({ is960, label }: { is960: boolean; label: string }) {
   );
 }
 
+function LessonStatusBadge({
+  lesson,
+  is960,
+  orange,
+  teal,
+}: {
+  lesson: HubLessonStatus;
+  is960: boolean;
+  orange: string;
+  teal: string;
+}) {
+  const badgeSize = is960 ? 52 : 58;
+  const isCurrent = lesson.status === 'current';
+  const isCompleted = lesson.status === 'completed';
+  const isLocked = lesson.status === 'locked';
+  const accent = isCurrent ? orange : isCompleted ? teal : '#94A3B8';
+
+  return (
+    <Box
+      sx={{
+        width: badgeSize,
+        height: badgeSize,
+        borderRadius: is960 ? '18px' : '20px',
+        flexShrink: 0,
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        bgcolor: isCurrent ? '#FFF7ED' : isCompleted ? '#ECFDF5' : '#F8FAFC',
+        border: '1px solid',
+        borderColor: isCurrent ? '#FDBA74' : isCompleted ? '#99F6E4' : '#E2E8F0',
+        color: accent,
+        boxShadow: isCurrent
+          ? `0 10px 22px ${orange}28`
+          : isCompleted
+            ? '0 8px 18px rgba(20,184,166,0.14)'
+            : 'none',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          borderRadius: 'inherit',
+          background: isCurrent
+            ? 'linear-gradient(135deg, rgba(255,122,69,0.14), rgba(255,255,255,0))'
+            : isCompleted
+              ? 'linear-gradient(135deg, rgba(20,184,166,0.12), rgba(255,255,255,0))'
+              : 'none',
+        },
+      }}
+    >
+      {isCompleted ? (
+        <CheckIcon sx={{ position: 'relative', fontSize: is960 ? 24 : 26, color: teal }} />
+      ) : (
+        <>
+          <Typography
+            sx={{
+              position: 'relative',
+              fontSize: is960 ? '0.5rem' : '0.54rem',
+              fontWeight: 850,
+              color: isLocked ? '#94A3B8' : accent,
+              letterSpacing: '0.12em',
+              lineHeight: 1,
+            }}
+          >
+            LESSON
+          </Typography>
+          <Typography
+            sx={{
+              position: 'relative',
+              fontSize: is960 ? '1.15rem' : '1.28rem',
+              fontWeight: 950,
+              color: isLocked ? '#64748B' : '#0F172A',
+              lineHeight: 1,
+              letterSpacing: '-0.05em',
+              fontVariantNumeric: 'tabular-nums',
+              mt: 0.28,
+            }}
+          >
+            {String(lesson.id).padStart(2, '0')}
+          </Typography>
+        </>
+      )}
+    </Box>
+  );
+}
 export default function FunChineseHubPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -432,24 +520,37 @@ export default function FunChineseHubPage() {
               height: is960 ? 38 : 44,
               minWidth: is960 ? 38 : 44,
               minHeight: is960 ? 38 : 44,
-              maxWidth: is960 ? 38 : 44,
-              maxHeight: is960 ? 38 : 44,
-              boxSizing: 'border-box',
               p: 0,
+              boxSizing: 'border-box',
               flexShrink: 0,
-              bgcolor: 'linear-gradient(135deg, rgba(99,102,241,0.14), rgba(168,85,247,0.12))',
-              borderRadius: is960 ? '15px' : '18px',
-              border: '1px solid rgba(99,102,241,0.18)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.75)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              borderRadius: is960 ? '14px' : '16px',
+              border: '1.5px solid #FDBA74',
+              boxShadow: '0 8px 20px rgba(249,115,22,0.2)',
+              overflow: 'hidden',
               transition: 'all 180ms ease',
-              '&:hover': { bgcolor: 'linear-gradient(135deg, rgba(99,102,241,0.18), rgba(168,85,247,0.15))' },
-              '&:active': { transform: 'scale(0.94)' },
+              '&:hover': {
+                boxShadow: '0 10px 24px rgba(249,115,22,0.28)',
+                '& .feedback-icon-wrap': {
+                  background: 'linear-gradient(135deg, #FB923C 0%, #F97316 55%, #EA580C 100%)',
+                },
+              },
+              '&:active': { transform: 'scale(0.96)' },
             }}
           >
-            <RateReviewOutlinedIcon sx={{ fontSize: is960 ? 20 : 22, color: '#4F46E5' }} />
+            <Box
+              className="feedback-icon-wrap"
+              sx={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'linear-gradient(135deg, #FDBA74 0%, #F97316 52%, #EA580C 100%)',
+                transition: 'background 180ms ease',
+              }}
+            >
+              <RateReviewOutlinedIcon sx={{ fontSize: is960 ? 20 : 23, color: '#FFFFFF' }} />
+            </Box>
           </ButtonBase>
         </Box>
       </Box>
@@ -517,67 +618,65 @@ export default function FunChineseHubPage() {
                   })}
                 </Box>
               </Box>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 1.5 : 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 1.2 : 1.45 }}>
                 {lessons.map((lesson) => (
                   <Box
                     key={lesson.id}
                     onClick={() => handleStartLesson(lesson.id, lesson.status)}
                     sx={{
-                      p: is960 ? 1.85 : 2.25,
-                      borderRadius: is960 ? '18px' : '22px',
-                      border: '2px solid',
+                      p: is960 ? 1.35 : 1.65,
+                      borderRadius: is960 ? '20px' : '24px',
+                      border: '1.5px solid',
                       borderColor:
                         lesson.status === 'current'
-                          ? `${orange}50`
+                          ? '#FDBA74'
                           : lesson.status === 'completed'
-                            ? 'rgba(0,0,0,0.06)'
-                            : 'rgba(0,0,0,0.06)',
-                      bgcolor:
+                            ? '#CCFBF1'
+                            : '#E2E8F0',
+                      background:
                         lesson.status === 'current'
-                          ? `${orange}08`
+                          ? 'linear-gradient(135deg, #FFF7ED 0%, #FFFFFF 72%)'
                           : lesson.status === 'completed'
-                            ? 'white'
+                            ? 'linear-gradient(135deg, #F0FDFA 0%, #FFFFFF 74%)'
                             : '#F8FAFC',
                       boxShadow:
                         lesson.status === 'current'
-                          ? `0 10px 24px ${orange}24`
+                          ? `0 12px 28px ${orange}1F`
                           : lesson.status === 'completed'
-                            ? '0 6px 16px rgba(15,23,42,0.08)'
-                            : '0 2px 8px rgba(0,0,0,0.03)',
+                            ? '0 8px 20px rgba(20,184,166,0.1)'
+                            : '0 2px 8px rgba(15,23,42,0.03)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
+                      gap: is960 ? 1.2 : 1.45,
                       cursor: lesson.status === 'locked' ? 'not-allowed' : 'pointer',
-                      opacity: lesson.status === 'locked' ? 0.5 : 1,
-                      transition: 'all 0.2s',
-                      '&:hover': lesson.status !== 'locked' ? { transform: 'translateX(4px) scale(1.01)' } : {},
+                      opacity: lesson.status === 'locked' ? 0.62 : 1,
+                      transition: 'transform 0.18s ease, box-shadow 0.18s ease',
+                      '&:hover': lesson.status !== 'locked' ? { transform: 'translateX(3px)', boxShadow: `0 14px 30px ${orange}22` } : {},
                     }}
                   >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 1.5 : 2 }}>
-                      <Box
+                    <LessonStatusBadge
+                      lesson={lesson}
+                      is960={is960}
+                      orange={orange}
+                      teal={teal}
+                    />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography
                         sx={{
-                          width: is960 ? 42 : 48,
-                          height: is960 ? 42 : 48,
-                          borderRadius: is960 ? '14px' : '16px',
-                          bgcolor: lesson.status === 'current' ? orange : '#E2E8F0',
-                          color: lesson.status === 'current' ? 'white' : '#64748B',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontWeight: 800,
-                          fontSize: is960 ? '1.1rem' : '1.35rem',
+                          fontWeight: 900,
+                          fontSize: is960 ? '1rem' : '1.16rem',
+                          color: '#0F172A',
+                          lineHeight: 1.15,
+                          letterSpacing: '-0.02em',
+                          mb: 0.45,
                         }}
                       >
-                        {lesson.id}
-                      </Box>
-                      <Box>
-                        <Typography sx={{ fontWeight: 850, fontSize: is960 ? '0.98rem' : '1.15rem', color: '#1E293B', lineHeight: 1.2 }}>
-                          {lesson.title}
-                        </Typography>
-                        <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: '#64748B', fontWeight: 600 }}>
-                          {lesson.titleEn}
-                        </Typography>
-                      </Box>
+                        {lesson.title}
+                      </Typography>
+                      <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: '#64748B', fontWeight: 650, lineHeight: 1.35 }}>
+                        {lesson.titleEn}
+                      </Typography>
                     </Box>
                     <Box
                       sx={{
@@ -821,7 +920,7 @@ export default function FunChineseHubPage() {
                       lineHeight: 1.2,
                     }}
                   >
-                    Knowledge Toolbox
+                    C-Toolbox
                   </Typography>
                   <Box
                     sx={{
