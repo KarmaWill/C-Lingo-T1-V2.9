@@ -195,6 +195,10 @@ export function lookupPinyinSyllable(tonedPinyin: string): PinyinLookupEntry {
   return PINYIN_SYLLABLE_LOOKUP[tonedPinyin] ?? buildFallbackEntry(tonedPinyin);
 }
 
+export function hasPinyinSyllableEntry(tonedPinyin: string): boolean {
+  return tonedPinyin in PINYIN_SYLLABLE_LOOKUP;
+}
+
 export function formatMultilingualLine(meanings: PinyinMeanings): string {
   return LOCALE_ORDER.map((id) => `${LOCALE_LABELS[id]}: ${meanings[id] ?? '—'}`).join('  ·  ');
 }

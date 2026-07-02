@@ -14,7 +14,6 @@ import SmartDisplayIcon from '@mui/icons-material/SmartDisplay';
 interface HubEntry {
   id: string;
   title: string;
-  kicker: string;
   description: string;
   meta: string;
   icon: React.ReactNode;
@@ -28,7 +27,6 @@ const CULTURE_ENTRIES: HubEntry[] = [
   {
     id: 'podcast',
     title: 'AI Culture Podcast',
-    kicker: 'Professional audio',
     description: 'Listen to culture stories.',
     meta: '3-5 min episodes',
     icon: <GraphicEqIcon />,
@@ -40,7 +38,6 @@ const CULTURE_ENTRIES: HubEntry[] = [
   {
     id: 'mindmap',
     title: 'Culture Mindmap',
-    kicker: 'Knowledge graph',
     description: 'Explore knowledge links.',
     meta: 'Visual connections',
     icon: <AccountTreeIcon />,
@@ -51,7 +48,6 @@ const CULTURE_ENTRIES: HubEntry[] = [
   {
     id: 'video',
     title: 'Culture Videos',
-    kicker: 'Watch and unlock',
     description: 'Watch unlocked videos.',
     meta: 'Bonus lessons',
     icon: <SmartDisplayIcon />,
@@ -243,9 +239,6 @@ export default function CultureMapPage() {
                   >
                     {entry.icon}
                   </Box>
-                  <Typography sx={{ mt: is960 ? 2.8 : 3.5, fontSize: is960 ? '0.74rem' : '0.86rem', fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase', opacity: 0.82, position: 'relative', zIndex: 1 }}>
-                    {entry.kicker}
-                  </Typography>
                 </Box>
 
                 <Box sx={{ p: is960 ? 2.4 : 3, display: 'flex', flexDirection: 'column', gap: is960 ? 1.1 : 1.4 }}>

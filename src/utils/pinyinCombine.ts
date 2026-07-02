@@ -17,12 +17,18 @@ export function combineInitialFinal(initial: string, final: string): string {
   }
 
   if (initial === 'y') {
+    if (final === 'i') return 'yi';
+    if (final === 'ü') return 'yu';
+    if (final === 'üe') return 'yue';
+    if (final === 'ün') return 'yun';
+    if (final === 'üan') return 'yuan';
     if (final.startsWith('i')) return 'y' + final.slice(1);
     if (final.startsWith('ü')) return 'y' + final.slice(1);
     return initial + final;
   }
 
   if (initial === 'w') {
+    if (final === 'u') return 'wu';
     if (final.startsWith('u')) return 'w' + final.slice(1);
     return initial + final;
   }

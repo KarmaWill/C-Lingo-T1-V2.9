@@ -24,6 +24,8 @@
     "deploy:lan:status": "./deploy-lan-status.sh",
     "deploy:lan:logs": "./deploy-lan-logs.sh",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "test": "vitest run",
+    "docs:pinyin-diff": "npx tsx ../scripts/diff-pinyin-chart-matrix.ts",
     "docs:api": "typedoc --options ../typedoc.json",
     "docs:tech-stack": "node ../scripts/extract-tech-stack.js > ../temp/tech-stack.json && node ../scripts/generate-tech-stack-doc.js --input ../temp/tech-stack.json --output ../docs/architecture/tech-stack.md",
     "docs:features": "node ../scripts/extract-features.js > ../temp/features.json",
@@ -61,6 +63,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
     "typescript": "^5.2.2",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vitest": "^4.1.9"
   }
 }

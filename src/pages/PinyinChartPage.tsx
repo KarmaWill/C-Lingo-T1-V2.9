@@ -14,8 +14,14 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import AutoStoriesOutlinedIcon from '@mui/icons-material/AutoStoriesOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { resolveBackPath } from '../utils/navigateBack';
-import { applyTone, combineInitialFinal } from '../utils/pinyinCombine';
-import { lookupPinyinSyllable, resolvePinyinMeaning } from '../utils/pinyinSyllableLookup';
+import { applyTone } from '../utils/pinyinCombine';
+import {
+  PINYIN_FINALS,
+  PINYIN_INITIALS,
+  buildValidBaseSyllable,
+  isValidPair,
+} from '../utils/pinyinChartValidate';
+import { hasPinyinSyllableEntry, lookupPinyinSyllable, resolvePinyinMeaning } from '../utils/pinyinSyllableLookup';
 import { useLocale } from '../context/LocaleContext';
 import PinyinRubyText from '../components/PinyinRubyText';
 import PinyinTianziGrid from '../components/PinyinTianziGrid';
@@ -45,36 +51,107 @@ export default function PinyinChartPage() {
   const is960 = screenSize === '960x540';
   const is1920x1125 = screenSize === '1920x1125';
 
-  const initials = ['b', 'p', 'm', 'f', 'd', 't', 'n', 'l', 'g', 'k', 'h', 'j', 'q', 'x', 'zh', 'ch', 'sh', 'r', 'z', 'c', 's', 'y', 'w'];
-  const finals = ['a', 'o', 'e', 'i', 'u', 'ü', 'ai', 'ei', 'ui', 'ao', 'ou', 'iu', 'ie', 'üe', 'er', 'ia', 'iao', 'ua', 'uo', 'an', 'en', 'in', 'un', 'ün', 'ian', 'uan', 'üan', 'ang', 'eng', 'ing', 'ong'];
+  const initials = PINYIN_INITIALS;
+  const finals = PINYIN_FINALS;
 
-  const [selectedInitial, setSelectedInitial] = useState<string>('b');
-  const [selectedFinal, setSelectedFinal] = useState<string>('a');
+  const [selectedInitial, setSelectedInitial] = useState<string | null>(null);
+  const [selectedFinal, setSelectedFinal] = useState<string | null>(null);
   const [selectedTone, setSelectedTone] = useState<1 | 2 | 3 | 4>(1);
   const [lookupOpen, setLookupOpen] = useState(false);
   const [phrasesOpen, setPhrasesOpen] = useState(false);
 
-  const baseSyllable = useMemo(
-    () => combineInitialFinal(selectedInitial, selectedFinal),
-    [selectedInitial, selectedFinal],
+  const isPairValid = Boolean(
+    selectedInitial && selectedFinal && isValidPair(selectedInitial, selectedFinal),
   );
 
+  const baseSyllable = useMemo(() => {
+    if (!selectedInitial || !selectedFinal) return '';
+    return buildValidBaseSyllable(selectedInitial, selectedFinal) ?? '';
+  }, [selectedInitial, selectedFinal]);
+
   const tonedSyllables = useMemo(
-    () => TONE_OPTIONS.map(({ tone }) => applyTone(baseSyllable, tone)),
+    () => (baseSyllable
+      ? TONE_OPTIONS.map(({ tone }) => applyTone(baseSyllable, tone))
+      : TONE_OPTIONS.map(() => '')),
     [baseSyllable],
   );
 
   const activeTonedSyllable = useMemo(
-    () => applyTone(baseSyllable, selectedTone),
+    () => (baseSyllable ? applyTone(baseSyllable, selectedTone) : ''),
     [baseSyllable, selectedTone],
   );
 
-  const lookupEntry = useMemo(
-    () => lookupPinyinSyllable(activeTonedSyllable),
+  const hasLookupEntry = useMemo(
+    () => Boolean(activeTonedSyllable) && hasPinyinSyllableEntry(activeTonedSyllable),
     [activeTonedSyllable],
   );
 
+  const lookupEntry = useMemo(
+    () => (activeTonedSyllable ? lookupPinyinSyllable(activeTonedSyllable) : null),
+    [activeTonedSyllable],
+  );
+
+  const handleSelectInitial = (initial: string) => {
+    setLookupOpen(false);
+    setPhrasesOpen(false);
+    setSelectedInitial((prev) => (prev === initial ? null : initial));
+  };
+
+  const handleSelectFinal = (final: string) => {
+    setLookupOpen(false);
+    setPhrasesOpen(false);
+    setSelectedFinal((prev) => (prev === final ? null : final));
+  };
+
+  const getInitialButtonState = (initial: string) => {
+    const isSelected = selectedInitial === initial;
+    if (isSelected) return { isSelected: true, isHighlighted: false, isDisabled: false };
+
+    if (selectedFinal && !selectedInitial) {
+      const matches = isValidPair(initial, selectedFinal);
+      return { isSelected: false, isHighlighted: matches, isDisabled: !matches };
+    }
+
+    if (selectedInitial && selectedFinal) {
+      const matches = isValidPair(initial, selectedFinal);
+      return { isSelected: false, isHighlighted: matches, isDisabled: !matches };
+    }
+
+    return { isSelected: false, isHighlighted: false, isDisabled: false };
+  };
+
+  const getFinalButtonState = (final: string) => {
+    const isSelected = selectedFinal === final;
+    if (isSelected) return { isSelected: true, isHighlighted: false, isDisabled: false };
+
+    if (selectedInitial && !selectedFinal) {
+      const matches = isValidPair(selectedInitial, final);
+      return { isSelected: false, isHighlighted: matches, isDisabled: !matches };
+    }
+
+    if (selectedInitial && selectedFinal) {
+      const matches = isValidPair(selectedInitial, final);
+      return { isSelected: false, isHighlighted: matches, isDisabled: !matches };
+    }
+
+    return { isSelected: false, isHighlighted: false, isDisabled: false };
+  };
+
+  const tipMessage = useMemo(() => {
+    if (!selectedInitial && !selectedFinal) {
+      return 'Tap an initial or a final to start.';
+    }
+    if (!selectedInitial || !selectedFinal) {
+      return 'Tap a matching option on the other side.';
+    }
+    if (!isPairValid) {
+      return 'This combination is not used in Mandarin. Try another pair.';
+    }
+    return 'Tap a tone to look up the character and hear the pronunciation.';
+  }, [selectedInitial, selectedFinal, isPairValid]);
+
   const openLookup = (tone: 1 | 2 | 3 | 4) => {
+    if (!isPairValid || !baseSyllable) return;
     setSelectedTone(tone);
     setPhrasesOpen(false);
     setLookupOpen(true);
@@ -204,22 +281,31 @@ export default function PinyinChartPage() {
               }}
             >
               {initials.map((initial) => {
-                const isSelected = selectedInitial === initial;
+                const { isSelected, isHighlighted, isDisabled } = getInitialButtonState(initial);
                 return (
                   <ButtonBase
                     key={initial}
-                    onClick={() => setSelectedInitial(initial)}
+                    onClick={() => handleSelectInitial(initial)}
+                    disabled={isDisabled}
                     sx={{
                       py: is960 ? 1.15 : (is1920x1125 ? 1.65 : 1.4),
                       borderRadius: is960 ? '12px' : (is1920x1125 ? '16px' : '14px'),
-                      bgcolor: isSelected ? '#E88B52' : 'white',
-                      color: isSelected ? 'white' : '#E88B52',
-                      border: '1px solid',
-                      borderColor: '#E88B52',
+                      bgcolor: isSelected ? '#E88B52' : isHighlighted ? '#FFF4ED' : 'white',
+                      color: isSelected ? 'white' : isDisabled ? '#CBD5E1' : '#E88B52',
+                      border: '2px solid',
+                      borderColor: isSelected
+                        ? '#E88B52'
+                        : isHighlighted
+                          ? '#E88B52'
+                          : isDisabled
+                            ? '#E2E8F0'
+                            : '#E88B52',
                       fontWeight: 800,
                       fontSize: is960 ? '1.08rem' : (is1920x1125 ? '1.35rem' : '1.22rem'),
+                      opacity: isDisabled ? 0.45 : 1,
+                      boxShadow: isHighlighted ? '0 0 0 2px rgba(232,139,82,0.25)' : 'none',
                       transition: 'all 0.2s',
-                      '&:active': { transform: 'scale(0.95)' },
+                      '&:active': { transform: isDisabled ? 'none' : 'scale(0.95)' },
                     }}
                   >
                     {initial}
@@ -270,22 +356,31 @@ export default function PinyinChartPage() {
               }}
             >
               {finals.map((final) => {
-                const isSelected = selectedFinal === final;
+                const { isSelected, isHighlighted, isDisabled } = getFinalButtonState(final);
                 return (
                   <ButtonBase
                     key={final}
-                    onClick={() => setSelectedFinal(final)}
+                    onClick={() => handleSelectFinal(final)}
+                    disabled={isDisabled}
                     sx={{
                       py: is960 ? 1.15 : (is1920x1125 ? 1.65 : 1.4),
                       borderRadius: is960 ? '12px' : (is1920x1125 ? '16px' : '14px'),
-                      bgcolor: isSelected ? '#008B8B' : 'white',
-                      color: isSelected ? 'white' : '#008B8B',
-                      border: '1px solid',
-                      borderColor: '#008B8B',
+                      bgcolor: isSelected ? '#008B8B' : isHighlighted ? '#ECFEFF' : 'white',
+                      color: isSelected ? 'white' : isDisabled ? '#CBD5E1' : '#008B8B',
+                      border: '2px solid',
+                      borderColor: isSelected
+                        ? '#008B8B'
+                        : isHighlighted
+                          ? '#008B8B'
+                          : isDisabled
+                            ? '#E2E8F0'
+                            : '#008B8B',
                       fontWeight: 800,
                       fontSize: is960 ? '1.08rem' : (is1920x1125 ? '1.35rem' : '1.22rem'),
+                      opacity: isDisabled ? 0.45 : 1,
+                      boxShadow: isHighlighted ? '0 0 0 2px rgba(0,139,139,0.25)' : 'none',
                       transition: 'all 0.2s',
-                      '&:active': { transform: 'scale(0.95)' },
+                      '&:active': { transform: isDisabled ? 'none' : 'scale(0.95)' },
                     }}
                   >
                     {final}
@@ -341,11 +436,11 @@ export default function PinyinChartPage() {
                 component="span"
                 sx={{
                   fontWeight: 800,
-                  color: '#E88B52',
+                  color: selectedInitial ? '#E88B52' : '#94A3B8',
                   fontSize: is960 ? '0.9rem' : '1rem',
                 }}
               >
-                {selectedInitial}
+                {selectedInitial ?? '—'}
               </Typography>
               <Typography component="span" sx={{ color: '#94A3B8', fontWeight: 700 }}>
                 +
@@ -354,11 +449,11 @@ export default function PinyinChartPage() {
                 component="span"
                 sx={{
                   fontWeight: 800,
-                  color: '#008B8B',
+                  color: selectedFinal ? '#008B8B' : '#94A3B8',
                   fontSize: is960 ? '0.9rem' : '1rem',
                 }}
               >
-                {selectedFinal}
+                {selectedFinal ?? '—'}
               </Typography>
               <Typography component="span" sx={{ color: '#94A3B8', fontWeight: 700 }}>
                 =
@@ -372,7 +467,7 @@ export default function PinyinChartPage() {
                   letterSpacing: '0.02em',
                 }}
               >
-                {baseSyllable}
+                {baseSyllable || '—'}
               </Typography>
             </Box>
           </Box>
@@ -390,20 +485,22 @@ export default function PinyinChartPage() {
                 <ButtonBase
                   key={tone}
                   onClick={() => openLookup(tone)}
+                  disabled={!isPairValid}
                   sx={{
                     flex: 1,
                     py: is960 ? 1.35 : (is1920x1125 ? 2.25 : 1.85),
                     borderRadius: is960 ? '12px' : (is1920x1125 ? '16px' : '14px'),
                     bgcolor: isActive ? '#3D68B3' : 'white',
-                    color: isActive ? 'white' : '#3D68B3',
+                    color: isActive ? 'white' : isPairValid ? '#3D68B3' : '#94A3B8',
                     border: '1px solid',
-                    borderColor: '#3D68B3',
+                    borderColor: isPairValid ? '#3D68B3' : '#E2E8F0',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: is960 ? 0.45 : (is1920x1125 ? 0.75 : 0.55),
+                    opacity: isPairValid ? 1 : 0.45,
                     transition: 'all 0.2s',
-                    '&:active': { transform: 'scale(0.97)' },
+                    '&:active': { transform: isPairValid ? 'scale(0.97)' : 'none' },
                   }}
                 >
                   <Typography
@@ -477,14 +574,14 @@ export default function PinyinChartPage() {
                 lineHeight: 1.4,
               }}
             >
-              Tap a tone to look up the character and hear the pronunciation.
+              {tipMessage}
             </Typography>
           </Box>
         </Box>
       </Box>
 
       <Dialog
-        open={lookupOpen}
+        open={lookupOpen && isPairValid}
         onClose={() => setLookupOpen(false)}
         maxWidth="sm"
         fullWidth
@@ -560,13 +657,13 @@ export default function PinyinChartPage() {
               }}
             >
               <Box component="span" sx={formulaChipSx('#E88B52', '#FFFFFF')}>
-                {selectedInitial}
+                {selectedInitial ?? '—'}
               </Box>
               <Typography sx={{ fontSize: is960 ? '1.05rem' : '1.15rem', fontWeight: 900, color: 'rgba(255,255,255,0.55)' }}>
                 +
               </Typography>
               <Box component="span" sx={formulaChipSx('#008B8B', '#FFFFFF')}>
-                {selectedFinal}
+                {selectedFinal ?? '—'}
               </Box>
               <Typography sx={{ fontSize: is960 ? '1.05rem' : '1.15rem', fontWeight: 900, color: 'rgba(255,255,255,0.55)' }}>
                 →
@@ -596,10 +693,12 @@ export default function PinyinChartPage() {
               flexDirection: 'column',
               alignItems: 'center',
               gap: is960 ? 0.75 : 0.9,
-              mb: phrasesOpen ? (is960 ? 0.75 : 1) : 0,
+              mb: phrasesOpen && hasLookupEntry ? (is960 ? 0.75 : 1) : 0,
               flexShrink: 0,
             }}
           >
+            {hasLookupEntry && lookupEntry ? (
+              <>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
               <Typography
                 sx={{
@@ -693,9 +792,62 @@ export default function PinyinChartPage() {
                 }}
               />
             </ButtonBase>
+              </>
+            ) : (
+              <Box
+                sx={{
+                  py: is960 ? 2 : 2.5,
+                  px: is960 ? 2 : 2.5,
+                  textAlign: 'center',
+                  maxWidth: 360,
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: is960 ? '1.05rem' : '1.15rem',
+                    fontWeight: 800,
+                    color: '#3D68B3',
+                    mb: 0.75,
+                  }}
+                >
+                  Valid syllable
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: is960 ? '0.85rem' : '0.92rem',
+                    fontWeight: 600,
+                    color: '#64748B',
+                    lineHeight: 1.5,
+                    mb: 1.25,
+                  }}
+                >
+                  {activeTonedSyllable} is a valid Mandarin syllable, but character lookup is not available yet.
+                </Typography>
+                <ButtonBase
+                  onClick={handleSpeak}
+                  sx={{
+                    minHeight: is960 ? 44 : 48,
+                    px: is960 ? 1.75 : 2,
+                    borderRadius: '999px',
+                    bgcolor: '#EEF2FF',
+                    color: '#3D68B3',
+                    border: '2px solid rgba(61,104,179,0.35)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.65,
+                    '&:active': { transform: 'scale(0.98)' },
+                  }}
+                >
+                  <VolumeUpIcon sx={{ fontSize: is960 ? 20 : 22 }} />
+                  <Typography sx={{ fontSize: is960 ? '0.82rem' : '0.88rem', fontWeight: 800 }}>
+                    Hear pronunciation
+                  </Typography>
+                </ButtonBase>
+              </Box>
+            )}
           </Box>
 
-          {phrasesOpen && (
+          {phrasesOpen && hasLookupEntry && lookupEntry && (
             <Box
               sx={{
                 flex: 1,
