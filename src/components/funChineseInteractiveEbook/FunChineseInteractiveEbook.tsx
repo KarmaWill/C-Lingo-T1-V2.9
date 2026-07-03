@@ -2,13 +2,50 @@ import { useState, useEffect, useRef, type MouseEvent, type CSSProperties } from
 import { useNavigate } from 'react-router-dom';
 import { saveSpeakingLatestScore } from '../../hsk/speakingScore';
 import './funChineseInteractiveEbook.css';
+import EbookRubyLine from './EbookRubyLine';
 import {
-  Volume2, Play, Pause, Mic, Settings, Tv,
-  ChevronLeft, ChevronRight, ChevronDown, Check, X, RotateCcw,
+  Volume2, Play, Pause, Mic, Tv,
+  ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Check, X, RotateCcw,
   Star, Sliders, Eye, EyeOff, Sparkles, Smile, RefreshCw,
   Link2, ListTodo, CircleHelp, MessageCircle, PenLine,
-  Maximize2, Minimize2, LayoutList, Languages, SquareDashed,
+  Maximize2, Minimize2, Languages, SquareDashed, ExternalLink,
+  BookOpen, Repeat2,
 } from 'lucide-react';
+
+function EbookLessonsIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden>
+      <circle cx="7.25" cy="8" r="2.35" stroke="currentColor" strokeWidth="1.55" />
+      <circle cx="7.25" cy="8" r="0.72" fill="currentColor" />
+      <circle cx="7.25" cy="16" r="2.35" stroke="currentColor" strokeWidth="1.55" />
+      <rect x="12.25" y="6.75" width="8.5" height="2.5" rx="1.25" fill="currentColor" />
+      <rect x="12.25" y="10.75" width="8.5" height="2.5" rx="1.25" fill="currentColor" />
+      <rect x="12.25" y="14.75" width="8.5" height="2.5" rx="1.25" fill="currentColor" />
+    </svg>
+  );
+}
+
+function EbookSettingsIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M12 2.8c.48 0 .88.34.98.8l.35 2.05a6.2 6.2 0 0 1 1.72.98l1.98-.82a1 1 0 0 1 1.22.45l1.05 1.82a1 1 0 0 1-.38 1.28l-1.78 1.02c.08.55.12 1.1.12 1.62s-.04 1.07-.12 1.62l1.78 1.02a1 1 0 0 1 .38 1.28l-1.05 1.82a1 1 0 0 1-1.22.45l-1.98-.82a6.2 6.2 0 0 1-1.72.98l-.35 2.05a1 1 0 0 1-.98.8c-.48 0-.88-.34-.98-.8l-.35-2.05a6.2 6.2 0 0 1-1.72-.98l-1.98.82a1 1 0 0 1-1.22-.45l-1.05-1.82a1 1 0 0 1 .38-1.28l1.78-1.02a6.5 6.5 0 0 1 0-3.24l-1.78-1.02a1 1 0 0 1-.38-1.28l1.05-1.82a1 1 0 0 1 1.22-.45l1.98.82c.52-.42 1.1-.75 1.72-.98l.35-2.05a1 1 0 0 1 .98-.8zm0 4.95a4.25 4.25 0 1 0 0 8.5 4.25 4.25 0 0 0 0-8.5z"
+      />
+      <circle cx="12" cy="12" r="2.15" fill="#ffffff" />
+    </svg>
+  );
+}
+
+const LEARNING_MODES = [
+  { id: 'read' as const, label: 'Tap to Read', Icon: BookOpen },
+  { id: 'repeat' as const, label: 'Repeat Range', Icon: Repeat2 },
+  { id: 'shadow' as const, label: 'Shadow Reading', Icon: Mic },
+  { id: 'exercise' as const, label: 'Practice', Icon: PenLine },
+];
+
+/** Modes affected by shared speech-speed setting */
+const SPEECH_SPEED_MODES = LEARNING_MODES.filter((m) => m.id !== 'exercise');
 
 const EXERCISE_TABS = [
   { id: 'match' as const, label: 'Match', Icon: Link2 },
@@ -21,6 +58,7 @@ const EXERCISE_TABS = [
 const VOICE_SPEED_STEPS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0] as const;
 
 const formatVoiceSpeedLabel = (speed: number) => (speed === 1 ? 'Normal' : `${speed}x`);
+const formatFooterSpeedLabel = (speed: number) => `${speed === 1 ? 1 : speed}x`;
 
 // --- DATA STRUCTURES ---
 export interface WordItem {
@@ -83,6 +121,10 @@ export interface Lesson {
     options: string[];
     correctAnswer: string;
     english: string;
+    sentenceChinese?: string;
+    sentencePinyin?: string;
+    blankHan?: string;
+    segments?: SentenceSegment[];
   };
   trueFalse: {
     illustration: string;
@@ -95,6 +137,7 @@ export interface Lesson {
     avatar: string;
     bubbleText: string;
     pinyin: string;
+    segments?: SentenceSegment[];
   }[];
   strokeChars: StrokeCharacter[];
 }
@@ -164,7 +207,17 @@ const LESSONS_DATA: Lesson[] = [
       pinyin: "míngzì",
       options: ["名字", "高兴", "苹果"],
       correctAnswer: "名字",
-      english: "What is your name?"
+      english: "What is your name?",
+      sentenceChinese: "你叫什么名字？",
+      sentencePinyin: "nǐ jiào shénme míngzì",
+      blankHan: "名字",
+      segments: [
+        { text: "你", pinyin: "nǐ" },
+        { text: "叫", pinyin: "jiào" },
+        { text: "什么", pinyin: "shénme" },
+        { text: "名字", pinyin: "míngzì" },
+        { text: "？", pinyin: "", speakable: false },
+      ],
     },
     trueFalse: {
       illustration: "🎒🏫",
@@ -173,8 +226,40 @@ const LESSONS_DATA: Lesson[] = [
       explanation: "“学中文”的意思是 'Study Chinese'。这代表我们一起快乐学汉语！"
     },
     comicRoleplay: [
-      { name: "小明", avatar: "👦", bubbleText: "你好！你叫什么名字？", pinyin: "Nǐ hǎo! Nǐ jiào shénme míngzì?" },
-      { name: "美林", avatar: "👧", bubbleText: "你好！我叫美林。我们学中文吧！", pinyin: "Nǐ hǎo! Wǒ jiào Měilín. Wǒmen xué Zhōngwén ba!" }
+      {
+        name: "小明",
+        avatar: "👦",
+        bubbleText: "你好！你叫什么名字？",
+        pinyin: "Nǐ hǎo! Nǐ jiào shénme míngzì?",
+        segments: [
+          { text: "你好", pinyin: "Nǐ hǎo" },
+          { text: "！", pinyin: "", speakable: false },
+          { text: "你", pinyin: "Nǐ" },
+          { text: "叫", pinyin: "jiào" },
+          { text: "什么", pinyin: "shénme" },
+          { text: "名字", pinyin: "míngzì" },
+          { text: "？", pinyin: "", speakable: false },
+        ],
+      },
+      {
+        name: "美林",
+        avatar: "👧",
+        bubbleText: "你好！我叫美林。我们学中文吧！",
+        pinyin: "Nǐ hǎo! Wǒ jiào Měilín. Wǒmen xué Zhōngwén ba!",
+        segments: [
+          { text: "你好", pinyin: "Nǐ hǎo" },
+          { text: "！", pinyin: "", speakable: false },
+          { text: "我", pinyin: "Wǒ" },
+          { text: "叫", pinyin: "jiào" },
+          { text: "美林", pinyin: "Měilín" },
+          { text: "。", pinyin: "", speakable: false },
+          { text: "我们", pinyin: "Wǒmen" },
+          { text: "学", pinyin: "xué" },
+          { text: "中文", pinyin: "Zhōngwén" },
+          { text: "吧", pinyin: "ba" },
+          { text: "！", pinyin: "", speakable: false },
+        ],
+      },
     ],
     strokeChars: [
       {
@@ -268,7 +353,14 @@ const LESSONS_DATA: Lesson[] = [
       pinyin: "píngguǒ",
       options: ["苹果", "你们", "高兴"],
       correctAnswer: "苹果",
-      english: "three apples"
+      english: "three apples",
+      sentenceChinese: "三个苹果",
+      sentencePinyin: "sān gè píngguǒ",
+      blankHan: "苹果",
+      segments: [
+        { text: "三个", pinyin: "sān gè" },
+        { text: "苹果", pinyin: "píngguǒ" },
+      ],
     },
     trueFalse: {
       illustration: "🍎🎒",
@@ -277,8 +369,40 @@ const LESSONS_DATA: Lesson[] = [
       explanation: "“十”是数字 10，“苹果”是 Apple，所以是 '10 apples'。数数让我们更有信心！"
     },
     comicRoleplay: [
-      { name: "小明", avatar: "👦", bubbleText: "一二三，共有几个苹果？", pinyin: "Yī èr sān, gòng yǒu jǐ gè píngguǒ?" },
-      { name: "美林", avatar: "👧", bubbleText: "这里有一二三...三个红苹果！", pinyin: "Zhèlǐ yǒu yī èr sān... sān gè hóng píngguǒ!" }
+      {
+        name: "小明",
+        avatar: "👦",
+        bubbleText: "一二三，共有几个苹果？",
+        pinyin: "Yī èr sān, gòng yǒu jǐ gè píngguǒ?",
+        segments: [
+          { text: "一", pinyin: "Yī" },
+          { text: "、", pinyin: "", speakable: false },
+          { text: "二", pinyin: "èr" },
+          { text: "、", pinyin: "", speakable: false },
+          { text: "三", pinyin: "sān" },
+          { text: "，", pinyin: "", speakable: false },
+          { text: "共有", pinyin: "gòng yǒu" },
+          { text: "几个", pinyin: "jǐ gè" },
+          { text: "苹果", pinyin: "píngguǒ" },
+          { text: "？", pinyin: "", speakable: false },
+        ],
+      },
+      {
+        name: "美林",
+        avatar: "👧",
+        bubbleText: "这里有一二三...三个红苹果！",
+        pinyin: "Zhèlǐ yǒu yī èr sān... sān gè hóng píngguǒ!",
+        segments: [
+          { text: "这里", pinyin: "Zhèlǐ" },
+          { text: "有", pinyin: "yǒu" },
+          { text: "一二三", pinyin: "yī èr sān" },
+          { text: "...", pinyin: "", speakable: false },
+          { text: "三个", pinyin: "sān gè" },
+          { text: "红", pinyin: "hóng" },
+          { text: "苹果", pinyin: "píngguǒ" },
+          { text: "！", pinyin: "", speakable: false },
+        ],
+      },
     ],
     strokeChars: [
       {
@@ -327,9 +451,9 @@ const CURRICULUM_UNITS: CurriculumUnit[] = [
     titleZh: '我和你',
     titleEn: 'You and I',
     items: [
-      { kind: 'lesson', lessonNum: 1, label: '你好' },
-      { kind: 'lesson', lessonNum: 2, label: '你叫什么' },
-      { kind: 'lesson', lessonNum: 3, label: '你家在哪儿' },
+      { kind: 'lesson', lessonNum: 1, label: '你好', sublabel: 'Ni hao' },
+      { kind: 'lesson', lessonNum: 2, label: '你叫什么', sublabel: "What's Your Name?" },
+      { kind: 'lesson', lessonNum: 3, label: '你家在哪儿', sublabel: 'Where is Your Home?' },
       { kind: 'culture', label: 'Chinese Culture' },
       { kind: 'unit-summary', label: '单元小结', sublabel: 'Unit Review' },
     ],
@@ -339,9 +463,9 @@ const CURRICULUM_UNITS: CurriculumUnit[] = [
     titleZh: '我的家',
     titleEn: 'My Family',
     items: [
-      { kind: 'lesson', lessonNum: 4, label: '爸爸、妈妈' },
-      { kind: 'lesson', lessonNum: 5, label: '我有一只小猫' },
-      { kind: 'lesson', lessonNum: 6, label: '我家不大' },
+      { kind: 'lesson', lessonNum: 4, label: '爸爸、妈妈', sublabel: 'Dad and Mom' },
+      { kind: 'lesson', lessonNum: 5, label: '我有一只小猫', sublabel: 'I Have a Kitten' },
+      { kind: 'lesson', lessonNum: 6, label: '我家不大', sublabel: 'My Home Is Not Big' },
       { kind: 'culture', label: 'Chinese Culture' },
       { kind: 'unit-summary', label: '单元小结', sublabel: 'Unit Review' },
     ],
@@ -351,9 +475,9 @@ const CURRICULUM_UNITS: CurriculumUnit[] = [
     titleZh: '饮食和用餐',
     titleEn: 'Food and Dining',
     items: [
-      { kind: 'lesson', lessonNum: 7, label: '喝牛奶，不喝咖啡' },
-      { kind: 'lesson', lessonNum: 8, label: '我要苹果，你呢' },
-      { kind: 'lesson', lessonNum: 9, label: '我喜欢海鲜' },
+      { kind: 'lesson', lessonNum: 7, label: '喝牛奶，不喝咖啡', sublabel: 'Milk, Not Coffee' },
+      { kind: 'lesson', lessonNum: 8, label: '我要苹果，你呢', sublabel: 'Apples for Me, How About You?' },
+      { kind: 'lesson', lessonNum: 9, label: '我喜欢海鲜', sublabel: 'I Like Seafood' },
       { kind: 'culture', label: 'Chinese Culture' },
       { kind: 'unit-summary', label: '单元小结', sublabel: 'Unit Review' },
     ],
@@ -363,9 +487,9 @@ const CURRICULUM_UNITS: CurriculumUnit[] = [
     titleZh: '学校生活',
     titleEn: 'School Life',
     items: [
-      { kind: 'lesson', lessonNum: 10, label: '中文课' },
-      { kind: 'lesson', lessonNum: 11, label: '我们班' },
-      { kind: 'lesson', lessonNum: 12, label: '我去图书馆' },
+      { kind: 'lesson', lessonNum: 10, label: '中文课', sublabel: 'Chinese Class' },
+      { kind: 'lesson', lessonNum: 11, label: '我们班', sublabel: 'Our Class' },
+      { kind: 'lesson', lessonNum: 12, label: '我去图书馆', sublabel: 'I Go to the Library' },
       { kind: 'culture', label: 'Chinese Culture' },
       { kind: 'unit-summary', label: '单元小结', sublabel: 'Unit Review' },
     ],
@@ -375,9 +499,9 @@ const CURRICULUM_UNITS: CurriculumUnit[] = [
     titleZh: '时间和天气',
     titleEn: 'Time and Weather',
     items: [
-      { kind: 'lesson', lessonNum: 13, label: '现在几点' },
-      { kind: 'lesson', lessonNum: 14, label: '我的生日' },
-      { kind: 'lesson', lessonNum: 15, label: '今天不冷' },
+      { kind: 'lesson', lessonNum: 13, label: '现在几点', sublabel: 'What Time Is It?' },
+      { kind: 'lesson', lessonNum: 14, label: '我的生日', sublabel: 'My Birthday' },
+      { kind: 'lesson', lessonNum: 15, label: '今天不冷', sublabel: "It's Not Cold Today" },
       { kind: 'culture', label: 'Chinese Culture' },
       { kind: 'unit-summary', label: '单元小结', sublabel: 'Unit Review' },
     ],
@@ -387,9 +511,9 @@ const CURRICULUM_UNITS: CurriculumUnit[] = [
     titleZh: '职业和工作',
     titleEn: 'Work Life and Professions',
     items: [
-      { kind: 'lesson', lessonNum: 16, label: '他是医生' },
-      { kind: 'lesson', lessonNum: 17, label: '他在医院工作' },
-      { kind: 'lesson', lessonNum: 18, label: '我想做演员' },
+      { kind: 'lesson', lessonNum: 16, label: '他是医生', sublabel: 'He Is a Doctor' },
+      { kind: 'lesson', lessonNum: 17, label: '他在医院工作', sublabel: 'He Works at a Hospital' },
+      { kind: 'lesson', lessonNum: 18, label: '我想做演员', sublabel: 'I Want to Be an Actor' },
       { kind: 'culture', label: 'Chinese Culture' },
       { kind: 'unit-summary', label: '单元小结', sublabel: 'Unit Review' },
     ],
@@ -399,9 +523,9 @@ const CURRICULUM_UNITS: CurriculumUnit[] = [
     titleZh: '兴趣和爱好',
     titleEn: 'Interests and Hobbies',
     items: [
-      { kind: 'lesson', lessonNum: 19, label: '你的爱好是什么' },
-      { kind: 'lesson', lessonNum: 20, label: '你会打网球吗' },
-      { kind: 'lesson', lessonNum: 21, label: '我天天看电视' },
+      { kind: 'lesson', lessonNum: 19, label: '你的爱好是什么', sublabel: 'What Are Your Hobbies?' },
+      { kind: 'lesson', lessonNum: 20, label: '你会打网球吗', sublabel: 'Can You Play Tennis?' },
+      { kind: 'lesson', lessonNum: 21, label: '我天天看电视', sublabel: 'I Watch TV Every Day' },
       { kind: 'culture', label: 'Chinese Culture' },
       { kind: 'unit-summary', label: '单元小结', sublabel: 'Unit Review' },
     ],
@@ -411,9 +535,9 @@ const CURRICULUM_UNITS: CurriculumUnit[] = [
     titleZh: '交通和旅游',
     titleEn: 'Transportation and Travel',
     items: [
-      { kind: 'lesson', lessonNum: 22, label: '这儿是火车站' },
-      { kind: 'lesson', lessonNum: 23, label: '我坐飞机去' },
-      { kind: 'lesson', lessonNum: 24, label: '车站在前边' },
+      { kind: 'lesson', lessonNum: 22, label: '这儿是火车站', sublabel: 'This Is the Train Station' },
+      { kind: 'lesson', lessonNum: 23, label: '我坐飞机去', sublabel: 'I Go by Plane' },
+      { kind: 'lesson', lessonNum: 24, label: '车站在前边', sublabel: 'The Station Is Ahead' },
       { kind: 'culture', label: 'Chinese Culture' },
       { kind: 'unit-summary', label: '单元小结', sublabel: 'Unit Review' },
     ],
@@ -595,15 +719,20 @@ export default function FunChineseInteractiveEbook() {
         onClick={handleTap}
         disabled={mode === 'exercise'}
         className={`textbook-speech-bubble ${align === 'left' ? 'textbook-speech-bubble-left self-start' : 'textbook-speech-bubble-right self-end'} ${
+          mode === 'shadow' ? 'textbook-speech-bubble-shadow' : ''
+        } ${
           isActiveReadSentence || isSentencePlaying ? 'ring-2 ring-orange-300' :
-          isShadowSelected ? 'ring-2 ring-pink-200' : ''
+          isShadowSelected ? 'ring-2 ring-[#008B8B]/40 textbook-speech-bubble-shadow-selected' : ''
         }`}
       >
         {(mode === 'shadow' && isShadowSelected) && (
-          <span className="absolute -top-2 -left-2 w-5 h-5 bg-pink-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{shadowSelectionIndex + 1}</span>
+          <span className="absolute -top-2 -left-2 w-5 h-5 bg-[#008B8B] text-white text-[9px] font-bold rounded-full flex items-center justify-center">{shadowSelectionIndex + 1}</span>
         )}
         <p className="text-[10px] text-sky-700 font-semibold leading-snug mb-0.5" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>{sentence.pinyin}</p>
         <p className="text-sm font-bold text-slate-800 leading-snug" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{sentence.chinese}</p>
+        {mode === 'shadow' && (
+          <p className="text-[9px] text-slate-500 mt-0.5 leading-snug">{sentence.english}</p>
+        )}
         {mode === 'repeat' && showReadHighlights && renderTextbookListenChip(sentence.chinese, `bubble-listen-${sentence.id}`)}
       </button>
     );
@@ -1064,50 +1193,36 @@ export default function FunChineseInteractiveEbook() {
               type="button"
               onClick={() => navigate(-1)}
               aria-label="Back"
-              className="shrink-0 w-[52px] h-[52px] rounded-full bg-white/95 text-slate-700 border border-slate-200 shadow-[0_2px_8px_rgba(15,23,42,0.12)] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+              className="ebook-header-circle-btn shrink-0"
             >
-              <ChevronLeft className="w-[30px] h-[30px]" strokeWidth={2.25} />
+              <ChevronLeft className="ebook-header-circle-icon" strokeWidth={2.25} />
             </button>
           </div>
 
-          {/* Core Brand segmented control for learning modes */}
-          <div className="flex items-center bg-orange-100/40 p-1.5 rounded-2xl border border-orange-200/50">
-            <button
-              onClick={() => switchMode('read')}
-              className={`min-h-[44px] py-2 px-4 rounded-xl text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                mode === 'read' ? 'bg-[#FCFAF0] text-amber-700 shadow-sm border border-orange-200/40' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <span className="text-base">📖</span>
-              <span>Tap to Read</span>
-            </button>
-            <button
-              onClick={() => switchMode('repeat')}
-              className={`min-h-[44px] py-2 px-4 rounded-xl text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                mode === 'repeat' ? 'bg-[#FCFAF0] text-sky-700 shadow-sm border border-orange-200/40' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <span className="text-base">🔁</span>
-              <span>Repeat Range</span>
-            </button>
-            <button
-              onClick={() => switchMode('shadow')}
-              className={`min-h-[44px] py-2 px-4 rounded-xl text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                mode === 'shadow' ? 'bg-[#FCFAF0] text-pink-700 shadow-sm border border-orange-200/40' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <span className="text-base">🎙️</span>
-              <span>Shadow Reading</span>
-            </button>
-            <button
-              onClick={() => switchMode('exercise')}
-              className={`min-h-[44px] py-2 px-4 rounded-xl text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                mode === 'exercise' ? 'bg-[#FCFAF0] text-emerald-700 shadow-sm border border-orange-200/40' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <span className="text-base">📝</span>
-              <span>Practice</span>
-            </button>
+          {/* Core mode bar — icon-only until selected (reference capsule UI) */}
+          <div className="ebook-mode-bar" role="tablist" aria-label="Learning modes">
+            {LEARNING_MODES.map(({ id, label, Icon }) => {
+              const isActive = mode === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-label={label}
+                  onClick={() => switchMode(id)}
+                  className={`ebook-mode-btn ${isActive ? 'ebook-mode-btn-active' : ''}`}
+                >
+                  <Icon className="ebook-mode-icon" strokeWidth={2} aria-hidden />
+                  {isActive && (
+                    <>
+                      <span className="ebook-mode-divider" aria-hidden />
+                      <span className="ebook-mode-label">{label}</span>
+                    </>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           <div className="flex items-center gap-2.5">
@@ -1118,28 +1233,27 @@ export default function FunChineseInteractiveEbook() {
                 setShowSettings(false);
               }}
               id="btn-lesson-picker"
-              className={`min-w-[44px] min-h-[44px] p-2.5 border rounded-xl transition-all hover:scale-105 shadow-sm flex items-center justify-center ${
-                showLessonPicker
-                  ? 'bg-orange-100 border-orange-300 text-orange-700'
-                  : 'bg-[#FAF8F5] hover:bg-orange-50 border-orange-200/40 text-slate-600'
-              }`}
+              className={`ebook-header-circle-btn ${showLessonPicker ? 'ebook-header-circle-btn-active' : ''}`}
               title="Lessons"
               aria-label="Lessons"
+              aria-pressed={showLessonPicker}
             >
-              <LayoutList className="w-5 h-5" />
+              <EbookLessonsIcon className="ebook-header-circle-icon" />
             </button>
 
             <button
+              type="button"
               onClick={() => {
                 setShowSettings((v) => !v);
                 setShowLessonPicker(false);
               }}
               id="btn-settings-toggle"
-              className="min-w-[44px] min-h-[44px] p-2.5 bg-[#FAF8F5] hover:bg-orange-50 border border-orange-200/40 text-slate-600 rounded-xl transition-all hover:scale-105 shadow-sm flex items-center justify-center"
+              className={`ebook-header-circle-btn ${showSettings ? 'ebook-header-circle-btn-active' : ''}`}
               title="Settings"
               aria-label="Settings"
+              aria-pressed={showSettings}
             >
-              <Settings className="w-5 h-5" />
+              <EbookSettingsIcon className="ebook-header-circle-icon" />
             </button>
           </div>
         </header>
@@ -1185,6 +1299,8 @@ export default function FunChineseInteractiveEbook() {
           }`}>
 
             <div className="textbook-left-content flex-1 flex flex-col min-h-0 overflow-hidden py-1">
+              {mode !== 'shadow' && (
+              <>
               {/* Textbook left page — lesson header + scene */}
               <div className="textbook-left-header relative mb-2 shrink-0">
                 <div className="textbook-wave-band flex items-end gap-3 pr-[58px] min-h-[72px]">
@@ -1220,14 +1336,9 @@ export default function FunChineseInteractiveEbook() {
               </div>
 
               {/* Mode hint — compact */}
-              {mode !== 'read' && mode !== 'repeat' && (
+              {mode === 'exercise' && (
                 <div className="mb-2 px-2.5 py-1.5 rounded-xl bg-[#F9F7F1]/90 border border-orange-100/40 text-[10px] text-slate-600 shrink-0">
-                  {mode === 'shadow' && (
-                    <p><strong className="text-pink-700">Shadow Reading</strong> — Tap lines to build your queue.</p>
-                  )}
-                  {mode === 'exercise' && (
-                    <p><strong className="text-emerald-700">Practice</strong> — Use the right page for exercises.</p>
-                  )}
+                  <p><strong className="text-emerald-700">Practice</strong> — Use the right page for exercises.</p>
                 </div>
               )}
 
@@ -1301,8 +1412,67 @@ export default function FunChineseInteractiveEbook() {
                 );
               })()}
 
+              </>
+              )}
+
+              {mode === 'shadow' && (
+                <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 pr-0.5 textbook-shadow-left">
+                  <div className="shrink-0 flex items-center gap-2 px-1 pt-1">
+                    <span className="textbook-lesson-badge shrink-0">{currentLesson.id}</span>
+                    <div className="min-w-0">
+                      <h2 className="text-sm font-bold text-slate-800" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
+                        {currentLesson.title}
+                      </h2>
+                      <p className="text-[10px] text-slate-500 font-semibold">{currentLesson.pinyin}</p>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0 px-1">
+                    {currentLesson.textbookLeft.sentences.slice(0, 1).map((sentence) => (
+                      <div key={sentence.id} className="textbook-shadow-featured-bubble">
+                        {renderTextbookBubble(sentence, 'left')}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="shrink-0 px-1 space-y-2.5">
+                    <div className="textbook-shadow-exercise-block">
+                      <p className="textbook-shadow-exercise-title">
+                        <span className="textbook-shadow-exercise-num">1</span>
+                        听一听，标一标。 Listen and number the pictures.
+                      </p>
+                      <div className="textbook-shadow-exercise-grid" aria-hidden="true">
+                        {['😴', '⏰', '👥', '📅'].map((icon) => (
+                          <div key={icon} className="textbook-shadow-exercise-cell">{icon}</div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="textbook-shadow-exercise-block">
+                      <p className="textbook-shadow-exercise-title">
+                        <span className="textbook-shadow-exercise-num">2</span>
+                        听一听，选一选。 Listen and choose.
+                      </p>
+                      <div className="textbook-shadow-exercise-choices" aria-hidden="true">
+                        {['🏀', '📺', '🍜'].map((icon) => (
+                          <div key={icon} className="textbook-shadow-exercise-choice">{icon}</div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="px-1 pb-2 space-y-2">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#008B8B]">Tap lines to shadow</p>
+                    {currentLesson.textbookLeft.sentences.slice(1).map((sentence, idx) => (
+                      <div key={sentence.id} className="max-w-full">
+                        {renderTextbookBubble(sentence, idx % 2 === 0 ? 'left' : 'right')}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             {/* Pagination textbook footer navigation indicators */}
-            {!isFocusMode && (
+            {!isFocusMode && mode !== 'shadow' && (
             <div className="mt-3 pt-2.5 border-t border-orange-100/60 flex items-center justify-between select-none">
               <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">快乐中文 C-Lingo © 2026</p>
               <div className="flex items-center gap-1.5">
@@ -1335,124 +1505,153 @@ export default function FunChineseInteractiveEbook() {
           {/* =========================================
               RIGHT PAGE: ADAPTIVE INTERACTION MODES
               ========================================= */}
-          <section className={`textbook-right-page-shell flex flex-col bg-[#FDFDFB] text-slate-800 min-h-0 overflow-hidden relative ${
+          <section className={`textbook-right-page-shell flex flex-col text-slate-800 min-h-0 overflow-hidden relative ${
+            mode === 'shadow'
+              ? 'speaking-reading-shell'
+              : mode === 'exercise'
+                ? 'exercise-panel-shell'
+                : 'bg-[#FDFDFB]'
+          } ${
             isFocusMode
-              ? 'p-3 rounded-xl border border-orange-100/50 shadow-sm md:ml-0'
-              : 'rounded-2xl p-4 border border-orange-100/60 shadow-sm md:ml-1'
+              ? mode === 'shadow'
+                ? 'speaking-reading-shell-focus md:ml-0'
+                : mode === 'exercise'
+                  ? 'exercise-panel-shell-focus md:ml-0'
+                  : 'p-3 rounded-xl border border-orange-100/50 shadow-sm md:ml-0'
+              : mode === 'shadow' || mode === 'exercise'
+                ? 'md:ml-1'
+                : 'rounded-2xl p-4 border border-orange-100/60 shadow-sm md:ml-1'
           }`}>
             
             {mode === 'shadow' ? (
-              <>
-                <div className="flex items-center justify-between border-b pb-2 border-orange-100/80 mb-2 select-none shrink-0">
-                  <h3 className="font-extrabold text-[#2C2925] text-sm flex items-center gap-2 min-w-0">
-                    <span className="p-1 bg-pink-100 text-pink-600 rounded-lg text-xs shrink-0">🎙️</span>
-                    <span className="truncate">Shadow Reading</span>
-                    {selectedShadowIds.length > 0 && (
-                      <span className="text-[10px] bg-pink-100 px-2 py-0.5 rounded-full text-pink-700 font-mono font-bold shrink-0">
-                        {selectedShadowIds.length}
-                      </span>
-                    )}
-                  </h3>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={startShadowTraining}
-                      disabled={!canShadowAll}
-                      title={canShadowAll ? 'Start shadow reading for selected lines' : 'Select 2+ lines, or turn on Select all'}
-                      className={`min-h-[36px] px-2.5 rounded-lg text-[10px] font-bold border transition-colors flex items-center gap-1 ${
-                        canShadowAll
-                          ? 'bg-pink-600 border-pink-500 text-white hover:bg-pink-500'
-                          : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
-                      }`}
-                    >
-                      <Mic className="w-3 h-3" />
-                      <span>Shadow All</span>
-                    </button>
+              <div className="speaking-reading-panel">
+                <div className="speaking-reading-header">
+                  <h3 className="speaking-reading-title">Speaking Reading</h3>
+                  <div className="speaking-reading-toolbar">
                     <button
                       type="button"
                       role="switch"
                       aria-checked={shadowSelectAllEnabled}
                       onClick={toggleShadowSelectAll}
-                      title="Select all lines on this page"
-                      className={`min-h-[36px] px-2.5 rounded-lg text-[10px] font-bold border transition-colors ${
-                        shadowSelectAllEnabled
-                          ? 'bg-pink-100 border-pink-300 text-pink-700'
-                          : 'bg-[#FAF8F5] border-orange-100 text-slate-500 hover:bg-orange-50'
-                      }`}
+                      title={shadowSelectAllEnabled ? 'Deselect all lines' : 'Select all lines on this page'}
+                      className={`speaking-reading-chip${shadowSelectAllEnabled ? ' is-on' : ''}`}
                     >
-                      Select all
+                      {shadowSelectAllEnabled && (
+                        <Check className="speaking-reading-chip-icon" strokeWidth={2.75} aria-hidden />
+                      )}
+                      <span>{shadowSelectAllEnabled ? 'All selected' : 'Select all'}</span>
+                    </button>
+                    <span className="speaking-reading-toolbar-divider" aria-hidden />
+                    <button
+                      type="button"
+                      onClick={startShadowTraining}
+                      disabled={!canShadowAll}
+                      title={canShadowAll ? 'Start shadow reading for selected lines' : 'Select 2+ lines, or turn on Select all'}
+                      className={`speaking-reading-btn speaking-reading-btn-primary${canShadowAll ? '' : ' is-disabled'}`}
+                    >
+                      <Mic className="speaking-reading-btn-icon" strokeWidth={2.25} />
+                      <span>Shadow All</span>
                     </button>
                   </div>
                 </div>
 
-                <div className="textbook-right-scroll flex-1 min-h-0 overflow-y-auto">
+                <div className="speaking-reading-tip" role="note">
+                  <p className="speaking-reading-tip-text">
+                    Tap a word, listen, then shadow it aloud.
+                  </p>
+                  <span className="speaking-reading-tip-icon" aria-hidden />
+                </div>
+
+                <div className="speaking-reading-scroll textbook-right-scroll">
                   {selectedShadowSentences.length === 0 ? (
-                    <div className="flex flex-col justify-center items-center px-3 py-8 select-none min-h-[200px]">
-                      <div className="bg-pink-50/70 rounded-2xl border border-dashed border-pink-200 p-6 text-xs text-slate-400 w-full text-center">
-                        Tap lines on the left, or turn on Select all
-                      </div>
-                    </div>
+                    <div className="speaking-reading-empty" aria-hidden />
                   ) : (
-                    <div className="space-y-2.5 pr-0.5 pb-2">
+                    <div className="speaking-reading-list">
                       {selectedShadowSentences.map((sentence, idx) => {
                         const score = shadowSentenceScores[sentence.id];
+                        const segments = getSentenceSegments(sentence);
                         return (
                           <div
                             key={sentence.id}
-                            className={`rounded-2xl border p-3 transition-all ${
+                            className={`speaking-reading-card${
                               score != null && score >= 80
-                                ? 'bg-emerald-50/40 border-emerald-200'
+                                ? ' is-pass'
                                 : score != null
-                                  ? 'bg-amber-50/50 border-amber-200'
-                                  : 'bg-pink-50/60 border-pink-200'
+                                  ? ' is-retry'
+                                  : ''
                             }`}
                           >
-                            <div className="flex items-start justify-between gap-2 mb-1">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] font-extrabold text-pink-600 bg-pink-100 px-1.5 py-0.5 rounded-md">
-                                  {idx + 1}
-                                </span>
-                                {score == null && (
-                                  <span className="text-[9px] font-bold text-slate-400 uppercase">Pending</span>
-                                )}
+                            {score != null && (
+                              <span className={`speaking-reading-card-score${
+                                score >= 80 ? ' is-pass' : ' is-retry'
+                              }`}>
+                                {score}
+                              </span>
+                            )}
+
+                            <div className="speaking-reading-card-top">
+                              <span className="speaking-reading-card-num" aria-hidden>
+                                {idx + 1}
+                              </span>
+                              <div className="speaking-reading-ruby-line">
+                                {segments.map((segment, segIdx) => {
+                                  const wordKey = `word-${sentence.id}-${segIdx}`;
+                                  const isActiveWord = activePlayingKey === wordKey;
+                                  if (segment.speakable === false) {
+                                    return (
+                                      <span
+                                        key={wordKey}
+                                        className="speaking-reading-ruby-punct"
+                                        style={{ fontFamily: 'KaiTi, STKaiti, serif' }}
+                                      >
+                                        {segment.text}
+                                      </span>
+                                    );
+                                  }
+                                  return (
+                                    <button
+                                      key={wordKey}
+                                      type="button"
+                                      onClick={(e) => handleReadWordTap(sentence, segment, segIdx, e)}
+                                      className={`speaking-reading-ruby-word${isActiveWord ? ' is-active' : ''}`}
+                                    >
+                                      <ruby style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
+                                        {segment.text}
+                                        {showPinyin && segment.pinyin ? (
+                                          <rt style={{ fontFamily: 'OPPO Sans, sans-serif' }}>{segment.pinyin}</rt>
+                                        ) : null}
+                                      </ruby>
+                                    </button>
+                                  );
+                                })}
                               </div>
-                              {score != null && (
-                                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full shrink-0 ${
-                                  score >= 80 ? 'text-emerald-700 bg-emerald-100' : 'text-amber-700 bg-amber-100'
-                                }`}>
-                                  {score}
-                                </span>
-                              )}
                             </div>
-                            <p className="text-sm font-bold text-slate-800 leading-relaxed" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
-                              {sentence.chinese}
-                            </p>
-                            {showPinyin && (
-                              <p className="text-[10px] text-amber-800 font-mono mt-0.5" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>
-                                {sentence.pinyin}
-                              </p>
-                            )}
+
                             {aiAssistEnabled && (
-                              <p className="text-[10px] text-slate-500 italic mt-0.5">
-                                {sentence.english}
-                              </p>
+                              <>
+                                <div className="speaking-reading-card-divider" aria-hidden />
+                                <p className="speaking-reading-card-en">{sentence.english}</p>
+                              </>
                             )}
-                            <div className="flex gap-2 mt-2.5">
+
+                            <div className="speaking-reading-card-actions">
                               <button
                                 type="button"
                                 onClick={() => speakZH(sentence.chinese, `shadow-${sentence.id}`)}
-                                className="flex-1 min-h-[44px] py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 border border-orange-200/50"
+                                className="speaking-reading-card-btn speaking-reading-card-btn-listen"
+                                aria-label="Listen"
+                                title="Listen"
                               >
-                                <Volume2 className="w-3.5 h-3.5" />
-                                <span>Listen</span>
+                                <Volume2 className="speaking-reading-card-btn-icon" strokeWidth={2.25} />
                               </button>
                               <button
                                 type="button"
                                 onClick={() => openFollowRead(sentence.chinese, sentence.pinyin, sentence.english, sentence.id, false)}
-                                className="flex-1 min-h-[44px] py-2 bg-pink-600 hover:bg-pink-500 text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-sm"
+                                className="speaking-reading-card-btn speaking-reading-card-btn-speak"
+                                aria-label="Speak and score"
+                                title="Speak and score"
                               >
-                                <Mic className="w-3.5 h-3.5" />
-                                <span>Speak & Score</span>
+                                <Mic className="speaking-reading-card-btn-icon" strokeWidth={2.25} />
                               </button>
                             </div>
                           </div>
@@ -1461,7 +1660,7 @@ export default function FunChineseInteractiveEbook() {
                     </div>
                   )}
                 </div>
-              </>
+              </div>
             ) : (
             <div className="textbook-right-scroll flex-1 min-h-0 overflow-y-auto">
             {mode === 'read' || mode === 'repeat' ? (
@@ -1551,72 +1750,73 @@ export default function FunChineseInteractiveEbook() {
                 </p>
               </div>
             ) : (
-              // Condition B: Render Standard Exercise panels with 5 custom tabs
-              <div className="flex-1 flex flex-col justify-between">
-                
-                {/* Horizontal Navigation tabs on the right side for exercises */}
-                <div className="flex items-center gap-1 overflow-x-auto border-b border-orange-100/60 pb-2 mb-3 select-none">
-                  {EXERCISE_TABS.map(({ id, label, Icon }) => (
-                    <button
-                      key={id}
-                      type="button"
-                      aria-label={label}
-                      title={label}
-                      onClick={() => { setExerciseTab(id); switchMode('exercise'); }}
-                      className={`min-h-[36px] min-w-[36px] py-1.5 px-2 rounded-lg text-[10px] font-bold transition-all whitespace-nowrap cursor-pointer flex items-center justify-center gap-1 ${
-                        exerciseTab === id
-                          ? 'bg-orange-600 text-white shadow-sm'
-                          : 'bg-[#FDFDFB] text-slate-600 hover:bg-orange-100/50'
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5 shrink-0" strokeWidth={2.25} />
-                      <span>{label}</span>
-                    </button>
-                  ))}
+              <div className="ebook-exercise-panel flex-1 flex flex-col min-h-0">
+                <div className="ebook-mode-bar ebook-exercise-tab-bar" role="tablist" aria-label="Exercise types">
+                  {EXERCISE_TABS.map(({ id, label, Icon }) => {
+                    const isActive = exerciseTab === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        role="tab"
+                        aria-selected={isActive}
+                        aria-label={label}
+                        onClick={() => { setExerciseTab(id); switchMode('exercise'); }}
+                        className={`ebook-mode-btn${isActive ? ' ebook-mode-btn-active' : ''}`}
+                      >
+                        <Icon className="ebook-mode-icon" strokeWidth={2} aria-hidden />
+                        {isActive && (
+                          <>
+                            <span className="ebook-mode-divider" aria-hidden />
+                            <span className="ebook-mode-label">{label}</span>
+                          </>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
 
-                {/* --- DISPLAY ACTIVE SUB-EXERCISE --- */}
-                <div className="flex-1 flex flex-col justify-between mt-1">
+                <div className="ebook-exercise-body">
 
                   {/* 1. MATCH PANEL */}
                   {exerciseTab === 'match' && (
-                    <div id="exercise-line-match" className="flex-1 flex flex-col overflow-y-auto">
-                      <div className="flex items-center justify-between text-xs select-none mb-2">
-                        <p className="font-extrabold text-slate-800">Word Match</p>
-                        <div className="flex items-center gap-2">
+                    <div id="exercise-line-match" className="ebook-exercise-view">
+                      <div className="ebook-exercise-head">
+                        <p className="ebook-exercise-title">Word Match</p>
+                        <div className="ebook-exercise-head-actions">
                           <button
                             type="button"
                             onClick={() => speakZH(currentLesson.vocabList.map((v) => v.chinese).join(''))}
-                            className="text-[10px] text-orange-700 font-bold flex items-center gap-1 px-2 py-1 bg-orange-100 rounded-lg border border-orange-200/40"
+                            className="ebook-exercise-chip-btn"
                           >
-                            <Volume2 className="w-3 h-3" /> Listen
+                            <Volume2 className="w-3.5 h-3.5" strokeWidth={2.25} />
+                            <span>Listen</span>
                           </button>
                           <button
+                            type="button"
                             onClick={() => {
                               setMatchOptions(currentLesson.matchOptions);
                               setSelectedLeft(null);
                               setMatchStatusMsg('');
                             }}
-                            className="text-[10px] text-orange-600 hover:underline font-extrabold flex items-center gap-1"
+                            className="ebook-exercise-link-btn"
                           >
-                            <RefreshCw className="w-2.5 h-2.5" /> Reset
+                            <RefreshCw className="w-3 h-3" strokeWidth={2.5} />
+                            <span>Reset</span>
                           </button>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3.5">
-                        <div className="space-y-2 select-none">
+                      <div className="ebook-exercise-match-grid">
+                        <div className="ebook-exercise-match-col">
                           {matchOptions.map((opt) => (
                             <button
                               key={opt.id}
+                              type="button"
                               disabled={opt.isMatched}
                               onClick={() => handleLeftMatchSelect(opt.id)}
-                              className={`w-full p-2.5 rounded-xl text-xs font-bold border text-left transition-all ${
-                                opt.isMatched
-                                  ? 'bg-emerald-50 border-emerald-200 text-emerald-400 line-through opacity-50'
-                                  : selectedLeft === opt.id
-                                    ? 'bg-amber-100 border-amber-400 text-amber-900 ring-2 ring-amber-300'
-                                    : 'bg-[#FDFDFB] hover:bg-orange-50 border-slate-250 text-slate-700'
+                              className={`ebook-exercise-option${
+                                opt.isMatched ? ' is-matched' : selectedLeft === opt.id ? ' is-selected' : ''
                               }`}
                             >
                               {opt.left}
@@ -1624,7 +1824,7 @@ export default function FunChineseInteractiveEbook() {
                           ))}
                         </div>
 
-                        <div className="space-y-2 select-none">
+                        <div className="ebook-exercise-match-col">
                           {matchOptions.map((opt, oIdx) => {
                             const charItem = matchOptions[(oIdx + 1) % matchOptions.length];
                             const actualTargetMatched = matchOptions.find((o) => o.right === charItem.right)?.isMatched;
@@ -1632,12 +1832,11 @@ export default function FunChineseInteractiveEbook() {
                             return (
                               <button
                                 key={oIdx}
+                                type="button"
                                 disabled={actualTargetMatched}
                                 onClick={() => handleRightMatchSelect(charItem.right)}
-                                className={`w-full p-2.5 rounded-xl text-xs font-extrabold border text-left transition-all ${
-                                  actualTargetMatched
-                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-600 opacity-50'
-                                    : 'bg-[#FDFDFB] hover:bg-orange-50 border-slate-250 text-slate-800'
+                                className={`ebook-exercise-option ebook-exercise-option-cn${
+                                  actualTargetMatched ? ' is-matched' : ''
                                 }`}
                               >
                                 <span style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{charItem.right}</span>
@@ -1648,70 +1847,68 @@ export default function FunChineseInteractiveEbook() {
                       </div>
 
                       {matchStatusMsg && (
-                        <p className="mt-3 text-xs text-orange-700 font-extrabold text-center select-none">{matchStatusMsg}</p>
+                        <p className="ebook-exercise-status is-error">{matchStatusMsg}</p>
                       )}
                       {matchOptions.every((o) => o.isMatched) && !matchStatusMsg && (
-                        <p className="mt-3 text-xs text-emerald-600 font-extrabold text-center select-none">All matched!</p>
+                        <p className="ebook-exercise-status is-success">All matched!</p>
                       )}
                     </div>
                   )}
 
                   {/* 2. FILL BLANK PANEL */}
                   {exerciseTab === 'fill' && (
-                    <div id="exercise-fill-blank" className="flex-1 flex flex-col overflow-y-auto">
-                      <div className="flex items-center justify-between mb-2 select-none">
-                        <p className="text-xs font-extrabold text-slate-800">Fill in the Blank</p>
+                    <div id="exercise-fill-blank" className="ebook-exercise-view">
+                      <div className="ebook-exercise-head">
+                        <p className="ebook-exercise-title">Fill in the Blank</p>
                         <button
                           type="button"
                           onClick={() => speakZH(currentLesson.fillBlank.audioText)}
-                          className="text-[10px] text-orange-700 font-bold flex items-center gap-1 px-2 py-1 bg-orange-100 rounded-lg border border-orange-200/40"
+                          className="ebook-exercise-chip-btn"
                         >
-                          <Volume2 className="w-3 h-3" /> Listen
+                          <Volume2 className="w-3.5 h-3.5" strokeWidth={2.25} />
+                          <span>Listen</span>
                         </button>
                       </div>
 
-                      <div className="bg-[#FDFDFB] rounded-2xl p-4 border border-orange-100 text-center shadow-sm">
-                          <span className="text-slate-400 italic font-serif text-xs block mb-2">"{currentLesson.fillBlank.english}"</span>
-                        <div className="text-lg font-extrabold tracking-wide text-slate-800" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
-                          你叫什么{' '}
-                          <span className="inline-block min-w-[4rem] px-2 py-0.5 border-b-2 border-dashed border-orange-400 text-orange-700">
-                            {fillInput || fillSelected || '____'}
-                          </span>
-                          ？
-                        </div>
-                          <span className="text-xs text-slate-400 font-mono block mt-2">
-                            nǐ jiào shénme ___ ?
-                          </span>
+                      <div className="ebook-exercise-card ebook-exercise-fill-card">
+                        <span className="ebook-exercise-fill-en">&ldquo;{currentLesson.fillBlank.english}&rdquo;</span>
+                        <EbookRubyLine
+                          text={currentLesson.fillBlank.sentenceChinese ?? currentLesson.fillBlank.audioText}
+                          pinyin={currentLesson.fillBlank.sentencePinyin ?? currentLesson.fillBlank.pinyin}
+                          segments={currentLesson.fillBlank.segments}
+                          showPinyin={showPinyin}
+                          blankHan={currentLesson.fillBlank.blankHan ?? currentLesson.fillBlank.correctAnswer}
+                          blankDisplay={fillInput || fillSelected || '____'}
+                          className="ebook-exercise-fill-ruby"
+                        />
                       </div>
 
-                      <div className="mt-3 flex gap-2">
+                      <div className="ebook-exercise-fill-row">
                         <input
                           type="text"
                           value={fillInput}
                           onChange={(e) => setFillInput(e.target.value)}
                           onKeyDown={(e) => { if (e.key === 'Enter') handleFillSubmit(); }}
                           placeholder="Type the missing word"
-                          className="flex-1 min-h-[44px] px-3 rounded-xl border border-orange-200/60 bg-white text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-300"
+                          className="ebook-exercise-input"
                           style={{ fontFamily: 'KaiTi, STKaiti, serif' }}
                         />
                         <button
                           type="button"
                           onClick={handleFillSubmit}
-                          className="min-h-[44px] px-4 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold"
+                          className="ebook-exercise-primary-btn"
                         >
                           Check
                         </button>
                       </div>
 
                       {fillFeedback && (
-                        <div className={`mt-3 p-3 rounded-2xl border select-none text-xs ${
-                          fillFeedback.isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-pink-50 border-pink-100'
-                        }`}>
-                          <p className={`font-bold flex items-center gap-1 ${fillFeedback.isCorrect ? 'text-emerald-700' : 'text-pink-700'}`}>
+                        <div className={`ebook-exercise-feedback${fillFeedback.isCorrect ? ' is-success' : ' is-error'}`}>
+                          <p className="ebook-exercise-feedback-title">
                             {fillFeedback.isCorrect ? <><Check className="w-4 h-4" /> Correct</> : <><X className="w-4 h-4" /> Try again</>}
                           </p>
                           {!fillFeedback.isCorrect && (
-                            <p className="text-slate-500 mt-1">Answer: {currentLesson.fillBlank.correctAnswer}</p>
+                            <p className="ebook-exercise-feedback-detail">Answer: {currentLesson.fillBlank.correctAnswer}</p>
                           )}
                         </div>
                       )}
@@ -1720,57 +1917,57 @@ export default function FunChineseInteractiveEbook() {
 
                   {/* 3. TRUE OR FALSE PANEL */}
                   {exerciseTab === 'truefalse' && (
-                    <div id="exercise-true-false" className="flex-1 flex flex-col justify-between">
+                    <div id="exercise-true-false" className="ebook-exercise-view ebook-exercise-view-spaced">
                       <div>
-                        <p className="text-xs font-extrabold text-slate-800 select-none">True or False</p>
+                        <p className="ebook-exercise-title">True or False</p>
 
-                        <div className="bg-[#FDFDFB] rounded-2xl p-4 text-center my-3 border border-orange-100 shadow-sm relative">
-                          <span className="text-5xl block filter drop-shadow mb-2 select-none">{currentLesson.trueFalse.illustration}</span>
-                          <p className="text-sm font-extrabold text-slate-800 leading-relaxed">{currentLesson.trueFalse.text}</p>
+                        <div className="ebook-exercise-card ebook-exercise-quiz-card">
+                          <span className="ebook-exercise-quiz-emoji">{currentLesson.trueFalse.illustration}</span>
+                          <p className="ebook-exercise-quiz-text">{currentLesson.trueFalse.text}</p>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3 select-none">
+                        <div className="ebook-exercise-quiz-actions">
                           <button
+                            type="button"
                             onClick={() => handleTrueFalseSelect(true)}
-                            className={`p-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                            className={`ebook-exercise-option ebook-exercise-quiz-btn${
                               trueFalseAnswer === true
                                 ? currentLesson.trueFalse.correctAnswer === true
-                                  ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                                  : 'bg-pink-50 border-pink-200 text-pink-600'
-                                : 'bg-[#FDFDFB] hover:bg-orange-50 border-slate-250 text-slate-700'
+                                  ? ' is-correct'
+                                  : ' is-wrong'
+                                : ''
                             }`}
                           >
-                            <span className="text-emerald-500 text-lg">✓</span> <span>True</span>
+                            <span className="ebook-exercise-quiz-mark is-true">✓</span>
+                            <span>True</span>
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleTrueFalseSelect(false)}
-                            className={`p-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                            className={`ebook-exercise-option ebook-exercise-quiz-btn${
                               trueFalseAnswer === false
                                 ? currentLesson.trueFalse.correctAnswer === false
-                                  ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                                  : 'bg-pink-50 border-pink-200 text-pink-600'
-                                : 'bg-[#FDFDFB] hover:bg-orange-50 border-slate-250 text-slate-700'
+                                  ? ' is-correct'
+                                  : ' is-wrong'
+                                : ''
                             }`}
                           >
-                            <span className="text-pink-500 text-lg">✗</span> <span>False</span>
+                            <span className="ebook-exercise-quiz-mark is-false">✗</span>
+                            <span>False</span>
                           </button>
                         </div>
                       </div>
 
                       {trueFalseSubmitted && (
-                        <div className={`mt-3 p-3.5 rounded-2xl border text-xs leading-relaxed select-none ${
-                          trueFalseAnswer === currentLesson.trueFalse.correctAnswer
-                            ? 'bg-emerald-50 border-emerald-200 text-slate-800'
-                            : 'bg-pink-50 border-pink-100 text-slate-800'
+                        <div className={`ebook-exercise-feedback${
+                          trueFalseAnswer === currentLesson.trueFalse.correctAnswer ? ' is-success' : ' is-error'
                         }`}>
-                          <p className={`font-extrabold flex items-center gap-1.5 ${
-                            trueFalseAnswer === currentLesson.trueFalse.correctAnswer ? 'text-emerald-700' : 'text-pink-700'
-                          }`}>
+                          <p className="ebook-exercise-feedback-title">
                             {trueFalseAnswer === currentLesson.trueFalse.correctAnswer
                               ? <><Check className="w-4 h-4" /> Correct — {currentLesson.trueFalse.correctAnswer ? 'True' : 'False'}</>
                               : <><X className="w-4 h-4" /> Incorrect — answer is {currentLesson.trueFalse.correctAnswer ? 'True' : 'False'}</>}
                           </p>
-                          <p className="mt-2 text-slate-600 font-medium leading-relaxed">{currentLesson.trueFalse.explanation}</p>
+                          <p className="ebook-exercise-feedback-detail">{currentLesson.trueFalse.explanation}</p>
                         </div>
                       )}
                     </div>
@@ -1778,32 +1975,37 @@ export default function FunChineseInteractiveEbook() {
 
                   {/* 4. DIALOGUE ROLE-PLAY WITH AUDIO SAVER */}
                   {exerciseTab === 'roleplay' && (
-                    <div id="exercise-roleplay" className="flex-1 flex flex-col justify-between">
+                    <div id="exercise-roleplay" className="ebook-exercise-view ebook-exercise-view-spaced">
                       <div>
-                        <p className="text-xs font-extrabold text-slate-800 select-none">Complete the Dialogue</p>
-                        <p className="text-[10px] text-slate-500 mt-0.5 select-none mb-3">Finish each line based on the context.</p>
+                        <p className="ebook-exercise-title">Complete the Dialogue</p>
+                        <p className="ebook-exercise-subtitle">Finish each line based on the context.</p>
 
-                        <div className="space-y-3.5 max-h-56 overflow-y-auto pr-1">
+                        <div className="ebook-exercise-roleplay-list">
                           {currentLesson.comicRoleplay.map((chat, cIdx) => (
-                            <div key={cIdx} className="flex gap-2.5 items-start">
-                              <span className="text-2xl filter drop-shadow bg-[#FDFDFB] p-2 rounded-xl border border-orange-100 shadow-sm select-none">{chat.avatar}</span>
-                              <div className="flex-1 bg-[#FDFDFB] rounded-r-2xl rounded-bl-2xl p-2.5 border border-orange-100 relative shadow-sm text-left">
-                                <span className="text-[10px] text-orange-600 block font-extrabold select-none">{chat.name}：</span>
-                                
-                                <p className="text-xs font-extrabold text-slate-800 mt-0.5" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{chat.bubbleText}</p>
-                                <p className="text-[9px] text-slate-400 font-mono font-semibold mt-0.5">{chat.pinyin}</p>
+                            <div key={cIdx} className="ebook-exercise-roleplay-row">
+                              <span className="ebook-exercise-roleplay-avatar">{chat.avatar}</span>
+                              <div className="ebook-exercise-roleplay-bubble">
+                                <span className="ebook-exercise-roleplay-name">{chat.name}：</span>
+                                <EbookRubyLine
+                                  text={chat.bubbleText}
+                                  pinyin={chat.pinyin}
+                                  segments={chat.segments}
+                                  showPinyin={showPinyin}
+                                  className="ebook-exercise-roleplay-ruby"
+                                />
 
-                                {/* Action bar for roleplay mic */}
-                                <div className="mt-2 flex items-center justify-between border-t pt-1.5 border-orange-100/50 select-none">
+                                <div className="ebook-exercise-roleplay-actions">
                                   <button
+                                    type="button"
                                     onClick={() => speakZH(chat.bubbleText)}
-                                    className="p-1 px-2.5 bg-[#FAF8F5] hover:bg-orange-50 border border-orange-200/30 rounded-lg text-[9px] flex items-center gap-1 text-slate-600 font-bold"
+                                    className="ebook-exercise-chip-btn ebook-exercise-chip-btn-sm"
                                   >
-                                    <Volume2 className="w-3 h-3 text-orange-600" />
+                                    <Volume2 className="w-3 h-3" strokeWidth={2.25} />
                                     <span>Listen</span>
                                   </button>
 
                                   <button
+                                    type="button"
                                     onClick={() => {
                                       speakZH(chat.bubbleText);
                                       setFollowModal({
@@ -1816,13 +2018,9 @@ export default function FunChineseInteractiveEbook() {
                                       setEvalResultScore(0);
                                       setRolePlayRecords(prev => ({ ...prev, [cIdx]: true }));
                                     }}
-                                    className={`p-1 px-2.5 rounded-lg text-[9px] flex items-center gap-1 font-bold ${
-                                      rolePlayRecords[cIdx] 
-                                        ? 'bg-amber-100 text-amber-800 border border-amber-300' 
-                                        : 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                                    }`}
+                                    className={`ebook-exercise-record-btn${rolePlayRecords[cIdx] ? ' is-done' : ''}`}
                                   >
-                                    <Mic className="w-3 h-3" />
+                                    <Mic className="w-3 h-3" strokeWidth={2.25} />
                                     <span>{rolePlayRecords[cIdx] ? 'Replay mine' : 'Record'}</span>
                                   </button>
                                 </div>
@@ -1832,7 +2030,7 @@ export default function FunChineseInteractiveEbook() {
                         </div>
                       </div>
 
-                      <div className="bg-[#FCFAF5] p-2 text-center rounded-xl text-[9px] text-slate-500 mt-2 border border-orange-100/50 font-medium select-none">
+                      <div className="ebook-exercise-footnote">
                         Recordings are saved locally in this e-book session.
                       </div>
                     </div>
@@ -1840,25 +2038,21 @@ export default function FunChineseInteractiveEbook() {
 
                   {/* 5. STROKE ORDER ANIMATOR GRID */}
                   {exerciseTab === 'stroke' && (
-                    <div id="exercise-stroke-order" className="flex-1 flex flex-col justify-between">
+                    <div id="exercise-stroke-order" className="ebook-exercise-view ebook-exercise-view-spaced">
                       <div>
-                        {/* Selector of stroke character guides */}
-                        <div className="flex justify-between items-center mb-1 text-xs select-none">
-                          <p className="font-extrabold text-slate-800">Stroke Order</p>
-                          <div className="flex bg-[#FDFDFB] rounded-lg p-0.5 border border-orange-200/50 shadow-sm">
+                        <div className="ebook-exercise-head">
+                          <p className="ebook-exercise-title">Stroke Order</p>
+                          <div className="ebook-stroke-char-tabs">
                             {currentLesson.strokeChars.map((s, idx) => (
                               <button
                                 key={idx}
+                                type="button"
                                 onClick={() => {
                                   setActiveStrokeCharIdx(idx);
                                   setActiveStrokeStep(-1);
                                   stopStrokeAnimation();
                                 }}
-                                className={`px-2.5 py-0.5 rounded text-xs transition-colors cursor-pointer font-bold ${
-                                  activeStrokeCharIdx === idx 
-                                    ? 'bg-orange-600 text-white font-extrabold shadow-sm' 
-                                    : 'text-slate-500 hover:text-slate-800'
-                                }`}
+                                className={`ebook-stroke-char-tab${activeStrokeCharIdx === idx ? ' is-active' : ''}`}
                                 style={{ fontFamily: 'KaiTi, STKaiti, serif' }}
                               >
                                 {s.char}
@@ -1867,25 +2061,22 @@ export default function FunChineseInteractiveEbook() {
                           </div>
                         </div>
 
-                        {/* Interactive Stroke Guide Chinese Rice Work sheet drawing */}
                         {(() => {
                           const charObj = currentLesson.strokeChars[activeStrokeCharIdx];
                           if (!charObj) return null;
                           return (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1.5">
-                              {/* Left — 田字格 + 楷体笔顺 */}
-                              <div className="relative bg-[#FFFCF8] rounded-2xl p-4 flex flex-col items-center justify-center border border-orange-200/40 overflow-hidden shadow-sm h-36">
+                            <div className="ebook-stroke-layout">
+                              <div className="ebook-stroke-canvas">
                                 <div className="stroke-guide-square" aria-hidden="true" />
 
                                 <span
-                                  className="stroke-char-ghost absolute text-[5.5rem] text-orange-100/90 z-0"
+                                  className="stroke-char-ghost ebook-stroke-ghost"
                                   aria-hidden="true"
                                 >
                                   {charObj.char}
                                 </span>
 
-                                <svg viewBox="0 0 100 100" className="w-28 h-28 relative z-10 select-none">
-                                  {/* Animated brush strokes (楷体轮廓由 HTML 层显示) */}
+                                <svg viewBox="0 0 100 100" className="ebook-stroke-svg">
                                   {charObj.strokes.map((path, idx) => {
                                     const isVisible = activeStrokeStep === -1 || idx <= activeStrokeStep;
                                     const isCurrentlyDrawing = activeStrokeStep === idx;
@@ -1894,14 +2085,14 @@ export default function FunChineseInteractiveEbook() {
                                         key={`fg-${idx}`}
                                         d={path}
                                         fill="none"
-                                        stroke={isCurrentlyDrawing ? "#e28600" : "#C2410C"}
+                                        stroke={isCurrentlyDrawing ? '#14b8a6' : '#0f766e'}
                                         strokeWidth="9"
                                         strokeLinecap="round"
                                         strokeLinejoin="round"
                                         style={{
-                                          transition: "all 0.8s ease-in-out",
-                                          strokeDasharray: isCurrentlyDrawing ? "200" : "none",
-                                          strokeDashoffset: isCurrentlyDrawing ? "0" : "none",
+                                          transition: 'all 0.8s ease-in-out',
+                                          strokeDasharray: isCurrentlyDrawing ? '200' : 'none',
+                                          strokeDashoffset: isCurrentlyDrawing ? '0' : 'none',
                                           display: isVisible ? 'block' : 'none'
                                         }}
                                       />
@@ -1910,17 +2101,16 @@ export default function FunChineseInteractiveEbook() {
                                 </svg>
                               </div>
 
-                              {/* Right detailed control definitions */}
-                              <div className="flex flex-col justify-between py-0.5 text-left">
-                                <div className="bg-[#FDFDFB] px-3.5 py-2.5 rounded-2xl border border-orange-100 text-xs shadow-sm">
-                                  <div className="flex justify-between items-center font-bold text-orange-850">
-                                    <span className="font-extrabold text-sm" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{charObj.char}</span>
-                                    <span className="bg-orange-100 text-orange-700 p-0.5 px-2 rounded-md font-extrabold text-[10px]">{charObj.meaning}</span>
+                              <div className="ebook-stroke-side">
+                                <div className="ebook-exercise-card ebook-stroke-info">
+                                  <div className="ebook-stroke-info-head">
+                                    <span className="ebook-stroke-char-label" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{charObj.char}</span>
+                                    <span className="ebook-stroke-meaning">{charObj.meaning}</span>
                                   </div>
-                                  <p className="text-[10px] text-slate-400 mt-1 font-mono font-medium">
+                                  <p className="ebook-stroke-progress">
                                     Stroke {activeStrokeStep === -1 ? 0 : activeStrokeStep + 1} / {charObj.strokes.length}
                                   </p>
-                                  <div className="mt-2 text-slate-600 leading-relaxed text-[11px] min-h-[38px] font-medium">
+                                  <div className="ebook-stroke-desc">
                                     {activeStrokeStep === -1 ? (
                                       <span>Tap play to watch the stroke order animation.</span>
                                     ) : (
@@ -1929,28 +2119,31 @@ export default function FunChineseInteractiveEbook() {
                                   </div>
                                 </div>
 
-                                <div className="flex gap-1.5 mt-2 select-none">
+                                <div className="ebook-stroke-controls">
                                   <button
+                                    type="button"
                                     onClick={() => {
                                       stopStrokeAnimation();
                                       startStrokeAnimation(charObj);
                                     }}
                                     disabled={isStrokeAnimating}
-                                    className="flex-1 py-1.5 bg-orange-600 hover:bg-orange-500 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1 disabled:bg-slate-200 disabled:text-slate-400 cursor-pointer shadow-sm shadow-orange-600/10"
+                                    className="ebook-exercise-primary-btn ebook-stroke-play-btn"
                                   >
-                                    <Play className="w-3.5 h-3.5" />
+                                    <Play className="w-3.5 h-3.5" strokeWidth={2.5} />
                                     <span>{isStrokeAnimating ? 'Playing…' : 'Play strokes'}</span>
                                   </button>
 
                                   <button
+                                    type="button"
                                     onClick={() => {
                                       stopStrokeAnimation();
                                       setActiveStrokeStep(-1);
                                     }}
-                                    className="p-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl"
+                                    className="ebook-stroke-reset-btn"
                                     title="Reset"
+                                    aria-label="Reset"
                                   >
-                                    <RotateCcw className="w-4 h-4 text-slate-600" />
+                                    <RotateCcw className="w-4 h-4" strokeWidth={2.25} />
                                   </button>
                                 </div>
                               </div>
@@ -1959,22 +2152,24 @@ export default function FunChineseInteractiveEbook() {
                         })()}
                       </div>
 
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-orange-100/60 pt-2.5 mt-3 select-none">
+                      <div className="ebook-stroke-footer">
                         <span>支持点选笔画定位跟学。</span>
-                        <div className="flex gap-1 font-bold">
-                          <button 
+                        <div className="ebook-stroke-step-btns">
+                          <button
+                            type="button"
                             disabled={activeStrokeStep <= -1}
                             onClick={() => { stopStrokeAnimation(); setActiveStrokeStep(prev => prev - 1); }}
-                            className="p-1 px-3 bg-[#FDFDFB] hover:bg-orange-50 border border-orange-200/30 disabled:opacity-40 text-[10px] rounded"
+                            className="ebook-stroke-step-btn"
                           >
-                            ◀ 上一笔
+                            ◀ Prev
                           </button>
-                          <button 
+                          <button
+                            type="button"
                             disabled={activeStrokeStep >= currentLesson.strokeChars[activeStrokeCharIdx].strokes.length - 1}
                             onClick={() => { stopStrokeAnimation(); setActiveStrokeStep(prev => prev + 1); }}
-                            className="p-1 px-3 bg-[#FDFDFB] hover:bg-orange-50 border border-orange-200/30 disabled:opacity-40 text-[10px] rounded"
+                            className="ebook-stroke-step-btn"
                           >
-                            下一笔 ▶
+                            Next ▶
                           </button>
                         </div>
                       </div>
@@ -2000,35 +2195,44 @@ export default function FunChineseInteractiveEbook() {
 
         </main>
 
-        {/* Minimal functional footer */}
+        {/* Footer toolbar — matches header circular / capsule style */}
         {!isFocusMode && (
-        <footer className="mt-3 grid grid-cols-3 items-center text-sm text-slate-400 border-t border-orange-100/60 pt-3 z-10 select-none">
-          <div className="flex items-center gap-2 text-xs font-semibold justify-self-start">
-            <span>Reading speed:</span>
-            <span className="font-extrabold text-orange-700 font-mono text-sm px-2.5 py-1 bg-orange-100 rounded-full border border-orange-200/20">{formatVoiceSpeedLabel(voiceSpeed)}</span>
-          </div>
+        <footer className="ebook-footer-bar select-none">
+          <button
+            type="button"
+            onClick={() => {
+              setShowSettings(true);
+              setShowLessonPicker(false);
+            }}
+            className="ebook-footer-chip justify-self-start"
+            aria-label={`Reading speed ${formatFooterSpeedLabel(voiceSpeed)}. Open settings`}
+            title="Speech speed (Settings)"
+          >
+            <span className="ebook-footer-chip-label">Speed</span>
+            <span className="ebook-footer-chip-divider" aria-hidden />
+            <span className="ebook-footer-chip-value">{formatFooterSpeedLabel(voiceSpeed)}</span>
+          </button>
 
           <button
             type="button"
             onClick={toggleFocusMode}
             aria-label="Focus reading"
             title="Hide controls for full-page reading"
-            className="justify-self-center flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-full bg-orange-100 hover:bg-orange-200 text-orange-800 border border-orange-200/50 text-xs font-bold transition-colors cursor-pointer"
+            className="ebook-header-circle-btn justify-self-center"
           >
-            <Maximize2 className="w-4 h-4" />
-            <span>Focus</span>
+            <Maximize2 className="ebook-header-circle-icon" strokeWidth={2.25} />
           </button>
 
-          <span className="text-xs text-slate-500 font-mono font-semibold justify-self-end text-right">
+          <div className="ebook-footer-chip ebook-footer-chip-static justify-self-end" aria-live="polite">
             Pages {leftPageNum}–{rightPageNum} of {totalPages}
-          </span>
+          </div>
         </footer>
         )}
 
         {/* Focus mode footer — Controls overlay at bottom center, no layout space */}
         {isFocusMode && (
         <footer
-          className={`absolute bottom-0 left-0 right-0 grid grid-cols-3 items-center text-sm text-slate-400 border-t border-orange-100/60 pt-3 pb-3 px-4 z-30 select-none transition-opacity duration-300 bg-gradient-to-t from-[#FAF8F5] via-[#FAF8F5]/95 to-transparent ${
+          className={`ebook-footer-bar ebook-footer-bar-focus absolute bottom-0 left-0 right-0 z-30 px-4 pb-3 transition-opacity duration-300 bg-gradient-to-t from-[#FAF8F5] via-[#FAF8F5]/95 to-transparent ${
             focusChromeVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
         >
@@ -2038,120 +2242,134 @@ export default function FunChineseInteractiveEbook() {
             onClick={toggleFocusMode}
             aria-label="Show controls"
             title="Show controls"
-            className="justify-self-center flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-full bg-orange-100 hover:bg-orange-200 text-orange-800 border border-orange-200/50 text-xs font-bold transition-colors cursor-pointer"
+            className="ebook-header-circle-btn justify-self-center"
           >
-            <Minimize2 className="w-4 h-4" />
-            <span>Controls</span>
+            <Minimize2 className="ebook-header-circle-icon" strokeWidth={2.25} />
           </button>
           <div aria-hidden="true" />
         </footer>
         )}
 
-        {/* Lesson picker dropdown — full curriculum outline */}
+        {/* Lesson picker — contents panel (teal reference design) */}
         {showLessonPicker && !isFocusMode && (
-          <div
-            id="lesson-picker-panel"
-            className="absolute top-[88px] right-4 w-[340px] bg-[#FDFDFB] border border-orange-200/80 rounded-2xl shadow-2xl p-4 z-40 animate-fade-in flex flex-col max-h-[min(520px,62vh)]"
-          >
-            <div className="flex items-center justify-between border-b border-orange-100 pb-2.5 mb-3 select-none shrink-0">
-              <h3 className="font-extrabold text-orange-800 text-sm uppercase tracking-wider">Contents</h3>
+          <div id="lesson-picker-panel" className="ebook-contents-drawer animate-fade-in">
+            <div className="ebook-contents-header">
+              <h3 className="ebook-contents-title">Contents</h3>
               <button
                 type="button"
                 onClick={() => setShowLessonPicker(false)}
-                className="min-w-[36px] min-h-[36px] p-1.5 hover:bg-orange-100/50 rounded-lg text-slate-400 hover:text-slate-800 flex items-center justify-center"
+                className="ebook-settings-close"
                 aria-label="Close"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" strokeWidth={2} />
               </button>
             </div>
 
-            <div className="space-y-3 overflow-y-auto pr-1 -mr-1 flex-1 min-h-0">
+            <div className="ebook-contents-body">
               {CURRICULUM_UNITS.map((unit) => {
                 const isExpanded = expandedUnits.has(unit.id);
+                const unitHasActiveLesson = unit.items.some(
+                  (item) => item.kind === 'lesson' && item.lessonNum === currentLessonId
+                );
                 return (
-                <section key={unit.id} className="space-y-1">
-                  <button
-                    type="button"
-                    onClick={() => toggleUnitExpanded(unit.id)}
-                    aria-expanded={isExpanded}
-                    className="w-full min-h-[44px] text-left text-xs font-extrabold text-orange-900/90 px-2.5 py-2 bg-orange-50/80 rounded-lg border border-orange-100/80 leading-snug hover:bg-orange-100/60 transition-colors cursor-pointer flex items-center gap-2"
-                  >
-                    <ChevronDown
-                      className={`w-4 h-4 shrink-0 text-orange-600/70 transition-transform duration-200 ${isExpanded ? '' : '-rotate-90'}`}
-                      aria-hidden
-                    />
-                    <span className="flex-1 min-w-0">
-                      Unit {unit.id}: {unit.titleZh}
-                      <span className="block text-[10px] font-semibold text-slate-500 mt-0.5">{unit.titleEn}</span>
-                    </span>
-                  </button>
-                  {isExpanded && (
-                  <ul className="space-y-0.5 pl-1 animate-fade-in">
-                    {unit.items.map((item, idx) => {
-                      const isLesson = item.kind === 'lesson';
-                      const lessonId = item.lessonNum;
-                      const isAvailable = isLesson && lessonId != null && AVAILABLE_LESSON_IDS.has(lessonId);
-                      const isActive = isLesson && lessonId === currentLessonId;
+                  <section key={unit.id} className="ebook-contents-unit">
+                    <button
+                      type="button"
+                      onClick={() => toggleUnitExpanded(unit.id)}
+                      aria-expanded={isExpanded}
+                      className={`ebook-contents-unit-header${isExpanded ? ' is-expanded' : ' is-collapsed'}${unitHasActiveLesson ? ' has-active-lesson' : ''}`}
+                    >
+                      {isExpanded ? (
+                        <ChevronDown className="ebook-contents-unit-chevron" aria-hidden />
+                      ) : (
+                        <ChevronUp className="ebook-contents-unit-chevron" aria-hidden />
+                      )}
+                      <span className="ebook-contents-unit-label">
+                        Unit {unit.id}: {unit.titleZh}
+                        <span className="ebook-contents-unit-label-en"> / {unit.titleEn}</span>
+                      </span>
+                    </button>
+                    {isExpanded && (
+                      <ul className="ebook-contents-lessons">
+                        {unit.items.map((item, idx) => {
+                          const isLesson = item.kind === 'lesson';
+                          const lessonId = item.lessonNum;
+                          const isAvailable = isLesson && lessonId != null && AVAILABLE_LESSON_IDS.has(lessonId);
+                          const isActive = isLesson && lessonId === currentLessonId;
 
-                      if (isLesson) {
-                        return (
-                          <li key={`u${unit.id}-l${lessonId}`}>
-                            <button
-                              type="button"
-                              disabled={!isAvailable}
-                              onClick={() => isAvailable && lessonId != null && selectLesson(lessonId)}
-                              className={`w-full min-h-[40px] py-2 px-2.5 rounded-xl text-xs font-bold text-left border flex items-center gap-2 transition-colors ${
-                                isActive
-                                  ? 'bg-orange-50 border-orange-300 text-orange-800'
-                                  : isAvailable
-                                    ? 'bg-[#FAF8F5] border-orange-100/80 text-slate-700 hover:bg-[#FAF7F1] cursor-pointer'
-                                    : 'bg-slate-50/60 border-slate-100 text-slate-400 cursor-not-allowed'
-                              }`}
-                            >
-                              <span className="shrink-0 w-5 text-[10px] font-mono font-extrabold text-orange-600/80">{lessonId}</span>
-                              <span className="flex-1 leading-snug">{item.label}</span>
-                              {!isAvailable && (
-                                <span className="text-[9px] font-bold uppercase tracking-wide text-slate-300 shrink-0">Soon</span>
-                              )}
-                            </button>
-                          </li>
-                        );
-                      }
+                          if (isLesson) {
+                            return (
+                              <li key={`u${unit.id}-l${lessonId}`}>
+                                <button
+                                  type="button"
+                                  disabled={!isAvailable}
+                                  onClick={() => isAvailable && lessonId != null && selectLesson(lessonId)}
+                                  className={`ebook-contents-lesson-row${isActive ? ' is-active' : ''}${!isAvailable ? ' is-disabled' : ''}`}
+                                >
+                                  <span className={`ebook-contents-lesson-num${isActive ? ' is-active' : ''}`}>
+                                    {lessonId}
+                                  </span>
+                                  <span className="ebook-contents-lesson-text">
+                                    <span className="ebook-contents-lesson-title">{item.label}</span>
+                                    {item.sublabel && (
+                                      <span className="ebook-contents-lesson-sub">{item.sublabel}</span>
+                                    )}
+                                  </span>
+                                  {!isAvailable && (
+                                    <span className="ebook-contents-soon">Soon</span>
+                                  )}
+                                </button>
+                              </li>
+                            );
+                          }
 
-                      const icon = item.kind === 'culture' ? '🏮' : item.kind === 'unit-summary' ? '📋' : '·';
-                      return (
-                        <li key={`u${unit.id}-${item.kind}-${idx}`}>
-                          <div className="min-h-[36px] py-1.5 px-2.5 rounded-xl text-xs font-semibold text-left flex items-center gap-2 text-slate-500 bg-slate-50/40 border border-dashed border-slate-200/60">
-                            <span className="shrink-0 text-sm leading-none">{icon}</span>
-                            <span className="flex-1 leading-snug">
-                              {item.label}
-                              {item.sublabel && (
-                                <span className="block text-[10px] font-medium text-slate-400">{item.sublabel}</span>
-                              )}
-                            </span>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  )}
-                </section>
-              );})}
+                          const iconClass =
+                            item.kind === 'culture'
+                              ? 'ebook-contents-special-icon is-culture'
+                              : 'ebook-contents-special-icon is-summary';
+                          const iconContent =
+                            item.kind === 'culture' ? (
+                              <span aria-hidden>🏮</span>
+                            ) : (
+                              <ListTodo className="w-4 h-4" strokeWidth={2.25} aria-hidden />
+                            );
 
-              <section className="space-y-1 pt-1 border-t border-orange-100/80">
-                <h4 className="text-xs font-extrabold text-slate-600 px-2 py-1.5 bg-slate-50 rounded-lg border border-slate-200/60">
+                          return (
+                            <li key={`u${unit.id}-${item.kind}-${idx}`}>
+                              <div className="ebook-contents-lesson-row is-special">
+                                <span className={iconClass}>{iconContent}</span>
+                                <span className="ebook-contents-lesson-text">
+                                  <span className="ebook-contents-lesson-title">{item.label}</span>
+                                  {item.sublabel && (
+                                    <span className="ebook-contents-lesson-sub">{item.sublabel}</span>
+                                  )}
+                                </span>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </section>
+                );
+              })}
+
+              <section className="ebook-contents-appendix">
+                <h4 className="ebook-contents-appendix-header">
                   附录
-                  <span className="block text-[10px] font-semibold text-slate-400 mt-0.5">Appendix</span>
+                  <span className="ebook-contents-appendix-header-en">Appendix</span>
                 </h4>
-                <ul className="space-y-0.5 pl-1">
+                <ul className="ebook-contents-lessons">
                   {CURRICULUM_APPENDIX.map((item, idx) => (
                     <li key={`appendix-${idx}`}>
-                      <div className="min-h-[36px] py-1.5 px-2.5 rounded-xl text-xs font-semibold text-left flex items-center gap-2 text-slate-500 bg-slate-50/40 border border-dashed border-slate-200/60">
-                        <span className="shrink-0 text-sm leading-none">📎</span>
-                        <span className="flex-1 leading-snug">
-                          {item.label}
+                      <div className="ebook-contents-lesson-row is-special">
+                        <span className="ebook-contents-special-icon is-appendix">
+                          <BookOpen className="w-4 h-4" strokeWidth={2.25} aria-hidden />
+                        </span>
+                        <span className="ebook-contents-lesson-text">
+                          <span className="ebook-contents-lesson-title">{item.label}</span>
                           {item.sublabel && (
-                            <span className="block text-[10px] font-medium text-slate-400">{item.sublabel}</span>
+                            <span className="ebook-contents-lesson-sub">{item.sublabel}</span>
                           )}
                         </span>
                       </div>
@@ -2168,88 +2386,114 @@ export default function FunChineseInteractiveEbook() {
             ========================================= */}
 
         {/* 1. AUDIO RECORDING FOLLOW-READ EVAL MODAL (跟读弹窗) */}
-        {followModal.isOpen && (
-          <div id="follow-read-modal" className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[680px] overflow-hidden flex flex-col md:flex-row min-h-[340px] relative">
-
-              {/* Left — sentence / word display */}
-              <section className="flex-1 bg-[#E8E8E8] p-5 md:p-6 flex items-center gap-3 min-h-[180px] md:min-h-0">
+        {followModal.isOpen && (() => {
+          const followModalSentence = followModal.sentenceId
+            ? currentLesson.textbookLeft.sentences.find((s) => s.id === followModal.sentenceId)
+            : undefined;
+          const followModalSegments = followModalSentence
+            ? getSentenceSegments(followModalSentence)
+            : [{ text: followModal.text, pinyin: followModal.pinyin }];
+          return (
+          <div id="follow-read-modal" className="follow-read-overlay animate-fade-in">
+            <div className="follow-read-dialog">
+              {/* Left — sentence display */}
+              <section className="follow-read-panel follow-read-panel-sentence">
                 <button
                   type="button"
                   onClick={() => speakZH(followModal.text)}
-                  className="shrink-0 w-11 h-11 rounded-xl bg-white/80 hover:bg-white border border-slate-200/60 flex items-center justify-center text-slate-600 shadow-sm transition-colors cursor-pointer"
+                  className="follow-read-listen-btn"
                   aria-label="Listen"
+                  title="Listen"
                 >
-                  <Volume2 className="w-5 h-5" />
+                  <Volume2 className="follow-read-listen-icon" strokeWidth={2.25} />
                 </button>
-                <div className="flex-1 text-center min-w-0 px-1">
-                  {followModal.pinyin && (
-                    <p className="text-sm text-slate-600 font-semibold mb-1.5 leading-snug" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>
-                      {followModal.pinyin}
-                    </p>
-                  )}
-                  <p
-                    className="text-3xl md:text-4xl font-bold text-slate-800 leading-snug break-words"
-                    style={{ fontFamily: 'KaiTi, STKaiti, serif' }}
-                  >
-                    {followModal.text}
-                  </p>
+                <div className="follow-read-sentence-body">
+                  <div className="follow-read-ruby-line">
+                    {followModalSegments.map((segment, segIdx) => (
+                      segment.speakable === false ? (
+                        <span
+                          key={`follow-seg-${segIdx}`}
+                          className="follow-read-ruby-punct"
+                          style={{ fontFamily: 'KaiTi, STKaiti, serif' }}
+                        >
+                          {segment.text}
+                        </span>
+                      ) : (
+                        <span
+                          key={`follow-seg-${segIdx}`}
+                          className="follow-read-ruby-word"
+                          style={{ fontFamily: 'KaiTi, STKaiti, serif' }}
+                        >
+                          <ruby>
+                            {segment.text}
+                            {showPinyin && segment.pinyin ? (
+                              <rt style={{ fontFamily: 'OPPO Sans, sans-serif' }}>{segment.pinyin}</rt>
+                            ) : null}
+                          </ruby>
+                        </span>
+                      )
+                    ))}
+                  </div>
                   {followModal.english && (
-                    <p className="text-xs text-slate-500 italic mt-2 leading-snug">"{followModal.english}"</p>
+                    <>
+                      <div className="follow-read-divider" aria-hidden />
+                      <p className="follow-read-en">&ldquo;{followModal.english}&rdquo;</p>
+                    </>
                   )}
                 </div>
               </section>
 
               {/* Right — record & score */}
-              <section className="flex-1 p-5 md:p-6 flex flex-col bg-[#FAFAFA] border-t md:border-t-0 md:border-l border-slate-200/50 relative min-h-[260px]">
+              <section className="follow-read-panel follow-read-panel-record">
                 <button
                   type="button"
                   onClick={() => {
                     if (followRecordState === 'recording') handleStopRecording();
                     setFollowModal((prev) => ({ ...prev, isOpen: false }));
                   }}
-                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer z-10"
+                  className="follow-read-close ebook-settings-close"
                   aria-label="Close"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" strokeWidth={2} />
                 </button>
 
-                <div className="text-center pt-1 pb-3 shrink-0">
-                  <h3 className="text-sm font-bold text-slate-700">
+                <div className="follow-read-record-head">
+                  <h3 className="follow-read-record-title">
                     {followModal.shadowSession ? 'Shadow Reading' : 'Speak & Score'}
                   </h3>
                   {followModal.shadowSession && (
-                    <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                    <p className="follow-read-record-progress">
                       {shadowSessionIndex + 1} / {shadowSessionQueue.length}
                     </p>
                   )}
                 </div>
 
-                <div className="flex-1 flex flex-col items-center justify-center select-none min-h-0">
+                <div className="follow-read-record-body">
                   {followRecordState === 'idle' && (
-                    <div className="text-center">
+                    <div className="follow-read-idle">
                       <button
                         type="button"
                         onClick={handleStartRecording}
-                        className="w-[72px] h-[72px] rounded-full bg-[#ECECEC] hover:bg-slate-200 border border-slate-200/80 flex flex-col items-center justify-center gap-0.5 mx-auto transition-colors cursor-pointer shadow-sm"
+                        className="follow-read-record-btn"
+                        aria-label="Tap to record"
                       >
-                        <Mic className="w-6 h-6 text-slate-600" />
+                        <Mic className="follow-read-record-btn-icon" strokeWidth={2.25} />
                       </button>
-                      <p className="text-[11px] text-slate-500 font-semibold mt-3">Tap to record</p>
+                      <p className="follow-read-record-hint">Tap to record</p>
                     </div>
                   )}
 
                   {followRecordState === 'recording' && (
-                    <div className="text-center w-full px-2">
-                      <p className="text-xs text-rose-500 font-bold animate-pulse mb-3">Recording…</p>
-                      <div className="h-12 flex items-center justify-center gap-1 px-2">
+                    <div className="follow-read-recording">
+                      <p className="follow-read-recording-label">Recording…</p>
+                      <div className="follow-read-waveform">
                         {[...Array(10)].map((_, i) => {
                           const h = micAmplitude > 0 ? Math.max(8, micAmplitude * (0.2 + Math.random() * 0.8)) : 8;
                           return (
                             <div
                               key={i}
                               style={{ height: `${h}px` }}
-                              className="w-1.5 bg-gradient-to-t from-orange-500 to-amber-400 rounded-full transition-all duration-100"
+                              className="follow-read-wave-bar"
                             />
                           );
                         })}
@@ -2257,40 +2501,36 @@ export default function FunChineseInteractiveEbook() {
                       <button
                         type="button"
                         onClick={handleStopRecording}
-                        className="mt-4 px-5 py-2 min-h-[40px] bg-rose-600 hover:bg-rose-500 rounded-xl text-xs font-bold text-white cursor-pointer"
+                        className="follow-read-stop-btn"
                       >
-                        Stop & Score
+                        Stop &amp; Score
                       </button>
                     </div>
                   )}
 
                   {followRecordState === 'evaluating' && (
-                    <div className="text-center">
-                      <div className="inline-block relative">
-                        <div className="w-10 h-10 rounded-full border-4 border-orange-400 border-t-transparent animate-spin" />
-                      </div>
-                      <p className="text-xs text-slate-600 font-semibold mt-4">Analyzing…</p>
+                    <div className="follow-read-evaluating">
+                      <div className="follow-read-spinner" aria-hidden />
+                      <p className="follow-read-evaluating-label">Analyzing…</p>
                     </div>
                   )}
 
                   {followRecordState === 'result' && (
-                    <div className="w-full flex flex-col items-center">
-                      <div className="flex items-center justify-center gap-0.5 mb-2">
+                    <div className="follow-read-result">
+                      <div className="follow-read-stars">
                         {[...Array(5)].map((_, i) => {
                           const filled = i < Math.ceil(evalResultScore / 20);
                           return (
                             <Star
                               key={i}
-                              className={`w-5 h-5 ${filled ? 'text-orange-400 fill-orange-400' : 'text-slate-200 fill-slate-200'}`}
+                              className={`follow-read-star${filled ? ' is-filled' : ''}`}
                             />
                           );
                         })}
                       </div>
 
-                      <div className="text-5xl font-extrabold text-slate-800 font-mono leading-none my-1">
-                        {evalResultScore}
-                      </div>
-                      <p className="text-xs text-slate-600 font-medium mb-4 text-center px-2">
+                      <div className="follow-read-score">{evalResultScore}</div>
+                      <p className="follow-read-score-msg">
                         {evalResultScore >= 95
                           ? 'Excellent — native-like clarity!'
                           : evalResultScore >= 90
@@ -2298,33 +2538,33 @@ export default function FunChineseInteractiveEbook() {
                             : 'Good effort — keep practicing!'}
                       </p>
 
-                      <div className="w-full grid grid-cols-3 gap-0 bg-[#ECECEC] rounded-xl py-2.5 px-1 mb-5 text-center">
+                      <div className="follow-read-metrics">
                         <div>
-                          <span className="text-[10px] text-slate-500 block">Accuracy</span>
-                          <span className="text-sm font-bold text-slate-800 font-mono">{evalResultScore - 1}%</span>
+                          <span className="follow-read-metric-label">Accuracy</span>
+                          <span className="follow-read-metric-value">{evalResultScore - 1}%</span>
                         </div>
                         <div>
-                          <span className="text-[10px] text-slate-500 block">Tone</span>
-                          <span className="text-sm font-bold text-slate-800 font-mono">
+                          <span className="follow-read-metric-label">Tone</span>
+                          <span className="follow-read-metric-value">
                             {evalResultScore >= 92 ? 95 : evalResultScore - 1}%
                           </span>
                         </div>
                         <div>
-                          <span className="text-[10px] text-slate-500 block">Fluency</span>
-                          <span className="text-sm font-bold text-slate-800 font-mono">{evalResultScore}%</span>
+                          <span className="follow-read-metric-label">Fluency</span>
+                          <span className="follow-read-metric-value">{evalResultScore}%</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-center gap-8 mb-4">
+                      <div className="follow-read-result-actions">
                         <button
                           type="button"
                           onClick={handleStartRecording}
-                          className="flex flex-col items-center gap-1.5 cursor-pointer group"
+                          className="follow-read-secondary-action"
                         >
-                          <span className="w-14 h-14 rounded-full bg-[#ECECEC] group-hover:bg-slate-200 border border-slate-200/80 flex items-center justify-center transition-colors">
-                            <Mic className="w-5 h-5 text-slate-600" />
+                          <span className="follow-read-secondary-action-icon">
+                            <Mic className="w-5 h-5" strokeWidth={2.25} />
                           </span>
-                          <span className="text-[10px] font-semibold text-slate-600">Rerecord</span>
+                          <span className="follow-read-secondary-action-label">Rerecord</span>
                         </button>
                         <button
                           type="button"
@@ -2333,14 +2573,12 @@ export default function FunChineseInteractiveEbook() {
                             speakZH(followModal.text);
                             setTimeout(() => setIsMyVoicePlaying(false), 2000);
                           }}
-                          className="flex flex-col items-center gap-1.5 cursor-pointer group"
+                          className="follow-read-secondary-action"
                         >
-                          <span className={`w-14 h-14 rounded-full border border-slate-200/80 flex items-center justify-center transition-colors ${
-                            isMyVoicePlaying ? 'bg-orange-100' : 'bg-[#ECECEC] group-hover:bg-slate-200'
-                          }`}>
-                            <Play className="w-5 h-5 text-slate-600 ml-0.5" />
+                          <span className={`follow-read-secondary-action-icon${isMyVoicePlaying ? ' is-active' : ''}`}>
+                            <Play className="w-5 h-5 ml-0.5" strokeWidth={2.25} />
                           </span>
-                          <span className="text-[10px] font-semibold text-slate-600">Play</span>
+                          <span className="follow-read-secondary-action-label">Play</span>
                         </button>
                       </div>
 
@@ -2348,10 +2586,10 @@ export default function FunChineseInteractiveEbook() {
                         <button
                           type="button"
                           onClick={advanceShadowSession}
-                          className="w-full min-h-[44px] py-2.5 bg-[#ECECEC] hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-sm flex items-center justify-center gap-1.5 transition-colors"
+                          className="follow-read-next-btn"
                         >
                           {shadowSessionIndex + 1 >= shadowSessionQueue.length ? 'View Report' : 'Next line'}
-                          <ChevronRight className="w-4 h-4" />
+                          <ChevronRight className="w-4 h-4" strokeWidth={2.5} />
                         </button>
                       )}
                     </div>
@@ -2360,7 +2598,8 @@ export default function FunChineseInteractiveEbook() {
               </section>
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* Shadow session report */}
         {shadowSessionReportOpen && (
@@ -2531,152 +2770,138 @@ export default function FunChineseInteractiveEbook() {
           </div>
         )}
 
-        {/* 3. SETTINGS SECTOR SLIDE PANEL (右侧设置抽屉) */}
+        {/* Settings panel — teal reference design */}
         {showSettings && (
-          <div id="settings-slide-drawer" className="absolute top-0 bottom-0 right-0 w-80 bg-[#FDFDFB] border-l border-orange-200/80 shadow-2xl p-6 z-50 animate-slide-in text-slate-800 flex flex-col min-h-0">
-            <div className="flex items-center justify-between border-b pb-3 border-orange-100 select-none shrink-0">
-              <h3 className="font-extrabold text-orange-800 text-base flex items-center gap-2">
-                <Settings className="w-5 h-5" />
+          <div id="settings-slide-drawer" className="ebook-settings-drawer animate-slide-in">
+            <div className="ebook-settings-header">
+              <h3 className="ebook-settings-title">
+                <EbookSettingsIcon className="ebook-settings-title-icon" />
                 <span>Settings</span>
               </h3>
-              <button 
-                onClick={() => setShowSettings(false)} 
-                className="min-w-[44px] min-h-[44px] p-2 hover:bg-orange-100/50 rounded-lg text-slate-400 hover:text-slate-800 cursor-pointer transition-colors flex items-center justify-center"
+              <button
+                type="button"
+                onClick={() => setShowSettings(false)}
+                className="ebook-settings-close"
                 aria-label="Close settings"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" strokeWidth={2} />
               </button>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto py-1 space-y-5">
-
-              {/* Tap to Read · Repeat Range · Shadow Reading */}
-              <section className="select-none">
-                <div className="mb-3 px-2.5 py-2 rounded-xl bg-orange-50/80 border border-orange-100/80">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Applies to</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[#FCFAF0] text-amber-700 border border-orange-200/40">📖 Tap to Read</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[#FCFAF0] text-sky-700 border border-orange-200/40">🔁 Repeat Range</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[#FCFAF0] text-pink-700 border border-orange-200/40">🎙️ Shadow Reading</span>
-                  </div>
+            <div className="ebook-settings-body">
+              <section className="ebook-settings-section ebook-settings-applies-inline">
+                <span className="ebook-settings-kicker-inline">Applies to</span>
+                <div className="ebook-settings-mode-icons" aria-label="Speech speed applies to Tap to Read, Repeat Range, and Shadow Reading">
+                  {SPEECH_SPEED_MODES.map(({ id, Icon }) => (
+                    <div
+                      key={id}
+                      className={`ebook-settings-mode-icon-btn ${mode === id ? 'ebook-settings-mode-icon-btn-active' : ''}`}
+                      title={LEARNING_MODES.find((m) => m.id === id)?.label}
+                    >
+                      <Icon className="ebook-settings-mode-icon" strokeWidth={2} aria-hidden />
+                      <span className="sr-only">{LEARNING_MODES.find((m) => m.id === id)?.label}</span>
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <div className="flex items-center justify-between mb-2.5">
-                    <label className="text-xs text-slate-500 uppercase tracking-wider font-extrabold">
-                      Speech playback speed
-                    </label>
-                    <span className="text-sm font-extrabold text-orange-700 font-mono px-2.5 py-1 bg-orange-100 rounded-full border border-orange-200/30">
-                      {formatVoiceSpeedLabel(voiceSpeed)}
-                    </span>
-                  </div>
+              </section>
+
+              <section className="ebook-settings-section ebook-settings-section-divider">
+                <div className="ebook-settings-row">
+                  <label className="ebook-settings-label" htmlFor="voice-speed-range">
+                    Playback speed
+                  </label>
+                  <span className="ebook-settings-speed-badge">
+                    {formatVoiceSpeedLabel(voiceSpeed)}
+                  </span>
+                </div>
+                <div
+                  className="ebook-settings-speed-wrap"
+                  style={{ '--speed-progress': `${(voiceSpeedIndex / (VOICE_SPEED_STEPS.length - 1)) * 100}%` } as CSSProperties}
+                >
                   <input
+                    id="voice-speed-range"
                     type="range"
                     min={0}
                     max={VOICE_SPEED_STEPS.length - 1}
                     step={1}
                     value={voiceSpeedIndex}
                     onChange={(e) => setVoiceSpeed(VOICE_SPEED_STEPS[Number(e.target.value)])}
-                    style={{ '--speed-progress': `${(voiceSpeedIndex / (VOICE_SPEED_STEPS.length - 1)) * 100}%` } as CSSProperties}
-                    className="voice-speed-range w-full"
-                    aria-label="Speech playback speed"
+                    className="ebook-settings-speed-range"
+                    aria-label="Playback speed"
+                    aria-valuetext={formatVoiceSpeedLabel(voiceSpeed)}
                   />
-                  <div className="flex justify-between mt-2 px-0.5">
-                    {VOICE_SPEED_STEPS.map((step) => (
-                      <button
-                        key={step}
-                        type="button"
-                        onClick={() => setVoiceSpeed(step)}
-                        className={`min-w-[36px] min-h-[36px] text-xs font-bold rounded-lg transition-colors ${
-                          voiceSpeed === step
-                            ? 'text-orange-700 bg-orange-100'
-                            : 'text-slate-400 hover:text-slate-600'
-                        }`}
-                      >
-                        {step}
-                      </button>
-                    ))}
-                  </div>
                 </div>
               </section>
 
-              {/* Tap to Read */}
-              <section className="select-none border-t border-orange-100 pt-4">
-                <div className="mb-3 px-2.5 py-2 rounded-xl bg-amber-50/70 border border-amber-100/80">
-                  <p className="text-xs font-extrabold text-amber-700 flex items-center gap-1.5">
-                    <span>📖</span>
-                    <span>Tap to Read</span>
-                  </p>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <label className="text-xs text-slate-500 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
-                    <SquareDashed className="w-4 h-4 text-orange-500" />
-                    <span>Tap-read marker</span>
+              <section className="ebook-settings-card">
+                <h4 className="ebook-settings-card-title">Tap to Read</h4>
+                <div className="ebook-settings-row">
+                  <label className="ebook-settings-item-label" htmlFor="toggle-read-marker">
+                    <SquareDashed className="ebook-settings-item-icon" strokeWidth={2} />
+                    <span>Tap marker</span>
                   </label>
                   <button
+                    id="toggle-read-marker"
                     type="button"
                     role="switch"
                     aria-checked={showReadHighlights}
                     onClick={() => setShowReadHighlights(!showReadHighlights)}
-                    className={`shrink-0 w-12 h-7 rounded-full flex items-center p-0.5 transition-colors duration-300 ${showReadHighlights ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'}`}
+                    className={`ebook-settings-toggle ${showReadHighlights ? 'ebook-settings-toggle-on' : ''}`}
                   >
-                    <div className="bg-white w-6 h-6 rounded-full shadow" />
+                    <span className="ebook-settings-toggle-thumb" />
                   </button>
                 </div>
               </section>
 
-              {/* Shadow Reading */}
-              <section className="select-none border-t border-orange-100 pt-4">
-                <div className="mb-3 px-2.5 py-2 rounded-xl bg-pink-50/70 border border-pink-100/80">
-                  <p className="text-xs font-extrabold text-pink-700 flex items-center gap-1.5">
-                    <span>🎙️</span>
-                    <span>Shadow Reading</span>
-                  </p>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <label className="text-xs text-slate-500 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
-                      <Languages className="w-4 h-4 text-sky-600" />
-                      <span>Pinyin display</span>
+              <section className="ebook-settings-card">
+                <h4 className="ebook-settings-card-title">Shadow Reading</h4>
+                <div className="ebook-settings-card-stack">
+                  <div className="ebook-settings-row">
+                    <label className="ebook-settings-item-label" htmlFor="toggle-pinyin">
+                      <Languages className="ebook-settings-item-icon" strokeWidth={2} />
+                      <span>Pinyin</span>
                     </label>
                     <button
+                      id="toggle-pinyin"
                       type="button"
                       role="switch"
                       aria-checked={showPinyin}
                       onClick={() => setShowPinyin(!showPinyin)}
-                      className={`shrink-0 w-12 h-7 rounded-full flex items-center p-0.5 transition-colors duration-300 ${showPinyin ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'}`}
+                      className={`ebook-settings-toggle ${showPinyin ? 'ebook-settings-toggle-on' : ''}`}
                     >
-                      <div className="bg-white w-6 h-6 rounded-full shadow" />
+                      <span className="ebook-settings-toggle-thumb" />
                     </button>
                   </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <label className="text-xs text-slate-500 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-violet-500" />
-                      <span>Show translation</span>
+                  <div className="ebook-settings-row">
+                    <label className="ebook-settings-item-label" htmlFor="toggle-translation">
+                      <Sparkles className="ebook-settings-item-icon" strokeWidth={2} />
+                      <span>Translation</span>
                     </label>
                     <button
+                      id="toggle-translation"
                       type="button"
                       role="switch"
                       aria-checked={aiAssistEnabled}
                       onClick={() => setAiAssistEnabled(!aiAssistEnabled)}
-                      className={`shrink-0 w-12 h-7 rounded-full flex items-center p-0.5 transition-colors duration-300 ${aiAssistEnabled ? 'bg-violet-600 justify-end' : 'bg-slate-300 justify-start'}`}
+                      className={`ebook-settings-toggle ${aiAssistEnabled ? 'ebook-settings-toggle-on' : ''}`}
                     >
-                      <div className="bg-white w-6 h-6 rounded-full shadow" />
+                      <span className="ebook-settings-toggle-thumb" />
                     </button>
                   </div>
                 </div>
               </section>
             </div>
 
-            <div className="pt-4 border-t border-orange-100 select-none shrink-0">
+            <div className="ebook-settings-footer">
               <button
+                type="button"
                 onClick={() => {
                   setVoiceSpeed(1.0);
                   setShowPinyin(false);
                   setAiAssistEnabled(false);
                   setShowReadHighlights(false);
-                  setShowSettings(false);
                 }}
-                className="w-full min-h-[44px] py-2.5 bg-slate-100 text-slate-600 border border-slate-200 rounded-xl text-sm hover:bg-slate-200 font-bold"
+                className="ebook-settings-reset"
               >
                 Reset to default settings
               </button>
