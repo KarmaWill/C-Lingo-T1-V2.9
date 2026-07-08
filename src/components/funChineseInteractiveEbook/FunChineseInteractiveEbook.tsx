@@ -27,12 +27,12 @@ function EbookLessonsIcon({ className }: { className?: string }) {
 
 function EbookSettingsIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden>
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
       <path
-        fill="currentColor"
-        d="M12 2.8c.48 0 .88.34.98.8l.35 2.05a6.2 6.2 0 0 1 1.72.98l1.98-.82a1 1 0 0 1 1.22.45l1.05 1.82a1 1 0 0 1-.38 1.28l-1.78 1.02c.08.55.12 1.1.12 1.62s-.04 1.07-.12 1.62l1.78 1.02a1 1 0 0 1 .38 1.28l-1.05 1.82a1 1 0 0 1-1.22.45l-1.98-.82a6.2 6.2 0 0 1-1.72.98l-.35 2.05a1 1 0 0 1-.98.8c-.48 0-.88-.34-.98-.8l-.35-2.05a6.2 6.2 0 0 1-1.72-.98l-1.98.82a1 1 0 0 1-1.22-.45l-1.05-1.82a1 1 0 0 1 .38-1.28l1.78-1.02a6.5 6.5 0 0 1 0-3.24l-1.78-1.02a1 1 0 0 1-.38-1.28l1.05-1.82a1 1 0 0 1 1.22-.45l1.98.82c.52-.42 1.1-.75 1.72-.98l.35-2.05a1 1 0 0 1 .98-.8zm0 4.95a4.25 4.25 0 1 0 0 8.5 4.25 4.25 0 0 0 0-8.5z"
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M11.828 2.25c-.916 0-1.699.663-1.85 1.567l-.091.549a.798.798 0 0 1-.517.608 7.45 7.45 0 0 0-.478.198.798.798 0 0 1-.796-.064l-.453-.324a1.875 1.875 0 0 0-2.416.2l-.243.243a1.875 1.875 0 0 0-.2 2.416l.324.453a.798.798 0 0 1 .064.796 7.448 7.448 0 0 0-.198.478.798.798 0 0 1-.608.517l-.55.092a1.875 1.875 0 0 0-1.566 1.849v.344c0 .916.663 1.699 1.567 1.85l.549.091c.281.047.508.25.608.517.06.162.127.321.198.478a.798.798 0 0 1-.064.796l-.324.453a1.875 1.875 0 0 0 .2 2.416l.243.243c.648.648 1.67.733 2.416.2l.453-.324a.798.798 0 0 1 .796-.064c.157.071.316.137.478.198.267.1.47.327.517.608l.092.55c.15.903.932 1.566 1.849 1.566h.344c.916 0 1.699-.663 1.85-1.567l.091-.549a.798.798 0 0 1 .517-.608 7.52 7.52 0 0 0 .478-.198.798.798 0 0 1 .796.064l.453.324a1.875 1.875 0 0 0 2.416-.2l.243-.243c.648-.648.733-1.67.2-2.416l-.324-.453a.798.798 0 0 1-.064-.796c.071-.157.137-.316.198-.478.1-.267.327-.47.608-.517l.55-.091a1.875 1.875 0 0 0 1.566-1.85v-.344c0-.916-.663-1.699-1.567-1.85l-.549-.091a.798.798 0 0 1-.608-.517 7.507 7.507 0 0 0-.198-.478.798.798 0 0 1 .064-.796l.324-.453a1.875 1.875 0 0 0-.2-2.416l-.243-.243a1.875 1.875 0 0 0-2.416-.2l-.453.324a.798.798 0 0 1-.796.064 7.462 7.462 0 0 0-.478-.198.798.798 0 0 1-.517-.608l-.091-.55a1.875 1.875 0 0 0-1.85-1.566h-.344ZM12 15.75a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5Z"
       />
-      <circle cx="12" cy="12" r="2.15" fill="#ffffff" />
     </svg>
   );
 }
@@ -1253,7 +1253,7 @@ export default function FunChineseInteractiveEbook() {
               aria-label="Settings"
               aria-pressed={showSettings}
             >
-              <EbookSettingsIcon className="ebook-header-circle-icon" />
+              <EbookSettingsIcon className="ebook-header-circle-icon ebook-settings-gear-icon" />
             </button>
           </div>
         </header>
@@ -2792,15 +2792,18 @@ export default function FunChineseInteractiveEbook() {
               <section className="ebook-settings-section ebook-settings-applies-inline">
                 <span className="ebook-settings-kicker-inline">Applies to</span>
                 <div className="ebook-settings-mode-icons" aria-label="Speech speed applies to Tap to Read, Repeat Range, and Shadow Reading">
-                  {SPEECH_SPEED_MODES.map(({ id, Icon }) => (
-                    <div
+                  {SPEECH_SPEED_MODES.map(({ id, label, Icon }) => (
+                    <button
                       key={id}
-                      className={`ebook-settings-mode-icon-btn ${mode === id ? 'ebook-settings-mode-icon-btn-active' : ''}`}
-                      title={LEARNING_MODES.find((m) => m.id === id)?.label}
+                      type="button"
+                      onClick={() => switchMode(id)}
+                      aria-label={label}
+                      aria-pressed={mode === id}
+                      title={label}
+                      className={`ebook-settings-mode-icon-btn${mode === id ? ' ebook-settings-mode-icon-btn-active' : ''}`}
                     >
                       <Icon className="ebook-settings-mode-icon" strokeWidth={2} aria-hidden />
-                      <span className="sr-only">{LEARNING_MODES.find((m) => m.id === id)?.label}</span>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </section>
@@ -2833,7 +2836,7 @@ export default function FunChineseInteractiveEbook() {
                 </div>
               </section>
 
-              <section className="ebook-settings-card">
+              <section className={`ebook-settings-card${mode === 'read' ? ' is-active' : ' is-inactive'}`}>
                 <h4 className="ebook-settings-card-title">Tap to Read</h4>
                 <div className="ebook-settings-row">
                   <label className="ebook-settings-item-label" htmlFor="toggle-read-marker">
@@ -2845,6 +2848,7 @@ export default function FunChineseInteractiveEbook() {
                     type="button"
                     role="switch"
                     aria-checked={showReadHighlights}
+                    disabled={mode !== 'read'}
                     onClick={() => setShowReadHighlights(!showReadHighlights)}
                     className={`ebook-settings-toggle ${showReadHighlights ? 'ebook-settings-toggle-on' : ''}`}
                   >
@@ -2853,7 +2857,7 @@ export default function FunChineseInteractiveEbook() {
                 </div>
               </section>
 
-              <section className="ebook-settings-card">
+              <section className={`ebook-settings-card${mode === 'shadow' ? ' is-active' : ' is-inactive'}`}>
                 <h4 className="ebook-settings-card-title">Shadow Reading</h4>
                 <div className="ebook-settings-card-stack">
                   <div className="ebook-settings-row">
@@ -2866,6 +2870,7 @@ export default function FunChineseInteractiveEbook() {
                       type="button"
                       role="switch"
                       aria-checked={showPinyin}
+                      disabled={mode !== 'shadow'}
                       onClick={() => setShowPinyin(!showPinyin)}
                       className={`ebook-settings-toggle ${showPinyin ? 'ebook-settings-toggle-on' : ''}`}
                     >
@@ -2882,6 +2887,7 @@ export default function FunChineseInteractiveEbook() {
                       type="button"
                       role="switch"
                       aria-checked={aiAssistEnabled}
+                      disabled={mode !== 'shadow'}
                       onClick={() => setAiAssistEnabled(!aiAssistEnabled)}
                       className={`ebook-settings-toggle ${aiAssistEnabled ? 'ebook-settings-toggle-on' : ''}`}
                     >

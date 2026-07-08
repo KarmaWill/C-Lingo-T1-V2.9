@@ -1257,6 +1257,10 @@
   flex-shrink: 0;
 }
 
+.ebook-settings-gear-icon {
+  color: #64748b;
+}
+
 /* Footer toolbar — aligned with header capsule / circle controls */
 
 .ebook-footer-bar {
@@ -1468,10 +1472,18 @@
   justify-content: center;
   width: 2rem;
   height: 2rem;
+  border: 1px solid transparent;
   border-radius: 9999px;
   background: transparent;
   color: #94a3b8;
-  pointer-events: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.ebook-settings-mode-icon-btn:hover:not(.ebook-settings-mode-icon-btn-active) {
+  background: #f0fdfa;
+  color: #14b8a6;
 }
 
 .ebook-settings-mode-icon-btn-active {
@@ -1585,6 +1597,32 @@
   border-radius: 1rem;
   border: 1px solid #e2e8f0;
   background: #ffffff;
+  transition: opacity 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.ebook-settings-card.is-active {
+  border-color: #99f6e4;
+  box-shadow: 0 0 0 1px rgba(20, 184, 166, 0.08);
+}
+
+.ebook-settings-card.is-inactive {
+  opacity: 0.5;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.ebook-settings-card.is-inactive .ebook-settings-card-title,
+.ebook-settings-card.is-inactive .ebook-settings-item-label {
+  color: #94a3b8;
+}
+
+.ebook-settings-card.is-inactive .ebook-settings-item-icon {
+  color: #cbd5e1;
+}
+
+.ebook-settings-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .ebook-settings-card-title {
