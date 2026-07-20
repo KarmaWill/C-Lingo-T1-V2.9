@@ -4,7 +4,7 @@
  * HomeScreen → PaperSelectionScreen → ExamIntroScreen → ExamScreen → ResultScreen
  */
 import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Box, Typography, ButtonBase } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -356,10 +356,12 @@ function HomeScreen({
   onSelectLevel,
   onBack,
   is960,
+  showBack = true,
 }: {
   onSelectLevel: (level: HSKLevel) => void;
   onBack: () => void;
   is960: boolean;
+  showBack?: boolean;
 }) {
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#FFF8F0', overflow: 'hidden' }}>
@@ -377,7 +379,17 @@ function HomeScreen({
       >
         <ButtonBase
           onClick={onBack}
-          sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: 'rgba(0,0,0,0.05)', color: '#586E75', flexShrink: 0, '&:active': { bgcolor: 'rgba(0,0,0,0.1)' } }}
+          sx={{
+            width: 44,
+            height: 44,
+            borderRadius: '50%',
+            bgcolor: 'rgba(0,0,0,0.05)',
+            color: '#586E75',
+            flexShrink: 0,
+            visibility: showBack ? 'visible' : 'hidden',
+            pointerEvents: showBack ? 'auto' : 'none',
+            '&:active': { bgcolor: 'rgba(0,0,0,0.1)' },
+          }}
         >
           <ChevronLeftIcon sx={{ fontSize: 24 }} />
         </ButtonBase>
@@ -706,12 +718,14 @@ function PaperSelectionScreen({
   onBack,
   is960,
   scoreRefreshKey,
+  paperTrack,
 }: {
   level: HSKLevel;
   onSelectPaper: (paper: PaperCatalogItem) => void;
   onBack: () => void;
   is960: boolean;
   scoreRefreshKey: number;
+  paperTrack?: PaperSource | null;
 }) {
   const papers = getPaperCatalogForLevel(level);
   const officialCardSize = is960 ? 156 : 184;
@@ -764,7 +778,7 @@ function PaperSelectionScreen({
           gap: is960 ? 2.5 : 3,
         }}
       >
-        {PAPER_SECTIONS.map((section) => {
+        {PAPER_SECTIONS.filter((section) => !paperTrack || section.source === paperTrack).map((section) => {
           const sectionPapers = papers.filter((p) => p.source === section.source);
           return (
             <Box key={section.source}>
@@ -2140,6 +2154,11 @@ function ResultScreen({ paper, result, onRestart, onGoHome, is960 }: { paper: Ex
    ═══════════════════════════════════════════════════════════════════════════════ */
 export default function HSKPrepTrainingPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isWebsiteEmbed = searchParams.get('mode') === 'website';
+  const paperTrackParam = searchParams.get('track');
+  const paperTrack: PaperSource | null =
+    paperTrackParam === 'clingo' ? 'clingo' : paperTrackParam === 'official' ? 'official' : null;
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
   const is960 = screenSize === '960x540';
 
@@ -2212,6 +2231,10 @@ export default function HSKPrepTrainingPage() {
 
   /** Leave prep training entirely — back to HSK Preparation hub (same as mock grid entry). */
   const handleExitToHub = () => {
+    if (isWebsiteEmbed) {
+      handleBackToHome();
+      return;
+    }
     navigate('/hsk-test');
   };
 
@@ -2219,7 +2242,12 @@ export default function HSKPrepTrainingPage() {
     <AnimatePresence mode="wait">
       {currentScreen === 'home' && (
         <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -40 }} style={{ height: '100%' }}>
-          <HomeScreen onSelectLevel={handleSelectLevel} onBack={handleExitToHub} is960={is960} />
+          <HomeScreen
+            onSelectLevel={handleSelectLevel}
+            onBack={handleExitToHub}
+            is960={is960}
+            showBack={!isWebsiteEmbed}
+          />
         </motion.div>
       )}
 
@@ -2231,6 +2259,7 @@ export default function HSKPrepTrainingPage() {
             onBack={handleBackToHome}
             is960={is960}
             scoreRefreshKey={scoreRefreshKey}
+            paperTrack={paperTrack}
           />
         </motion.div>
       )}
