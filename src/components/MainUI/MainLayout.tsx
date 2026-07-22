@@ -21,6 +21,9 @@ const SHELL_CHROME_RESERVE = SHELL_BAR_RESERVE * 2
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation()
+  const isWebsiteEmbed =
+    location.pathname === '/hsk-prep-training' &&
+    new URLSearchParams(location.search).get('mode') === 'website'
 
   const openExternal = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer')
@@ -45,14 +48,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
   }, [])
 
   const scale1920 = is1920x1125
-    ? Math.min(1, viewport.w / DESIGN_1920, (viewport.h - SHELL_CHROME_RESERVE) / DESIGN_1125)
+    ? Math.min(1, viewport.w / DESIGN_1920, (viewport.h - (isWebsiteEmbed ? 0 : SHELL_CHROME_RESERVE)) / DESIGN_1125)
     : 1
 
   const breakpointDeviceScale =
     viewport.w < 600 ? 0.35 : viewport.w < 900 ? 0.6 : viewport.w < 1200 ? 0.85 : 1
   const fitDeviceScale = Math.min(
     breakpointDeviceScale,
-    (viewport.h - SHELL_CHROME_RESERVE - 12) / screenHeight,
+    (viewport.h - (isWebsiteEmbed ? 0 : SHELL_CHROME_RESERVE) - 12) / screenHeight,
     (viewport.w - 24) / screenWidth,
   )
   const deviceScale = Math.max(0.28, fitDeviceScale)
@@ -149,7 +152,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isLingoFlashPage || 
     isGrammarPuzzlePage || 
     isSyntaxSnapPage ||
-    isHSKPrepTrainingPage ||
+    (isHSKPrepTrainingPage && !isWebsiteEmbed) ||
     isHSKSkillDrillPage ||
     isHSKOralReviewPage ||
     isGrammarSnapPage ||
@@ -329,7 +332,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       justifyContent: 'flex-start',
       overflow: 'hidden'
     }}>
-      {shellTopBar}
+      {!isWebsiteEmbed && shellTopBar}
       <Box
         id="shell-stage"
         sx={{
@@ -423,7 +426,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       )}
       </Box>
       </Box>
-      {shellBrand}
+      {!isWebsiteEmbed && shellBrand}
     </Box>
   )
 }

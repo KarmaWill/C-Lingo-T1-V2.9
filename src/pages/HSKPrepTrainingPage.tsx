@@ -4,13 +4,25 @@
  * HomeScreen → PaperSelectionScreen → ExamIntroScreen → ExamScreen → ResultScreen
  */
 import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Box, Typography, ButtonBase } from '@mui/material';
+import {
+  Box,
+  Typography,
+  ButtonBase,
+  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+} from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import LockIcon from '@mui/icons-material/Lock';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import HeadphonesIcon from '@mui/icons-material/Headphones';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
@@ -25,23 +37,49 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import ReplayIcon from '@mui/icons-material/Replay';
 import {
   type PaperSource,
   type HSKLevel,
   type ExamSectionKind,
-  getExamBlueprint,
-  formatSectionSummary,
-  formatSectionSummaryLines,
-  generateQuestionsFromBlueprint,
   getPartTitle,
-  getIntroSectionLines,
   type GeneratedExamQuestion,
+  type HskTemplateCode,
   TEMPLATE_LABELS,
+  hasCompositeImageOptions,
+  clampActiveSubIndex,
+  createSectionPartNumberResolver,
 } from '../hsk/hskExamBlueprint';
+import {
+  listPublishedPapers,
+  getAttempt,
+  getAttemptResultDetail,
+  startAttempt,
+  submitAttempt,
+  type AttemptResult,
+  type AttemptReview,
+  type AttemptReviewItem,
+  type ExamAttempt,
+  isAttemptNotFoundError,
+  type PublishedPaper,
+  type RuntimeOption,
+} from '../services/hskExamService';
+import { ExclusiveAudioPlayer } from '../hsk/exclusiveAudioPlayer';
+import {
+  ACTIVE_ATTEMPT_POINTER_KEY_PREFIX,
+  LEGACY_ACTIVE_ATTEMPT_POINTER_KEY,
+  clearActiveAttemptPointerIfMatches as clearStoredActiveAttemptPointer,
+  hasBlockingAttemptPointer,
+  listActiveAttemptPointers as listStoredActiveAttemptPointers,
+  readActiveAttemptPointer as readStoredActiveAttemptPointer,
+  scanAttemptPointers,
+  writeActiveAttemptPointer as writeStoredActiveAttemptPointer,
+  type ActiveAttemptPointer as StoredActiveAttemptPointer,
+} from '../hsk/attemptPointerStore';
 
-type Screen = 'home' | 'papers' | 'intro' | 'exam' | 'result';
+type Screen = 'home' | 'papers' | 'intro' | 'exam' | 'result' | 'review';
 
-type Question = GeneratedExamQuestion;
+type Question = GeneratedExamQuestion & { isExample?: boolean };
 
 interface ExamPaper {
   id: string;
@@ -54,7 +92,11 @@ interface ExamPaper {
   passScore: number;
   listeningPlays: 1 | 2;
   sectionSummary: string;
+  sectionLines: ExamSectionLine[];
   questions: Question[];
+  questionCount: number;
+  attemptId?: string;
+  expiresAt?: string;
 }
 
 interface PaperCatalogItem {
@@ -68,53 +110,61 @@ interface PaperCatalogItem {
   questionCount: number;
   duration: number;
   sectionSummary: string;
-  sectionLines: string[];
+  sectionLines: ExamSectionLine[];
   maxScore: number;
   passScore: number;
+  maxPlayCount: number;
+  activeAttemptId?: string;
+  bestScore?: number;
+  bestScoreAt?: string;
 }
 
-const ALL_LEVELS: HSKLevel[] = [1, 2, 3, 4, 5, 6];
+type ActiveAttemptPointer = StoredActiveAttemptPointer<PaperCatalogItem>;
+const LATEST_RESULT_POINTER_KEY = 'clingo-hsk-latest-result';
 
-const HSK_PAPER_SCORES_KEY = 'hsk-prep-paper-scores';
+function readActiveAttemptPointers(): ActiveAttemptPointer[] {
+  return listStoredActiveAttemptPointers<PaperCatalogItem>(localStorage);
+}
+
+function readActiveAttemptPointer(): ActiveAttemptPointer | null {
+  return readStoredActiveAttemptPointer<PaperCatalogItem>(localStorage);
+}
+
+function writeActiveAttemptPointer(pointer: ActiveAttemptPointer): void {
+  writeStoredActiveAttemptPointer(localStorage, pointer);
+}
+
+function clearActiveAttemptPointerIfMatches(attemptId: string): boolean {
+  return clearStoredActiveAttemptPointer(localStorage, attemptId);
+}
+
+function readLatestResultPointer(): ActiveAttemptPointer | null {
+  try {
+    const value = JSON.parse(localStorage.getItem(LATEST_RESULT_POINTER_KEY) || 'null') as ActiveAttemptPointer | null;
+    return value?.attemptId && value.catalog?.id ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLatestResultPointer(pointer: ActiveAttemptPointer | null) {
+  if (pointer) {
+    localStorage.setItem(LATEST_RESULT_POINTER_KEY, JSON.stringify(pointer));
+  } else {
+    localStorage.removeItem(LATEST_RESULT_POINTER_KEY);
+  }
+}
+
+interface ExamSectionLine {
+  title: string;
+  detail: string;
+  duration?: string;
+}
 
 interface PaperAttemptRecord {
   score: number;
   completedAt: string;
 }
-
-function loadPaperRecords(): Record<string, PaperAttemptRecord> {
-  try {
-    const raw = localStorage.getItem(HSK_PAPER_SCORES_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as Record<string, PaperAttemptRecord | number>;
-    const records: Record<string, PaperAttemptRecord> = {};
-    for (const [id, val] of Object.entries(parsed)) {
-      if (typeof val === 'number') {
-        records[id] = { score: val, completedAt: new Date().toISOString() };
-      } else if (val && typeof val.score === 'number') {
-        records[id] = val;
-      }
-    }
-    return records;
-  } catch {
-    return {};
-  }
-}
-
-const CLINGO_VOLUMES_PER_LEVEL = 5;
-
-/** 演示用记录 — 展示分数 + 做卷日期（真实记录优先） */
-const DEMO_PAPER_RECORDS: Record<string, PaperAttemptRecord> = {
-  'hsk1-official-v1': { score: 168, completedAt: '2026-02-14T09:30:00.000Z' },
-  'hsk1-official-v2': { score: 98, completedAt: '2026-01-08T14:15:00.000Z' },
-  'clingo-test-1-v1': { score: 132, completedAt: '2026-03-02T11:00:00.000Z' },
-  'clingo-test-1-v2': { score: 105, completedAt: '2026-02-20T16:45:00.000Z' },
-  'clingo-test-1-v4': { score: 88, completedAt: '2026-01-15T10:20:00.000Z' },
-  'hsk2-official-v1': { score: 145, completedAt: '2026-03-10T08:50:00.000Z' },
-  'hsk2-official-v2': { score: 108, completedAt: '2026-02-28T13:30:00.000Z' },
-};
-
-const SCORE_PASS_LINE = 120;
 
 const SCORE_BADGE_BG = {
   none: 'linear-gradient(135deg, #E5E7EB 0%, #D1D5DB 100%)',
@@ -126,80 +176,147 @@ function formatPaperDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function resolvePaperRecord(paperId: string, savedRecords: Record<string, PaperAttemptRecord>): PaperAttemptRecord | undefined {
-  if (savedRecords[paperId]) return savedRecords[paperId];
-  return DEMO_PAPER_RECORDS[paperId];
+function levelNumber(level: string): HSKLevel {
+  const parsed = Number(level.replace(/[^0-9]/g, ''));
+  return (parsed === 2 ? 2 : 1) as HSKLevel;
 }
 
-function savePaperAttempt(paperId: string, score: number, completedAt: string) {
-  const records = loadPaperRecords();
-  const prev = records[paperId];
-  if (prev === undefined || score > prev.score) {
-    records[paperId] = { score, completedAt };
-    localStorage.setItem(HSK_PAPER_SCORES_KEY, JSON.stringify(records));
-  }
+function apiPaperToCatalog(paper: PublishedPaper, index: number): PaperCatalogItem {
+  const level = levelNumber(paper.level);
+  const source: PaperSource = paper.category === 'official' ? 'official' : 'clingo';
+  const sectionLines = sectionLinesFromSummary(paper.sectionSummary);
+  return {
+    id: paper.id,
+    source,
+    level,
+    volume: index + 1,
+    brandLabel: source === 'official' ? `Volume ${index + 1}` : 'Custom',
+    title: paper.name,
+    subtitle: source === 'official' ? `Volume ${index + 1}` : 'Custom paper',
+    questionCount: paper.questionCount,
+    duration: paper.durationMinutes,
+    sectionSummary: sectionLines.map((line) => line.detail).join(' · ') || `${paper.questionCount} questions`,
+    sectionLines,
+    maxScore: paper.totalScore,
+    passScore: paper.passScore,
+    maxPlayCount: paper.maxPlayCount || 2,
+    activeAttemptId: paper.activeAttemptId,
+    bestScore: paper.bestScore,
+    bestScoreAt: paper.bestScoreAt,
+  };
 }
 
-interface ExamResult {
-  paperId: string;
-  score: number;
-  answers: Record<string, string>;
-  completedAt: string;
-}
-
-
-function getOfficialPapers(): PaperCatalogItem[] {
-  return ALL_LEVELS.flatMap((level) => {
-    const blueprint = getExamBlueprint(level, 'official');
-    return [1, 2].map((volume) => ({
-      id: `hsk${level}-official-v${volume}`,
-      source: 'official' as const,
-      level,
-      volume,
-      brandLabel: `Volume ${volume}`,
-      title: blueprint.label,
-      subtitle: `Volume ${volume}`,
-      questionCount: blueprint.totalQuestions,
-      duration: blueprint.totalMinutes,
-      sectionSummary: formatSectionSummary(blueprint),
-      sectionLines: formatSectionSummaryLines(blueprint),
-      maxScore: blueprint.maxScore,
-      passScore: blueprint.passScore,
+function sectionLinesFromSummary(
+  summary: Array<{ module?: string; count?: number; minutes?: number }> | undefined,
+): ExamSectionLine[] {
+  const titles: Record<string, string> = {
+    listening: 'Listening',
+    reading: 'Reading',
+    writing: 'Writing',
+  };
+  return (summary || [])
+    .filter((item) => Number(item.count || 0) > 0)
+    .map((item) => ({
+      title: titles[item.module || ''] || item.module || 'Questions',
+      detail: `${item.count} questions`,
+      duration: Number(item.minutes || 0) > 0 ? `~${item.minutes} min` : undefined,
     }));
-  });
 }
 
-function getClingoPapers(): PaperCatalogItem[] {
-  return ALL_LEVELS.flatMap((level) => {
-    const blueprint = getExamBlueprint(level, 'clingo');
-    return Array.from({ length: CLINGO_VOLUMES_PER_LEVEL }, (_, i) => {
-      const volume = i + 1;
-      return {
-        id: `clingo-test-${level}-v${volume}`,
-        source: 'clingo' as const,
-        level,
-        volume,
-        brandLabel: `C-Lingo Test ${volume}`,
-        title: blueprint.label,
-        subtitle: `Test ${volume}`,
-        questionCount: blueprint.totalQuestions,
-        duration: blueprint.totalMinutes,
-        sectionSummary: formatSectionSummary(blueprint),
-        sectionLines: formatSectionSummaryLines(blueprint),
-        maxScore: blueprint.maxScore,
-        passScore: blueprint.passScore,
-      };
-    });
-  });
+function contentText(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (!value || typeof value !== 'object') return '';
+  const record = value as Record<string, unknown>;
+  for (const key of ['stem', 'phrase', 'question', 'text', 'title', 'prompt', 'content']) {
+    const text = contentText(record[key]);
+    if (text) return text;
+  }
+  return '';
 }
 
-function getAllPaperCatalog(): PaperCatalogItem[] {
-  return [...getOfficialPapers(), ...getClingoPapers()];
+function optionValue(option: RuntimeOption, index: number): string {
+  return option.key || option.text || String.fromCharCode(65 + index);
 }
 
-function getPaperCatalogForLevel(level: HSKLevel): PaperCatalogItem[] {
-  return getAllPaperCatalog().filter((paper) => paper.level === level);
+function attemptToPaper(catalog: PaperCatalogItem, attempt: ExamAttempt): ExamPaper {
+  const questions: Question[] = [];
+  const nextPart = createSectionPartNumberResolver();
+  for (const runtime of attempt.delivery.questions || []) {
+    const templateCode = runtime.type.replace(/_group$/, '') as HskTemplateCode;
+    const section = (runtime.category === 'listening'
+      ? 'listening'
+      : runtime.category === 'writing'
+        ? 'writing'
+        : 'reading') as ExamSectionKind;
+    const sectionId = runtime.sectionId || `${section}-${runtime.type}-${runtime.groupId || runtime.questionNumber}`;
+    const partNumber = nextPart(section, sectionId);
+    const children = runtime.questions || [];
+    const rootOptions = runtime.options || [];
+    const imageMatch = children.length > 0 && hasCompositeImageOptions(runtime);
+    const rootText = contentText(runtime.content);
+    const rows = children.length > 0
+      ? children.map((child) => ({
+        id: child.sourceSubId || child.id,
+        number: child.questionNumber || 0,
+        isExample: Boolean(child.isExample),
+        question: contentText(child.question) || rootText,
+        options: child.options?.length ? child.options : rootOptions,
+      }))
+      : [{
+        id: runtime.id,
+        number: runtime.questionNumber || runtime.id || 0,
+        isExample: Boolean(runtime.isExample),
+        question: rootText,
+        options: rootOptions,
+      }];
+    for (const row of rows) {
+      const options = row.options || [];
+      const values = options.map(optionValue);
+      const optionTextByValue = Object.fromEntries(
+        options.map((option, index) => [optionValue(option, index), option.text || option.key || '']),
+      );
+      const isWriting = templateCode === 'W02';
+      questions.push({
+        id: row.isExample ? `example-${row.id || runtime.id || questions.length}` : String(row.number),
+        number: row.number,
+        isExample: row.isExample,
+        section,
+        partNumber,
+        templateCode,
+        templateLabel: runtime.typeName || TEMPLATE_LABELS[templateCode] || templateCode,
+        isComposite: children.length > 0,
+        question: row.question,
+        options: values,
+        correctAnswer: '',
+        displayMode: isWriting ? 'writing' : imageMatch ? 'image-match' : children.length > 0 ? 'text-composite' : options.some((option) => option.image) ? 'image' : 'text',
+        optionImages: options.map((option) => option.image || ''),
+        optionTextByValue,
+        sharedPrompt: rootText,
+        audioUrl: runtime.audioUrl,
+        audioGroupId: runtime.groupId || `${runtime.type}-${runtime.questionNumber}`,
+        maxPlayCount: runtime.maxPlayCount || attempt.delivery.maxPlayCount || 2,
+      });
+    }
+  }
+  return {
+    id: catalog.id,
+    level: catalog.level,
+    volume: catalog.volume,
+    source: catalog.source,
+    title: attempt.delivery.title,
+    duration: attempt.delivery.durationMinutes,
+    maxScore: attempt.delivery.totalScore,
+    passScore: attempt.delivery.passScore,
+    listeningPlays: (attempt.delivery.maxPlayCount === 1 ? 1 : 2),
+    sectionSummary: catalog.sectionSummary,
+    sectionLines: sectionLinesFromSummary(attempt.delivery.sectionSummary),
+    questions,
+    questionCount: catalog.questionCount,
+    attemptId: attempt.attemptId,
+    expiresAt: attempt.expiresAt,
+  };
 }
+
 
 type LevelPickerId = HSKLevel | 'hsk7-9';
 
@@ -216,27 +333,28 @@ interface LevelPickerItem {
 const LEVEL_PICKER_ITEMS: LevelPickerItem[] = [
   { id: 1, title: 'HSK 1', desc: '150 words · Beginner', color: '#E8941A', tint: '#FFF8EB', badgeGradient: 'linear-gradient(145deg, #F0A830 0%, #E8941A 100%)', enabled: true },
   { id: 2, title: 'HSK 2', desc: '300 words · Elementary', color: '#1FA396', tint: '#ECFDF9', badgeGradient: 'linear-gradient(145deg, #2DB8A8 0%, #1FA396 100%)', enabled: true },
-  { id: 3, title: 'HSK 3', desc: '600 words · Intermediate', color: '#E06518', tint: '#FFF4EB', badgeGradient: 'linear-gradient(145deg, #F07828 0%, #E06518 100%)', enabled: false },
-  { id: 4, title: 'HSK 4', desc: '1200 words · Upper intermediate', color: '#7A2430', tint: '#FDF2F3', badgeGradient: 'linear-gradient(145deg, #9B3040 0%, #7A2430 100%)', enabled: false },
-  { id: 5, title: 'HSK 5', desc: '2500 words · Advanced', color: '#1E3355', tint: '#EEF2F8', badgeGradient: 'linear-gradient(145deg, #2C4770 0%, #1E3355 100%)', enabled: false },
-  { id: 6, title: 'HSK 6', desc: '5000+ words · Proficient', color: '#543878', tint: '#F3EFF8', badgeGradient: 'linear-gradient(145deg, #6B4898 0%, #543878 100%)', enabled: false },
-  { id: 'hsk7-9', title: 'HSK 7–9', desc: 'Advanced fluency · Coming soon', color: '#64748B', tint: '#F1F5F9', badgeGradient: 'linear-gradient(145deg, #64748B 0%, #475569 100%)', enabled: false },
+  { id: 3, title: 'HSK 3', desc: '600 words · Intermediate', color: '#E59B73', tint: '#FFF7F2', badgeGradient: 'linear-gradient(145deg, #F3B18E 0%, #DF8D65 100%)', enabled: false },
+  { id: 4, title: 'HSK 4', desc: '1200 words · Upper intermediate', color: '#B78591', tint: '#FFF7F9', badgeGradient: 'linear-gradient(145deg, #C99AA5 0%, #AE7885 100%)', enabled: false },
+  { id: 5, title: 'HSK 5', desc: '2500 words · Advanced', color: '#8796AA', tint: '#F7F9FC', badgeGradient: 'linear-gradient(145deg, #A6B2C2 0%, #7D8DA4 100%)', enabled: false },
+  { id: 6, title: 'HSK 6', desc: '5000+ words · Proficient', color: '#9B8DB5', tint: '#FAF8FD', badgeGradient: 'linear-gradient(145deg, #B1A5C7 0%, #9080AB 100%)', enabled: false },
+  { id: 'hsk7-9', title: 'HSK 7–9', desc: 'Advanced fluency · Coming soon', color: '#8993A3', tint: '#F8FAFC', badgeGradient: 'linear-gradient(145deg, #A6AFBD 0%, #7E899A 100%)', enabled: false },
 ];
 
 function buildPaperFromCatalog(item: PaperCatalogItem): ExamPaper {
-  const blueprint = getExamBlueprint(item.level, item.source);
   return {
     id: item.id,
     level: item.level,
     volume: item.volume,
     source: item.source,
-    title: `${item.title} · ${item.subtitle}`,
-    duration: blueprint.totalMinutes,
-    maxScore: blueprint.maxScore,
-    passScore: blueprint.passScore,
-    listeningPlays: blueprint.listeningPlays,
-    sectionSummary: formatSectionSummary(blueprint),
-    questions: generateQuestionsFromBlueprint(item.id, blueprint),
+    title: item.title,
+    duration: item.duration,
+    maxScore: item.maxScore,
+    passScore: item.passScore,
+    listeningPlays: item.maxPlayCount === 1 ? 1 : 2,
+    sectionSummary: item.sectionSummary,
+    sectionLines: item.sectionLines,
+    questions: [],
+    questionCount: item.questionCount,
   };
 }
 
@@ -405,9 +523,8 @@ function HomeScreen({
           gap: is960 ? 1 : 1.25,
         }}
       >
-        {LEVEL_PICKER_ITEMS.map((item, index) => {
+        {LEVEL_PICKER_ITEMS.map((item) => {
           const locked = !item.enabled;
-          const isLast = index === LEVEL_PICKER_ITEMS.length - 1;
 
           const cardBody = (
             <>
@@ -489,7 +606,6 @@ function HomeScreen({
           );
 
           const cardSx = {
-            gridColumn: isLast ? '1 / -1' : undefined,
             display: 'flex',
             flexDirection: 'row' as const,
             alignItems: 'center',
@@ -507,6 +623,7 @@ function HomeScreen({
             opacity: locked ? 0.82 : 1,
             position: 'relative' as const,
             overflow: 'hidden' as const,
+            gridColumn: item.id === 'hsk7-9' ? '1 / -1' : undefined,
             ...(locked
               ? {}
               : {
@@ -570,7 +687,7 @@ function PaperCard({
   const theme = PAPER_CARD_THEMES[paper.source];
   const savedScore = attempt?.score;
   const hasScore = savedScore !== undefined;
-  const passed = hasScore && savedScore >= SCORE_PASS_LINE;
+  const passed = hasScore && savedScore >= paper.passScore;
   const scoreBadgeBg = !hasScore ? SCORE_BADGE_BG.none : passed ? SCORE_BADGE_BG.pass : SCORE_BADGE_BG.fail;
   const dateLabel = attempt ? formatPaperDate(attempt.completedAt) : '--';
 
@@ -702,23 +819,25 @@ function PaperCard({
 
 function PaperSelectionScreen({
   level,
+  papers,
+  loading,
+  error,
   onSelectPaper,
   onBack,
+  onRetry,
   is960,
-  scoreRefreshKey,
 }: {
   level: HSKLevel;
+  papers: PaperCatalogItem[];
+  loading: boolean;
+  error: string | null;
   onSelectPaper: (paper: PaperCatalogItem) => void;
   onBack: () => void;
+  onRetry: () => void;
   is960: boolean;
-  scoreRefreshKey: number;
 }) {
-  const papers = getPaperCatalogForLevel(level);
   const officialCardSize = is960 ? 156 : 184;
-  const savedRecords = useMemo(() => loadPaperRecords(), [scoreRefreshKey]);
-  const blueprint = getExamBlueprint(level, 'official');
-  const clingoCount = papers.filter((p) => p.source === 'clingo').length;
-  const clingoColumns = clingoCount >= 5 ? 5 : Math.min(4, clingoCount);
+  const summaryPaper = papers[0];
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#FFF8F0', overflow: 'hidden' }}>
@@ -745,9 +864,9 @@ function PaperSelectionScreen({
             HSK {level} Practice Papers
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: is960 ? 0.65 : 0.85 }}>
-            <HeaderStatChip label="Duration" value={`${blueprint.totalMinutes} min`} is960={is960} />
-            <HeaderStatChip label="Questions" value={blueprint.totalQuestions} is960={is960} />
-            <HeaderStatChip label="Full score" value={blueprint.maxScore} is960={is960} />
+            <HeaderStatChip label="Duration" value={summaryPaper ? `${summaryPaper.duration} min` : '--'} is960={is960} />
+            <HeaderStatChip label="Questions" value={summaryPaper?.questionCount ?? '--'} is960={is960} />
+            <HeaderStatChip label="Full score" value={summaryPaper?.maxScore ?? '--'} is960={is960} />
           </Box>
         </Box>
       </Box>
@@ -764,8 +883,24 @@ function PaperSelectionScreen({
           gap: is960 ? 2.5 : 3,
         }}
       >
+        {(loading || error || papers.length === 0) && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            <Typography sx={{ color: error ? '#B91C1C' : '#64748B', fontWeight: 700 }}>
+              {loading ? 'Loading published papers…' : error || 'No published papers for this level.'}
+            </Typography>
+            {error && !loading && (
+              <ButtonBase
+                onClick={onRetry}
+                sx={{ minHeight: 44, px: 2, borderRadius: '8px', bgcolor: '#FFFFFF', border: '1px solid #CBD5E1', color: '#334155', fontWeight: 800 }}
+              >
+                Retry
+              </ButtonBase>
+            )}
+          </Box>
+        )}
         {PAPER_SECTIONS.map((section) => {
           const sectionPapers = papers.filter((p) => p.source === section.source);
+          if (sectionPapers.length === 0) return null;
           return (
             <Box key={section.source}>
               <SectionDividerTitle label={section.labelEn} source={section.source} is960={is960} />
@@ -773,23 +908,20 @@ function PaperSelectionScreen({
               <Box
                 sx={{
                   display: 'grid',
-                  gridTemplateColumns:
-                    section.source === 'clingo'
-                      ? `repeat(${clingoColumns}, minmax(0, 1fr))`
-                      : `repeat(${Math.min(sectionPapers.length, 2)}, minmax(0, 1fr))`,
+                  gridTemplateColumns: `repeat(auto-fill, ${officialCardSize}px)`,
                   gap: is960 ? 1.1 : 1.35,
                   width: '100%',
-                  maxWidth: section.source === 'official' ? officialCardSize * 2 + (is960 ? 18 : 22) : '100%',
                 }}
               >
                 {sectionPapers.map((paper) => (
                   <PaperCard
                     key={paper.id}
                     paper={paper}
-                    cardSize={section.source === 'official' ? officialCardSize : undefined}
-                    fluid={section.source === 'clingo'}
+                    cardSize={officialCardSize}
                     is960={is960}
-                    attempt={resolvePaperRecord(paper.id, savedRecords)}
+                    attempt={paper.bestScore === undefined
+                      ? undefined
+                      : { score: paper.bestScore, completedAt: paper.bestScoreAt || new Date().toISOString() }}
                     onSelect={onSelectPaper}
                   />
                 ))}
@@ -809,17 +941,18 @@ function ExamIntroScreen({
   paper,
   onStart,
   onBack,
+  starting,
   is960,
 }: {
   paper: ExamPaper;
   onStart: () => void;
   onBack: () => void;
+  starting: boolean;
   is960: boolean;
 }) {
   const [rulesAccepted, setRulesAccepted] = useState(false);
-  const blueprint = getExamBlueprint(paper.level, paper.source);
-  const sectionLines = getIntroSectionLines(blueprint);
-  const listenLabel = blueprint.listeningPlays === 1 ? 'once' : 'twice';
+  const sectionLines = paper.sectionLines;
+  const listenLabel = paper.listeningPlays === 1 ? 'once' : 'twice';
   const theme = PAPER_CARD_THEMES[paper.source];
   const isOfficial = paper.source === 'official';
   const accent = theme.volumeColor;
@@ -878,6 +1011,7 @@ function ExamIntroScreen({
       <Box sx={{ flexShrink: 0, px: is960 ? 2 : 3, py: is960 ? 1.5 : 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
         <ButtonBase
           onClick={onBack}
+          disabled={starting}
           sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: 'white', border: '1px solid #E5E7EB', color: '#586E75', flexShrink: 0, '&:active': { bgcolor: '#F3F4F6' } }}
         >
           <ChevronLeftIcon sx={{ fontSize: 24 }} />
@@ -911,7 +1045,7 @@ function ExamIntroScreen({
         <Box sx={{ ...card, display: 'flex', alignItems: 'stretch', p: is960 ? 1.75 : 2.5, mb: is960 ? 1.5 : 2 }}>
           {statItem(<AccessTimeIcon sx={{ fontSize: is960 ? 24 : 30 }} />, paper.duration, 'Duration · min', accent, isOfficial ? '#FEF2F2' : '#F0FDFA')}
           <Box sx={{ width: '1px', bgcolor: '#EEF0F3', my: 0.5 }} />
-          {statItem(<QuizOutlinedIcon sx={{ fontSize: is960 ? 24 : 30 }} />, paper.questions.length, 'Total questions', '#2563EB', '#EFF6FF')}
+          {statItem(<QuizOutlinedIcon sx={{ fontSize: is960 ? 24 : 30 }} />, paper.questionCount, 'Total questions', '#2563EB', '#EFF6FF')}
           <Box sx={{ width: '1px', bgcolor: '#EEF0F3', my: 0.5 }} />
           {statItem(<WorkspacePremiumOutlinedIcon sx={{ fontSize: is960 ? 24 : 30 }} />, paper.maxScore, 'Full score', '#CA8A04', '#FEF9C3')}
         </Box>
@@ -926,7 +1060,7 @@ function ExamIntroScreen({
                   Listening audio plays <Box component="span" sx={{ color: '#DC2626', fontWeight: 800 }}>{listenLabel}</Box>. Pay close attention.
                 </>,
                 <>
-                  You may submit early. When time is up, the system will <Box component="span" sx={{ color: '#DC2626', fontWeight: 800 }}>auto-submit</Box>.
+                  You may submit early. Submit before the <Box component="span" sx={{ color: '#DC2626', fontWeight: 800 }}>grace period ends</Box> to receive a score.
                 </>,
                 'Manage your time wisely — easier questions first, then harder ones.',
               ].map((rule, idx) => (
@@ -1043,6 +1177,7 @@ function ExamIntroScreen({
       >
         <ButtonBase
           onClick={() => setRulesAccepted((v) => !v)}
+          disabled={starting}
           sx={{
             display: 'flex',
             alignItems: 'center',
@@ -1067,23 +1202,23 @@ function ExamIntroScreen({
 
         <ButtonBase
           onClick={onStart}
-          disabled={!rulesAccepted}
+          disabled={!rulesAccepted || starting}
           sx={{
             minWidth: is960 ? 180 : 240,
             minHeight: is960 ? 52 : 60,
             px: 3,
             borderRadius: is960 ? '14px' : '16px',
-            bgcolor: rulesAccepted ? accent : '#E5E7EB',
-            color: rulesAccepted ? '#FFFFFF' : '#9CA3AF',
+            bgcolor: rulesAccepted && !starting ? accent : '#E5E7EB',
+            color: rulesAccepted && !starting ? '#FFFFFF' : '#9CA3AF',
             fontWeight: 900,
             fontSize: is960 ? '1rem' : '1.15rem',
             letterSpacing: '0.02em',
-            boxShadow: rulesAccepted ? `0 8px 20px ${accent}55` : 'none',
+            boxShadow: rulesAccepted && !starting ? `0 8px 20px ${accent}55` : 'none',
             transition: 'all 0.2s',
             '&:active': rulesAccepted ? { transform: 'scale(0.98)' } : {},
           }}
         >
-          Start exam
+          {starting ? 'Starting...' : 'Start exam'}
         </ButtonBase>
       </Box>
     </Box>
@@ -1109,19 +1244,27 @@ function isGroupedDisplayMode(mode: Question['displayMode']): mode is 'image-mat
   return mode === 'image-match' || mode === 'text-composite';
 }
 
+function groupedQuestionKey(question: Question): string {
+  return `${question.section}-${question.partNumber}-${question.audioGroupId || question.id}`;
+}
+
+function questionLabel(question: Question): string {
+  return question.isExample ? 'Example' : String(question.number);
+}
+
 function buildExamNavGroups(questions: Question[]): ExamNavGroup[] {
   const groups: ExamNavGroup[] = [];
   let i = 0;
   while (i < questions.length) {
     const q = questions[i];
     if (isGroupedDisplayMode(q.displayMode)) {
-      const partKey = `${q.section}-${q.partNumber}`;
+      const groupKey = groupedQuestionKey(q);
       const groupKind = q.displayMode;
       const indices: number[] = [];
       while (
         i < questions.length
         && questions[i].displayMode === groupKind
-        && `${questions[i].section}-${questions[i].partNumber}` === partKey
+        && groupedQuestionKey(questions[i]) === groupKey
       ) {
         indices.push(i);
         i += 1;
@@ -1140,10 +1283,11 @@ function isNavGroupComplete(
   questions: Question[],
   answers: Record<string, string>,
 ): boolean {
-  const groupAnswers = group.indices
+  const scoredIndices = group.indices.filter((idx) => !questions[idx].isExample);
+  const groupAnswers = scoredIndices
     .map((idx) => answers[questions[idx].id])
     .filter((value) => Boolean(value));
-  if (groupAnswers.length !== group.indices.length) return false;
+  if (groupAnswers.length !== scoredIndices.length) return false;
   if (group.groupKind === 'image-match') {
     return new Set(groupAnswers).size === groupAnswers.length;
   }
@@ -1156,42 +1300,89 @@ function buildSidebarSlots(indices: number[], questions: Question[]): SidebarSlo
   while (i < indices.length) {
     const q = questions[indices[i]];
     if (isGroupedDisplayMode(q.displayMode)) {
-      const partKey = `${q.section}-${q.partNumber}`;
+      const groupKey = groupedQuestionKey(q);
       const groupMode = q.displayMode;
       const slotIndices: number[] = [];
       while (
         i < indices.length
         && questions[indices[i]].displayMode === groupMode
-        && `${questions[indices[i]].section}-${questions[indices[i]].partNumber}` === partKey
+        && groupedQuestionKey(questions[indices[i]]) === groupKey
       ) {
         slotIndices.push(indices[i]);
         i += 1;
       }
-      const numbers = slotIndices.map((idx) => questions[idx].number);
+      const scoredNumbers = slotIndices
+        .map((idx) => questions[idx])
+        .filter((question) => !question.isExample)
+        .map((question) => question.number);
+      const includesExample = slotIndices.some((idx) => questions[idx].isExample);
+      const numberLabel = scoredNumbers.length > 1
+        ? `${scoredNumbers[0]}–${scoredNumbers[scoredNumbers.length - 1]}`
+        : scoredNumbers.length === 1 ? String(scoredNumbers[0]) : '';
       slots.push({
         kind: 'range',
         indices: slotIndices,
-        label: `${numbers[0]}–${numbers[numbers.length - 1]}`,
+        label: includesExample ? `Example${numberLabel ? ` · ${numberLabel}` : ''}` : numberLabel,
       });
     } else {
-      slots.push({ kind: 'single', indices: [indices[i]], label: String(questions[indices[i]].number) });
+      slots.push({ kind: 'single', indices: [indices[i]], label: questionLabel(questions[indices[i]]) });
       i += 1;
     }
   }
   return slots;
 }
 
-function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFinish: (answers: Record<string, string>) => void; onExit: () => void; is960: boolean }) {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [timeRemaining, setTimeRemaining] = useState(paper.duration * 60);
-  const [activeSubIndex, setActiveSubIndex] = useState(0);
+function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPaper; onFinish: (answers: Record<string, string>) => Promise<boolean>; onExit: () => void; error: string | null; is960: boolean }) {
+  const GRACE_PERIOD_SECONDS = 60;
+  const attemptStorageKey = `hsk-attempt-${paper.attemptId || paper.id}`;
+  const storedAttempt = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem(attemptStorageKey) || '{}') as {
+        answers?: Record<string, string>;
+        currentQuestionIndex?: number;
+        activeSubIndex?: number;
+        playCounts?: Record<string, number>;
+      };
+    } catch {
+      return {};
+    }
+  }, [attemptStorageKey]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(() => {
+    const restored = storedAttempt.currentQuestionIndex;
+    return Number.isInteger(restored) && restored !== undefined && restored >= 0 && restored < paper.questions.length
+      ? restored
+      : 0;
+  });
+  const [answers, setAnswers] = useState<Record<string, string>>(storedAttempt.answers || {});
+  const [examDeadlineMs] = useState(() => {
+    const parsed = paper.expiresAt ? Date.parse(paper.expiresAt) : Number.NaN;
+    return Number.isFinite(parsed) ? parsed : Date.now() + paper.duration * 60 * 1000;
+  });
+  const [clockNow, setClockNow] = useState(Date.now);
+  const [activeSubIndex, setActiveSubIndex] = useState(() => (
+    Number.isInteger(storedAttempt.activeSubIndex) && Number(storedAttempt.activeSubIndex) >= 0
+      ? Number(storedAttempt.activeSubIndex)
+      : 0
+  ));
+  const subIndexRestoredRef = useRef(false);
   const [progressOpen, setProgressOpen] = useState(true);
   const [timeHidden, setTimeHidden] = useState(false);
   const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const audioPlayerRef = useRef<ExclusiveAudioPlayer | null>(null);
+  if (!audioPlayerRef.current) {
+    audioPlayerRef.current = new ExclusiveAudioPlayer((url) => new Audio(url));
+  }
+  const submittedRef = useRef(false);
+  const [playCounts, setPlayCounts] = useState<Record<string, number>>(storedAttempt.playCounts || {});
+  const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
 
   const CRITICAL_TIME_SECONDS = 5 * 60;
-  const isCriticalTime = timeRemaining <= CRITICAL_TIME_SECONDS;
+  const timeRemaining = Math.max(0, Math.ceil((examDeadlineMs - clockNow) / 1000));
+  const graceRemaining = Math.max(0, Math.ceil((examDeadlineMs + GRACE_PERIOD_SECONDS * 1000 - clockNow) / 1000));
+  const isGracePeriod = timeRemaining === 0 && graceRemaining > 0;
+  const isExpired = graceRemaining <= 0;
+  const isAnsweringClosed = timeRemaining <= 0;
+  const isCriticalTime = timeRemaining > 0 && timeRemaining <= CRITICAL_TIME_SECONDS;
 
   const examNavGroups = useMemo(() => buildExamNavGroups(paper.questions), [paper.questions]);
   const currentNavGroupIndex = examNavGroups.findIndex((g) => g.indices.includes(currentQuestionIndex));
@@ -1203,8 +1394,9 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
     ? currentNavGroup.indices.map((idx) => paper.questions[idx])
     : [paper.questions[currentQuestionIndex]];
 
+  const currentSubIndex = clampActiveSubIndex(activeSubIndex, groupQuestions.length);
   const currentQuestion = isTextCompositeGroup
-    ? groupQuestions[activeSubIndex]
+    ? groupQuestions[currentSubIndex]
     : paper.questions[currentQuestionIndex];
   const selectedAnswer = answers[currentQuestion.id];
   const matchImages = groupQuestions[0]?.optionImages ?? [];
@@ -1224,10 +1416,19 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
   }, [paper.questions]);
 
   useEffect(() => {
-    if (timeRemaining <= 0) return;
-    const timer = setInterval(() => setTimeRemaining((t) => Math.max(0, t - 1)), 1000);
+    if (isExpired) return;
+    const timer = setInterval(() => setClockNow(Date.now()), 1000);
     return () => clearInterval(timer);
-  }, [timeRemaining]);
+  }, [isExpired]);
+
+  useEffect(() => {
+    localStorage.setItem(attemptStorageKey, JSON.stringify({
+      answers,
+      currentQuestionIndex,
+      activeSubIndex,
+      playCounts,
+    }));
+  }, [activeSubIndex, answers, attemptStorageKey, currentQuestionIndex, playCounts]);
 
   useEffect(() => () => {
     if (revealTimeoutRef.current) clearTimeout(revealTimeoutRef.current);
@@ -1257,24 +1458,31 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
   };
 
   useEffect(() => {
+    if (!subIndexRestoredRef.current) {
+      subIndexRestoredRef.current = true;
+      return;
+    }
     setActiveSubIndex(0);
   }, [currentNavGroupIndex]);
 
   const handleSelectAnswer = (answer: string, questionId = currentQuestion.id) => {
+    const question = paper.questions.find((item) => item.id === questionId);
+    if (isAnsweringClosed || question?.isExample) return;
     setAnswers((prev) => ({ ...prev, [questionId]: answer }));
 
     if (isTextCompositeGroup) {
       const groupLen = groupQuestions.length;
-      if (activeSubIndex < groupLen - 1) {
+      if (currentSubIndex < groupLen - 1) {
         setActiveSubIndex((prev) => prev + 1);
       }
     }
   };
 
   const handleAssignMatchLetter = (letter: string) => {
-    if (!isImageMatchGroup) return;
-    const qIdx = currentNavGroup.indices[activeSubIndex];
+    if (!isImageMatchGroup || isAnsweringClosed) return;
+    const qIdx = currentNavGroup.indices[currentSubIndex];
     const q = paper.questions[qIdx];
+    if (q.isExample) return;
 
     setAnswers((prev) => {
       const next = { ...prev };
@@ -1288,16 +1496,16 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
       next[q.id] = letter;
 
       const groupLen = currentNavGroup.indices.length;
-      let nextSub = activeSubIndex;
-      for (let i = activeSubIndex + 1; i < groupLen; i += 1) {
+      let nextSub = currentSubIndex;
+      for (let i = currentSubIndex + 1; i < groupLen; i += 1) {
         const idx = currentNavGroup.indices[i];
         if (!next[paper.questions[idx].id]) {
           nextSub = i;
           break;
         }
       }
-      if (nextSub === activeSubIndex && activeSubIndex < groupLen - 1) {
-        nextSub = activeSubIndex + 1;
+      if (nextSub === currentSubIndex && currentSubIndex < groupLen - 1) {
+        nextSub = currentSubIndex + 1;
       }
       setActiveSubIndex(nextSub);
 
@@ -1307,6 +1515,7 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
 
   const handleNext = () => {
     if (currentNavGroupIndex < examNavGroups.length - 1) {
+      setActiveSubIndex(0);
       setCurrentQuestionIndex(examNavGroups[currentNavGroupIndex + 1].indices[0]);
     }
   };
@@ -1314,23 +1523,66 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
   const handlePrevious = () => {
     if (currentNavGroupIndex > 0) {
       const prevGroup = examNavGroups[currentNavGroupIndex - 1];
+      setActiveSubIndex(0);
       setCurrentQuestionIndex(prevGroup.indices[0]);
     }
   };
 
-  const handleSubmit = () => {
-    onFinish(answers);
+  const submitAnswers = () => {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    void onFinish(answers).then((submitted) => {
+      if (!submitted) submittedRef.current = false;
+    });
   };
 
-  const allQuestionsAnswered = examNavGroups.every((group) =>
-    isNavGroupComplete(group, paper.questions, answers),
-  );
+  const handleSubmit = () => {
+    if (isExpired) return;
+    const unanswered = paper.questions.filter((question) => !question.isExample && !answers[question.id]).length;
+    if (unanswered > 0) {
+      setSubmitConfirmOpen(true);
+      return;
+    }
+    submitAnswers();
+  };
+
+  const confirmIncompleteSubmit = () => {
+    setSubmitConfirmOpen(false);
+    submitAnswers();
+  };
+
+  const playCurrentAudio = async () => {
+    const audioUrl = currentQuestion.audioUrl;
+    const groupId = currentQuestion.audioGroupId || currentQuestion.id;
+    const maxPlayCount = currentQuestion.maxPlayCount || paper.listeningPlays;
+    const audioPlayer = audioPlayerRef.current;
+    if (isAnsweringClosed || !audioUrl || !audioPlayer || audioPlayer.isActive || (playCounts[groupId] || 0) >= maxPlayCount) return;
+    await audioPlayer.play(audioUrl, () => {
+      setPlayCounts((counts) => ({ ...counts, [groupId]: (counts[groupId] || 0) + 1 }));
+    });
+  };
+
+  useEffect(() => {
+    if (!isAnsweringClosed && currentQuestion.audioUrl && (playCounts[currentQuestion.audioGroupId || currentQuestion.id] || 0) === 0) {
+      void playCurrentAudio();
+    }
+    return () => {
+      audioPlayerRef.current?.stop();
+    };
+  }, [currentNavGroupIndex, isAnsweringClosed]);
+
+  useEffect(() => {
+    if (!isAnsweringClosed) return;
+    audioPlayerRef.current?.stop();
+  }, [isAnsweringClosed]);
+
   const isCurrentGroupComplete = isNavGroupComplete(currentNavGroup, paper.questions, answers);
   const isListening = currentQuestion.section === 'listening';
   const isPinyinTextOptions = currentQuestion.displayMode === 'pinyin-text';
   const isImageOptions = !isGroupedQuestion && currentQuestion.displayMode === 'image';
   const currentPartKey = `${currentQuestion.section}-${currentQuestion.partNumber}`;
-  const timeLabel = `${Math.floor(timeRemaining / 60)}:${(timeRemaining % 60).toString().padStart(2, '0')}`;
+  const displayedSeconds = isGracePeriod ? graceRemaining : timeRemaining;
+  const timeLabel = `${Math.floor(displayedSeconds / 60)}:${(displayedSeconds % 60).toString().padStart(2, '0')}`;
   const examTitle = paper.source === 'official'
     ? `HSK ${paper.level} Official Mock`
     : `HSK ${paper.level} Practice Test`;
@@ -1339,8 +1591,8 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
   const examTealDark = '#49A995';
   const isLastGroup = currentNavGroupIndex >= examNavGroups.length - 1;
   const groupRangeLabel = isGroupedQuestion
-    ? `Questions ${groupQuestions[0].number}–${groupQuestions[groupQuestions.length - 1].number}`
-    : `Question ${currentQuestion.number}`;
+    ? `Questions ${groupQuestions.map(questionLabel).join(' · ')}`
+    : currentQuestion.isExample ? 'Example' : `Question ${currentQuestion.number}`;
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#F5F6F8', overflow: 'hidden' }}>
@@ -1378,7 +1630,9 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                 lineHeight: 1.2,
               }}
             >
-              Time left: {timeHidden ? '--:--' : timeLabel}
+              {isExpired
+                ? 'Time expired'
+                : `${isGracePeriod ? 'Grace period' : 'Time left'}: ${timeHidden ? '--:--' : timeLabel}`}
             </Typography>
             <ButtonBase
               onClick={handleToggleTimeVisibility}
@@ -1403,24 +1657,47 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
 
         <ButtonBase
           onClick={handleSubmit}
-          disabled={!allQuestionsAnswered}
+          disabled={isExpired}
           sx={{
             px: is960 ? 2 : 2.5,
             py: is960 ? 0.85 : 1,
             minHeight: 44,
-            bgcolor: allQuestionsAnswered ? examTeal : '#E5E7EB',
-            color: allQuestionsAnswered ? '#FFFFFF' : '#9CA3AF',
+            bgcolor: examTeal,
+            color: '#FFFFFF',
             borderRadius: '999px',
             fontWeight: 800,
             fontSize: is960 ? '0.88rem' : '0.98rem',
-            boxShadow: allQuestionsAnswered ? '0 4px 12px rgba(91,191,175,0.35)' : 'none',
-            '&:active': allQuestionsAnswered ? { transform: 'scale(0.97)', bgcolor: examTealDark } : {},
+            boxShadow: '0 4px 12px rgba(91,191,175,0.35)',
+            '&:active': { transform: 'scale(0.97)', bgcolor: examTealDark },
             '&.Mui-disabled': { bgcolor: '#E5E7EB', color: '#9CA3AF', boxShadow: 'none' },
           }}
         >
           Submit
         </ButtonBase>
       </Box>
+
+      {error && (
+        <Box role="alert" sx={{ flexShrink: 0, px: 3, py: 1, bgcolor: '#FEF2F2', borderBottom: '1px solid #FECACA' }}>
+          <Typography sx={{ color: '#B91C1C', fontWeight: 700 }}>{error}</Typography>
+        </Box>
+      )}
+
+      <Dialog
+        open={submitConfirmOpen}
+        onClose={() => setSubmitConfirmOpen(false)}
+        aria-labelledby="incomplete-submit-title"
+      >
+        <DialogTitle id="incomplete-submit-title">Submit incomplete exam?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            {paper.questions.filter((question) => !question.isExample && !answers[question.id]).length} questions are unanswered and will receive 0 points.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSubmitConfirmOpen(false)} color="inherit">Continue answering</Button>
+          <Button onClick={confirmIncompleteSubmit} variant="contained" color="primary">Confirm submit</Button>
+        </DialogActions>
+      </Dialog>
 
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden', width: '100%' }}>
         {/* Sidebar — progress grid (collapsible) */}
@@ -1498,12 +1775,16 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                   <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: is960 ? 0.55 : 0.65 }}>
                     {buildSidebarSlots(group.indices, paper.questions).map((slot) => {
                       const isCurrent = slot.indices.includes(currentQuestionIndex);
-                      const hasAnswer = slot.indices.every((idx) => !!answers[paper.questions[idx].id]);
-                      const partiallyAnswered = !hasAnswer && slot.indices.some((idx) => !!answers[paper.questions[idx].id]);
+                      const scoredIndices = slot.indices.filter((idx) => !paper.questions[idx].isExample);
+                      const hasAnswer = scoredIndices.length === 0 || scoredIndices.every((idx) => !!answers[paper.questions[idx].id]);
+                      const partiallyAnswered = !hasAnswer && scoredIndices.some((idx) => !!answers[paper.questions[idx].id]);
                       return (
                         <ButtonBase
                           key={slot.label}
-                          onClick={() => setCurrentQuestionIndex(slot.indices[0])}
+                          onClick={() => {
+                            setActiveSubIndex(0);
+                            setCurrentQuestionIndex(slot.indices[0]);
+                          }}
                           sx={{
                             gridColumn: slot.kind === 'range' ? '1 / -1' : undefined,
                             aspectRatio: slot.kind === 'single' ? '1' : undefined,
@@ -1557,6 +1838,8 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
               </Typography>
               {isGroupedQuestion && isListening && (
                 <ButtonBase
+                  onClick={playCurrentAudio}
+                  disabled={isAnsweringClosed}
                   sx={{
                     width: is960 ? 40 : 44,
                     height: is960 ? 40 : 44,
@@ -1588,8 +1871,15 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                 </Typography>
               </Box>
               <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', fontWeight: 600, color: '#64748B', lineHeight: 1.3 }}>
-                {TEMPLATE_LABELS[currentQuestion.templateCode]}
+                {currentQuestion.templateLabel}
               </Typography>
+              {currentQuestion.isExample && (
+                <Box sx={{ px: 1, py: 0.35, borderRadius: '8px', bgcolor: '#E0F2FE', border: '1px solid #7DD3FC' }}>
+                  <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.8rem', fontWeight: 800, color: '#0369A1', lineHeight: 1.2 }}>
+                    Example · not scored
+                  </Typography>
+                </Box>
+              )}
             </Box>
 
             {isImageMatchGroup ? (
@@ -1611,6 +1901,7 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                       <ButtonBase
                         key={letter}
                         onClick={() => handleAssignMatchLetter(letter)}
+                        disabled={isAnsweringClosed || currentQuestion.isExample}
                         sx={{
                           position: 'relative',
                           aspectRatio: '1',
@@ -1619,7 +1910,7 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                           borderRadius: is960 ? '14px' : '18px',
                           overflow: 'hidden',
                           boxShadow: isAssigned ? '0 4px 14px rgba(91,191,175,0.2)' : '0 2px 8px rgba(15,23,42,0.04)',
-                          opacity: isAssigned && answers[groupQuestions[activeSubIndex]?.id] !== letter ? 0.88 : 1,
+                          opacity: isAssigned && answers[groupQuestions[currentSubIndex]?.id] !== letter ? 0.88 : 1,
                           '&:active': { transform: 'scale(0.98)', borderColor: examTeal },
                         }}
                       >
@@ -1661,10 +1952,10 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                   })}
                 </Box>
 
-                <Box sx={{ flex: 0.85, minWidth: is960 ? 180 : 220, display: 'flex', flexDirection: 'column', gap: is960 ? 0.85 : 1 }}>
+                <Box sx={{ flex: 1, minWidth: is960 ? 260 : 320, display: 'flex', flexDirection: 'column', gap: is960 ? 0.85 : 1 }}>
                   {groupQuestions.map((q, subIdx) => {
                     const subAnswer = answers[q.id];
-                    const isActive = activeSubIndex === subIdx;
+                    const isActive = currentSubIndex === subIdx;
                     return (
                       <ButtonBase
                         key={q.id}
@@ -1678,8 +1969,8 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                           textAlign: 'left',
                         }}
                       >
-                        <Typography sx={{ fontSize: is960 ? '0.95rem' : '1.05rem', fontWeight: 800, color: '#374151', minWidth: 28 }}>
-                          {q.number}.
+                          <Typography sx={{ fontSize: is960 ? '0.95rem' : '1.05rem', fontWeight: 800, color: '#374151', minWidth: 28 }}>
+                          {questionLabel(q)}{q.isExample ? '' : '.'}
                         </Typography>
                         <Box
                           sx={{
@@ -1690,14 +1981,44 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                             border: isActive ? `2px solid ${examTeal}` : '2px solid #E2E8F0',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            px: 2,
+                            justifyContent: 'space-between',
+                            gap: is960 ? 1 : 1.25,
+                            px: is960 ? 1.25 : 1.5,
                             boxShadow: isActive ? '0 4px 12px rgba(91,191,175,0.15)' : 'none',
                           }}
                         >
-                          <Typography sx={{ fontSize: is960 ? '1rem' : '1.12rem', fontWeight: 900, color: subAnswer ? '#111827' : '#CBD5E1' }}>
-                            {subAnswer || ' '}
+                          <Typography
+                            sx={{
+                              flex: 1,
+                              minWidth: 0,
+                              fontSize: is960 ? '0.82rem' : '0.92rem',
+                              fontWeight: 700,
+                              color: '#374151',
+                              lineHeight: 1.35,
+                              textAlign: 'left',
+                              wordBreak: 'break-word',
+                            }}
+                          >
+                            {q.question || '—'}
                           </Typography>
+                          <Box
+                            sx={{
+                              flexShrink: 0,
+                              minWidth: is960 ? 30 : 34,
+                              height: is960 ? 28 : 30,
+                              px: 0.75,
+                              borderRadius: '999px',
+                              bgcolor: subAnswer ? '#CCFBF1' : '#F8FAFC',
+                              border: subAnswer ? '1px solid #5EEAD4' : '1px solid #E2E8F0',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <Typography sx={{ fontSize: is960 ? '0.82rem' : '0.9rem', fontWeight: 900, color: subAnswer ? '#0F766E' : '#CBD5E1' }}>
+                              {subAnswer || '—'}
+                            </Typography>
+                          </Box>
                         </Box>
                       </ButtonBase>
                     );
@@ -1712,25 +2033,29 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                   </Typography>
                 )}
 
-                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                  <ButtonBase
-                    sx={{
-                      width: is960 ? 64 : 72,
-                      height: is960 ? 64 : 72,
-                      borderRadius: is960 ? '18px' : '20px',
-                      bgcolor: '#FB923C',
-                      color: '#FFFFFF',
-                      boxShadow: '0 8px 20px rgba(251,146,60,0.38)',
-                      '&:active': { transform: 'scale(0.95)', bgcolor: '#F97316' },
-                    }}
-                  >
-                    <VolumeUpIcon sx={{ fontSize: is960 ? 32 : 36 }} />
-                  </ButtonBase>
-                </Box>
+                {isListening && currentQuestion.audioUrl && (
+                  <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                    <ButtonBase
+                      onClick={playCurrentAudio}
+                      disabled={isAnsweringClosed}
+                      sx={{
+                        width: is960 ? 64 : 72,
+                        height: is960 ? 64 : 72,
+                        borderRadius: is960 ? '18px' : '20px',
+                        bgcolor: '#FB923C',
+                        color: '#FFFFFF',
+                        boxShadow: '0 8px 20px rgba(251,146,60,0.38)',
+                        '&:active': { transform: 'scale(0.95)', bgcolor: '#F97316' },
+                      }}
+                    >
+                      <VolumeUpIcon sx={{ fontSize: is960 ? 32 : 36 }} />
+                    </ButtonBase>
+                  </Box>
+                )}
 
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: is960 ? 0.75 : 1 }}>
                   {groupQuestions.map((q, subIdx) => {
-                    const isActive = activeSubIndex === subIdx;
+                    const isActive = currentSubIndex === subIdx;
                     const answered = !!answers[q.id];
                     return (
                       <ButtonBase
@@ -1749,7 +2074,7 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                           '&:active': { transform: 'scale(0.98)' },
                         }}
                       >
-                        {q.number}
+                        {questionLabel(q)}
                       </ButtonBase>
                     );
                   })}
@@ -1763,7 +2088,7 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                     lineHeight: 1.45,
                   }}
                 >
-                  {currentQuestion.number}. {currentQuestion.question}
+                  {currentQuestion.isExample ? 'Example' : `${currentQuestion.number}.`} {currentQuestion.question}
                 </Typography>
 
                 <Box
@@ -1780,6 +2105,7 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                       <ButtonBase
                         key={idx}
                         onClick={() => handleSelectAnswer(option, currentQuestion.id)}
+                        disabled={isAnsweringClosed || currentQuestion.isExample}
                         sx={{
                           position: 'relative',
                           minHeight: is960 ? 120 : 148,
@@ -1823,7 +2149,7 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                             px: 1,
                           }}
                         >
-                          {option}
+                          {currentQuestion.optionTextByValue?.[option] || option}
                         </Typography>
                       </ButtonBase>
                     );
@@ -1849,7 +2175,9 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
 
                 {isListening && (
                   <Box sx={{ display: 'flex', justifyContent: 'center', mb: is960 ? 2.5 : 3 }}>
-                    <ButtonBase
+                      <ButtonBase
+                        onClick={playCurrentAudio}
+                        disabled={isAnsweringClosed}
                       sx={{
                         width: is960 ? 64 : 72,
                         height: is960 ? 64 : 72,
@@ -1865,6 +2193,18 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                   </Box>
                 )}
 
+                {currentQuestion.displayMode === 'writing' ? (
+                  <TextField
+                    value={selectedAnswer || ''}
+                    onChange={(event) => handleSelectAnswer(event.target.value)}
+                    disabled={isAnsweringClosed || currentQuestion.isExample}
+                    placeholder="请输入答案"
+                    multiline
+                    minRows={3}
+                    fullWidth
+                    inputProps={{ 'aria-label': `Answer question ${currentQuestion.number}` }}
+                  />
+                ) : (
                 <Box
                   sx={{
                     display: 'grid',
@@ -1883,6 +2223,7 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                       <ButtonBase
                         key={idx}
                         onClick={() => handleSelectAnswer(option)}
+                        disabled={isAnsweringClosed || currentQuestion.isExample}
                         sx={{
                           position: 'relative',
                           aspectRatio: isPinyinTextOptions ? '1.15 / 1' : '1',
@@ -1971,13 +2312,14 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                               px: 1,
                             }}
                           >
-                            {option}
+                          {currentQuestion.optionTextByValue?.[option] || option}
                           </Typography>
                         )}
                       </ButtonBase>
                     );
                   })}
                 </Box>
+                )}
               </>
             )}
           </Box>
@@ -2015,7 +2357,7 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
 
             <ButtonBase
               onClick={isLastGroup ? handleSubmit : handleNext}
-              disabled={isLastGroup ? !allQuestionsAnswered : !isCurrentGroupComplete}
+              disabled={isLastGroup ? isExpired : !isCurrentGroupComplete}
               sx={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -2023,15 +2365,15 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
                 px: is960 ? 2.25 : 2.75,
                 py: is960 ? 0.9 : 1.05,
                 minHeight: 44,
-                bgcolor: (isLastGroup ? allQuestionsAnswered : isCurrentGroupComplete) ? examTeal : '#E5E7EB',
-                color: (isLastGroup ? allQuestionsAnswered : isCurrentGroupComplete) ? '#FFFFFF' : '#9CA3AF',
+                bgcolor: ((isLastGroup && !isExpired) || isCurrentGroupComplete) ? examTeal : '#E5E7EB',
+                color: ((isLastGroup && !isExpired) || isCurrentGroupComplete) ? '#FFFFFF' : '#9CA3AF',
                 borderRadius: '999px',
                 fontWeight: 800,
                 fontSize: is960 ? '0.92rem' : '1rem',
-                boxShadow: (isLastGroup ? allQuestionsAnswered : isCurrentGroupComplete)
+                boxShadow: ((isLastGroup && !isExpired) || isCurrentGroupComplete)
                   ? '0 4px 14px rgba(91,191,175,0.35)'
                   : 'none',
-                '&:active': (isLastGroup ? allQuestionsAnswered : isCurrentGroupComplete)
+                '&:active': ((isLastGroup && !isExpired) || isCurrentGroupComplete)
                   ? { transform: 'scale(0.97)', bgcolor: examTealDark }
                   : {},
                 '&.Mui-disabled': { bgcolor: '#E5E7EB', color: '#9CA3AF', boxShadow: 'none' },
@@ -2047,90 +2389,252 @@ function ExamScreen({ paper, onFinish, onExit, is960 }: { paper: ExamPaper; onFi
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   ResultScreen — 考试结果
-   ═══════════════════════════════════════════════════════════════════════════════ */
-function ResultScreen({ paper, result, onRestart, onGoHome, is960 }: { paper: ExamPaper; result: ExamResult; onRestart: () => void; onGoHome: () => void; is960: boolean }) {
-  const correctCount = paper.questions.filter((q) => result.answers[q.id] === q.correctAnswer).length;
-  const totalCount = paper.questions.length;
-  const score = Math.round((correctCount / totalCount) * paper.maxScore);
-  const passed = score >= paper.passScore;
+function readableReviewValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '';
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) return value.map(readableReviewValue).filter(Boolean).join(', ');
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    for (const key of ['zh', 'zh-CN', 'en', 'text', 'answer', 'value', 'content']) {
+      const text = readableReviewValue(record[key]);
+      if (text) return text;
+    }
+    return Object.values(record).map(readableReviewValue).filter(Boolean).join(', ');
+  }
+  return '';
+}
+
+function answerContains(answer: unknown, value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return false;
+  if (Array.isArray(answer)) return answer.some((item) => answerContains(item, value));
+  if (answer && typeof answer === 'object') {
+    return Object.values(answer as Record<string, unknown>).some((item) => answerContains(item, value));
+  }
+  return String(answer ?? '').trim().toLowerCase() === normalized;
+}
+
+function formatExamDuration(seconds?: number): string {
+  const total = Math.max(0, Number(seconds || 0));
+  const minutes = Math.floor(total / 60);
+  return `${minutes}m ${total % 60}s`;
+}
+
+interface ReviewGroup {
+  id: string;
+  label: string;
+  items: AttemptReviewItem[];
+  correct: boolean;
+  unanswered: boolean;
+}
+
+function buildReviewGroups(items: AttemptReviewItem[]): ReviewGroup[] {
+  const grouped = new Map<string, AttemptReviewItem[]>();
+  items.forEach((item) => {
+    const key = item.parentUid || item.itemUid;
+    grouped.set(key, [...(grouped.get(key) || []), item]);
+  });
+  return Array.from(grouped.entries()).map(([id, groupItems]) => {
+    const numbers = groupItems.map((item) => item.questionNumber).filter((value): value is number => typeof value === 'number');
+    const first = numbers.length ? Math.min(...numbers) : undefined;
+    const last = numbers.length ? Math.max(...numbers) : undefined;
+    return {
+      id,
+      label: first === undefined ? id : first === last ? String(first) : `${first}-${last}`,
+      items: groupItems,
+      correct: groupItems.length > 0 && groupItems.every((item) => item.correct === true),
+      unanswered: groupItems.every((item) => item.unanswered),
+    };
+  });
+}
+
+function ResultScreen({
+  paper,
+  result,
+  review,
+  reviewError,
+  reviewLoading,
+  retakeAvailable,
+  retakeError,
+  onOpenReview,
+  onRestart,
+  onGoHome,
+  is960,
+}: {
+  paper: ExamPaper;
+  result: AttemptResult;
+  review: AttemptReview | null;
+  reviewError: string | null;
+  reviewLoading: boolean;
+  retakeAvailable: boolean | null;
+  retakeError: string | null;
+  onOpenReview: (itemUid?: string) => void;
+  onRestart: () => void;
+  onGoHome: () => void;
+  is960: boolean;
+}) {
+  const groups = buildReviewGroups(review?.items || []);
+  const moduleScores = result.moduleScores || [];
+  const passed = Boolean(result.passed);
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#FFF8F0', p: is960 ? 3 : 4 }}>
-      <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', damping: 12 }}>
-        <Box sx={{ textAlign: 'center', bgcolor: 'white', borderRadius: '32px', p: is960 ? 4 : 6, boxShadow: '0 20px 60px rgba(0,0,0,0.1)', width: '100%', maxWidth: is960 ? 500 : 720 }}>
-          <EmojiEventsIcon sx={{ fontSize: is960 ? 64 : 80, color: passed ? '#F59E0B' : '#9CA3AF', mb: 2 }} />
-
-          <Typography sx={{ fontSize: is960 ? '2rem' : '3rem', fontWeight: 900, color: '#111827', mb: 0.5 }}>
-            {score} / {paper.maxScore}
-          </Typography>
-
-          <Typography sx={{ fontSize: is960 ? '0.85rem' : '1rem', fontWeight: 800, color: passed ? '#059669' : '#DC2626', mb: 1 }}>
-            {passed ? 'Passed' : 'Not passed'} · Pass line {paper.passScore}
-          </Typography>
-
-          <Typography sx={{ fontSize: is960 ? '1rem' : '1.25rem', fontWeight: 700, color: '#6B7280', mb: 4 }}>
-            {paper.title} complete
-          </Typography>
-
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2, mb: 4 }}>
-            <Box sx={{ bgcolor: '#D1FAE5', borderRadius: '16px', p: 2.5 }}>
-              <CheckCircleIcon sx={{ fontSize: 32, color: '#10B981', mb: 1 }} />
-              <Typography sx={{ fontSize: is960 ? '1.5rem' : '2rem', fontWeight: 900, color: '#10B981' }}>
-                {correctCount}
-              </Typography>
-              <Typography sx={{ fontSize: is960 ? '0.75rem' : '0.85rem', color: '#065F46', fontWeight: 700 }}>
-                答对
-              </Typography>
-            </Box>
-            
-            <Box sx={{ bgcolor: '#FEE2E2', borderRadius: '16px', p: 2.5 }}>
-              <Typography sx={{ fontSize: is960 ? '1.5rem' : '2rem', fontWeight: 900, color: '#EF4444', mb: 1 }}>
-                {totalCount - correctCount}
-              </Typography>
-              <Typography sx={{ fontSize: is960 ? '0.75rem' : '0.85rem', color: '#991B1B', fontWeight: 700 }}>
-                答错
-              </Typography>
-            </Box>
+    <Box sx={{ height: '100%', overflow: 'auto', bgcolor: '#F4F8F6', p: is960 ? 2 : 3 }}>
+      <Box sx={{ maxWidth: 1180, mx: 'auto', display: 'grid', gridTemplateColumns: is960 ? '1fr 0.8fr' : '1.2fr 0.85fr', gap: 2.5 }}>
+        <Box sx={{ bgcolor: '#FFFFFF', borderRadius: '8px', p: is960 ? 2.5 : 3 }}>
+          <Typography sx={{ fontSize: is960 ? '1.25rem' : '1.5rem', fontWeight: 900, mb: 2 }}>Score details</Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${Math.max(1, Math.min(moduleScores.length, 3))}, minmax(0, 1fr))`, gap: 1.5, mb: 2.5 }}>
+            {moduleScores.map((module) => (
+              <Box key={module.moduleId} sx={{ bgcolor: '#F0FAF7', borderRadius: '8px', p: 2, textAlign: 'center' }}>
+                <Typography sx={{ color: '#0F9F82', fontSize: is960 ? '1.25rem' : '1.6rem', fontWeight: 900 }}>{module.score}</Typography>
+                <Typography sx={{ color: '#667085', fontWeight: 700 }}>{module.moduleName}</Typography>
+              </Box>
+            ))}
           </Box>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <ButtonBase
-              onClick={onRestart}
-              sx={{
-                width: '100%',
-                py: 2,
-                bgcolor: '#2563EB',
-                color: 'white',
-                borderRadius: '16px',
-                fontWeight: 900,
-                fontSize: is960 ? '1rem' : '1.15rem',
-                '&:active': { transform: 'scale(0.98)' },
-              }}
-            >
-              再做一次
-            </ButtonBase>
+          <Typography sx={{ fontSize: is960 ? '1.1rem' : '1.3rem', fontWeight: 900, mb: 1.5 }}>Answer review</Typography>
+          {reviewError && <Typography sx={{ color: '#B91C1C', mb: 1.5 }}>{reviewError}</Typography>}
+          <Box sx={{ display: 'grid', gridTemplateColumns: is960 ? 'repeat(6, 1fr)' : 'repeat(5, 1fr)', gap: 1 }}>
+            {groups.map((group) => {
+              const color = group.unanswered ? '#667085' : group.correct ? '#0EAD8B' : '#F04452';
+              const bg = group.unanswered ? '#F2F4F7' : group.correct ? '#E9F9F4' : '#FFF0F1';
+              return (
+                <ButtonBase key={group.id} onClick={() => onOpenReview(group.items[0]?.itemUid)} sx={{ minHeight: 62, borderRadius: '8px', bgcolor: bg, color, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  {group.unanswered ? <HelpOutlineIcon sx={{ fontSize: 17 }} /> : group.correct ? <CheckCircleIcon sx={{ fontSize: 17 }} /> : <CancelIcon sx={{ fontSize: 17 }} />}
+                  <Typography sx={{ fontWeight: 900 }}>{group.label}</Typography>
+                </ButtonBase>
+              );
+            })}
+          </Box>
+          {!groups.length && !reviewError && <Typography sx={{ color: '#98A2B3' }}>Loading answer details...</Typography>}
+        </Box>
 
-            <ButtonBase
-              onClick={onGoHome}
-              sx={{
-                width: '100%',
-                py: 2,
-                bgcolor: 'white',
-                color: '#374151',
-                border: '2px solid #E5E7EB',
-                borderRadius: '16px',
-                fontWeight: 900,
-                fontSize: is960 ? '1rem' : '1.15rem',
-                '&:active': { transform: 'scale(0.98)' },
-              }}
-            >
-              返回首页
-            </ButtonBase>
+        <Box sx={{ bgcolor: '#FFFFFF', borderRadius: '8px', p: is960 ? 2.5 : 3, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+          <EmojiEventsIcon sx={{ fontSize: is960 ? 46 : 58, color: passed ? '#F59E0B' : '#98A2B3', mb: 1 }} />
+          <Typography sx={{ fontSize: is960 ? '1.35rem' : '1.7rem', fontWeight: 900 }}>{paper.title}</Typography>
+          <Typography sx={{ fontSize: is960 ? '3.5rem' : '4.8rem', lineHeight: 1.1, color: passed ? '#12B76A' : '#F04438', fontWeight: 900, mt: 1 }}>
+            {result.score || 0}<Typography component="span" sx={{ color: '#667085', fontSize: '1.4rem' }}> / {result.totalScore}</Typography>
+          </Typography>
+          <Typography sx={{ color: '#667085', fontWeight: 700, mb: 2 }}>Score rate {Math.round(Number(result.scoreRate || 0))}% · {passed ? 'Passed' : 'Not passed'}</Typography>
+
+          <Box sx={{ width: '100%', bgcolor: '#F9FAFB', borderRadius: '8px', p: 2, mb: 2, textAlign: 'left' }}>
+            <Typography sx={{ fontWeight: 700, color: '#667085' }}>Correct <Box component="span" sx={{ float: 'right', color: '#12B76A' }}>{result.correctCount || 0}</Box></Typography>
+            <Typography sx={{ fontWeight: 700, color: '#667085' }}>Incorrect <Box component="span" sx={{ float: 'right', color: '#F04438' }}>{result.incorrectCount || 0}</Box></Typography>
+            <Typography sx={{ fontWeight: 700, color: '#667085' }}>Unanswered <Box component="span" sx={{ float: 'right', color: '#344054' }}>{result.unansweredCount || 0}</Box></Typography>
+            <Typography sx={{ fontWeight: 700, color: '#667085' }}>Best score <Box component="span" sx={{ float: 'right', color: '#0EAD8B' }}>{result.bestScore ?? result.score ?? 0}</Box></Typography>
+            <Typography sx={{ fontWeight: 700, color: '#667085' }}>Duration <Box component="span" sx={{ float: 'right', color: '#344054' }}>{formatExamDuration(result.durationSeconds)}</Box></Typography>
+          </Box>
+
+          <ButtonBase
+            onClick={() => onOpenReview()}
+            disabled={reviewLoading}
+            sx={{ width: '100%', minHeight: 48, bgcolor: '#19C7AA', color: '#FFFFFF', borderRadius: '8px', fontWeight: 900, mb: 1.25, '&.Mui-disabled': { bgcolor: '#98A2B3', color: '#FFFFFF' } }}
+          >
+            {reviewLoading ? 'Loading details...' : reviewError && !review ? 'Retry details' : 'View details'}
+          </ButtonBase>
+          <ButtonBase
+            onClick={onRestart}
+            disabled={retakeAvailable !== true && !retakeError}
+            sx={{ width: '100%', minHeight: 46, border: '1px solid #D0D5DD', borderRadius: '8px', fontWeight: 800, mb: 1.25, '&.Mui-disabled': { color: '#98A2B3', bgcolor: '#F2F4F7' } }}
+          >
+            <ReplayIcon sx={{ mr: 0.75 }} />
+            {retakeError ? 'Retry availability' : retakeAvailable === null ? 'Checking availability...' : retakeAvailable ? 'Try again' : 'No longer available'}
+          </ButtonBase>
+          {retakeError && <Typography sx={{ color: '#B42318', fontSize: '0.82rem', mb: 1.25 }}>{retakeError}</Typography>}
+          <ButtonBase onClick={onGoHome} sx={{ color: '#667085', fontWeight: 800 }}>Back</ButtonBase>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+function ReviewScreen({ paper, review, initialItemUid, onBack, is960 }: { paper: ExamPaper; review: AttemptReview; initialItemUid?: string; onBack: () => void; is960: boolean }) {
+  const initialIndex = Math.max(0, review.items.findIndex((item) => item.itemUid === initialItemUid));
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const current = review.items[currentIndex];
+  const groups = buildReviewGroups(review.items);
+
+  useEffect(() => {
+    const nextIndex = review.items.findIndex((item) => item.itemUid === initialItemUid);
+    if (nextIndex >= 0) setCurrentIndex(nextIndex);
+  }, [initialItemUid, review.items]);
+
+  useEffect(() => () => {
+    audioRef.current?.pause();
+    audioRef.current = null;
+  }, [currentIndex]);
+
+  if (!current) return null;
+
+  const playAudio = () => {
+    if (!current.audioUrl) return;
+    audioRef.current?.pause();
+    const audio = new Audio(current.audioUrl);
+    audioRef.current = audio;
+    void audio.play();
+  };
+  const explanation = readableReviewValue(current.explanationByLang) || readableReviewValue(current.explanation);
+  const submittedAnswer = readableReviewValue(current.submittedAnswer) || 'Unanswered';
+  const correctAnswer = readableReviewValue(current.correctAnswer);
+
+  return (
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#F8FAFC' }}>
+      <Box sx={{ minHeight: is960 ? 58 : 72, px: is960 ? 2 : 3, display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', bgcolor: '#FFFFFF', borderBottom: '1px solid #EAECF0' }}>
+        <ButtonBase onClick={onBack} sx={{ justifySelf: 'start', width: 42, height: 42, borderRadius: '50%', bgcolor: '#F2F4F7' }}><ChevronLeftIcon /></ButtonBase>
+        <Box sx={{ textAlign: 'center' }}><Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.1rem' : '1.35rem' }}>{paper.title}</Typography><Typography sx={{ color: '#667085', fontSize: '0.8rem' }}>Submitted · review only</Typography></Box>
+      </Box>
+
+      <Box sx={{ minHeight: 0, flex: 1, display: 'grid', gridTemplateColumns: is960 ? '220px 1fr' : '280px 1fr' }}>
+        <Box sx={{ overflow: 'auto', bgcolor: '#FFFFFF', borderRight: '1px solid #EAECF0', p: 2 }}>
+          <Typography sx={{ fontWeight: 900, mb: 1.5 }}>Answer progress</Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.75 }}>
+            {groups.map((group) => {
+              const selected = group.items.some((item) => item.itemUid === current.itemUid);
+              return <ButtonBase key={group.id} onClick={() => setCurrentIndex(review.items.findIndex((item) => item.itemUid === group.items[0]?.itemUid))} sx={{ minHeight: 42, borderRadius: '8px', border: selected ? '2px solid #0EAD8B' : '1px solid #D0D5DD', color: group.unanswered ? '#667085' : group.correct ? '#0EAD8B' : '#F04438', fontWeight: 900 }}>{group.label}</ButtonBase>;
+            })}
           </Box>
         </Box>
-      </motion.div>
+
+        <Box sx={{ overflow: 'auto', p: is960 ? 2.5 : 4 }}>
+          <Box sx={{ maxWidth: 860, mx: 'auto' }}>
+            <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1rem' : '1.2rem', mb: 1 }}>Question {current.questionNumber || currentIndex + 1}</Typography>
+            <Typography sx={{ fontSize: is960 ? '1.15rem' : '1.4rem', fontWeight: 800, mb: 2 }}>{contentText(current.content) || current.questionType}</Typography>
+            {current.audioUrl && <ButtonBase onClick={playAudio} sx={{ width: 52, height: 52, bgcolor: '#FF8F3D', color: '#FFFFFF', borderRadius: '8px', mb: 2 }}><VolumeUpIcon /></ButtonBase>}
+
+            {!!current.options?.length && (
+              <Box sx={{ display: 'grid', gridTemplateColumns: current.options.length > 3 ? 'repeat(3, 1fr)' : `repeat(${current.options.length}, 1fr)`, gap: 1.25, mb: 2 }}>
+                {current.options.map((option, index) => {
+                  const value = optionValue(option, index);
+                  const selected = answerContains(current.submittedAnswer, value);
+                  const correct = answerContains(current.correctAnswer, value);
+                  const borderColor = correct ? '#0EAD8B' : selected ? '#F04438' : '#D0D5DD';
+                  return (
+                    <Box key={`${value}-${index}`} sx={{ minHeight: 90, border: `2px solid ${borderColor}`, borderRadius: '8px', p: 1.5, bgcolor: correct ? '#ECFDF3' : selected ? '#FFF1F3' : '#FFFFFF' }}>
+                      <Typography sx={{ fontWeight: 900, mb: 0.75 }}>{value}</Typography>
+                      {option.image && <Box component="img" src={option.image} alt={option.text || value} sx={{ display: 'block', width: '100%', maxHeight: 150, objectFit: 'contain', mb: option.text ? 0.75 : 0 }} />}
+                      {option.text && <Typography sx={{ fontWeight: 700 }}>{option.text}</Typography>}
+                    </Box>
+                  );
+                })}
+              </Box>
+            )}
+
+            <Box sx={{ borderRadius: '8px', p: 2, bgcolor: current.unanswered ? '#F2F4F7' : current.correct ? '#ECFDF3' : '#FFF1F3', border: `1px solid ${current.unanswered ? '#D0D5DD' : current.correct ? '#ABEFC6' : '#FECDD6'}` }}>
+              <Typography sx={{ fontWeight: 900, color: current.unanswered ? '#344054' : current.correct ? '#067647' : '#C01048' }}>{current.unanswered ? 'Unanswered' : current.correct ? 'Correct' : 'Incorrect'}</Typography>
+              <Typography sx={{ mt: 0.75, fontWeight: 800 }}>Score: {current.score} / {current.maxScore}</Typography>
+              <Typography sx={{ mt: 0.75 }}>Your answer: {submittedAnswer}</Typography>
+              {correctAnswer && <Typography>Correct answer: {correctAnswer}</Typography>}
+              {explanation && <Typography sx={{ mt: 1, color: '#475467' }}>{explanation}</Typography>}
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+
+      <Box sx={{ px: 3, py: 1.25, display: 'flex', justifyContent: 'space-between', bgcolor: '#FFFFFF', borderTop: '1px solid #EAECF0' }}>
+        <ButtonBase disabled={currentIndex === 0} onClick={() => setCurrentIndex((value) => Math.max(0, value - 1))} sx={{ px: 2, py: 1, border: '1px solid #D0D5DD', borderRadius: '8px', '&.Mui-disabled': { opacity: 0.35 } }}>Previous</ButtonBase>
+        <Typography sx={{ alignSelf: 'center', color: '#667085', fontWeight: 700 }}>{currentIndex + 1} / {review.items.length}</Typography>
+        <ButtonBase disabled={currentIndex === review.items.length - 1} onClick={() => setCurrentIndex((value) => Math.min(review.items.length - 1, value + 1))} sx={{ px: 2, py: 1, border: '1px solid #D0D5DD', borderRadius: '8px', '&.Mui-disabled': { opacity: 0.35 } }}>Next</ButtonBase>
+      </Box>
     </Box>
   );
 }
@@ -2140,80 +2644,439 @@ function ResultScreen({ paper, result, onRestart, onGoHome, is960 }: { paper: Ex
    ═══════════════════════════════════════════════════════════════════════════════ */
 export default function HSKPrepTrainingPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isWebsiteEmbed = searchParams.get('mode') === 'website';
+  const requestedParentOrigin = searchParams.get('parentOrigin');
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
   const is960 = screenSize === '960x540';
 
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [selectedLevel, setSelectedLevel] = useState<HSKLevel | null>(null);
   const [selectedPaper, setSelectedPaper] = useState<ExamPaper | null>(null);
-  const [examResult, setExamResult] = useState<ExamResult | null>(null);
-  const [scoreRefreshKey, setScoreRefreshKey] = useState(0);
+  const [examResult, setExamResult] = useState<AttemptResult | null>(null);
+  const [attemptReview, setAttemptReview] = useState<AttemptReview | null>(null);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewStartItemUid, setReviewStartItemUid] = useState<string | undefined>();
+  const [catalogPapers, setCatalogPapers] = useState<PaperCatalogItem[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [flowError, setFlowError] = useState<string | null>(null);
+  const [retakeAvailable, setRetakeAvailable] = useState<boolean | null>(true);
+  const [retakeError, setRetakeError] = useState<string | null>(null);
+  const [attemptInProgress, setAttemptInProgress] = useState(() => Boolean(readActiveAttemptPointer()));
+  const [sessionRestoring, setSessionRestoring] = useState(true);
+  const [sessionRestoreError, setSessionRestoreError] = useState<string | null>(null);
+  const [sessionRestoreNonce, setSessionRestoreNonce] = useState(0);
+  const [startLoading, setStartLoading] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const reviewRequestTokenRef = useRef(0);
+  const retakeRequestTokenRef = useRef(0);
+  const catalogRequestTokenRef = useRef(0);
+  const startRequestTokenRef = useRef(0);
 
   const activePaper = selectedPaper;
 
-  const handleSelectLevel = (level: HSKLevel) => {
+  useEffect(() => {
+    const syncAttemptState = (event: StorageEvent) => {
+      if (event.key === LEGACY_ACTIVE_ATTEMPT_POINTER_KEY
+        || event.key?.startsWith(ACTIVE_ATTEMPT_POINTER_KEY_PREFIX)) {
+        setAttemptInProgress(Boolean(readActiveAttemptPointer()));
+      }
+    };
+    window.addEventListener('storage', syncAttemptState);
+    return () => window.removeEventListener('storage', syncAttemptState);
+  }, []);
+
+  useEffect(() => {
+    if (!isWebsiteEmbed || window.parent === window) return;
+    let parentOrigin = '';
+    try {
+      if (requestedParentOrigin) {
+        const parsed = new URL(requestedParentOrigin);
+        if (parsed.origin === requestedParentOrigin) parentOrigin = parsed.origin;
+      }
+      if (!parentOrigin && document.referrer) parentOrigin = new URL(document.referrer).origin;
+    } catch {
+      parentOrigin = '';
+    }
+    if (!parentOrigin) return;
+    window.parent.postMessage({
+      type: 'clingo:hsk-state',
+      screen: currentScreen,
+      inProgress: attemptInProgress,
+    }, parentOrigin);
+  }, [currentScreen, attemptInProgress, isWebsiteEmbed, requestedParentOrigin]);
+
+  useEffect(() => {
+    let active = true;
+    setSessionRestoring(true);
+    setSessionRestoreError(null);
+    const restoreSubmittedAttempt = async (
+      pointer: ActiveAttemptPointer,
+      attempt: ExamAttempt,
+      source: 'active' | 'result',
+      ignoredActiveAttemptIds: ReadonlySet<string> = new Set<string>(),
+    ): Promise<boolean> => {
+      if (attempt.status !== 'submitted' || !attempt.result) return false;
+      if (source === 'active') {
+        clearActiveAttemptPointerIfMatches(pointer.attemptId);
+        writeLatestResultPointer(pointer);
+        if (hasBlockingAttemptPointer(readActiveAttemptPointers(), ignoredActiveAttemptIds)) {
+          setAttemptInProgress(true);
+          return false;
+        }
+      } else if (readActiveAttemptPointer()) {
+        return false;
+      } else {
+        writeLatestResultPointer(pointer);
+      }
+      setAttemptInProgress(false);
+      setSelectedLevel(pointer.catalog.level);
+      setCatalogPapers([pointer.catalog]);
+      setSelectedPaper(attemptToPaper(pointer.catalog, attempt));
+      setExamResult(attempt.result);
+      setAttemptReview(null);
+      setReviewError(null);
+      setRetakeAvailable(null);
+      setRetakeError(null);
+      setCurrentScreen('result');
+      const reviewRequestToken = ++reviewRequestTokenRef.current;
+      const retakeRequestToken = ++retakeRequestTokenRef.current;
+      setReviewLoading(true);
+      void getAttemptResultDetail(attempt.attemptId)
+        .then((detail) => {
+          if (!active || reviewRequestToken !== reviewRequestTokenRef.current) return;
+          setAttemptReview(detail);
+        })
+        .catch((reviewFailure) => {
+          if (!active || reviewRequestToken !== reviewRequestTokenRef.current) return;
+          setReviewError(reviewFailure instanceof Error ? reviewFailure.message : 'Failed to load answer details');
+        })
+        .finally(() => {
+          if (active && reviewRequestToken === reviewRequestTokenRef.current) setReviewLoading(false);
+        });
+      void listPublishedPapers(pointer.catalog.level)
+        .then((published) => {
+          if (!active || retakeRequestToken !== retakeRequestTokenRef.current) return;
+          setRetakeAvailable(published.some((paper) => paper.id === pointer.catalog.id));
+          setRetakeError(null);
+        })
+        .catch((availabilityFailure) => {
+          if (!active || retakeRequestToken !== retakeRequestTokenRef.current) return;
+          setRetakeAvailable(null);
+          setRetakeError(availabilityFailure instanceof Error ? availabilityFailure.message : 'Unable to verify paper availability');
+        });
+      return true;
+    };
+
+    const restoreActiveAttempt = async () => {
+      try {
+        const pointers = readActiveAttemptPointers();
+        const scan = await scanAttemptPointers(pointers, getAttempt, isAttemptNotFoundError);
+        if (!active) return;
+        scan.discardAttemptIds.forEach(clearActiveAttemptPointerIfMatches);
+        if (scan.submitted) writeLatestResultPointer(scan.submitted.pointer);
+        if (scan.active) {
+          const { pointer, attempt } = scan.active;
+          setAttemptInProgress(true);
+          setSelectedLevel(pointer.catalog.level);
+          setCatalogPapers([pointer.catalog]);
+          setSelectedPaper(attemptToPaper(pointer.catalog, attempt));
+          setCurrentScreen('exam');
+          return;
+        }
+        if (scan.submitted
+          && await restoreSubmittedAttempt(
+            scan.submitted.pointer,
+            scan.submitted.attempt,
+            'active',
+            new Set(scan.transientErrors.map(({ pointer }) => pointer.attemptId)),
+          )) return;
+        if (scan.transientErrors.length > 0) throw scan.transientErrors[0].error;
+        setAttemptInProgress(Boolean(readActiveAttemptPointer()));
+        const publishedPapers = await listPublishedPapers();
+        if (!active) return;
+        for (const level of [1, 2] as HSKLevel[]) {
+          const catalog = publishedPapers
+            .filter((paper) => paper.level === `HSK${level}`)
+            .map(apiPaperToCatalog);
+          const activeCatalog = catalog.find((paper) => paper.activeAttemptId);
+          if (!activeCatalog?.activeAttemptId) continue;
+          const attempt = await getAttempt(activeCatalog.activeAttemptId);
+          if (!active) return;
+          if (attempt.status !== 'in_progress') continue;
+          await writeActiveAttemptPointer({ attemptId: attempt.attemptId, catalog: activeCatalog });
+          setAttemptInProgress(true);
+          setSelectedLevel(level);
+          setCatalogPapers(catalog);
+          setSelectedPaper(attemptToPaper(activeCatalog, attempt));
+          setCurrentScreen('exam');
+          return;
+        }
+        setAttemptInProgress(false);
+        const resultPointer = readLatestResultPointer();
+        if (resultPointer) {
+          try {
+            const attempt = await getAttempt(resultPointer.attemptId);
+            if (!active) return;
+            if (await restoreSubmittedAttempt(resultPointer, attempt, 'result')) return;
+          } catch (error) {
+            if (!isAttemptNotFoundError(error)) throw error;
+            console.warn('Discarding missing HSK result pointer', error);
+          }
+          if (!readActiveAttemptPointer()) writeLatestResultPointer(null);
+        }
+      } catch (error) {
+        if (active) {
+          console.warn('Failed to restore active HSK attempt', error);
+          setSessionRestoreError(error instanceof Error ? error.message : 'Failed to restore exam session');
+        }
+      } finally {
+        if (active) setSessionRestoring(false);
+      }
+    };
+    void restoreActiveAttempt();
+    return () => {
+      active = false;
+    };
+  }, [sessionRestoreNonce]);
+
+  const loadCatalogPapers = async (level: HSKLevel) => {
+    const requestToken = ++catalogRequestTokenRef.current;
+    setCatalogLoading(true);
+    setFlowError(null);
+    try {
+      const published = await listPublishedPapers(level);
+      if (catalogRequestTokenRef.current !== requestToken) return;
+      setCatalogPapers(published.map(apiPaperToCatalog));
+    } catch (error) {
+      if (catalogRequestTokenRef.current !== requestToken) return;
+      setCatalogPapers([]);
+      setFlowError(error instanceof Error ? error.message : 'Failed to load papers');
+    } finally {
+      if (catalogRequestTokenRef.current === requestToken) setCatalogLoading(false);
+    }
+  };
+
+  const handleSelectLevel = async (level: HSKLevel) => {
     setSelectedLevel(level);
     setSelectedPaper(null);
     setExamResult(null);
+    setAttemptReview(null);
+    setReviewError(null);
+    setRetakeAvailable(true);
+    setRetakeError(null);
     setCurrentScreen('papers');
+    await loadCatalogPapers(level);
   };
 
   const handleBackToHome = () => {
+    catalogRequestTokenRef.current += 1;
+    setCatalogLoading(false);
+    setFlowError(null);
     setSelectedLevel(null);
     setSelectedPaper(null);
     setExamResult(null);
+    setAttemptReview(null);
+    setReviewError(null);
+    setRetakeAvailable(true);
+    setRetakeError(null);
     setCurrentScreen('home');
   };
 
   const handleSelectPaper = (paper: PaperCatalogItem) => {
     setSelectedPaper(buildPaperFromCatalog(paper));
     setExamResult(null);
+    setAttemptReview(null);
+    setReviewError(null);
+    setRetakeAvailable(true);
+    setRetakeError(null);
     setCurrentScreen('intro');
   };
 
-  const handleStartExam = () => {
-    setCurrentScreen('exam');
+  const handleStartExam = async () => {
+    if (!selectedPaper || startLoading) return;
+    const requestToken = ++startRequestTokenRef.current;
+    const paperId = selectedPaper.id;
+    setStartLoading(true);
+    setFlowError(null);
+    try {
+      const attempt = await startAttempt(paperId);
+      if (startRequestTokenRef.current !== requestToken) return;
+      const catalog = catalogPapers.find((paper) => paper.id === paperId);
+      if (!catalog) throw new Error('Paper catalog entry is missing');
+      if (attempt.status !== 'in_progress') throw new Error('This attempt is no longer available');
+      await writeActiveAttemptPointer({ attemptId: attempt.attemptId, catalog });
+      if (startRequestTokenRef.current !== requestToken) return;
+      setAttemptInProgress(true);
+      setSelectedPaper(attemptToPaper(catalog, attempt));
+      setCurrentScreen('exam');
+    } catch (error) {
+      if (startRequestTokenRef.current !== requestToken) return;
+      setFlowError(error instanceof Error ? error.message : 'Failed to start exam');
+    } finally {
+      if (startRequestTokenRef.current === requestToken) setStartLoading(false);
+    }
   };
 
   const handleBackToPapers = () => {
+    startRequestTokenRef.current += 1;
+    setStartLoading(false);
     setSelectedPaper(null);
     setExamResult(null);
+    setAttemptReview(null);
+    setReviewError(null);
     setCurrentScreen('papers');
+    if (selectedLevel) void loadCatalogPapers(selectedLevel);
   };
 
   const handleBackToIntro = () => {
     setExamResult(null);
+    setAttemptReview(null);
+    setReviewError(null);
     setCurrentScreen('intro');
   };
 
-  const handleFinishExam = (answers: Record<string, string>) => {
-    if (!activePaper) return;
-    const correctCount = activePaper.questions.filter(
-      q => answers[q.id] === q.correctAnswer
-    ).length;
+  const handleFinishExam = async (answers: Record<string, string>): Promise<boolean> => {
+    if (!activePaper?.attemptId) return false;
+    setFlowError(null);
+    try {
+      const serverResult: AttemptResult = await submitAttempt(activePaper.attemptId, answers);
 
-    const result: ExamResult = {
-      paperId: activePaper.id,
-      score: Math.round((correctCount / activePaper.questions.length) * activePaper.maxScore),
-      answers,
-      completedAt: new Date().toISOString(),
-    };
-
-    savePaperAttempt(activePaper.id, result.score, result.completedAt);
-    setScoreRefreshKey((k) => k + 1);
-    setExamResult(result);
-    setCurrentScreen('result');
+      localStorage.removeItem(`hsk-attempt-${activePaper.attemptId}`);
+      await clearActiveAttemptPointerIfMatches(activePaper.attemptId);
+      setAttemptInProgress(Boolean(readActiveAttemptPointer()));
+      const catalog = catalogPapers.find((paper) => paper.id === activePaper.id);
+      if (catalog) writeLatestResultPointer({ attemptId: activePaper.attemptId, catalog });
+      setExamResult(serverResult);
+      setAttemptReview(null);
+      setReviewError(null);
+      setRetakeAvailable(null);
+      setRetakeError(null);
+      setCurrentScreen('result');
+      const retakeRequestToken = ++retakeRequestTokenRef.current;
+      const reviewRequestToken = ++reviewRequestTokenRef.current;
+      setReviewLoading(true);
+      void listPublishedPapers(activePaper.level)
+        .then((published) => {
+          if (retakeRequestToken !== retakeRequestTokenRef.current) return;
+          setRetakeAvailable(published.some((paper) => paper.id === activePaper.id));
+        })
+        .catch((availabilityFailure) => {
+          if (retakeRequestToken !== retakeRequestTokenRef.current) return;
+          setRetakeAvailable(null);
+          setRetakeError(availabilityFailure instanceof Error ? availabilityFailure.message : 'Unable to verify paper availability');
+        });
+      void getAttemptResultDetail(activePaper.attemptId)
+        .then((detail) => {
+          if (reviewRequestToken !== reviewRequestTokenRef.current) return;
+          setAttemptReview(detail);
+        })
+        .catch((reviewFailure) => {
+          if (reviewRequestToken !== reviewRequestTokenRef.current) return;
+          setReviewError(reviewFailure instanceof Error ? reviewFailure.message : 'Failed to load answer details');
+        })
+        .finally(() => {
+          if (reviewRequestToken === reviewRequestTokenRef.current) setReviewLoading(false);
+        });
+      return true;
+    } catch (error) {
+      setFlowError(error instanceof Error ? error.message : 'Failed to submit exam');
+      return false;
+    }
   };
 
-  const handleRestart = () => {
-    setExamResult(null);
-    setCurrentScreen('exam');
+  const handleRestart = async () => {
+    if (!selectedPaper) return;
+    const requestToken = ++retakeRequestTokenRef.current;
+    setRetakeAvailable(null);
+    setRetakeError(null);
+    try {
+      const published = (await listPublishedPapers(selectedPaper.level)).map(apiPaperToCatalog);
+      if (retakeRequestTokenRef.current !== requestToken) return;
+      const catalog = published.find((paper) => paper.id === selectedPaper.id);
+      if (!catalog) {
+        setRetakeAvailable(false);
+        return;
+      }
+      setCatalogPapers(published);
+      setSelectedPaper(buildPaperFromCatalog(catalog));
+      writeLatestResultPointer(null);
+      setExamResult(null);
+      setAttemptReview(null);
+      setReviewError(null);
+      setRetakeAvailable(true);
+      setCurrentScreen('intro');
+    } catch (error) {
+      if (retakeRequestTokenRef.current !== requestToken) return;
+      setRetakeAvailable(null);
+      setRetakeError(error instanceof Error ? error.message : 'Unable to verify paper availability');
+    }
+  };
+
+  const handleOpenReview = async (itemUid?: string) => {
+    if (!activePaper?.attemptId || reviewLoading) return;
+    setReviewStartItemUid(itemUid);
+    if (attemptReview) {
+      setCurrentScreen('review');
+      return;
+    }
+    const requestToken = ++reviewRequestTokenRef.current;
+    const attemptId = activePaper.attemptId;
+    setReviewLoading(true);
+    setReviewError(null);
+    try {
+      const detail = await getAttemptResultDetail(attemptId);
+      if (reviewRequestTokenRef.current !== requestToken) return;
+      setAttemptReview(detail);
+      setCurrentScreen('review');
+    } catch (error) {
+      if (reviewRequestTokenRef.current !== requestToken) return;
+      setReviewError(error instanceof Error ? error.message : 'Failed to load answer details');
+    } finally {
+      if (reviewRequestTokenRef.current === requestToken) setReviewLoading(false);
+    }
   };
 
   /** Leave prep training entirely — back to HSK Preparation hub (same as mock grid entry). */
   const handleExitToHub = () => {
+    reviewRequestTokenRef.current += 1;
+    retakeRequestTokenRef.current += 1;
+    startRequestTokenRef.current += 1;
+    setReviewLoading(false);
+    setStartLoading(false);
+    if (currentScreen === 'result' || currentScreen === 'review') {
+      writeLatestResultPointer(null);
+    }
+    if (isWebsiteEmbed) {
+      handleBackToHome();
+      return;
+    }
     navigate('/hsk-test');
   };
+
+  if (sessionRestoring) {
+    return (
+      <Box sx={{ height: '100%', display: 'grid', placeItems: 'center', bgcolor: '#FFFBF5' }}>
+        <Typography sx={{ color: '#667085', fontWeight: 700 }}>Loading exam...</Typography>
+      </Box>
+    );
+  }
+
+  if (sessionRestoreError) {
+    return (
+      <Box sx={{ height: '100%', display: 'grid', placeItems: 'center', bgcolor: '#FFFBF5', p: 3 }}>
+        <Box sx={{ maxWidth: 520, textAlign: 'center' }}>
+          <Typography sx={{ color: '#B42318', fontWeight: 800, mb: 2 }}>{sessionRestoreError}</Typography>
+          <ButtonBase
+            onClick={() => setSessionRestoreNonce((value) => value + 1)}
+            sx={{ px: 3, py: 1.25, borderRadius: '8px', bgcolor: '#0EAD8B', color: '#FFFFFF', fontWeight: 900 }}
+          >
+            Retry
+          </ButtonBase>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <AnimatePresence mode="wait">
@@ -2227,29 +3090,41 @@ export default function HSKPrepTrainingPage() {
         <motion.div key="papers" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} style={{ height: '100%' }}>
           <PaperSelectionScreen
             level={selectedLevel}
+            papers={catalogPapers}
+            loading={catalogLoading}
+            error={flowError}
             onSelectPaper={handleSelectPaper}
             onBack={handleBackToHome}
+            onRetry={() => void loadCatalogPapers(selectedLevel)}
             is960={is960}
-            scoreRefreshKey={scoreRefreshKey}
           />
         </motion.div>
       )}
 
       {currentScreen === 'intro' && activePaper && (
         <motion.div key="intro" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={{ height: '100%' }}>
-          <ExamIntroScreen paper={activePaper} onStart={handleStartExam} onBack={handleBackToPapers} is960={is960} />
+          <>
+            {flowError && <Typography sx={{ color: '#B91C1C', px: 3, pt: 1 }}>{flowError}</Typography>}
+            <ExamIntroScreen paper={activePaper} onStart={handleStartExam} onBack={handleBackToPapers} starting={startLoading} is960={is960} />
+          </>
         </motion.div>
       )}
 
       {currentScreen === 'exam' && activePaper && (
         <motion.div key="exam" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} style={{ height: '100%' }}>
-          <ExamScreen paper={activePaper} onFinish={handleFinishExam} onExit={handleBackToIntro} is960={is960} />
+          <ExamScreen paper={activePaper} onFinish={handleFinishExam} onExit={handleBackToIntro} error={flowError} is960={is960} />
         </motion.div>
       )}
 
       {currentScreen === 'result' && examResult && activePaper && (
         <motion.div key="result" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} style={{ height: '100%' }}>
-          <ResultScreen paper={activePaper} result={examResult} onRestart={handleRestart} onGoHome={handleExitToHub} is960={is960} />
+          <ResultScreen paper={activePaper} result={examResult} review={attemptReview} reviewError={reviewError} reviewLoading={reviewLoading} retakeAvailable={retakeAvailable} retakeError={retakeError} onOpenReview={handleOpenReview} onRestart={handleRestart} onGoHome={handleExitToHub} is960={is960} />
+        </motion.div>
+      )}
+
+      {currentScreen === 'review' && attemptReview && activePaper && (
+        <motion.div key="review" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} style={{ height: '100%' }}>
+          <ReviewScreen paper={activePaper} review={attemptReview} initialItemUid={reviewStartItemUid} onBack={() => setCurrentScreen('result')} is960={is960} />
         </motion.div>
       )}
     </AnimatePresence>
