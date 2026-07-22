@@ -115,7 +115,18 @@ export interface AttemptResult {
   bestScore?: number;
   bestScoreAt?: string;
   moduleScores?: AttemptModuleScore[];
+  reviewSummary?: AttemptReviewSummaryItem[];
   submittedAt?: string;
+}
+
+export interface AttemptReviewSummaryItem {
+  itemUid: string;
+  parentUid?: string;
+  questionNumber?: number;
+  score: number;
+  maxScore: number;
+  correct?: boolean;
+  unanswered: boolean;
 }
 
 export interface AttemptModuleScore {

@@ -59,6 +59,7 @@ import {
   type AttemptResult,
   type AttemptReview,
   type AttemptReviewItem,
+  type AttemptReviewSummaryItem,
   type ExamAttempt,
   isAttemptNotFoundError,
   type PublishedPaper,
@@ -2420,16 +2421,18 @@ function formatExamDuration(seconds?: number): string {
   return `${minutes}m ${total % 60}s`;
 }
 
-interface ReviewGroup {
+type ReviewStatusItem = AttemptReviewItem | AttemptReviewSummaryItem;
+
+interface ReviewGroup<T extends ReviewStatusItem> {
   id: string;
   label: string;
-  items: AttemptReviewItem[];
+  items: T[];
   correct: boolean;
   unanswered: boolean;
 }
 
-function buildReviewGroups(items: AttemptReviewItem[]): ReviewGroup[] {
-  const grouped = new Map<string, AttemptReviewItem[]>();
+function buildReviewGroups<T extends ReviewStatusItem>(items: T[]): ReviewGroup<T>[] {
+  const grouped = new Map<string, T[]>();
   items.forEach((item) => {
     const key = item.parentUid || item.itemUid;
     grouped.set(key, [...(grouped.get(key) || []), item]);
@@ -2454,6 +2457,7 @@ function ResultScreen({
   review,
   reviewError,
   reviewLoading,
+  reviewOpening,
   retakeAvailable,
   retakeError,
   onOpenReview,
@@ -2466,6 +2470,7 @@ function ResultScreen({
   review: AttemptReview | null;
   reviewError: string | null;
   reviewLoading: boolean;
+  reviewOpening: boolean;
   retakeAvailable: boolean | null;
   retakeError: string | null;
   onOpenReview: (itemUid?: string) => void;
@@ -2473,7 +2478,10 @@ function ResultScreen({
   onGoHome: () => void;
   is960: boolean;
 }) {
-  const groups = buildReviewGroups(review?.items || []);
+  const reviewStatusItems: ReviewStatusItem[] = result.reviewSummary?.length
+    ? result.reviewSummary
+    : review?.items || [];
+  const groups = buildReviewGroups(reviewStatusItems);
   const moduleScores = result.moduleScores || [];
   const passed = Boolean(result.passed);
 
@@ -2505,7 +2513,8 @@ function ResultScreen({
               );
             })}
           </Box>
-          {!groups.length && !reviewError && <Typography sx={{ color: '#98A2B3' }}>Loading answer details...</Typography>}
+          {!groups.length && reviewLoading && !reviewError && <Typography sx={{ color: '#98A2B3' }}>Loading answer details...</Typography>}
+          {!groups.length && !reviewLoading && !reviewError && <Typography sx={{ color: '#98A2B3' }}>No answer details</Typography>}
         </Box>
 
         <Box sx={{ bgcolor: '#FFFFFF', borderRadius: '8px', p: is960 ? 2.5 : 3, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
@@ -2526,10 +2535,10 @@ function ResultScreen({
 
           <ButtonBase
             onClick={() => onOpenReview()}
-            disabled={reviewLoading}
+            disabled={reviewOpening}
             sx={{ width: '100%', minHeight: 48, bgcolor: '#19C7AA', color: '#FFFFFF', borderRadius: '8px', fontWeight: 900, mb: 1.25, '&.Mui-disabled': { bgcolor: '#98A2B3', color: '#FFFFFF' } }}
           >
-            {reviewLoading ? 'Loading details...' : reviewError && !review ? 'Retry details' : 'View details'}
+            {reviewOpening ? 'Opening details...' : reviewError && !review ? 'Retry details' : 'View details'}
           </ButtonBase>
           <ButtonBase
             onClick={onRestart}
@@ -2668,12 +2677,31 @@ export default function HSKPrepTrainingPage() {
   const [sessionRestoreNonce, setSessionRestoreNonce] = useState(0);
   const [startLoading, setStartLoading] = useState(false);
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewOpening, setReviewOpening] = useState(false);
   const reviewRequestTokenRef = useRef(0);
+  const reviewRequestRef = useRef<{ attemptId: string; promise: Promise<AttemptReview> } | null>(null);
   const retakeRequestTokenRef = useRef(0);
   const catalogRequestTokenRef = useRef(0);
   const startRequestTokenRef = useRef(0);
 
   const activePaper = selectedPaper;
+
+  const getReviewRequest = (attemptId: string): Promise<AttemptReview> => {
+    const activeRequest = reviewRequestRef.current;
+    if (activeRequest?.attemptId === attemptId) return activeRequest.promise;
+    const promise = getAttemptResultDetail(attemptId);
+    const request = { attemptId, promise };
+    reviewRequestRef.current = request;
+    void promise.then(
+      () => {
+        if (reviewRequestRef.current === request) reviewRequestRef.current = null;
+      },
+      () => {
+        if (reviewRequestRef.current === request) reviewRequestRef.current = null;
+      },
+    );
+    return promise;
+  };
 
   useEffect(() => {
     const syncAttemptState = (event: StorageEvent) => {
@@ -2736,35 +2764,26 @@ export default function HSKPrepTrainingPage() {
       setExamResult(attempt.result);
       setAttemptReview(null);
       setReviewError(null);
-      setRetakeAvailable(null);
+      setRetakeAvailable(true);
       setRetakeError(null);
       setCurrentScreen('result');
       const reviewRequestToken = ++reviewRequestTokenRef.current;
-      const retakeRequestToken = ++retakeRequestTokenRef.current;
       setReviewLoading(true);
-      void getAttemptResultDetail(attempt.attemptId)
-        .then((detail) => {
-          if (!active || reviewRequestToken !== reviewRequestTokenRef.current) return;
-          setAttemptReview(detail);
-        })
-        .catch((reviewFailure) => {
-          if (!active || reviewRequestToken !== reviewRequestTokenRef.current) return;
-          setReviewError(reviewFailure instanceof Error ? reviewFailure.message : 'Failed to load answer details');
-        })
-        .finally(() => {
-          if (active && reviewRequestToken === reviewRequestTokenRef.current) setReviewLoading(false);
-        });
-      void listPublishedPapers(pointer.catalog.level)
-        .then((published) => {
-          if (!active || retakeRequestToken !== retakeRequestTokenRef.current) return;
-          setRetakeAvailable(published.some((paper) => paper.id === pointer.catalog.id));
-          setRetakeError(null);
-        })
-        .catch((availabilityFailure) => {
-          if (!active || retakeRequestToken !== retakeRequestTokenRef.current) return;
-          setRetakeAvailable(null);
-          setRetakeError(availabilityFailure instanceof Error ? availabilityFailure.message : 'Unable to verify paper availability');
-        });
+      window.setTimeout(() => {
+        if (!active || reviewRequestToken !== reviewRequestTokenRef.current) return;
+        void getReviewRequest(attempt.attemptId)
+          .then((detail) => {
+            if (!active || reviewRequestToken !== reviewRequestTokenRef.current) return;
+            setAttemptReview(detail);
+          })
+          .catch((reviewFailure) => {
+            if (!active || reviewRequestToken !== reviewRequestTokenRef.current) return;
+            setReviewError(reviewFailure instanceof Error ? reviewFailure.message : 'Failed to load answer details');
+          })
+          .finally(() => {
+            if (active && reviewRequestToken === reviewRequestTokenRef.current) setReviewLoading(false);
+          });
+      }, 0);
       return true;
     };
 
@@ -2858,6 +2877,9 @@ export default function HSKPrepTrainingPage() {
   };
 
   const handleSelectLevel = async (level: HSKLevel) => {
+    reviewRequestTokenRef.current += 1;
+    setReviewLoading(false);
+    setReviewOpening(false);
     setSelectedLevel(level);
     setSelectedPaper(null);
     setExamResult(null);
@@ -2871,7 +2893,10 @@ export default function HSKPrepTrainingPage() {
 
   const handleBackToHome = () => {
     catalogRequestTokenRef.current += 1;
+    reviewRequestTokenRef.current += 1;
     setCatalogLoading(false);
+    setReviewLoading(false);
+    setReviewOpening(false);
     setFlowError(null);
     setSelectedLevel(null);
     setSelectedPaper(null);
@@ -2884,6 +2909,9 @@ export default function HSKPrepTrainingPage() {
   };
 
   const handleSelectPaper = (paper: PaperCatalogItem) => {
+    reviewRequestTokenRef.current += 1;
+    setReviewLoading(false);
+    setReviewOpening(false);
     setSelectedPaper(buildPaperFromCatalog(paper));
     setExamResult(null);
     setAttemptReview(null);
@@ -2920,7 +2948,10 @@ export default function HSKPrepTrainingPage() {
 
   const handleBackToPapers = () => {
     startRequestTokenRef.current += 1;
+    reviewRequestTokenRef.current += 1;
     setStartLoading(false);
+    setReviewLoading(false);
+    setReviewOpening(false);
     setSelectedPaper(null);
     setExamResult(null);
     setAttemptReview(null);
@@ -2930,6 +2961,9 @@ export default function HSKPrepTrainingPage() {
   };
 
   const handleBackToIntro = () => {
+    reviewRequestTokenRef.current += 1;
+    setReviewLoading(false);
+    setReviewOpening(false);
     setExamResult(null);
     setAttemptReview(null);
     setReviewError(null);
@@ -2938,46 +2972,39 @@ export default function HSKPrepTrainingPage() {
 
   const handleFinishExam = async (answers: Record<string, string>): Promise<boolean> => {
     if (!activePaper?.attemptId) return false;
+    const attemptId = activePaper.attemptId;
     setFlowError(null);
     try {
-      const serverResult: AttemptResult = await submitAttempt(activePaper.attemptId, answers);
+      const serverResult: AttemptResult = await submitAttempt(attemptId, answers);
 
-      localStorage.removeItem(`hsk-attempt-${activePaper.attemptId}`);
-      await clearActiveAttemptPointerIfMatches(activePaper.attemptId);
+      localStorage.removeItem(`hsk-attempt-${attemptId}`);
+      await clearActiveAttemptPointerIfMatches(attemptId);
       setAttemptInProgress(Boolean(readActiveAttemptPointer()));
       const catalog = catalogPapers.find((paper) => paper.id === activePaper.id);
-      if (catalog) writeLatestResultPointer({ attemptId: activePaper.attemptId, catalog });
+      if (catalog) writeLatestResultPointer({ attemptId, catalog });
       setExamResult(serverResult);
       setAttemptReview(null);
       setReviewError(null);
-      setRetakeAvailable(null);
+      setRetakeAvailable(true);
       setRetakeError(null);
       setCurrentScreen('result');
-      const retakeRequestToken = ++retakeRequestTokenRef.current;
       const reviewRequestToken = ++reviewRequestTokenRef.current;
       setReviewLoading(true);
-      void listPublishedPapers(activePaper.level)
-        .then((published) => {
-          if (retakeRequestToken !== retakeRequestTokenRef.current) return;
-          setRetakeAvailable(published.some((paper) => paper.id === activePaper.id));
-        })
-        .catch((availabilityFailure) => {
-          if (retakeRequestToken !== retakeRequestTokenRef.current) return;
-          setRetakeAvailable(null);
-          setRetakeError(availabilityFailure instanceof Error ? availabilityFailure.message : 'Unable to verify paper availability');
-        });
-      void getAttemptResultDetail(activePaper.attemptId)
-        .then((detail) => {
-          if (reviewRequestToken !== reviewRequestTokenRef.current) return;
-          setAttemptReview(detail);
-        })
-        .catch((reviewFailure) => {
-          if (reviewRequestToken !== reviewRequestTokenRef.current) return;
-          setReviewError(reviewFailure instanceof Error ? reviewFailure.message : 'Failed to load answer details');
-        })
-        .finally(() => {
-          if (reviewRequestToken === reviewRequestTokenRef.current) setReviewLoading(false);
-        });
+      window.setTimeout(() => {
+        if (reviewRequestToken !== reviewRequestTokenRef.current) return;
+        void getReviewRequest(attemptId)
+          .then((detail) => {
+            if (reviewRequestToken !== reviewRequestTokenRef.current) return;
+            setAttemptReview(detail);
+          })
+          .catch((reviewFailure) => {
+            if (reviewRequestToken !== reviewRequestTokenRef.current) return;
+            setReviewError(reviewFailure instanceof Error ? reviewFailure.message : 'Failed to load answer details');
+          })
+          .finally(() => {
+            if (reviewRequestToken === reviewRequestTokenRef.current) setReviewLoading(false);
+          });
+      }, 0);
       return true;
     } catch (error) {
       setFlowError(error instanceof Error ? error.message : 'Failed to submit exam');
@@ -3004,6 +3031,9 @@ export default function HSKPrepTrainingPage() {
       setExamResult(null);
       setAttemptReview(null);
       setReviewError(null);
+      reviewRequestTokenRef.current += 1;
+      setReviewLoading(false);
+      setReviewOpening(false);
       setRetakeAvailable(true);
       setCurrentScreen('intro');
     } catch (error) {
@@ -3014,7 +3044,7 @@ export default function HSKPrepTrainingPage() {
   };
 
   const handleOpenReview = async (itemUid?: string) => {
-    if (!activePaper?.attemptId || reviewLoading) return;
+    if (!activePaper?.attemptId || reviewOpening) return;
     setReviewStartItemUid(itemUid);
     if (attemptReview) {
       setCurrentScreen('review');
@@ -3023,9 +3053,10 @@ export default function HSKPrepTrainingPage() {
     const requestToken = ++reviewRequestTokenRef.current;
     const attemptId = activePaper.attemptId;
     setReviewLoading(true);
+    setReviewOpening(true);
     setReviewError(null);
     try {
-      const detail = await getAttemptResultDetail(attemptId);
+      const detail = await getReviewRequest(attemptId);
       if (reviewRequestTokenRef.current !== requestToken) return;
       setAttemptReview(detail);
       setCurrentScreen('review');
@@ -3033,7 +3064,10 @@ export default function HSKPrepTrainingPage() {
       if (reviewRequestTokenRef.current !== requestToken) return;
       setReviewError(error instanceof Error ? error.message : 'Failed to load answer details');
     } finally {
-      if (reviewRequestTokenRef.current === requestToken) setReviewLoading(false);
+      if (reviewRequestTokenRef.current === requestToken) {
+        setReviewLoading(false);
+        setReviewOpening(false);
+      }
     }
   };
 
@@ -3043,6 +3077,7 @@ export default function HSKPrepTrainingPage() {
     retakeRequestTokenRef.current += 1;
     startRequestTokenRef.current += 1;
     setReviewLoading(false);
+    setReviewOpening(false);
     setStartLoading(false);
     if (currentScreen === 'result' || currentScreen === 'review') {
       writeLatestResultPointer(null);
@@ -3118,7 +3153,7 @@ export default function HSKPrepTrainingPage() {
 
       {currentScreen === 'result' && examResult && activePaper && (
         <motion.div key="result" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} style={{ height: '100%' }}>
-          <ResultScreen paper={activePaper} result={examResult} review={attemptReview} reviewError={reviewError} reviewLoading={reviewLoading} retakeAvailable={retakeAvailable} retakeError={retakeError} onOpenReview={handleOpenReview} onRestart={handleRestart} onGoHome={handleExitToHub} is960={is960} />
+          <ResultScreen paper={activePaper} result={examResult} review={attemptReview} reviewError={reviewError} reviewLoading={reviewLoading} reviewOpening={reviewOpening} retakeAvailable={retakeAvailable} retakeError={retakeError} onOpenReview={handleOpenReview} onRestart={handleRestart} onGoHome={handleExitToHub} is960={is960} />
         </motion.div>
       )}
 
