@@ -216,6 +216,14 @@ export function clampActiveSubIndex(activeIndex: number, groupLength: number): n
   return Math.min(Math.max(0, Math.trunc(activeIndex)), groupLength - 1);
 }
 
+export function runtimeScoredQuestionId(
+  questionNumber: string | number | undefined,
+  runtimeId: string | number,
+): string {
+  const normalizedQuestionNumber = String(questionNumber ?? '').trim();
+  return normalizedQuestionNumber || String(runtimeId);
+}
+
 export function createSectionPartNumberResolver() {
   const sectionNumbers = new Map<ExamSectionKind, Map<string, number>>();
   return (section: ExamSectionKind, sectionId: string): number => {

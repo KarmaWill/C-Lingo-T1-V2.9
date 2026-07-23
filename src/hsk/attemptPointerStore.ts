@@ -146,3 +146,18 @@ export async function scanAttemptPointers<
   }
   return scan;
 }
+
+export function firstBlockingTransientError<
+  TCatalog extends AttemptPointerCatalog,
+  TAttempt extends RestorableAttempt,
+>(
+  scan: AttemptRestoreScan<TCatalog, TAttempt>,
+  fallbackSubmittedPointer?: ActiveAttemptPointer<TCatalog> | null,
+): unknown {
+  const submittedPointer = scan.submitted?.pointer || fallbackSubmittedPointer;
+  if (!submittedPointer) return scan.transientErrors[0]?.error;
+  const submittedAt = submittedPointer.storedAt || 0;
+  return scan.transientErrors.find(
+    ({ pointer }) => (pointer.storedAt || 0) >= submittedAt,
+  )?.error;
+}

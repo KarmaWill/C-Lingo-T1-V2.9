@@ -21,9 +21,7 @@ const SHELL_CHROME_RESERVE = SHELL_BAR_RESERVE * 2
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation()
-  const isWebsiteEmbed =
-    location.pathname === '/hsk-prep-training' &&
-    new URLSearchParams(location.search).get('mode') === 'website'
+  const isWebsiteEmbed = new URLSearchParams(location.search).get('mode') === 'website'
 
   const openExternal = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer')
@@ -48,7 +46,11 @@ export default function MainLayout({ children }: MainLayoutProps) {
   }, [])
 
   const scale1920 = is1920x1125
-    ? Math.min(1, viewport.w / DESIGN_1920, (viewport.h - (isWebsiteEmbed ? 0 : SHELL_CHROME_RESERVE)) / DESIGN_1125)
+    ? Math.min(
+        1,
+        viewport.w / DESIGN_1920,
+        (viewport.h - (isWebsiteEmbed ? 0 : SHELL_CHROME_RESERVE)) / DESIGN_1125,
+      )
     : 1
 
   const breakpointDeviceScale =
@@ -172,6 +174,13 @@ export default function MainLayout({ children }: MainLayoutProps) {
   // Calculate scaled heights based on screen size
   const is960 = screenSize === '960x540'
   const hardwareProtrusion = is960 ? 10 : 12
+  const websiteEmbedScale = isWebsiteEmbed
+    ? Math.min(
+        (viewport.w - 4) / screenWidth,
+        (viewport.h - 4) / (screenHeight + hardwareProtrusion),
+      ) * 0.9
+    : null
+  const effectiveDeviceScale = Math.max(0.28, websiteEmbedScale ?? deviceScale)
   const systemBarHeight = is960 ? 24 : (is2000x1200 ? 44 : (is1920x1125 ? 40 : 32))
   const topBannerHeight = is960 ? 56 : (is2000x1200 ? 110 : (is1920x1125 ? 100 : 80))
   // Reserve space for BottomNavigator: 4-dot tab indicator + dock + camera (absolute bottom)
@@ -323,7 +332,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <Box sx={{ 
-      ...shellBackdropSx,
+      ...(isWebsiteEmbed
+        ? {
+            background: '#F4FFF5',
+            '&::before': { display: 'none' },
+          }
+        : shellBackdropSx),
       width: '100vw',
       height: '100vh',
       display: 'flex',
@@ -393,12 +407,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
       {/* iPad/Tablet Container: non-1920x1125（含 2000x1200 原比例） */}
       <Box
         sx={{
-          width: screenWidth * deviceScale,
-          height: screenHeight * deviceScale + hardwareProtrusion * deviceScale,
+          width: screenWidth * effectiveDeviceScale,
+          height: screenHeight * effectiveDeviceScale + hardwareProtrusion * effectiveDeviceScale,
           position: 'relative',
           flexShrink: 0,
           overflow: 'visible',
-          pt: `${hardwareProtrusion * deviceScale}px`,
+          pt: `${hardwareProtrusion * effectiveDeviceScale}px`,
         }}
       >
       <IpadDeviceShell
@@ -406,7 +420,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         height={screenHeight}
         sizeTier={is960 ? '960' : is2000x1200 ? '2000' : 'default'}
         screenBg={chromeTheme.screenBg}
-        transform={`scale(${deviceScale})`}
+        transform={`scale(${effectiveDeviceScale})`}
         transformOrigin="top left"
         position="absolute"
       >

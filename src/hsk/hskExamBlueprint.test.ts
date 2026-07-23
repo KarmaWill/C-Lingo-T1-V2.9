@@ -3,6 +3,7 @@ import {
   clampActiveSubIndex,
   createSectionPartNumberResolver,
   hasCompositeImageOptions,
+  runtimeScoredQuestionId,
 } from './hskExamBlueprint';
 
 describe('hasCompositeImageOptions', () => {
@@ -36,5 +37,10 @@ describe('runtime exam navigation helpers', () => {
     expect(nextPart('listening', 'listening-b')).toBe(2);
     expect(nextPart('reading', 'reading-a')).toBe(1);
     expect(nextPart('writing', 'writing-a')).toBe(1);
+  });
+
+  it('uses the delivery question number as the scored answer key', () => {
+    expect(runtimeScoredQuestionId(21, 'sub-1')).toBe('21');
+    expect(runtimeScoredQuestionId(undefined, 'runtime-21')).toBe('runtime-21');
   });
 });

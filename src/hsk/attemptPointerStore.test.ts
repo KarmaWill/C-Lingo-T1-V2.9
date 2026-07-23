@@ -3,6 +3,7 @@ import {
   ACTIVE_ATTEMPT_POINTER_KEY_PREFIX,
   LEGACY_ACTIVE_ATTEMPT_POINTER_KEY,
   clearActiveAttemptPointerIfMatches,
+  firstBlockingTransientError,
   hasBlockingAttemptPointer,
   listActiveAttemptPointers,
   scanAttemptPointers,
@@ -149,5 +150,40 @@ describe('attemptPointerStore', () => {
 
     expect(hasBlockingAttemptPointer(pointers, new Set(['transient']))).toBe(true);
     expect(hasBlockingAttemptPointer(pointers.slice(0, 1), new Set(['transient']))).toBe(false);
+  });
+
+  it('only lets a transient pointer block submitted results that are not newer', () => {
+    const submitted = {
+      pointer: { attemptId: 'submitted', catalog: { id: 'paper-1' }, storedAt: 20 },
+      attempt: { status: 'submitted', result: { score: 10 } },
+    };
+    const olderError = new Error('older request unavailable');
+    const newerError = new Error('newer request unavailable');
+
+    expect(firstBlockingTransientError({
+      submitted,
+      discardAttemptIds: [],
+      transientErrors: [{
+        pointer: { attemptId: 'older', catalog: { id: 'paper-2' }, storedAt: 10 },
+        error: olderError,
+      }],
+    })).toBeUndefined();
+
+    expect(firstBlockingTransientError({
+      submitted,
+      discardAttemptIds: [],
+      transientErrors: [{
+        pointer: { attemptId: 'newer', catalog: { id: 'paper-3' }, storedAt: 30 },
+        error: newerError,
+      }],
+    })).toBe(newerError);
+
+    expect(firstBlockingTransientError({
+      discardAttemptIds: [],
+      transientErrors: [{
+        pointer: { attemptId: 'older', catalog: { id: 'paper-2' }, storedAt: 10 },
+        error: olderError,
+      }],
+    }, submitted.pointer)).toBeUndefined();
   });
 });

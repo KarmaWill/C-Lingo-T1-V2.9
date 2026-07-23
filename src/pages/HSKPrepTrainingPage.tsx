@@ -49,6 +49,7 @@ import {
   hasCompositeImageOptions,
   clampActiveSubIndex,
   createSectionPartNumberResolver,
+  runtimeScoredQuestionId,
 } from '../hsk/hskExamBlueprint';
 import {
   listPublishedPapers,
@@ -70,6 +71,7 @@ import {
   ACTIVE_ATTEMPT_POINTER_KEY_PREFIX,
   LEGACY_ACTIVE_ATTEMPT_POINTER_KEY,
   clearActiveAttemptPointerIfMatches as clearStoredActiveAttemptPointer,
+  firstBlockingTransientError,
   hasBlockingAttemptPointer,
   listActiveAttemptPointers as listStoredActiveAttemptPointers,
   readActiveAttemptPointer as readStoredActiveAttemptPointer,
@@ -278,7 +280,9 @@ function attemptToPaper(catalog: PaperCatalogItem, attempt: ExamAttempt): ExamPa
       );
       const isWriting = templateCode === 'W02';
       questions.push({
-        id: row.isExample ? `example-${row.id || runtime.id || questions.length}` : String(row.number),
+        id: row.isExample
+          ? `example-${row.id || runtime.id || questions.length}`
+          : runtimeScoredQuestionId(row.number, row.id || runtime.id || questions.length),
         number: row.number,
         isExample: row.isExample,
         section,
@@ -475,10 +479,12 @@ function HomeScreen({
   onSelectLevel,
   onBack,
   is960,
+  showBack = true,
 }: {
   onSelectLevel: (level: HSKLevel) => void;
   onBack: () => void;
   is960: boolean;
+  showBack?: boolean;
 }) {
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#FFF8F0', overflow: 'hidden' }}>
@@ -496,7 +502,17 @@ function HomeScreen({
       >
         <ButtonBase
           onClick={onBack}
-          sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: 'rgba(0,0,0,0.05)', color: '#586E75', flexShrink: 0, '&:active': { bgcolor: 'rgba(0,0,0,0.1)' } }}
+          sx={{
+            width: 44,
+            height: 44,
+            borderRadius: '50%',
+            bgcolor: 'rgba(0,0,0,0.05)',
+            color: '#586E75',
+            flexShrink: 0,
+            visibility: showBack ? 'visible' : 'hidden',
+            pointerEvents: showBack ? 'auto' : 'none',
+            '&:active': { bgcolor: 'rgba(0,0,0,0.1)' },
+          }}
         >
           <ChevronLeftIcon sx={{ fontSize: 24 }} />
         </ButtonBase>
@@ -827,6 +843,7 @@ function PaperSelectionScreen({
   onBack,
   onRetry,
   is960,
+  paperTrack,
 }: {
   level: HSKLevel;
   papers: PaperCatalogItem[];
@@ -836,9 +853,14 @@ function PaperSelectionScreen({
   onBack: () => void;
   onRetry: () => void;
   is960: boolean;
+  paperTrack?: PaperSource | null;
 }) {
   const officialCardSize = is960 ? 156 : 184;
-  const summaryPaper = papers[0];
+  const visiblePapers = useMemo(
+    () => (paperTrack ? papers.filter((paper) => paper.source === paperTrack) : papers),
+    [paperTrack, papers],
+  );
+  const summaryPaper = visiblePapers[0];
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#FFF8F0', overflow: 'hidden' }}>
@@ -884,7 +906,7 @@ function PaperSelectionScreen({
           gap: is960 ? 2.5 : 3,
         }}
       >
-        {(loading || error || papers.length === 0) && (
+        {(loading || error || visiblePapers.length === 0) && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
             <Typography sx={{ color: error ? '#B91C1C' : '#64748B', fontWeight: 700 }}>
               {loading ? 'Loading published papers…' : error || 'No published papers for this level.'}
@@ -899,8 +921,8 @@ function PaperSelectionScreen({
             )}
           </Box>
         )}
-        {PAPER_SECTIONS.map((section) => {
-          const sectionPapers = papers.filter((p) => p.source === section.source);
+        {PAPER_SECTIONS.filter((section) => !paperTrack || section.source === paperTrack).map((section) => {
+          const sectionPapers = visiblePapers.filter((p) => p.source === section.source);
           if (sectionPapers.length === 0) return null;
           return (
             <Box key={section.source}>
@@ -1376,6 +1398,7 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
   const submittedRef = useRef(false);
   const [playCounts, setPlayCounts] = useState<Record<string, number>>(storedAttempt.playCounts || {});
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const CRITICAL_TIME_SECONDS = 5 * 60;
   const timeRemaining = Math.max(0, Math.ceil((examDeadlineMs - clockNow) / 1000));
@@ -1532,9 +1555,17 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
   const submitAnswers = () => {
     if (submittedRef.current) return;
     submittedRef.current = true;
-    void onFinish(answers).then((submitted) => {
-      if (!submitted) submittedRef.current = false;
-    });
+    setSubmitting(true);
+    void onFinish(answers)
+      .then((submitted) => {
+        if (!submitted) submittedRef.current = false;
+      })
+      .catch(() => {
+        submittedRef.current = false;
+      })
+      .finally(() => {
+        setSubmitting(false);
+      });
   };
 
   const handleSubmit = () => {
@@ -1612,7 +1643,10 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
         }}
       >
         <ButtonBase
-          onClick={onExit}
+          onClick={() => {
+            if (!submitting) onExit();
+          }}
+          disabled={submitting}
           sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: '#F3F4F6', color: '#64748B', '&:active': { bgcolor: '#E5E7EB' } }}
         >
           <ChevronLeftIcon sx={{ fontSize: 24 }} />
@@ -1658,7 +1692,7 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
 
         <ButtonBase
           onClick={handleSubmit}
-          disabled={isExpired}
+          disabled={isExpired || submitting}
           sx={{
             px: is960 ? 2 : 2.5,
             py: is960 ? 0.85 : 1,
@@ -1673,7 +1707,7 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
             '&.Mui-disabled': { bgcolor: '#E5E7EB', color: '#9CA3AF', boxShadow: 'none' },
           }}
         >
-          Submit
+          {submitting ? 'Submitting...' : 'Submit'}
         </ButtonBase>
       </Box>
 
@@ -1685,7 +1719,9 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
 
       <Dialog
         open={submitConfirmOpen}
-        onClose={() => setSubmitConfirmOpen(false)}
+        onClose={() => {
+          if (!submitting) setSubmitConfirmOpen(false);
+        }}
         aria-labelledby="incomplete-submit-title"
       >
         <DialogTitle id="incomplete-submit-title">Submit incomplete exam?</DialogTitle>
@@ -1695,8 +1731,10 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setSubmitConfirmOpen(false)} color="inherit">Continue answering</Button>
-          <Button onClick={confirmIncompleteSubmit} variant="contained" color="primary">Confirm submit</Button>
+          <Button disabled={submitting} onClick={() => setSubmitConfirmOpen(false)} color="inherit">Continue answering</Button>
+          <Button disabled={submitting} onClick={confirmIncompleteSubmit} variant="contained" color="primary">
+            {submitting ? 'Submitting...' : 'Confirm submit'}
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -2358,7 +2396,7 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
 
             <ButtonBase
               onClick={isLastGroup ? handleSubmit : handleNext}
-              disabled={isLastGroup ? isExpired : !isCurrentGroupComplete}
+              disabled={isLastGroup ? isExpired || submitting : !isCurrentGroupComplete}
               sx={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -2380,7 +2418,7 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
                 '&.Mui-disabled': { bgcolor: '#E5E7EB', color: '#9CA3AF', boxShadow: 'none' },
               }}
             >
-              {isLastGroup ? 'Submit' : 'Next'}
+              {isLastGroup ? (submitting ? 'Submitting...' : 'Submit') : 'Next'}
               <ArrowForwardIcon sx={{ fontSize: is960 ? 18 : 20 }} />
             </ButtonBase>
           </Box>
@@ -2656,6 +2694,9 @@ export default function HSKPrepTrainingPage() {
   const [searchParams] = useSearchParams();
   const isWebsiteEmbed = searchParams.get('mode') === 'website';
   const requestedParentOrigin = searchParams.get('parentOrigin');
+  const paperTrackParam = searchParams.get('track');
+  const paperTrack: PaperSource | null =
+    paperTrackParam === 'clingo' ? 'clingo' : paperTrackParam === 'official' ? 'official' : null;
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
   const is960 = screenSize === '960x540';
 
@@ -2752,7 +2793,7 @@ export default function HSKPrepTrainingPage() {
           setAttemptInProgress(true);
           return false;
         }
-      } else if (readActiveAttemptPointer()) {
+      } else if (hasBlockingAttemptPointer(readActiveAttemptPointers(), ignoredActiveAttemptIds)) {
         return false;
       } else {
         writeLatestResultPointer(pointer);
@@ -2803,14 +2844,19 @@ export default function HSKPrepTrainingPage() {
           setCurrentScreen('exam');
           return;
         }
+        const resultPointer = readLatestResultPointer();
+        const blockingRestoreError = firstBlockingTransientError(scan, resultPointer);
+        if (blockingRestoreError) throw blockingRestoreError;
+        const ignorableTransientAttemptIds = new Set(
+          scan.transientErrors.map(({ pointer }) => pointer.attemptId),
+        );
         if (scan.submitted
           && await restoreSubmittedAttempt(
             scan.submitted.pointer,
             scan.submitted.attempt,
             'active',
-            new Set(scan.transientErrors.map(({ pointer }) => pointer.attemptId)),
+            ignorableTransientAttemptIds,
           )) return;
-        if (scan.transientErrors.length > 0) throw scan.transientErrors[0].error;
         setAttemptInProgress(Boolean(readActiveAttemptPointer()));
         const publishedPapers = await listPublishedPapers();
         if (!active) return;
@@ -2818,7 +2864,10 @@ export default function HSKPrepTrainingPage() {
           const catalog = publishedPapers
             .filter((paper) => paper.level === `HSK${level}`)
             .map(apiPaperToCatalog);
-          const activeCatalog = catalog.find((paper) => paper.activeAttemptId);
+          const activeCatalog = catalog.find(
+            (paper) => paper.activeAttemptId
+              && !ignorableTransientAttemptIds.has(paper.activeAttemptId),
+          );
           if (!activeCatalog?.activeAttemptId) continue;
           const attempt = await getAttempt(activeCatalog.activeAttemptId);
           if (!active) return;
@@ -2832,12 +2881,16 @@ export default function HSKPrepTrainingPage() {
           return;
         }
         setAttemptInProgress(false);
-        const resultPointer = readLatestResultPointer();
         if (resultPointer) {
           try {
             const attempt = await getAttempt(resultPointer.attemptId);
             if (!active) return;
-            if (await restoreSubmittedAttempt(resultPointer, attempt, 'result')) return;
+            if (await restoreSubmittedAttempt(
+              resultPointer,
+              attempt,
+              'result',
+              ignorableTransientAttemptIds,
+            )) return;
           } catch (error) {
             if (!isAttemptNotFoundError(error)) throw error;
             console.warn('Discarding missing HSK result pointer', error);
@@ -2881,6 +2934,7 @@ export default function HSKPrepTrainingPage() {
     setReviewLoading(false);
     setReviewOpening(false);
     setSelectedLevel(level);
+    setCatalogPapers([]);
     setSelectedPaper(null);
     setExamResult(null);
     setAttemptReview(null);
@@ -3117,7 +3171,12 @@ export default function HSKPrepTrainingPage() {
     <AnimatePresence mode="wait">
       {currentScreen === 'home' && (
         <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -40 }} style={{ height: '100%' }}>
-          <HomeScreen onSelectLevel={handleSelectLevel} onBack={handleExitToHub} is960={is960} />
+          <HomeScreen
+            onSelectLevel={handleSelectLevel}
+            onBack={handleExitToHub}
+            is960={is960}
+            showBack={!isWebsiteEmbed}
+          />
         </motion.div>
       )}
 
@@ -3132,6 +3191,7 @@ export default function HSKPrepTrainingPage() {
             onBack={handleBackToHome}
             onRetry={() => void loadCatalogPapers(selectedLevel)}
             is960={is960}
+            paperTrack={paperTrack}
           />
         </motion.div>
       )}
