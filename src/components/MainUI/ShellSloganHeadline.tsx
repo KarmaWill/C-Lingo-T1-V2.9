@@ -1,4 +1,4 @@
-import { Box, ButtonBase, Typography } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 
 const OPPO_FONT = '"OPPO Sans", "Helvetica Neue", Arial, sans-serif'
 
@@ -68,11 +68,7 @@ function SloganGlobeIcon({ gradientId }: { gradientId: string }) {
   )
 }
 
-interface ShellSloganHeadlineProps {
-  onClick?: () => void
-}
-
-export default function ShellSloganHeadline({ onClick }: ShellSloganHeadlineProps) {
+export default function ShellSloganHeadline() {
   return (
     <Box
       className="about-slogan-banner"
@@ -100,44 +96,32 @@ export default function ShellSloganHeadline({ onClick }: ShellSloganHeadlineProp
           zIndex: 0,
         }}
       />
-      <ButtonBase
-        onClick={onClick}
-        aria-label="Beyond Language. To Bigger Worlds. — Open product roadmap"
+      <Typography
+        component="p"
+        className="about-slogan-headline"
         sx={{
           position: 'relative',
           zIndex: 1,
-          borderRadius: '8px',
-          p: 0,
-          cursor: onClick ? 'pointer' : 'default',
-          '&:hover': onClick ? { opacity: 0.92 } : undefined,
-          '&:active': onClick ? { transform: 'scale(0.99)' } : undefined,
+          m: 0,
+          fontFamily: OPPO_FONT,
+          fontSize: 'clamp(0.88rem, 1.85vw, 1.32rem)',
+          fontWeight: 700,
+          color: '#F7FFF6',
+          lineHeight: 1.1,
+          letterSpacing: '-0.8px',
+          whiteSpace: 'nowrap',
+          WebkitFontSmoothing: 'antialiased',
+          textRendering: 'optimizeLegibility',
+          userSelect: 'none',
+          display: 'inline-block',
         }}
       >
-        <Typography
-          component="span"
-          className="about-slogan-headline"
-          sx={{
-            m: 0,
-            fontFamily: OPPO_FONT,
-            fontSize: 'clamp(0.88rem, 1.85vw, 1.32rem)',
-            fontWeight: 700,
-            color: '#F7FFF6',
-            lineHeight: 1.1,
-            letterSpacing: '-0.8px',
-            whiteSpace: 'nowrap',
-            WebkitFontSmoothing: 'antialiased',
-            textRendering: 'optimizeLegibility',
-            userSelect: 'none',
-            display: 'inline-block',
-          }}
-        >
-          Bey
-          <SloganStarIcon gradientId="shell-slogan-star-grad" />
-          nd Language. To Bigger W
-          <SloganGlobeIcon gradientId="shell-slogan-globe-grad" />
-          rlds.
-        </Typography>
-      </ButtonBase>
+        Bey
+        <SloganStarIcon gradientId="shell-slogan-star-grad" />
+        nd Language. To Bigger W
+        <SloganGlobeIcon gradientId="shell-slogan-globe-grad" />
+        rlds.
+      </Typography>
     </Box>
   )
 }

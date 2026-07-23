@@ -1,13 +1,11 @@
 import type { ReactNode } from 'react'
 import { Box, ButtonBase, Typography } from '@mui/material'
 import { motion } from 'framer-motion'
-import glassLogo from '../../assets/c-lingo-glass-logo.png'
 import hubTileScan from '../../assets/hub-tile-scan.png'
 
 const MotionButtonBase = motion.create(ButtonBase)
 
 interface ShellTopBarProductLinksProps {
-  onOpenAdmin: () => void
   onOpenScanPen: () => void
 }
 
@@ -58,7 +56,7 @@ function ProductLink({
   )
 }
 
-export default function ShellTopBarProductLinks({ onOpenAdmin, onOpenScanPen }: ShellTopBarProductLinksProps) {
+export default function ShellTopBarProductLinks({ onOpenScanPen }: ShellTopBarProductLinksProps) {
   return (
     <Box
       sx={{
@@ -71,23 +69,6 @@ export default function ShellTopBarProductLinks({ onOpenAdmin, onOpenScanPen }: 
         zIndex: 2,
       }}
     >
-      <ProductLink ariaLabel="C-Lingo Admin" label="C-Lingo Admin" onClick={onOpenAdmin}>
-        <Box
-          component="img"
-          src={glassLogo}
-          alt=""
-          draggable={false}
-          sx={{
-            width: 34,
-            height: 34,
-            objectFit: 'contain',
-            display: 'block',
-            pointerEvents: 'none',
-            userSelect: 'none',
-          }}
-        />
-      </ProductLink>
-
       <ProductLink ariaLabel="C-Lingo ScanPen" label="C-Lingo ScanPen" onClick={onOpenScanPen}>
         <Box
           sx={{
