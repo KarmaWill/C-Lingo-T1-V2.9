@@ -93,6 +93,7 @@ export interface ExamDelivery {
   durationMinutes: number;
   totalScore: number;
   passScore: number;
+  scoringMode: ScoringMode;
   maxPlayCount?: number;
   noticeRules?: string[];
   sectionSummary?: Array<{ module?: string; count?: number; minutes?: number }>;
@@ -106,6 +107,7 @@ export interface AttemptResult {
   score?: number;
   totalScore: number;
   passScore: number;
+  scoringMode: ScoringMode;
   scoreRate?: number;
   passed?: boolean;
   correctCount?: number;
@@ -132,12 +134,14 @@ export interface AttemptReviewSummaryItem {
 export interface AttemptModuleScore {
   moduleId: string;
   moduleName: string;
-  score: number;
-  totalScore: number;
+  score?: number | null;
+  totalScore?: number | null;
   correctCount: number;
   incorrectCount: number;
   unansweredCount: number;
 }
+
+export type ScoringMode = 'equal_ratio' | 'per_item';
 
 export interface AttemptReviewItem {
   itemUid: string;

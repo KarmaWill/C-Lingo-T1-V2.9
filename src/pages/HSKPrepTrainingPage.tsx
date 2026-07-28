@@ -2531,7 +2531,11 @@ function ResultScreen({
           <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${Math.max(1, Math.min(moduleScores.length, 3))}, minmax(0, 1fr))`, gap: 1.5, mb: 2.5 }}>
             {moduleScores.map((module) => (
               <Box key={module.moduleId} sx={{ bgcolor: '#F0FAF7', borderRadius: '8px', p: 2, textAlign: 'center' }}>
-                <Typography sx={{ color: '#0F9F82', fontSize: is960 ? '1.25rem' : '1.6rem', fontWeight: 900 }}>{module.score}</Typography>
+                <Typography sx={{ color: '#0F9F82', fontSize: is960 ? '1.25rem' : '1.6rem', fontWeight: 900 }}>
+                  {result.scoringMode === 'equal_ratio'
+                    ? `${module.correctCount}/${module.correctCount + module.incorrectCount + module.unansweredCount}`
+                    : module.score}
+                </Typography>
                 <Typography sx={{ color: '#667085', fontWeight: 700 }}>{module.moduleName}</Typography>
               </Box>
             ))}
@@ -2594,7 +2598,7 @@ function ResultScreen({
   );
 }
 
-function ReviewScreen({ paper, review, initialItemUid, onBack, is960 }: { paper: ExamPaper; review: AttemptReview; initialItemUid?: string; onBack: () => void; is960: boolean }) {
+function ReviewScreen({ paper, review, scoringMode, initialItemUid, onBack, is960 }: { paper: ExamPaper; review: AttemptReview; scoringMode: AttemptResult['scoringMode']; initialItemUid?: string; onBack: () => void; is960: boolean }) {
   const initialIndex = Math.max(0, review.items.findIndex((item) => item.itemUid === initialItemUid));
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -2668,7 +2672,9 @@ function ReviewScreen({ paper, review, initialItemUid, onBack, is960 }: { paper:
 
             <Box sx={{ borderRadius: '8px', p: 2, bgcolor: current.unanswered ? '#F2F4F7' : current.correct ? '#ECFDF3' : '#FFF1F3', border: `1px solid ${current.unanswered ? '#D0D5DD' : current.correct ? '#ABEFC6' : '#FECDD6'}` }}>
               <Typography sx={{ fontWeight: 900, color: current.unanswered ? '#344054' : current.correct ? '#067647' : '#C01048' }}>{current.unanswered ? 'Unanswered' : current.correct ? 'Correct' : 'Incorrect'}</Typography>
-              <Typography sx={{ mt: 0.75, fontWeight: 800 }}>Score: {current.score} / {current.maxScore}</Typography>
+              {scoringMode === 'per_item' && (
+                <Typography sx={{ mt: 0.75, fontWeight: 800 }}>Score: {current.score} / {current.maxScore}</Typography>
+              )}
               <Typography sx={{ mt: 0.75 }}>Your answer: {submittedAnswer}</Typography>
               {correctAnswer && <Typography>Correct answer: {correctAnswer}</Typography>}
               {explanation && <Typography sx={{ mt: 1, color: '#475467' }}>{explanation}</Typography>}
@@ -3217,9 +3223,9 @@ export default function HSKPrepTrainingPage() {
         </motion.div>
       )}
 
-      {currentScreen === 'review' && attemptReview && activePaper && (
+      {currentScreen === 'review' && attemptReview && activePaper && examResult && (
         <motion.div key="review" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} style={{ height: '100%' }}>
-          <ReviewScreen paper={activePaper} review={attemptReview} initialItemUid={reviewStartItemUid} onBack={() => setCurrentScreen('result')} is960={is960} />
+          <ReviewScreen paper={activePaper} review={attemptReview} scoringMode={examResult.scoringMode} initialItemUid={reviewStartItemUid} onBack={() => setCurrentScreen('result')} is960={is960} />
         </motion.div>
       )}
     </AnimatePresence>
