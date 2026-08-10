@@ -185,7 +185,7 @@ export default function LibraryPage() {
     const pageBg = '#FDF6E9';
     const funOrange = '#FF7A45';
     const teal = '#14B8A6';
-    const lessonCoverImage = '/images/library-hero.png';
+    const lessonCoverImage = '/images/library-hero-greeting.png';
     const bookshelfCoverImage = '/images/happy-chinese-vol1-cover.png';
 
     return (
@@ -418,26 +418,34 @@ export default function LibraryPage() {
                     lineHeight: 1.25,
                   }}
                 >
-                  Lesson 1: Who is he?
+                  Greeting
                 </Typography>
                 <Box
                   component="ul"
                   sx={{
                     m: 0,
-                    pl: is960 ? 1.4 : 1.65,
+                    pl: is960 ? 1.55 : 1.8,
                     color: 'rgba(255,255,255,0.88)',
                     fontSize: is960 ? '0.74rem' : '0.88rem',
                     fontWeight: 600,
                     lineHeight: 1.35,
-                    '& li': { mb: 0.2 },
+                    listStyleType: 'disc',
+                    listStylePosition: 'outside',
+                    '& li': {
+                      mb: 0.2,
+                      display: 'list-item',
+                      paddingInlineStart: 0,
+                    },
+                    '& li::marker': {
+                      color: 'rgba(255,255,255,0.88)',
+                    },
                   }}
                 >
-                  <li>Ask about someone&apos;s name</li>
-                  <li>Talk about someone&apos;s hometown and telephone number</li>
+                  <li>Say hello and introduce yourself</li>
                 </Box>
               </Box>
 
-              {/* 右下：Starting Learning 按钮 */}
+              {/* 右下：Start — premium glass CTA */}
               <ButtonBase
                 onClick={(e) => {
                   e.stopPropagation();
@@ -450,24 +458,64 @@ export default function LibraryPage() {
                   left: { xs: '50%', md: 'auto' },
                   transform: { xs: 'translateX(-50%)', md: 'none' },
                   zIndex: 3,
-                  bgcolor: '#FFFFFF',
-                  color: '#0F172A',
-                  px: is960 ? 2.4 : 3,
-                  py: is960 ? 1.15 : 1.45,
-                  minHeight: is960 ? 52 : 62,
-                  minWidth: is960 ? 210 : 246,
-                  borderRadius: is960 ? '18px' : '22px',
-                  fontSize: is960 ? '0.98rem' : '1.12rem',
-                  fontWeight: 900,
-                  boxShadow: '0 18px 36px rgba(15,23,42,0.3)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: is960 ? 1.1 : 1.25,
+                  pl: is960 ? 1.85 : 2.15,
+                  pr: is960 ? 0.7 : 0.8,
+                  py: is960 ? 0.7 : 0.8,
+                  minHeight: is960 ? 52 : 58,
+                  borderRadius: '999px',
+                  color: '#FFFFFF',
+                  bgcolor: 'rgba(15, 23, 42, 0.55)',
+                  border: '1px solid rgba(255,255,255,0.28)',
+                  backdropFilter: 'blur(18px)',
+                  WebkitBackdropFilter: 'blur(18px)',
+                  boxShadow: [
+                    '0 16px 36px rgba(15,23,42,0.34)',
+                    'inset 0 1px 0 rgba(255,255,255,0.22)',
+                  ].join(', '),
                   whiteSpace: 'nowrap',
-                  justifyContent: 'space-between',
-                  gap: 1.4,
-                  '&:active': { transform: { xs: 'translateX(-50%) scale(0.98)', md: 'scale(0.98)' } },
+                  transition: 'transform 160ms ease, background 160ms ease, box-shadow 160ms ease',
+                  '&:hover': {
+                    bgcolor: 'rgba(15, 23, 42, 0.68)',
+                    boxShadow: [
+                      '0 18px 40px rgba(15,23,42,0.4)',
+                      'inset 0 1px 0 rgba(255,255,255,0.28)',
+                    ].join(', '),
+                  },
+                  '&:active': {
+                    transform: { xs: 'translateX(-50%) scale(0.97)', md: 'scale(0.97)' },
+                  },
                 }}
               >
-                <Box component="span">Starting Learning</Box>
-                <ArrowForwardIcon sx={{ fontSize: is960 ? 22 : 24 }} />
+                <Box
+                  component="span"
+                  sx={{
+                    fontSize: is960 ? '0.95rem' : '1.05rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.04em',
+                    lineHeight: 1,
+                  }}
+                >
+                  Start
+                </Box>
+                <Box
+                  aria-hidden
+                  sx={{
+                    width: is960 ? 34 : 38,
+                    height: is960 ? 34 : 38,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'linear-gradient(145deg, #2DD4BF 0%, #14B8A6 48%, #0D9488 100%)',
+                    boxShadow: '0 6px 16px rgba(20,184,166,0.4)',
+                    color: '#FFFFFF',
+                  }}
+                >
+                  <ArrowForwardIcon sx={{ fontSize: is960 ? 18 : 20 }} />
+                </Box>
               </ButtonBase>
             </Box>
 

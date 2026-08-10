@@ -179,7 +179,7 @@ export default function CultureVideoStage({ data, onBack }: Props) {
               }}
             >
               <SubtitlesIcon sx={{ fontSize: 20 }} />
-              <Typography sx={{ fontWeight: 700, fontSize: '0.875rem' }}>字幕</Typography>
+              <Typography sx={{ fontWeight: 700, fontSize: '0.875rem' }}>Subtitles</Typography>
             </ButtonBase>
             <Menu
               anchorEl={subtitleMenuAnchor}
@@ -188,8 +188,8 @@ export default function CultureVideoStage({ data, onBack }: Props) {
               anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
               transformOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             >
-              <MenuItem selected={subtitles.includes('pinyin')} onClick={() => toggleSubtitle('pinyin')}>拼音</MenuItem>
-              <MenuItem selected={subtitles.includes('zh')} onClick={() => toggleSubtitle('zh')}>中文</MenuItem>
+              <MenuItem selected={subtitles.includes('pinyin')} onClick={() => toggleSubtitle('pinyin')}>Pinyin</MenuItem>
+              <MenuItem selected={subtitles.includes('zh')} onClick={() => toggleSubtitle('zh')}>Chinese</MenuItem>
               <MenuItem selected={subtitles.includes('en')} onClick={() => toggleSubtitle('en')}>English</MenuItem>
             </Menu>
           </Box>

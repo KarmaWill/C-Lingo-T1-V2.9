@@ -7,6 +7,7 @@ import MicIcon from '@mui/icons-material/Mic'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import VolumeUpIcon from '@mui/icons-material/VolumeUp'
 import { Unit, ExerciseType } from '../../types/lesson'
+import FeedbackEntryButton from '../feedback/FeedbackEntryButton'
 
 interface Props {
   unit: Unit
@@ -148,9 +149,12 @@ export default function ExerciseStage({ unit, onComplete, onExit }: Props) {
             }} 
           />
         </Box>
-        <Typography sx={{ fontWeight: 900, color: '#1F2937', fontSize: is960 ? '0.95rem' : (is1920x1125 ? '1.5rem' : '1.25rem'), minWidth: is960 ? 40 : (is1920x1125 ? 60 : 48), textAlign: 'right' }}>
-          {Math.round(progress)}%
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography sx={{ fontWeight: 900, color: '#1F2937', fontSize: is960 ? '0.95rem' : (is1920x1125 ? '1.5rem' : '1.25rem'), minWidth: is960 ? 40 : (is1920x1125 ? 60 : 48), textAlign: 'right' }}>
+            {Math.round(progress)}%
+          </Typography>
+          <FeedbackEntryButton is960={is960} context={{ screen: 'exercise', unitId: unit.id }} />
+        </Box>
       </Box>
 
       {/* Content */}

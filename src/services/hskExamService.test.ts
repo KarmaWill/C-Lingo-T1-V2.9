@@ -1,11 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ExamApiError, getAttempt, isAttemptNotFoundError, listPublishedPapers } from './hskExamService';
+import {
+  appendGatewayToken,
+  ExamApiError,
+  getAttempt,
+  isAttemptNotFoundError,
+  listPublishedPapers,
+} from './hskExamService';
 
 const localValues = new Map<string, string>();
 
 afterEach(() => {
   localValues.clear();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 function stubLocalStorage() {
@@ -14,6 +21,25 @@ function stubLocalStorage() {
     setItem: (key: string, value: string) => localValues.set(key, value),
   });
 }
+
+describe('appendGatewayToken', () => {
+  it('appends token as query param when configured', () => {
+    vi.stubEnv('VITE_CLINGO_GATEWAY_TOKEN', 'login_test');
+    expect(appendGatewayToken('http://localhost:8082/api/papers')).toBe(
+      'http://localhost:8082/api/papers?token=login_test',
+    );
+    expect(appendGatewayToken('http://localhost:8082/api/papers?level=HSK1')).toBe(
+      'http://localhost:8082/api/papers?level=HSK1&token=login_test',
+    );
+  });
+
+  it('leaves url unchanged when token is unset', () => {
+    vi.stubEnv('VITE_CLINGO_GATEWAY_TOKEN', '');
+    expect(appendGatewayToken('http://localhost:8082/api/papers')).toBe(
+      'http://localhost:8082/api/papers',
+    );
+  });
+});
 
 describe('hskExamService errors', () => {
   it('loads the complete paper catalog with one unfiltered request', async () => {
@@ -32,6 +58,26 @@ describe('hskExamService errors', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:8082/api/papers');
+  });
+
+  it('appends gateway token to exam requests when configured', async () => {
+    vi.stubEnv('VITE_CLINGO_GATEWAY_TOKEN', 'login_test');
+    stubLocalStorage();
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      code: 0,
+      msg: 'ok',
+      data: [],
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await listPublishedPapers(1);
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      'http://localhost:8082/api/papers?level=HSK1&token=login_test',
+    );
   });
 
   it('recognizes the backend HTTP 200 envelope business code 404 as missing', async () => {

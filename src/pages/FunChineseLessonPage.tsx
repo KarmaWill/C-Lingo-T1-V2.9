@@ -3,7 +3,7 @@
  * 包含 Warmup -> Learn -> Practice -> Complete 等阶段
  */
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Box, Typography, ButtonBase } from '@mui/material';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -15,6 +15,12 @@ import ClearIcon from '@mui/icons-material/Clear';
 import EditIcon from '@mui/icons-material/Edit';
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import { markLessonCompleted, UNIT_LESSON_COUNT } from '../utils/funChineseUnitProgress';
+import FeedbackEntryButton from '../components/feedback/FeedbackEntryButton';
+import {
+  buildWritingPracticeHref,
+  buildWritingPracticeState,
+  readLessonRestoreState,
+} from '../utils/navigateBack';
 
 type Phase = 'warmup' | 'learn' | 'cards' | 'practice' | 'complete';
 type Language = 'en' | 'vi' | 'th' | 'id';
@@ -237,6 +243,7 @@ const LESSON_DATA = {
 
 export default function FunChineseLessonPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { lessonId } = useParams<{ lessonId: string }>();
   const [searchParams] = useSearchParams();
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
@@ -249,9 +256,16 @@ export default function FunChineseLessonPage() {
   const initialCardIndex = Number.isFinite(queryCardIndex)
     ? Math.min(Math.max(queryCardIndex, 0), LESSON_DATA.knowledgeCards.length - 1)
     : 0;
+  const lessonRestore = readLessonRestoreState(location);
+  const restoredVocabIndex =
+    lessonRestore && Number.isFinite(lessonRestore.vocabIndex)
+      ? Math.min(Math.max(lessonRestore.vocabIndex, 0), LESSON_DATA.vocabulary.length - 1)
+      : 0;
 
-  const [currentPhase, setCurrentPhase] = useState<Phase>(queryWantsCards ? 'cards' : 'warmup');
-  const [vocabIndex, setVocabIndex] = useState(0);
+  const [currentPhase, setCurrentPhase] = useState<Phase>(
+    lessonRestore?.phase ?? (queryWantsCards ? 'cards' : 'warmup'),
+  );
+  const [vocabIndex, setVocabIndex] = useState(restoredVocabIndex);
   const [cardIndex, setCardIndex] = useState(initialCardIndex);
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -385,6 +399,9 @@ export default function FunChineseLessonPage() {
           <Typography sx={{ fontSize: is960 ? '1.24rem' : '1.42rem', fontWeight: 900, color: '#111827', letterSpacing: '-0.03em' }}>
             Lesson {lessonId}: {LESSON_DATA.title}
           </Typography>
+          <Box sx={{ position: 'absolute', right: is960 ? 22 : 32, top: '50%', transform: 'translateY(-50%)' }}>
+            <FeedbackEntryButton is960={is960} context={{ screen: 'fun_chinese_lesson', lessonId: String(safeLessonId) }} />
+          </Box>
         </Box>
 
         <Box
@@ -734,7 +751,23 @@ export default function FunChineseLessonPage() {
               {shouldShowWriting && (
                 <ButtonBase
                   onClick={() => {
-                    navigate(`/character-writing/practice/${encodeURIComponent(currentVocab.chinese)}`);
+                    const lessonPath = `/library/hub/fun-chinese/lesson/${safeLessonId}${
+                      fromCollection ? '?from=collection' : ''
+                    }`;
+                    navigate(
+                      buildWritingPracticeHref(currentVocab.chinese, {
+                        lessonPath,
+                        vocabIndex,
+                        phase: 'learn',
+                      }),
+                      {
+                        state: buildWritingPracticeState({
+                          lessonPath,
+                          vocabIndex,
+                          phase: 'learn',
+                        }),
+                      },
+                    );
                   }}
                   sx={{
                     width: is960 ? 162 : 206,

@@ -69,5 +69,104 @@
     "writingTraining2": "训练",
     "studyWork1": "在华",
     "studyWork2": "学习与工作"
+  },
+  "hskExamIntro": {
+    "volume": "第 {{volume}} 套",
+    "mockTest": "HSK {{level}} 模拟考试",
+    "practiceTest": "HSK {{level}} 练习考试",
+    "durationMin": "时长 · 分钟",
+    "totalQuestions": "总题数",
+    "fullScore": "满分",
+    "examRules": "考试规则",
+    "questionTypes": "题型分布",
+    "rule1": "保持专注，独立完成考试。",
+    "rule2Prefix": "听力音频播放",
+    "rule2Suffix": "，请仔细聆听。",
+    "rule3Prefix": "可提前交卷。时间结束后，系统将",
+    "rule3Suffix": "。",
+    "rule4": "合理分配时间——先做简单题，再做难题。",
+    "listenOnce": "一遍",
+    "listenTwice": "两遍",
+    "autoSubmit": "自动交卷",
+    "questions": "{{count}} 道题",
+    "minutesApprox": "约 {{count}} 分钟",
+    "rulesAccepted": "我已阅读并理解考试规则",
+    "startExam": "开始考试",
+    "starting": "正在开始…",
+    "sections": {
+      "listening": "听力",
+      "reading": "阅读",
+      "writing": "书写"
+    }
+  },
+  "hskExamResult": {
+    "scoreDetails": "分数明细",
+    "correctCount": "答对题数",
+    "answerReview": "答题回顾",
+    "correct": "正确",
+    "incorrect": "错误",
+    "loadingReview": "正在加载答题详情…",
+    "noReview": "暂无答题详情",
+    "overallScoreRate": "综合得分率 {{rate}}%",
+    "bestScore": "最高得分",
+    "scorePoints": "{{score}}分",
+    "examDuration": "考试用时",
+    "durationFormat": "{{minutes}}分{{seconds}}秒",
+    "viewDetails": "查看详情",
+    "openingDetails": "正在打开详情…",
+    "retryDetails": "重试加载详情",
+    "tryAgain": "再做一次",
+    "checkingAvailability": "正在检查可用性…",
+    "retryAvailability": "重试检查",
+    "noLongerAvailable": "暂不可再做"
+  },
+  "feedback": {
+    "title": "问题反馈",
+    "subtitle": "选择最接近的问题类型，我们会更快定位并处理。",
+    "typeLabel": "反馈类型 · 单选",
+    "tagsLabel": "具体问题 · 可多选",
+    "detailsLabel": "补充说明 · 必选 · 最多 400 字",
+    "detailsPlaceholder": "请描述你遇到的问题或想法…",
+    "screenshotHint": "添加问题截图 · 仅支持 1 张 · 至少提交 1 张",
+    "remainingToday": "今日还可提交 {{count}} 次",
+    "cancel": "取消",
+    "submit": "提交反馈",
+    "submitting": "提交中…",
+    "categories": {
+      "content_error": {
+        "title": "内容有误",
+        "desc": "翻译、汉字、拼音或知识点错误。"
+      },
+      "functional_failure": {
+        "title": "功能故障",
+        "desc": "卡顿、音频加载失败或操作异常。"
+      },
+      "user_experience": {
+        "title": "用户体验",
+        "desc": "界面体验、功能预期或使用感受。"
+      },
+      "suggestion": {
+        "title": "建议与需求",
+        "desc": "希望增加的功能或改进建议。"
+      }
+    },
+    "tags": {
+      "font_too_small": "字太小，看不清",
+      "more_interactive_games": "互动游戏希望能更多",
+      "too_few_rewards": "奖励太少了",
+      "parental_controls": "希望有家长监督功能",
+      "more_levels": "希望增加更多关卡",
+      "other": "其他"
+    },
+    "toast": {
+      "success": "提交成功，今日还可反馈 {{count}} 次",
+      "limitReached": "为了确保每条意见都能被认真处理，请明天再来提交吧",
+      "authRequired": "请先登录后再提交反馈"
+    },
+    "errors": {
+      "imageType": "请上传图片文件",
+      "imageSize": "图片大小不能超过 4MB"
+    },
+    "contextHint": "上下文：{{module}} · {{route}}"
   }
 }

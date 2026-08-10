@@ -7,6 +7,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import { CURRENT_LESSON } from '../mock/lessonData';
 import { Question, ExerciseType } from '../types/lesson';
 import MistakePracticeMode from '../components/Lesson/MistakePracticeMode';
+import FeedbackEntryButton from '../components/feedback/FeedbackEntryButton';
 
 interface QuestionResult {
   question: Question;
@@ -162,7 +163,7 @@ export default function MistakesReviewPage() {
           </Typography>
         </Box>
 
-        <Box sx={{ width: 100 }} />
+        <FeedbackEntryButton is960={is960} context={{ screen: 'mistakes_review' }} />
       </Box>
 
       {/* Content */}

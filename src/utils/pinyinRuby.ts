@@ -100,12 +100,16 @@ export function splitPinyinWord(word: string): string[] {
   return out.length ? out : [word];
 }
 
-/** Split pinyin input on spaces; strip trailing punctuation from each token. */
+const PINYIN_LETTER =
+  'a-zA-ZüÜāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜĀÁǍÀĒÉĚÈĪÍǏÌŌÓǑÒŪÚǓÙǕǗǙǛ';
+
+/** Split pinyin input on spaces; strip edge punctuation (keep letters, tones, digits, apostrophe). */
 export function splitPinyinInput(pinyin: string): string[] {
+  const edgePunct = new RegExp(`^[^${PINYIN_LETTER}0-9']+|[^${PINYIN_LETTER}0-9']+$`, 'g');
   return pinyin
     .trim()
     .split(/\s+/)
-    .map((token) => token.replace(/^[^a-zA-ZüÜ]+|[^a-zA-ZüÜāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]+$/g, ''))
+    .map((token) => token.replace(edgePunct, ''))
     .filter(Boolean);
 }
 

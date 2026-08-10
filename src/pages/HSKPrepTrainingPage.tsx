@@ -5,6 +5,7 @@
  */
 import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Box,
@@ -12,10 +13,6 @@ import {
   ButtonBase,
   TextField,
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
 } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -23,11 +20,12 @@ import LockIcon from '@mui/icons-material/Lock';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import HeadphonesIcon from '@mui/icons-material/Headphones';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import EditNoteIcon from '@mui/icons-material/EditNote';
+import BorderColorOutlinedIcon from '@mui/icons-material/BorderColorOutlined';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import QuizOutlinedIcon from '@mui/icons-material/QuizOutlined';
 import WorkspacePremiumOutlinedIcon from '@mui/icons-material/WorkspacePremiumOutlined';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
@@ -37,7 +35,7 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import ReplayIcon from '@mui/icons-material/Replay';
+import FeedbackEntryButton from '../components/feedback/FeedbackEntryButton';
 import {
   type PaperSource,
   type HSKLevel,
@@ -159,9 +157,27 @@ function writeLatestResultPointer(pointer: ActiveAttemptPointer | null) {
 }
 
 interface ExamSectionLine {
+  kind: ExamSectionKind;
   title: string;
   detail: string;
+  questionCount: number;
+  durationMinutes?: number;
   duration?: string;
+}
+
+const SECTION_ZH: Record<ExamSectionKind, string> = {
+  listening: '听力',
+  reading: '阅读',
+  writing: '书写',
+};
+
+function bilingualSectionLabel(kind: ExamSectionKind, t: (key: string, options?: { lng?: string }) => string, lng: string): string {
+  const zh = SECTION_ZH[kind];
+  const localized = t(`hskExamIntro.sections.${kind}`);
+  if (lng.startsWith('zh')) {
+    return `${zh} · ${t(`hskExamIntro.sections.${kind}`, { lng: 'en' })}`;
+  }
+  return `${localized} · ${zh}`;
 }
 
 interface PaperAttemptRecord {
@@ -171,7 +187,7 @@ interface PaperAttemptRecord {
 
 const SCORE_BADGE_BG = {
   none: 'linear-gradient(135deg, #E5E7EB 0%, #D1D5DB 100%)',
-  pass: 'linear-gradient(135deg, #EF4444 0%, #B91C1C 100%)',
+  pass: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
   fail: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
 } as const;
 
@@ -193,7 +209,7 @@ function apiPaperToCatalog(paper: PublishedPaper, index: number): PaperCatalogIt
     source,
     level,
     volume: index + 1,
-    brandLabel: source === 'official' ? `Volume ${index + 1}` : 'Custom',
+    brandLabel: source === 'official' ? `Volume ${index + 1}` : `C-Lingo Test ${index + 1}`,
     title: paper.name,
     subtitle: source === 'official' ? `Volume ${index + 1}` : 'Custom paper',
     questionCount: paper.questionCount,
@@ -219,11 +235,25 @@ function sectionLinesFromSummary(
   };
   return (summary || [])
     .filter((item) => Number(item.count || 0) > 0)
-    .map((item) => ({
-      title: titles[item.module || ''] || item.module || 'Questions',
-      detail: `${item.count} questions`,
-      duration: Number(item.minutes || 0) > 0 ? `~${item.minutes} min` : undefined,
-    }));
+    .map((item) => {
+      const moduleKindMap: Record<string, ExamSectionKind> = {
+        listening: 'listening',
+        reading: 'reading',
+        writing: 'writing',
+        听力: 'listening',
+        阅读: 'reading',
+        书写: 'writing',
+      };
+      const kind = moduleKindMap[item.module || ''] || 'reading';
+      return {
+        kind,
+        title: titles[item.module || ''] || item.module || 'Questions',
+        detail: `${item.count} questions`,
+        questionCount: Number(item.count || 0),
+        durationMinutes: Number(item.minutes || 0) > 0 ? Number(item.minutes) : undefined,
+        duration: Number(item.minutes || 0) > 0 ? `~${item.minutes} min` : undefined,
+      };
+    });
 }
 
 function contentText(value: unknown): string {
@@ -325,10 +355,15 @@ function attemptToPaper(catalog: PaperCatalogItem, attempt: ExamAttempt): ExamPa
 
 type LevelPickerId = HSKLevel | 'hsk7-9';
 
+/** Warm cream page background — matches HSK prep design reference */
+const HSK_PREP_PAGE_BG = '#FFF9F3';
+
 interface LevelPickerItem {
   id: LevelPickerId;
   title: string;
   desc: string;
+  subtitle: string;
+  difficulty: number;
   color: string;
   tint: string;
   badgeGradient: string;
@@ -336,13 +371,13 @@ interface LevelPickerItem {
 }
 
 const LEVEL_PICKER_ITEMS: LevelPickerItem[] = [
-  { id: 1, title: 'HSK 1', desc: '150 words · Beginner', color: '#E8941A', tint: '#FFF8EB', badgeGradient: 'linear-gradient(145deg, #F0A830 0%, #E8941A 100%)', enabled: true },
-  { id: 2, title: 'HSK 2', desc: '300 words · Elementary', color: '#1FA396', tint: '#ECFDF9', badgeGradient: 'linear-gradient(145deg, #2DB8A8 0%, #1FA396 100%)', enabled: true },
-  { id: 3, title: 'HSK 3', desc: '600 words · Intermediate', color: '#E59B73', tint: '#FFF7F2', badgeGradient: 'linear-gradient(145deg, #F3B18E 0%, #DF8D65 100%)', enabled: false },
-  { id: 4, title: 'HSK 4', desc: '1200 words · Upper intermediate', color: '#B78591', tint: '#FFF7F9', badgeGradient: 'linear-gradient(145deg, #C99AA5 0%, #AE7885 100%)', enabled: false },
-  { id: 5, title: 'HSK 5', desc: '2500 words · Advanced', color: '#8796AA', tint: '#F7F9FC', badgeGradient: 'linear-gradient(145deg, #A6B2C2 0%, #7D8DA4 100%)', enabled: false },
-  { id: 6, title: 'HSK 6', desc: '5000+ words · Proficient', color: '#9B8DB5', tint: '#FAF8FD', badgeGradient: 'linear-gradient(145deg, #B1A5C7 0%, #9080AB 100%)', enabled: false },
-  { id: 'hsk7-9', title: 'HSK 7–9', desc: 'Advanced fluency · Coming soon', color: '#8993A3', tint: '#F8FAFC', badgeGradient: 'linear-gradient(145deg, #A6AFBD 0%, #7E899A 100%)', enabled: false },
+  { id: 1, title: 'HSK 1', desc: '150 words · Beginner', subtitle: 'Core everyday vocabulary', difficulty: 1, color: '#E8941A', tint: '#FFF8EB', badgeGradient: 'linear-gradient(180deg, #F5B84A 0%, #E8941A 100%)', enabled: true },
+  { id: 2, title: 'HSK 2', desc: '300 words · Elementary', subtitle: 'Simple topics & daily tasks', difficulty: 1.5, color: '#1FA396', tint: '#ECFDF9', badgeGradient: 'linear-gradient(180deg, #34C4B3 0%, #1FA396 100%)', enabled: true },
+  { id: 3, title: 'HSK 3', desc: '600 words · Intermediate', subtitle: 'Broader social communication', difficulty: 2, color: '#E07A5F', tint: '#FFF7F2', badgeGradient: 'linear-gradient(180deg, #F0A08C 0%, #D96A52 100%)', enabled: false },
+  { id: 4, title: 'HSK 4', desc: '1200 words · Upper intermediate', subtitle: 'Complex topics & discussions', difficulty: 2.5, color: '#B78591', tint: '#FFF7F9', badgeGradient: 'linear-gradient(180deg, #C99AA5 0%, #AE7885 100%)', enabled: false },
+  { id: 5, title: 'HSK 5', desc: '2500 words · Advanced', subtitle: 'Fluent communication in daily life', difficulty: 3, color: '#6B8CAE', tint: '#F7F9FC', badgeGradient: 'linear-gradient(180deg, #8AA4C0 0%, #5F7F9E 100%)', enabled: false },
+  { id: 6, title: 'HSK 6', desc: '5000+ words · Proficient', subtitle: 'Professional reading and expression', difficulty: 4, color: '#9B8DB5', tint: '#FAF8FD', badgeGradient: 'linear-gradient(180deg, #B1A5C7 0%, #9080AB 100%)', enabled: false },
+  { id: 'hsk7-9', title: 'HSK 7–9', desc: 'Advanced fluency · Coming soon', subtitle: 'Academic and professional Chinese', difficulty: 5, color: '#7E899A', tint: '#F8FAFC', badgeGradient: 'linear-gradient(180deg, #A6AFBD 0%, #7E899A 100%)', enabled: false },
 ];
 
 function buildPaperFromCatalog(item: PaperCatalogItem): ExamPaper {
@@ -364,7 +399,7 @@ function buildPaperFromCatalog(item: PaperCatalogItem): ExamPaper {
 }
 
 const PAPER_SECTIONS: { source: PaperSource; label: string; labelEn: string; accent: string }[] = [
-  { source: 'official', label: 'HSK 官方', labelEn: 'Official Mock Papers', accent: '#DC2626' },
+  { source: 'official', label: 'HSK 官方', labelEn: 'Mock Test Papers', accent: '#DC2626' },
   { source: 'clingo', label: 'C-Lingo 自研', labelEn: 'C-Lingo Practice', accent: '#00B4A0' },
 ];
 
@@ -372,28 +407,37 @@ const PAPER_CARD_THEMES: Record<
   PaperSource,
   {
     headerBg: string;
+    headerTint: string;
     headerColor: string;
     volumeColor: string;
     subColor: string;
     borderColor: string;
     lineColor: string;
+    footerBg: string;
+    shellBg: string;
   }
 > = {
   official: {
     headerBg: 'linear-gradient(135deg, #EF4444 0%, #B91C1C 100%)',
+    headerTint: '#FFEDEF',
     headerColor: '#FFFFFF',
     volumeColor: '#DC2626',
     subColor: '#7F1D1D',
-    borderColor: '#FECACA',
+    borderColor: '#F5B0BC',
     lineColor: '#FCA5A5',
+    footerBg: '#FFF0F3',
+    shellBg: '#FFD6DE',
   },
   clingo: {
     headerBg: 'linear-gradient(135deg, #2DD4BF 0%, #0891B2 100%)',
+    headerTint: '#E6FAF7',
     headerColor: '#FFFFFF',
     volumeColor: '#0D9488',
     subColor: '#115E59',
-    borderColor: '#99F6E4',
+    borderColor: '#8EDFD4',
     lineColor: '#5EEAD4',
+    footerBg: '#E8FAF7',
+    shellBg: '#B8EBE3',
   },
 };
 
@@ -409,18 +453,18 @@ function HeaderStatChip({ label, value, is960 }: { label: string; value: string 
       sx={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: is960 ? 0.55 : 0.7,
-        px: is960 ? 1 : 1.2,
-        py: is960 ? 0.45 : 0.55,
+        gap: is960 ? 0.5 : 0.65,
+        px: is960 ? 1.1 : 1.35,
+        py: is960 ? 0.5 : 0.6,
         borderRadius: '999px',
-        bgcolor: '#F8FAFC',
-        border: '1px solid #E2E8F0',
+        bgcolor: '#EEF2FF',
+        border: '1px solid #E0E7FF',
       }}
     >
-      <Typography sx={{ fontSize: is960 ? '0.62rem' : '0.7rem', color: '#94A3B8', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+      <Typography sx={{ fontSize: is960 ? '0.62rem' : '0.68rem', color: '#6366F1', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
         {label}
       </Typography>
-      <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: '#1E293B', fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>
+      <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.86rem', color: '#1E293B', fontWeight: 900, fontVariantNumeric: 'tabular-nums' }}>
         {value}
       </Typography>
     </Box>
@@ -438,32 +482,23 @@ function SectionDividerTitle({
 }) {
   const isOfficial = source === 'official';
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 1 : 1.25, mb: is960 ? 1.25 : 1.5 }}>
+    <Box sx={{ mb: is960 ? 1.15 : 1.35 }}>
       <Box
         sx={{
-          px: is960 ? 1.15 : 1.35,
-          py: is960 ? 0.45 : 0.55,
-          borderRadius: '12px',
+          display: 'inline-flex',
+          px: is960 ? 1.25 : 1.5,
+          py: is960 ? 0.5 : 0.6,
+          borderRadius: '999px',
           background: isOfficial
             ? 'linear-gradient(135deg, #EF4444 0%, #B91C1C 100%)'
             : 'linear-gradient(135deg, #14B8A6 0%, #0891B2 100%)',
-          boxShadow: isOfficial ? '0 4px 14px rgba(185,28,28,0.22)' : '0 4px 14px rgba(8,145,178,0.28)',
+          boxShadow: isOfficial ? '0 4px 14px rgba(185,28,28,0.18)' : '0 4px 14px rgba(8,145,178,0.22)',
         }}
       >
-        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.88rem' : '1rem', color: '#FFFFFF', letterSpacing: '0.01em' }}>
+        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.82rem' : '0.92rem', color: '#FFFFFF', letterSpacing: '0.01em' }}>
           {label}
         </Typography>
       </Box>
-      <Box
-        sx={{
-          flex: 1,
-          height: 2,
-          borderRadius: '999px',
-          background: isOfficial
-            ? 'linear-gradient(90deg, rgba(239,68,68,0.45), transparent)'
-            : 'linear-gradient(90deg, rgba(20,184,166,0.55), transparent)',
-        }}
-      />
     </Box>
   );
 }
@@ -473,6 +508,194 @@ function SectionDividerTitle({
    ═══════════════════════════════════════════════════════════════════════════════ */
 function levelBadgeLabel(id: LevelPickerId): string {
   return id === 'hsk7-9' ? '7–9' : String(id);
+}
+
+function DifficultyMeter({ level, color, locked, is960 }: { level: number; color: string; locked: boolean; is960: boolean }) {
+  const empty = '#E2E8F0';
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 0.65 : 0.75, mt: is960 ? 0.55 : 0.65 }}>
+      <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.78rem', fontWeight: 800, color: locked ? '#CBD5E1' : '#94A3B8', letterSpacing: '0.08em', lineHeight: 1 }}>
+        DIFFICULTY
+      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 0.35 : 0.4, opacity: locked ? 0.55 : 1 }}>
+        {Array.from({ length: 5 }, (_, index) => {
+          const fill = Math.max(0, Math.min(1, level - index)); // 0 | 0.5 | 1
+          const background =
+            fill >= 1
+              ? color
+              : fill >= 0.5
+                ? `linear-gradient(90deg, ${color} 0%, ${color} 50%, ${empty} 50%, ${empty} 100%)`
+                : empty;
+          return (
+            <Box
+              key={index}
+              sx={{
+                width: is960 ? 18 : 20,
+                height: is960 ? 7 : 8,
+                borderRadius: '999px',
+                background,
+              }}
+            />
+          );
+        })}
+      </Box>
+    </Box>
+  );
+}
+
+function LevelPickerCard({
+  item,
+  is960,
+  onSelect,
+}: {
+  item: LevelPickerItem;
+  is960: boolean;
+  onSelect: (level: HSKLevel) => void;
+}) {
+  const locked = !item.enabled;
+  const bandWidth = is960 ? 82 : 92;
+
+  const cardBody = (
+    <>
+      <Box
+        sx={{
+          width: bandWidth,
+          alignSelf: 'stretch',
+          flexShrink: 0,
+          background: item.badgeGradient,
+          opacity: locked ? 0.55 : 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+          borderRadius: is960 ? '16px 0 0 16px' : '18px 0 0 18px',
+        }}
+      >
+        <Box sx={{ position: 'absolute', top: -8, right: -10, width: 36, height: 36, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.12)' }} />
+        <Box sx={{ position: 'absolute', bottom: 10, left: -14, width: 44, height: 44, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.08)' }} />
+        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.95rem' : '2.15rem', color: '#FFFFFF', lineHeight: 1, letterSpacing: '-0.02em', position: 'relative', zIndex: 1 }}>
+          {levelBadgeLabel(item.id)}
+        </Typography>
+        <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.78rem', fontWeight: 800, color: 'rgba(255,255,255,0.88)', letterSpacing: '0.12em', mt: 0.4, position: 'relative', zIndex: 1 }}>
+          LEVEL
+        </Typography>
+      </Box>
+
+      <Box sx={{ flex: 1, minWidth: 0, px: is960 ? 1.35 : 1.6, py: is960 ? 1.1 : 1.25, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.28rem' : '1.42rem', color: locked ? '#9CA3AF' : '#111827', lineHeight: 1.15, letterSpacing: '-0.01em' }}>
+          {item.title}
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.55, mt: is960 ? 0.45 : 0.55, minWidth: 0 }}>
+          <MenuBookIcon sx={{ fontSize: is960 ? 18 : 20, color: locked ? '#CBD5E1' : '#94A3B8', flexShrink: 0 }} />
+          <Typography
+            sx={{
+              fontSize: is960 ? '0.95rem' : '1.02rem',
+              color: locked ? '#B0B7C3' : '#64748B',
+              fontWeight: 600,
+              lineHeight: 1.35,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {item.desc}
+          </Typography>
+        </Box>
+        <Typography
+          sx={{
+            fontSize: is960 ? '0.88rem' : '0.94rem',
+            color: locked ? '#CBD5E1' : '#94A3B8',
+            fontStyle: 'italic',
+            fontWeight: 500,
+            mt: is960 ? 0.28 : 0.32,
+            lineHeight: 1.35,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {item.subtitle}
+        </Typography>
+        <DifficultyMeter level={item.difficulty} color={item.color} locked={locked} is960={is960} />
+      </Box>
+
+      {locked ? (
+        <Box
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 0.55,
+            px: is960 ? 1.35 : 1.5,
+            py: is960 ? 0.75 : 0.85,
+            mr: is960 ? 1.15 : 1.35,
+            borderRadius: '999px',
+            bgcolor: '#FFFFFF',
+            border: '1.5px solid #CBD5E1',
+            flexShrink: 0,
+          }}
+        >
+          <LockIcon sx={{ fontSize: is960 ? 18 : 20, color: '#94A3B8' }} />
+          <Typography sx={{ fontSize: is960 ? '0.95rem' : '1.02rem', fontWeight: 800, color: '#94A3B8' }}>Locked</Typography>
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 0.4,
+            px: is960 ? 1.5 : 1.65,
+            py: is960 ? 0.8 : 0.9,
+            mr: is960 ? 1.15 : 1.35,
+            borderRadius: '999px',
+            background: item.badgeGradient,
+            boxShadow: `0 4px 14px ${item.color}44`,
+            flexShrink: 0,
+          }}
+        >
+          <Typography sx={{ fontSize: is960 ? '1rem' : '1.08rem', fontWeight: 800, color: '#FFFFFF' }}>Enter</Typography>
+          <ChevronRightIcon sx={{ fontSize: is960 ? 20 : 22, color: '#FFFFFF' }} />
+        </Box>
+      )}
+    </>
+  );
+
+  const cardSx = {
+    display: 'flex',
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    width: '100%',
+    height: '100%',
+    minHeight: is960 ? 118 : 128,
+    borderRadius: is960 ? '18px' : '20px',
+    bgcolor: '#FFFFFF',
+    border: locked ? '1px solid #E2E8F0' : `1px solid ${item.color}33`,
+    boxShadow: locked ? '0 2px 8px rgba(15,23,42,0.04)' : '0 6px 20px rgba(15,23,42,0.08)',
+    textAlign: 'left' as const,
+    overflow: 'hidden' as const,
+    gridColumn: item.id === 'hsk7-9' ? '1 / -1' : undefined,
+  };
+
+  if (locked) {
+    return (
+      <Box sx={cardSx}>
+        {cardBody}
+      </Box>
+    );
+  }
+
+  return (
+    <ButtonBase
+      onClick={() => onSelect(item.id as HSKLevel)}
+      sx={{
+        ...cardSx,
+        '&:active': { transform: 'scale(0.99)', bgcolor: item.tint },
+      }}
+    >
+      {cardBody}
+    </ButtonBase>
+  );
 }
 
 function HomeScreen({
@@ -487,17 +710,24 @@ function HomeScreen({
   showBack?: boolean;
 }) {
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#FFF8F0', overflow: 'hidden' }}>
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        background: HSK_PREP_PAGE_BG,
+        overflow: 'hidden',
+      }}
+    >
       <Box
         sx={{
           flexShrink: 0,
           px: is960 ? 2 : 3,
-          py: is960 ? 1.5 : 1.75,
+          pt: is960 ? 1.75 : 2.25,
+          pb: is960 ? 1 : 1.25,
           display: 'flex',
           alignItems: 'center',
-          gap: 1.5,
-          bgcolor: 'white',
-          borderBottom: '1px solid rgba(0,0,0,0.06)',
+          gap: is960 ? 1.25 : 1.5,
         }}
       >
         <ButtonBase
@@ -506,23 +736,33 @@ function HomeScreen({
             width: 44,
             height: 44,
             borderRadius: '50%',
-            bgcolor: 'rgba(0,0,0,0.05)',
+            bgcolor: '#FFFFFF',
+            border: '1px solid rgba(0,0,0,0.06)',
             color: '#586E75',
             flexShrink: 0,
             visibility: showBack ? 'visible' : 'hidden',
             pointerEvents: showBack ? 'auto' : 'none',
-            '&:active': { bgcolor: 'rgba(0,0,0,0.1)' },
+            boxShadow: '0 2px 8px rgba(15,23,42,0.05)',
+            '&:active': { bgcolor: '#F9FAFB' },
           }}
         >
           <ChevronLeftIcon sx={{ fontSize: 24 }} />
         </ButtonBase>
-        <Box sx={{ minWidth: 0, flex: 1, display: 'flex', alignItems: 'center', gap: is960 ? 1 : 1.25, flexWrap: 'wrap' }}>
-          <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.2rem' : '1.42rem', color: '#111827', lineHeight: 1.15, letterSpacing: '-0.02em' }}>
+        <Box sx={{ minWidth: 0, flex: 1, display: 'flex', alignItems: 'center', gap: is960 ? 0.85 : 1, flexWrap: 'wrap' }}>
+          <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.35rem' : '1.65rem', color: '#111827', lineHeight: 1.15, letterSpacing: '-0.02em' }}>
             Mock Exam
           </Typography>
-          <Box sx={{ px: is960 ? 1.1 : 1.25, py: is960 ? 0.4 : 0.5, borderRadius: '999px', bgcolor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
-            <Typography sx={{ fontSize: is960 ? '0.82rem' : '0.95rem', color: '#64748B', fontWeight: 700, lineHeight: 1.2 }}>
-              Choose level
+          <Box
+            sx={{
+              px: is960 ? 1.25 : 1.4,
+              py: is960 ? 0.5 : 0.55,
+              borderRadius: '999px',
+              background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+              boxShadow: '0 3px 10px rgba(234,88,12,0.25)',
+            }}
+          >
+            <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.86rem', color: '#FFFFFF', fontWeight: 800, lineHeight: 1.2, letterSpacing: '0.08em' }}>
+              CHOOSE LEVEL
             </Typography>
           </Box>
         </Box>
@@ -533,151 +773,17 @@ function HomeScreen({
           flex: 1,
           minHeight: 0,
           px: is960 ? 2 : 3,
-          py: is960 ? 1.25 : 1.5,
+          pb: is960 ? 2 : 2.5,
           display: 'grid',
           gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-          gridTemplateRows: 'repeat(4, minmax(0, 1fr))',
-          gap: is960 ? 1 : 1.25,
+          gridAutoRows: 'minmax(118px, 1fr)',
+          gap: is960 ? 0.85 : 1,
+          overflow: 'auto',
         }}
       >
-        {LEVEL_PICKER_ITEMS.map((item) => {
-          const locked = !item.enabled;
-
-          const cardBody = (
-            <>
-              <Box
-                sx={{
-                  width: is960 ? 64 : 72,
-                  height: is960 ? 64 : 72,
-                  borderRadius: is960 ? '16px' : '18px',
-                  background: item.badgeGradient,
-                  opacity: locked ? 0.45 : 1,
-                  boxShadow: locked ? 'none' : '0 6px 16px rgba(15,23,42,0.18)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.35rem' : '1.55rem', color: '#FFFFFF', lineHeight: 1, letterSpacing: '-0.02em' }}>
-                  {levelBadgeLabel(item.id)}
-                </Typography>
-              </Box>
-
-              <Box sx={{ flex: 1, minWidth: 0, mx: is960 ? 1.5 : 1.85 }}>
-                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.12rem' : '1.32rem', color: locked ? '#9CA3AF' : '#111827', lineHeight: 1.15, letterSpacing: '-0.01em' }}>
-                  {item.title}
-                </Typography>
-                <Typography
-                  sx={{
-                    fontSize: is960 ? '0.82rem' : '0.95rem',
-                    color: locked ? '#B0B7C3' : '#64748B',
-                    fontWeight: 600,
-                    mt: is960 ? 0.4 : 0.5,
-                    lineHeight: 1.35,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {item.desc}
-                </Typography>
-              </Box>
-
-              {locked ? (
-                <Box
-                  sx={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 0.6,
-                    px: is960 ? 1.35 : 1.6,
-                    py: is960 ? 0.75 : 0.9,
-                    borderRadius: '999px',
-                    bgcolor: '#E2E8F0',
-                    border: '1px solid #CBD5E1',
-                    flexShrink: 0,
-                  }}
-                >
-                  <LockIcon sx={{ fontSize: is960 ? 20 : 22, color: '#94A3B8' }} />
-                  <Typography sx={{ fontSize: is960 ? '0.88rem' : '1rem', fontWeight: 800, color: '#94A3B8' }}>Locked</Typography>
-                </Box>
-              ) : (
-                <Box
-                  sx={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 0.5,
-                    px: is960 ? 1.5 : 1.75,
-                    py: is960 ? 0.8 : 0.95,
-                    borderRadius: '999px',
-                    background: item.badgeGradient,
-                    boxShadow: '0 4px 14px rgba(15,23,42,0.14)',
-                    flexShrink: 0,
-                  }}
-                >
-                  <Typography sx={{ fontSize: is960 ? '0.92rem' : '1.05rem', fontWeight: 800, color: '#FFFFFF' }}>Enter</Typography>
-                  <ChevronRightIcon sx={{ fontSize: is960 ? 22 : 24, color: '#FFFFFF' }} />
-                </Box>
-              )}
-            </>
-          );
-
-          const cardSx = {
-            display: 'flex',
-            flexDirection: 'row' as const,
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            height: '100%',
-            minHeight: is960 ? 84 : 96,
-            px: is960 ? 1.75 : 2.25,
-            py: is960 ? 1.35 : 1.65,
-            borderRadius: is960 ? '18px' : '20px',
-            bgcolor: locked ? '#F1F5F9' : '#FFFFFF',
-            border: locked ? '1.5px solid #E2E8F0' : `1.5px solid ${item.color}28`,
-            boxShadow: locked ? 'none' : '0 6px 20px rgba(15,23,42,0.07)',
-            textAlign: 'left' as const,
-            opacity: locked ? 0.82 : 1,
-            position: 'relative' as const,
-            overflow: 'hidden' as const,
-            gridColumn: item.id === 'hsk7-9' ? '1 / -1' : undefined,
-            ...(locked
-              ? {}
-              : {
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: 4,
-                    bgcolor: item.color,
-                    borderRadius: '4px 0 0 4px',
-                  },
-                }),
-          };
-
-          if (locked) {
-            return (
-              <Box key={String(item.id)} sx={cardSx}>
-                {cardBody}
-              </Box>
-            );
-          }
-
-          return (
-            <ButtonBase
-              key={String(item.id)}
-              onClick={() => onSelectLevel(item.id as HSKLevel)}
-              sx={{
-                ...cardSx,
-                '&:active': { transform: 'scale(0.99)', bgcolor: item.tint },
-              }}
-            >
-              {cardBody}
-            </ButtonBase>
-          );
-        })}
+        {LEVEL_PICKER_ITEMS.map((item) => (
+          <LevelPickerCard key={String(item.id)} item={item} is960={is960} onSelect={onSelectLevel} />
+        ))}
       </Box>
     </Box>
   );
@@ -707,6 +813,9 @@ function PaperCard({
   const passed = hasScore && savedScore >= paper.passScore;
   const scoreBadgeBg = !hasScore ? SCORE_BADGE_BG.none : passed ? SCORE_BADGE_BG.pass : SCORE_BADGE_BG.fail;
   const dateLabel = attempt ? formatPaperDate(attempt.completedAt) : '--';
+  const cardRadius = is960 ? 18 : 20;
+  const ribbonW = is960 ? 42 : 48;
+  const ribbonH = is960 ? 50 : 56;
 
   return (
     <ButtonBase
@@ -715,116 +824,140 @@ function PaperCard({
         width: fluid ? '100%' : cardSize,
         height: fluid ? 'auto' : cardSize,
         aspectRatio: fluid ? '1 / 1' : undefined,
-        display: 'flex',
-        flexDirection: 'column',
-        bgcolor: '#FFFFFF',
-        borderRadius: is960 ? '14px' : '16px',
-        border: `1.5px solid ${theme.borderColor}`,
-        boxShadow: '0 6px 18px rgba(15,23,42,0.1)',
-        textAlign: 'left',
+        display: 'block',
+        p: 0,
+        borderRadius: `${cardRadius}px`,
+        border: `2px solid ${theme.borderColor}`,
         overflow: 'hidden',
         flexShrink: fluid ? 1 : 0,
         position: 'relative',
         minWidth: 0,
-        '&:active': { bgcolor: '#FAFAFA', transform: 'scale(0.98)' },
+        bgcolor: '#FFFFFF',
+        boxShadow: '0 4px 16px rgba(15,23,42,0.07)',
+        textAlign: 'left',
+        '&:active': { transform: 'scale(0.98)' },
       }}
     >
-      {/* 顶部细色条 */}
-      <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 5, bgcolor: theme.volumeColor, opacity: 0.5 }} />
-
-      {/* 分数徽章 — 左上角：显示历史最高分，未考过显示 -- */}
+      {/* Pink / teal header band */}
       <Box
         sx={{
           position: 'absolute',
           top: 0,
           left: 0,
-          zIndex: 2,
-          width: is960 ? 42 : 48,
-          height: is960 ? 42 : 48,
+          right: 0,
+          height: '30%',
+          bgcolor: theme.shellBg,
+          zIndex: 0,
+        }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: is960 ? 8 : 9,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: is960 ? 38 : 42,
+            height: is960 ? 5 : 6,
+            borderRadius: '999px',
+            bgcolor: '#FFFFFF',
+          }}
+        />
+      </Box>
+
+      {/* White body — slanted top overlaps header */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '14%',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          bgcolor: '#FFFFFF',
+          clipPath: 'polygon(0 0, 100% 16%, 100% 100%, 0 100%)',
+          zIndex: 1,
+        }}
+      />
+
+      {/* Score ribbon — hangs from the slanted paper edge */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '14%',
+          left: is960 ? 10 : 12,
+          zIndex: 4,
+          width: ribbonW,
+          height: ribbonH,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: is960 ? 0.28 : 0.35,
+          gap: 0.2,
           background: scoreBadgeBg,
-          borderBottomRightRadius: is960 ? '12px' : '14px',
-          boxShadow: hasScore ? '0 6px 16px rgba(15,23,42,0.18)' : '0 4px 10px rgba(15,23,42,0.08)',
+          clipPath: 'polygon(0 0, 100% 3%, 100% 100%, 50% 80%, 0 100%)',
+          boxShadow: hasScore ? '0 4px 12px rgba(15,23,42,0.18)' : 'none',
         }}
       >
-        <Typography sx={{ fontSize: is960 ? '0.42rem' : '0.46rem', fontWeight: 800, color: hasScore ? 'rgba(255,255,255,0.82)' : '#9CA3AF', letterSpacing: '0.08em', lineHeight: 1, textAlign: 'center', width: '100%' }}>
+        <Typography sx={{ fontSize: is960 ? '0.4rem' : '0.44rem', fontWeight: 800, color: hasScore ? 'rgba(255,255,255,0.92)' : '#9CA3AF', letterSpacing: '0.08em', lineHeight: 1 }}>
           SCORE
         </Typography>
-        <Typography sx={{ fontSize: is960 ? '0.92rem' : '1.02rem', fontWeight: 900, color: hasScore ? '#FFFFFF' : '#9CA3AF', lineHeight: 1, fontVariantNumeric: 'tabular-nums', textAlign: 'center', width: '100%' }}>
+        <Typography sx={{ fontSize: is960 ? '1rem' : '1.1rem', fontWeight: 900, color: hasScore ? '#FFFFFF' : '#9CA3AF', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
           {hasScore ? savedScore : '--'}
         </Typography>
       </Box>
 
-      {/* 主视觉 — Volume / C-Lingo Test：避开左上角 SCORE，在剩余区域垂直居中 */}
+      {/* Volume title */}
       <Box
         sx={{
-          flex: 1,
-          minHeight: 0,
+          position: 'absolute',
+          top: '56%',
+          left: 0,
+          right: 0,
+          zIndex: 2,
           display: 'flex',
-          flexDirection: 'column',
-          px: is960 ? 1.1 : 1.35,
-          pb: is960 ? 4 : 4.5,
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: 1,
         }}
       >
-        <Box sx={{ flexShrink: 0, height: is960 ? 42 : 48 }} aria-hidden />
-        <Box
+        <Typography
           sx={{
-            flex: 1,
-            minHeight: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
+            fontSize: paper.source === 'official'
+              ? (is960 ? '1.22rem' : '1.4rem')
+              : (is960 ? '0.96rem' : '1.1rem'),
+            color: theme.volumeColor,
+            fontWeight: 900,
+            lineHeight: 1.1,
+            letterSpacing: '-0.02em',
             textAlign: 'center',
-            pt: is960 ? 0.35 : 0.5,
           }}
         >
-          <Typography
-            sx={{
-              fontSize: paper.source === 'official'
-                ? (is960 ? '1.28rem' : '1.58rem')
-                : (is960 ? '1.05rem' : '1.28rem'),
-              color: theme.volumeColor,
-              fontWeight: 900,
-              lineHeight: paper.source === 'official' ? 1 : 1.08,
-              letterSpacing: '-0.02em',
-              maxWidth: '100%',
-            }}
-          >
-            {paper.brandLabel}
-          </Typography>
-          <Box sx={{ width: is960 ? 34 : 42, height: 3, borderRadius: '999px', bgcolor: theme.borderColor, mt: is960 ? 1.1 : 1.25 }} />
-        </Box>
+          {paper.brandLabel}
+        </Typography>
       </Box>
 
-      {/* 做卷日期 — 底部 */}
+      {/* Date pill */}
       <Box
         sx={{
           position: 'absolute',
           left: is960 ? 10 : 12,
           right: is960 ? 10 : 12,
           bottom: is960 ? 10 : 12,
-          zIndex: 2,
+          zIndex: 3,
           textAlign: 'center',
-          px: is960 ? 0.8 : 1,
-          py: is960 ? 0.65 : 0.75,
-          borderRadius: is960 ? '10px' : '12px',
-          bgcolor: paper.source === 'official' ? '#FFF7F7' : '#F0FDFA',
-          border: `1px solid ${theme.borderColor}`,
+          px: is960 ? 0.85 : 1,
+          py: is960 ? 0.3 : 0.38,
+          borderRadius: '999px',
+          bgcolor: theme.footerBg,
+          border: `1.5px solid ${theme.borderColor}`,
         }}
       >
         <Typography
           sx={{
-            fontSize: is960 ? '0.72rem' : '0.84rem',
-            color: attempt ? '#475569' : '#9CA3AF',
+            fontSize: is960 ? '0.76rem' : '0.84rem',
+            color: attempt ? '#1E293B' : '#9CA3AF',
             fontWeight: 800,
             lineHeight: 1.3,
             fontVariantNumeric: 'tabular-nums',
-            letterSpacing: '0.01em',
           }}
         >
           {dateLabel}
@@ -855,41 +988,64 @@ function PaperSelectionScreen({
   is960: boolean;
   paperTrack?: PaperSource | null;
 }) {
-  const officialCardSize = is960 ? 156 : 184;
+  const officialCardSize = is960 ? 148 : 172;
+  const clingoCardSize = is960 ? 132 : 152;
   const visiblePapers = useMemo(
     () => (paperTrack ? papers.filter((paper) => paper.source === paperTrack) : papers),
     [paperTrack, papers],
   );
   const summaryPaper = visiblePapers[0];
+  const visibleSections = PAPER_SECTIONS.filter((section) => !paperTrack || section.source === paperTrack)
+    .map((section) => ({
+      ...section,
+      papers: visiblePapers.filter((p) => p.source === section.source),
+    }))
+    .filter((section) => section.papers.length > 0);
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#FFF8F0', overflow: 'hidden' }}>
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        background: HSK_PREP_PAGE_BG,
+        overflow: 'hidden',
+      }}
+    >
       <Box
         sx={{
           flexShrink: 0,
           px: is960 ? 2 : 3,
-          py: is960 ? 1.75 : 2.25,
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 1.5,
-          bgcolor: 'white',
-          borderBottom: '1px solid rgba(0,0,0,0.06)',
+          pt: is960 ? 1.75 : 2.25,
+          pb: is960 ? 1.25 : 1.5,
         }}
       >
-        <ButtonBase
-          onClick={onBack}
-          sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: 'rgba(0,0,0,0.05)', color: '#586E75', flexShrink: 0, mt: 0.15, '&:active': { bgcolor: 'rgba(0,0,0,0.1)' } }}
-        >
-          <ChevronLeftIcon sx={{ fontSize: 24 }} />
-        </ButtonBase>
-        <Box sx={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: is960 ? 0.85 : 1.1, pt: 0.15 }}>
-          <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.12rem' : '1.32rem', color: '#111827', lineHeight: 1.15, letterSpacing: '-0.02em' }}>
-            HSK {level} Practice Papers
-          </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: is960 ? 0.65 : 0.85 }}>
-            <HeaderStatChip label="Duration" value={summaryPaper ? `${summaryPaper.duration} min` : '--'} is960={is960} />
-            <HeaderStatChip label="Questions" value={summaryPaper?.questionCount ?? '--'} is960={is960} />
-            <HeaderStatChip label="Full score" value={summaryPaper?.maxScore ?? '--'} is960={is960} />
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: is960 ? 1.25 : 1.5 }}>
+          <ButtonBase
+            onClick={onBack}
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: '50%',
+              bgcolor: '#FFFFFF',
+              border: '1px solid rgba(0,0,0,0.06)',
+              color: '#586E75',
+              flexShrink: 0,
+              boxShadow: '0 2px 8px rgba(15,23,42,0.05)',
+              '&:active': { bgcolor: '#F9FAFB' },
+            }}
+          >
+            <ChevronLeftIcon sx={{ fontSize: 24 }} />
+          </ButtonBase>
+          <Box sx={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: is960 ? 0.85 : 1 }}>
+            <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.35rem' : '1.65rem', color: '#111827', lineHeight: 1.15, letterSpacing: '-0.02em' }}>
+              HSK {level} Practice Papers
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: is960 ? 0.6 : 0.75 }}>
+              <HeaderStatChip label="Duration" value={summaryPaper ? `${summaryPaper.duration} min` : '--'} is960={is960} />
+              <HeaderStatChip label="Questions" value={summaryPaper?.questionCount ?? '--'} is960={is960} />
+              <HeaderStatChip label="Full score" value={summaryPaper?.maxScore ?? '--'} is960={is960} />
+            </Box>
           </Box>
         </Box>
       </Box>
@@ -900,58 +1056,66 @@ function PaperSelectionScreen({
           minHeight: 0,
           overflow: 'auto',
           px: is960 ? 2 : 3,
-          py: is960 ? 2 : 2.5,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: is960 ? 2.5 : 3,
+          pb: is960 ? 2 : 2.5,
         }}
       >
         {(loading || error || visiblePapers.length === 0) && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 2 }}>
             <Typography sx={{ color: error ? '#B91C1C' : '#64748B', fontWeight: 700 }}>
               {loading ? 'Loading published papers…' : error || 'No published papers for this level.'}
             </Typography>
             {error && !loading && (
               <ButtonBase
                 onClick={onRetry}
-                sx={{ minHeight: 44, px: 2, borderRadius: '8px', bgcolor: '#FFFFFF', border: '1px solid #CBD5E1', color: '#334155', fontWeight: 800 }}
+                sx={{ minHeight: 44, px: 2, borderRadius: '999px', bgcolor: '#FFFFFF', border: '1px solid #CBD5E1', color: '#334155', fontWeight: 800 }}
               >
                 Retry
               </ButtonBase>
             )}
           </Box>
         )}
-        {PAPER_SECTIONS.filter((section) => !paperTrack || section.source === paperTrack).map((section) => {
-          const sectionPapers = visiblePapers.filter((p) => p.source === section.source);
-          if (sectionPapers.length === 0) return null;
-          return (
-            <Box key={section.source}>
-              <SectionDividerTitle label={section.labelEn} source={section.source} is960={is960} />
 
+        {visibleSections.map((section, sectionIndex) => (
+          <Box key={section.source} sx={{ mb: is960 ? 2 : 2.5 }}>
+            {sectionIndex > 0 && (
               <Box
                 sx={{
-                  display: 'grid',
-                  gridTemplateColumns: `repeat(auto-fill, ${officialCardSize}px)`,
-                  gap: is960 ? 1.1 : 1.35,
-                  width: '100%',
+                  borderTop: '2px dotted #D1D5DB',
+                  mb: is960 ? 2 : 2.5,
+                  opacity: 0.85,
                 }}
-              >
-                {sectionPapers.map((paper) => (
-                  <PaperCard
-                    key={paper.id}
-                    paper={paper}
-                    cardSize={officialCardSize}
-                    is960={is960}
-                    attempt={paper.bestScore === undefined
-                      ? undefined
-                      : { score: paper.bestScore, completedAt: paper.bestScoreAt || new Date().toISOString() }}
-                    onSelect={onSelectPaper}
-                  />
-                ))}
-              </Box>
+              />
+            )}
+
+            <SectionDividerTitle label={section.labelEn} source={section.source} is960={is960} />
+
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: section.source === 'official'
+                  ? `repeat(${Math.min(section.papers.length, 2)}, ${officialCardSize}px)`
+                  : `repeat(${section.papers.length}, ${clingoCardSize}px)`,
+                gap: is960 ? 1 : 1.25,
+                width: '100%',
+                overflowX: section.source === 'clingo' && section.papers.length > 4 ? 'auto' : 'visible',
+                pb: section.source === 'clingo' ? 0.5 : 0,
+              }}
+            >
+              {section.papers.map((paper) => (
+                <PaperCard
+                  key={paper.id}
+                  paper={paper}
+                  cardSize={section.source === 'official' ? officialCardSize : clingoCardSize}
+                  is960={is960}
+                  attempt={paper.bestScore === undefined
+                    ? undefined
+                    : { score: paper.bestScore, completedAt: paper.bestScoreAt || new Date().toISOString() }}
+                  onSelect={onSelectPaper}
+                />
+              ))}
             </Box>
-          );
-        })}
+          </Box>
+        ))}
       </Box>
     </Box>
   );
@@ -974,26 +1138,31 @@ function ExamIntroScreen({
   is960: boolean;
 }) {
   const [rulesAccepted, setRulesAccepted] = useState(false);
+  const { t, i18n } = useTranslation();
   const sectionLines = paper.sectionLines;
-  const listenLabel = paper.listeningPlays === 1 ? 'once' : 'twice';
+  const listenLabel = paper.listeningPlays === 1 ? t('hskExamIntro.listenOnce') : t('hskExamIntro.listenTwice');
   const theme = PAPER_CARD_THEMES[paper.source];
   const isOfficial = paper.source === 'official';
   const accent = theme.volumeColor;
+  const questionTypesAccent = '#A855F7';
   const examTypeLabel = isOfficial
-    ? `HSK ${paper.level} Official Mock Test`
-    : `HSK ${paper.level} C-Lingo Practice Test`;
+    ? t('hskExamIntro.mockTest', { level: paper.level })
+    : t('hskExamIntro.practiceTest', { level: paper.level });
+  const startGradient = isOfficial
+    ? 'linear-gradient(90deg, #F43F5E 0%, #FB7185 48%, #FB923C 100%)'
+    : 'linear-gradient(90deg, #14B8A6 0%, #06B6D4 48%, #0891B2 100%)';
 
   const card = {
     bgcolor: '#FFFFFF',
-    borderRadius: is960 ? '18px' : '22px',
-    border: '1px solid rgba(15,23,42,0.06)',
-    boxShadow: '0 8px 24px rgba(15,23,42,0.06)',
+    borderRadius: is960 ? '20px' : '24px',
+    border: '1px solid rgba(15,23,42,0.05)',
+    boxShadow: '0 10px 32px rgba(15,23,42,0.07)',
     p: is960 ? 2 : 2.5,
   } as const;
 
-  const sectionTitle = (text: string) => (
+  const sectionTitle = (text: string, barColor = accent) => (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: is960 ? 1.25 : 1.75 }}>
-      <Box sx={{ width: 5, height: is960 ? 18 : 22, borderRadius: '999px', bgcolor: accent }} />
+      <Box sx={{ width: 5, height: is960 ? 18 : 22, borderRadius: '999px', bgcolor: barColor }} />
       <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.05rem' : '1.25rem', color: '#111827' }}>
         {text}
       </Typography>
@@ -1029,32 +1198,42 @@ function ExamIntroScreen({
   );
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#FFF8F0', overflow: 'hidden' }}>
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        background: 'linear-gradient(180deg, #FFF0F5 0%, #FFF5EE 28%, #FFF8F0 100%)',
+      }}
+    >
       {/* Header */}
       <Box sx={{ flexShrink: 0, px: is960 ? 2 : 3, py: is960 ? 1.5 : 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
         <ButtonBase
           onClick={onBack}
           disabled={starting}
-          sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: 'white', border: '1px solid #E5E7EB', color: '#586E75', flexShrink: 0, '&:active': { bgcolor: '#F3F4F6' } }}
+          sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: 'white', border: '1px solid #E5E7EB', color: '#586E75', flexShrink: 0, boxShadow: '0 2px 8px rgba(15,23,42,0.06)', '&:active': { bgcolor: '#F3F4F6' } }}
         >
           <ChevronLeftIcon sx={{ fontSize: 24 }} />
         </ButtonBase>
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 1 : 1.25, flexWrap: 'wrap' }}>
-            <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.4rem' : '1.85rem', color: '#111827', lineHeight: 1.1, letterSpacing: '-0.01em' }}>
-              Volume {paper.volume}
+            <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.4rem' : '1.85rem', color: '#111827', lineHeight: 1.1, letterSpacing: '-0.02em' }}>
+              {t('hskExamIntro.volume', { volume: paper.volume })}
             </Typography>
             <Box
               sx={{
-                px: is960 ? 1.1 : 1.35,
+                px: is960 ? 1.15 : 1.4,
                 py: is960 ? 0.45 : 0.55,
-                borderRadius: '10px',
+                borderRadius: '999px',
                 background: theme.headerBg,
                 display: 'inline-flex',
                 alignItems: 'center',
+                gap: 0.55,
               }}
             >
-              <Typography sx={{ fontWeight: 900, fontSize: is960 ? '0.76rem' : '0.92rem', color: '#FFFFFF', letterSpacing: '0.01em', lineHeight: 1.2 }}>
+              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.92)', flexShrink: 0 }} />
+              <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.74rem' : '0.9rem', color: '#FFFFFF', letterSpacing: '0.01em', lineHeight: 1.2 }}>
                 {examTypeLabel}
               </Typography>
             </Box>
@@ -1066,42 +1245,46 @@ function ExamIntroScreen({
       <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', px: is960 ? 2.5 : 3.5, pt: is960 ? 0.5 : 1, pb: is960 ? 1 : 1.5 }}>
         {/* Stat bar */}
         <Box sx={{ ...card, display: 'flex', alignItems: 'stretch', p: is960 ? 1.75 : 2.5, mb: is960 ? 1.5 : 2 }}>
-          {statItem(<AccessTimeIcon sx={{ fontSize: is960 ? 24 : 30 }} />, paper.duration, 'Duration · min', accent, isOfficial ? '#FEF2F2' : '#F0FDFA')}
+          {statItem(<AccessTimeIcon sx={{ fontSize: is960 ? 24 : 30 }} />, paper.duration, t('hskExamIntro.durationMin'), accent, isOfficial ? '#FEF2F2' : '#F0FDFA')}
           <Box sx={{ width: '1px', bgcolor: '#EEF0F3', my: 0.5 }} />
-          {statItem(<QuizOutlinedIcon sx={{ fontSize: is960 ? 24 : 30 }} />, paper.questionCount, 'Total questions', '#2563EB', '#EFF6FF')}
+          {statItem(<QuizOutlinedIcon sx={{ fontSize: is960 ? 24 : 30 }} />, paper.questionCount, t('hskExamIntro.totalQuestions'), '#2563EB', '#EFF6FF')}
           <Box sx={{ width: '1px', bgcolor: '#EEF0F3', my: 0.5 }} />
-          {statItem(<WorkspacePremiumOutlinedIcon sx={{ fontSize: is960 ? 24 : 30 }} />, paper.maxScore, 'Full score', '#CA8A04', '#FEF9C3')}
+          {statItem(<WorkspacePremiumOutlinedIcon sx={{ fontSize: is960 ? 24 : 30 }} />, paper.maxScore, t('hskExamIntro.fullScore'), '#CA8A04', '#FEF9C3')}
         </Box>
 
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: is960 ? 1.5 : 2 }}>
           <Box sx={{ ...card, flex: 1.3, minWidth: 0, p: is960 ? 2 : 3 }}>
-            {sectionTitle('Exam rules')}
+            {sectionTitle(t('hskExamIntro.examRules'))}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 1.1 : 1.5 }}>
               {[
-                'Stay focused and complete the test independently.',
+                t('hskExamIntro.rule1'),
                 <>
-                  Listening audio plays <Box component="span" sx={{ color: '#DC2626', fontWeight: 800 }}>{listenLabel}</Box>. Pay close attention.
+                  {t('hskExamIntro.rule2Prefix')}{' '}
+                  <Box component="span" sx={{ color: '#DC2626', fontWeight: 800 }}>{listenLabel}</Box>
+                  {t('hskExamIntro.rule2Suffix')}
                 </>,
                 <>
-                  You may submit early. Submit before the <Box component="span" sx={{ color: '#DC2626', fontWeight: 800 }}>grace period ends</Box> to receive a score.
+                  {t('hskExamIntro.rule3Prefix')}{' '}
+                  <Box component="span" sx={{ color: '#DC2626', fontWeight: 800 }}>{t('hskExamIntro.autoSubmit')}</Box>
+                  {t('hskExamIntro.rule3Suffix')}
                 </>,
-                'Manage your time wisely — easier questions first, then harder ones.',
+                t('hskExamIntro.rule4'),
               ].map((rule, idx) => (
                 <Box key={idx} sx={{ display: 'flex', gap: is960 ? 1.1 : 1.35, alignItems: 'flex-start' }}>
                   <Box
                     sx={{
-                      width: is960 ? 24 : 30,
-                      height: is960 ? 24 : 30,
-                      borderRadius: '9px',
+                      width: is960 ? 26 : 32,
+                      height: is960 ? 26 : 32,
+                      borderRadius: '50%',
                       bgcolor: isOfficial ? '#FEF2F2' : '#F0FDFA',
                       color: accent,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
-                      mt: 0.15,
+                      mt: 0.1,
                       fontWeight: 900,
-                      fontSize: is960 ? '0.72rem' : '0.88rem',
+                      fontSize: is960 ? '0.72rem' : '0.86rem',
                     }}
                   >
                     {idx + 1}
@@ -1115,22 +1298,22 @@ function ExamIntroScreen({
           </Box>
 
           <Box sx={{ ...card, flex: 1, minWidth: 0, p: is960 ? 2 : 3 }}>
-            {sectionTitle('Question types')}
+            {sectionTitle(t('hskExamIntro.questionTypes'), questionTypesAccent)}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 1 : 1.25 }}>
-              {sectionLines.map((line, idx) => {
-                const Icon = idx === 0 ? HeadphonesIcon : idx === 1 ? MenuBookIcon : EditNoteIcon;
+              {sectionLines.map((line) => {
+                const Icon = SECTION_ICONS[line.kind];
                 return (
                   <Box
-                    key={line.title}
+                    key={line.kind}
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: 1.35,
                       px: is960 ? 1.35 : 1.75,
                       py: is960 ? 1.15 : 1.4,
-                      borderRadius: is960 ? '12px' : '16px',
-                      bgcolor: '#F9FAFB',
-                      border: '1px solid #F1F3F5',
+                      borderRadius: is960 ? '14px' : '18px',
+                      bgcolor: '#F5F3FF',
+                      border: '1px solid #EDE9FE',
                     }}
                   >
                     <Box
@@ -1139,11 +1322,11 @@ function ExamIntroScreen({
                         height: is960 ? 38 : 48,
                         borderRadius: '12px',
                         bgcolor: 'white',
-                        border: '1px solid #E5E7EB',
+                        border: '1px solid #DDD6FE',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: '#6B7280',
+                        color: questionTypesAccent,
                         flexShrink: 0,
                       }}
                     >
@@ -1151,28 +1334,23 @@ function ExamIntroScreen({
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography sx={{ fontSize: is960 ? '0.92rem' : '1.08rem', color: '#111827', fontWeight: 800, lineHeight: 1.25 }}>
-                        {line.title}
+                        {bilingualSectionLabel(line.kind, t, i18n.language)}
                       </Typography>
                       <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: '#6B7280', fontWeight: 600, lineHeight: 1.35, mt: 0.2 }}>
-                        {line.detail}
+                        {t('hskExamIntro.questions', { count: line.questionCount })}
                       </Typography>
                     </Box>
-                    {line.duration && (
+                    {line.durationMinutes != null && line.durationMinutes > 0 && (
                       <Typography
                         sx={{
                           fontSize: is960 ? '0.82rem' : '0.95rem',
                           color: '#374151',
                           fontWeight: 800,
                           flexShrink: 0,
-                          px: 1.15,
-                          py: 0.5,
-                          borderRadius: '10px',
-                          bgcolor: 'white',
-                          border: '1px solid #E5E7EB',
                           fontVariantNumeric: 'tabular-nums',
                         }}
                       >
-                        {line.duration}
+                        {t('hskExamIntro.minutesApprox', { count: line.durationMinutes })}
                       </Typography>
                     )}
                   </Box>
@@ -1190,12 +1368,10 @@ function ExamIntroScreen({
           px: is960 ? 2.5 : 3.5,
           pb: is960 ? 2 : 2.5,
           pt: is960 ? 1.25 : 1.5,
-          bgcolor: 'rgba(255,248,240,0.92)',
-          backdropFilter: 'blur(8px)',
-          borderTop: '1px solid rgba(15,23,42,0.06)',
           display: 'flex',
           alignItems: 'center',
-          gap: is960 ? 1.5 : 2,
+          justifyContent: 'space-between',
+          gap: is960 ? 1.25 : 2,
         }}
       >
         <ButtonBase
@@ -1204,22 +1380,32 @@ function ExamIntroScreen({
           sx={{
             display: 'flex',
             alignItems: 'center',
-            gap: 1,
+            gap: 0.75,
             py: 0.5,
             borderRadius: '10px',
-            flex: 1,
+            flex: '1 1 auto',
             minWidth: 0,
             justifyContent: 'flex-start',
             '&:active': { opacity: 0.85 },
           }}
         >
           {rulesAccepted ? (
-            <CheckBoxIcon sx={{ fontSize: is960 ? 26 : 30, color: accent }} />
+            <CheckBoxIcon sx={{ fontSize: is960 ? 22 : 26, color: accent, flexShrink: 0 }} />
           ) : (
-            <CheckBoxOutlineBlankIcon sx={{ fontSize: is960 ? 26 : 30, color: '#9CA3AF' }} />
+            <CheckBoxOutlineBlankIcon sx={{ fontSize: is960 ? 22 : 26, color: '#9CA3AF', flexShrink: 0 }} />
           )}
-          <Typography sx={{ fontSize: is960 ? '0.88rem' : '1.02rem', color: '#374151', fontWeight: 700, textAlign: 'left', lineHeight: 1.4 }}>
-            I have read and understand the exam rules
+          <Typography
+            component="span"
+            sx={{
+              fontSize: is960 ? '0.8rem' : '0.92rem',
+              color: '#374151',
+              fontWeight: 700,
+              textAlign: 'left',
+              lineHeight: 1.3,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {t('hskExamIntro.rulesAccepted')}
           </Typography>
         </ButtonBase>
 
@@ -1227,21 +1413,42 @@ function ExamIntroScreen({
           onClick={onStart}
           disabled={!rulesAccepted || starting}
           sx={{
-            minWidth: is960 ? 180 : 240,
-            minHeight: is960 ? 52 : 60,
-            px: 3,
-            borderRadius: is960 ? '14px' : '16px',
-            bgcolor: rulesAccepted && !starting ? accent : '#E5E7EB',
+            flex: '0 0 auto',
+            width: is960 ? 168 : 196,
+            minHeight: is960 ? 48 : 54,
+            px: 2,
+            borderRadius: '999px',
+            background: rulesAccepted && !starting ? startGradient : '#E5E7EB',
             color: rulesAccepted && !starting ? '#FFFFFF' : '#9CA3AF',
             fontWeight: 900,
-            fontSize: is960 ? '1rem' : '1.15rem',
-            letterSpacing: '0.02em',
-            boxShadow: rulesAccepted && !starting ? `0 8px 20px ${accent}55` : 'none',
+            fontSize: is960 ? '0.92rem' : '1.02rem',
+            letterSpacing: '0.01em',
+            boxShadow: rulesAccepted && !starting ? '0 10px 24px rgba(244,63,94,0.32)' : 'none',
             transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 0.85,
             '&:active': rulesAccepted ? { transform: 'scale(0.98)' } : {},
           }}
         >
-          {starting ? 'Starting...' : 'Start exam'}
+          {starting ? t('hskExamIntro.starting') : t('hskExamIntro.startExam')}
+          {!starting && (
+            <Box
+              sx={{
+                width: is960 ? 24 : 28,
+                height: is960 ? 24 : 28,
+                borderRadius: '50%',
+                bgcolor: 'rgba(255,255,255,0.22)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <ArrowForwardIcon sx={{ fontSize: is960 ? 14 : 16 }} />
+            </Box>
+          )}
         </ButtonBase>
       </Box>
     </Box>
@@ -1625,6 +1832,7 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
   const groupRangeLabel = isGroupedQuestion
     ? `Questions ${groupQuestions.map(questionLabel).join(' · ')}`
     : currentQuestion.isExample ? 'Example' : `Question ${currentQuestion.number}`;
+  const unansweredCount = paper.questions.filter((question) => !question.isExample && !answers[question.id]).length;
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#F5F6F8', overflow: 'hidden' }}>
@@ -1723,19 +1931,205 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
           if (!submitting) setSubmitConfirmOpen(false);
         }}
         aria-labelledby="incomplete-submit-title"
+        PaperProps={{
+          sx: {
+            position: 'relative',
+            overflow: 'visible',
+            width: '100%',
+            maxWidth: is960 ? 400 : 500,
+            borderRadius: is960 ? '36px' : '44px',
+            background: 'linear-gradient(180deg, #E8FAF4 0%, #F3FDF9 22%, #FFFFFF 48%)',
+            boxShadow: '0 28px 56px rgba(15, 23, 42, 0.16)',
+            pt: is960 ? 4.75 : 5.75,
+            pb: is960 ? 2.25 : 2.75,
+            px: is960 ? 2.25 : 3,
+            mx: 2,
+          },
+        }}
+        slotProps={{
+          backdrop: {
+            sx: { bgcolor: 'rgba(15, 23, 42, 0.48)' },
+          },
+        }}
       >
-        <DialogTitle id="incomplete-submit-title">Submit incomplete exam?</DialogTitle>
-        <DialogContent>
-          <Typography>
-            {paper.questions.filter((question) => !question.isExample && !answers[question.id]).length} questions are unanswered and will receive 0 points.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button disabled={submitting} onClick={() => setSubmitConfirmOpen(false)} color="inherit">Continue answering</Button>
-          <Button disabled={submitting} onClick={confirmIncompleteSubmit} variant="contained" color="primary">
+        {/* Left ring decoration */}
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            top: is960 ? 10 : 14,
+            left: is960 ? 18 : 26,
+            width: is960 ? 40 : 48,
+            height: is960 ? 40 : 48,
+            pointerEvents: 'none',
+          }}
+        >
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 2,
+              left: 0,
+              width: is960 ? 30 : 36,
+              height: is960 ? 30 : 36,
+              borderRadius: '50%',
+              border: `${is960 ? 5 : 6}px solid ${examTeal}`,
+              borderRightColor: 'transparent',
+              borderBottomColor: 'transparent',
+              transform: 'rotate(-24deg)',
+            }}
+          />
+          <Box
+            sx={{
+              position: 'absolute',
+              top: is960 ? 10 : 12,
+              left: is960 ? 18 : 22,
+              width: is960 ? 12 : 14,
+              height: is960 ? 12 : 14,
+              borderRadius: '50%',
+              bgcolor: '#D1D5DB',
+            }}
+          />
+        </Box>
+
+        {/* Right sparkle decoration */}
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            top: is960 ? 8 : 12,
+            right: is960 ? 20 : 28,
+            width: is960 ? 36 : 44,
+            height: is960 ? 36 : 44,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(91,191,175,0.22) 0%, transparent 70%)',
+            pointerEvents: 'none',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: '18%',
+              left: '22%',
+              width: is960 ? 14 : 18,
+              height: is960 ? 14 : 18,
+              background: examTeal,
+              opacity: 0.18,
+              clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
+            },
+          }}
+        />
+
+        {/* Top-center badge */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: is960 ? -30 : -36,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: is960 ? 58 : 68,
+            height: is960 ? 58 : 68,
+            borderRadius: '50%',
+            bgcolor: '#FFFFFF',
+            boxShadow: '0 14px 32px rgba(15, 23, 42, 0.12)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2,
+          }}
+        >
+          <Box
+            sx={{
+              width: is960 ? 36 : 42,
+              height: is960 ? 36 : 42,
+              borderRadius: is960 ? '11px' : '13px',
+              bgcolor: '#DDF5EF',
+              color: examTeal,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <EditNoteIcon sx={{ fontSize: is960 ? 22 : 26 }} />
+          </Box>
+        </Box>
+
+        <Typography
+          id="incomplete-submit-title"
+          sx={{
+            textAlign: 'center',
+            fontWeight: 900,
+            fontSize: is960 ? '1.15rem' : '1.35rem',
+            color: '#111827',
+            lineHeight: 1.35,
+            px: is960 ? 1 : 2,
+            mb: is960 ? 1.25 : 1.5,
+          }}
+        >
+          Submit incomplete exam?
+        </Typography>
+
+        <Typography
+          sx={{
+            textAlign: 'center',
+            fontSize: is960 ? '0.88rem' : '0.98rem',
+            color: '#667085',
+            fontWeight: 600,
+            lineHeight: 1.5,
+            px: is960 ? 0.5 : 1.5,
+            mb: is960 ? 2 : 2.5,
+          }}
+        >
+          {unansweredCount} questions are unanswered and will receive 0 points.
+        </Typography>
+
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: is960 ? 1 : 1.25,
+          }}
+        >
+          <ButtonBase
+            disabled={submitting}
+            onClick={() => setSubmitConfirmOpen(false)}
+            sx={{
+              flex: 1,
+              minHeight: is960 ? 44 : 48,
+              borderRadius: '999px',
+              bgcolor: '#EFEFEF',
+              color: '#374151',
+              fontWeight: 800,
+              fontSize: is960 ? '0.72rem' : '0.8rem',
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              px: is960 ? 1.5 : 2,
+              '&.Mui-disabled': { opacity: 0.55 },
+              '&:active': { transform: 'scale(0.98)', bgcolor: '#E5E7EB' },
+            }}
+          >
+            Continue answering
+          </ButtonBase>
+          <ButtonBase
+            disabled={submitting}
+            onClick={confirmIncompleteSubmit}
+            sx={{
+              flex: 1,
+              minHeight: is960 ? 44 : 48,
+              borderRadius: '999px',
+              bgcolor: examTeal,
+              color: '#FFFFFF',
+              fontWeight: 800,
+              fontSize: is960 ? '0.72rem' : '0.8rem',
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              px: is960 ? 1.5 : 2,
+              boxShadow: '0 8px 20px rgba(91,191,175,0.35)',
+              '&.Mui-disabled': { bgcolor: '#98A2B3', color: '#FFFFFF', boxShadow: 'none' },
+              '&:active': { transform: 'scale(0.98)', bgcolor: examTealDark },
+            }}
+          >
             {submitting ? 'Submitting...' : 'Confirm submit'}
-          </Button>
-        </DialogActions>
+          </ButtonBase>
+        </Box>
       </Dialog>
 
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden', width: '100%' }}>
@@ -2453,10 +2847,35 @@ function answerContains(answer: unknown, value: string): boolean {
   return String(answer ?? '').trim().toLowerCase() === normalized;
 }
 
-function formatExamDuration(seconds?: number): string {
-  const total = Math.max(0, Number(seconds || 0));
-  const minutes = Math.floor(total / 60);
-  return `${minutes}m ${total % 60}s`;
+const RESULT_SECTION_ICONS: Record<ExamSectionKind, typeof HeadphonesIcon> = {
+  ...SECTION_ICONS,
+  writing: BorderColorOutlinedIcon,
+};
+
+const RESULT_MODULE_THEMES: Record<ExamSectionKind, { tileBg: string; iconBg: string; accent: string }> = {
+  listening: { tileBg: '#E8F6FF', iconBg: '#BAE6FD', accent: '#0284C7' },
+  reading: { tileBg: '#ECFDF5', iconBg: '#A7F3D0', accent: '#059669' },
+  writing: { tileBg: '#F5F3FF', iconBg: '#DDD6FE', accent: '#7C3AED' },
+};
+
+function resolveModuleKind(module: { moduleId: string; moduleName: string }): ExamSectionKind | null {
+  const id = module.moduleId.toLowerCase();
+  const name = module.moduleName.toLowerCase();
+  if (id.includes('listen') || name.includes('listen') || name.includes('听力')) return 'listening';
+  if (id.includes('read') || name.includes('read') || name.includes('阅读')) return 'reading';
+  if (id.includes('writ') || name.includes('writ') || name.includes('书写')) return 'writing';
+  return null;
+}
+
+function formatModuleScoreValue(
+  module: { score?: number | null; correctCount: number; incorrectCount: number; unansweredCount: number },
+  scoringMode: AttemptResult['scoringMode'],
+): string {
+  if (scoringMode === 'equal_ratio') {
+    const total = module.correctCount + module.incorrectCount + module.unansweredCount;
+    return `${module.correctCount}/${total}`;
+  }
+  return String(module.score ?? 0);
 }
 
 type ReviewStatusItem = AttemptReviewItem | AttemptReviewSummaryItem;
@@ -2516,82 +2935,501 @@ function ResultScreen({
   onGoHome: () => void;
   is960: boolean;
 }) {
+  const { t } = useTranslation();
   const reviewStatusItems: ReviewStatusItem[] = result.reviewSummary?.length
     ? result.reviewSummary
     : review?.items || [];
   const groups = buildReviewGroups(reviewStatusItems);
   const moduleScores = result.moduleScores || [];
   const passed = Boolean(result.passed);
+  const scoreRate = Math.round(Number(result.scoreRate || 0));
+  const totalQuestions = (result.correctCount ?? 0) + (result.incorrectCount ?? 0) + (result.unansweredCount ?? 0) || paper.questionCount;
+  const durationSeconds = Math.max(0, Number(result.durationSeconds || 0));
+  const durationMinutes = Math.floor(durationSeconds / 60);
+  const durationRemainder = durationSeconds % 60;
+
+  const moduleTiles: ExamSectionKind[] = ['listening', 'reading', 'writing'];
+  const moduleByKind = new Map<ExamSectionKind, (typeof moduleScores)[number]>();
+  moduleScores.forEach((module) => {
+    const kind = resolveModuleKind(module);
+    if (kind) moduleByKind.set(kind, module);
+  });
+
+  const card = {
+    bgcolor: '#FFFFFF',
+    borderRadius: is960 ? '14px' : '18px',
+    boxShadow: '0 10px 40px rgba(15, 23, 42, 0.06)',
+    border: '1px solid rgba(226, 232, 240, 0.9)',
+  };
 
   return (
-    <Box sx={{ height: '100%', overflow: 'auto', bgcolor: '#F4F8F6', p: is960 ? 2 : 3 }}>
-      <Box sx={{ maxWidth: 1180, mx: 'auto', display: 'grid', gridTemplateColumns: is960 ? '1fr 0.8fr' : '1.2fr 0.85fr', gap: 2.5 }}>
-        <Box sx={{ bgcolor: '#FFFFFF', borderRadius: '8px', p: is960 ? 2.5 : 3 }}>
-          <Typography sx={{ fontSize: is960 ? '1.25rem' : '1.5rem', fontWeight: 900, mb: 2 }}>Score details</Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${Math.max(1, Math.min(moduleScores.length, 3))}, minmax(0, 1fr))`, gap: 1.5, mb: 2.5 }}>
-            {moduleScores.map((module) => (
-              <Box key={module.moduleId} sx={{ bgcolor: '#F0FAF7', borderRadius: '8px', p: 2, textAlign: 'center' }}>
-                <Typography sx={{ color: '#0F9F82', fontSize: is960 ? '1.25rem' : '1.6rem', fontWeight: 900 }}>
-                  {result.scoringMode === 'equal_ratio'
-                    ? `${module.correctCount}/${module.correctCount + module.incorrectCount + module.unansweredCount}`
-                    : module.score}
-                </Typography>
-                <Typography sx={{ color: '#667085', fontWeight: 700 }}>{module.moduleName}</Typography>
-              </Box>
-            ))}
-          </Box>
-
-          <Typography sx={{ fontSize: is960 ? '1.1rem' : '1.3rem', fontWeight: 900, mb: 1.5 }}>Answer review</Typography>
-          {reviewError && <Typography sx={{ color: '#B91C1C', mb: 1.5 }}>{reviewError}</Typography>}
-          <Box sx={{ display: 'grid', gridTemplateColumns: is960 ? 'repeat(6, 1fr)' : 'repeat(5, 1fr)', gap: 1 }}>
-            {groups.map((group) => {
-              const color = group.unanswered ? '#667085' : group.correct ? '#0EAD8B' : '#F04452';
-              const bg = group.unanswered ? '#F2F4F7' : group.correct ? '#E9F9F4' : '#FFF0F1';
-              return (
-                <ButtonBase key={group.id} onClick={() => onOpenReview(group.items[0]?.itemUid)} sx={{ minHeight: 62, borderRadius: '8px', bgcolor: bg, color, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                  {group.unanswered ? <HelpOutlineIcon sx={{ fontSize: 17 }} /> : group.correct ? <CheckCircleIcon sx={{ fontSize: 17 }} /> : <CancelIcon sx={{ fontSize: 17 }} />}
-                  <Typography sx={{ fontWeight: 900 }}>{group.label}</Typography>
-                </ButtonBase>
-              );
-            })}
-          </Box>
-          {!groups.length && reviewLoading && !reviewError && <Typography sx={{ color: '#98A2B3' }}>Loading answer details...</Typography>}
-          {!groups.length && !reviewLoading && !reviewError && <Typography sx={{ color: '#98A2B3' }}>No answer details</Typography>}
+    <Box
+      sx={{
+        height: '100%',
+        overflow: 'auto',
+        background: 'linear-gradient(145deg, #F4FAF7 0%, #F8FAFC 55%, #EFF6FF 100%)',
+        p: is960 ? 2 : 3,
+        boxSizing: 'border-box',
+      }}
+    >
+      <Box sx={{ maxWidth: 1180, mx: 'auto' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            mb: is960 ? 1.5 : 2,
+          }}
+        >
+          <ButtonBase
+            onClick={onGoHome}
+            sx={{
+              width: is960 ? 40 : 44,
+              height: is960 ? 40 : 44,
+              borderRadius: '50%',
+              bgcolor: '#FFFFFF',
+              border: '1px solid #E5E7EB',
+              color: '#586E75',
+              boxShadow: '0 2px 8px rgba(15,23,42,0.06)',
+              '&:active': { bgcolor: '#F3F4F6' },
+            }}
+          >
+            <ChevronLeftIcon sx={{ fontSize: is960 ? 22 : 24 }} />
+          </ButtonBase>
+          <FeedbackEntryButton
+            is960={is960}
+            forceShow
+            context={{ screen: 'hsk_exam_result', paperId: paper.id }}
+          />
         </Box>
 
-        <Box sx={{ bgcolor: '#FFFFFF', borderRadius: '8px', p: is960 ? 2.5 : 3, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-          <EmojiEventsIcon sx={{ fontSize: is960 ? 46 : 58, color: passed ? '#F59E0B' : '#98A2B3', mb: 1 }} />
-          <Typography sx={{ fontSize: is960 ? '1.35rem' : '1.7rem', fontWeight: 900 }}>{paper.title}</Typography>
-          <Typography sx={{ fontSize: is960 ? '3.5rem' : '4.8rem', lineHeight: 1.1, color: passed ? '#12B76A' : '#F04438', fontWeight: 900, mt: 1 }}>
-            {result.score || 0}<Typography component="span" sx={{ color: '#667085', fontSize: '1.4rem' }}> / {result.totalScore}</Typography>
-          </Typography>
-          <Typography sx={{ color: '#667085', fontWeight: 700, mb: 2 }}>Score rate {Math.round(Number(result.scoreRate || 0))}% · {passed ? 'Passed' : 'Not passed'}</Typography>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: is960 ? '1.15fr 0.85fr' : '1.25fr 0.75fr',
+            gap: is960 ? 2 : 2.5,
+            alignItems: 'stretch',
+          }}
+        >
+          {/* Left — score breakdown + answer review */}
+          <Box sx={{ ...card, p: is960 ? 2 : 2.75, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <Typography sx={{ fontSize: is960 ? '1.15rem' : '1.35rem', fontWeight: 900, color: '#111827', mb: is960 ? 1.5 : 2 }}>
+              {t('hskExamResult.scoreDetails')}
+            </Typography>
 
-          <Box sx={{ width: '100%', bgcolor: '#F9FAFB', borderRadius: '8px', p: 2, mb: 2, textAlign: 'left' }}>
-            <Typography sx={{ fontWeight: 700, color: '#667085' }}>Correct <Box component="span" sx={{ float: 'right', color: '#12B76A' }}>{result.correctCount || 0}</Box></Typography>
-            <Typography sx={{ fontWeight: 700, color: '#667085' }}>Incorrect <Box component="span" sx={{ float: 'right', color: '#F04438' }}>{result.incorrectCount || 0}</Box></Typography>
-            <Typography sx={{ fontWeight: 700, color: '#667085' }}>Unanswered <Box component="span" sx={{ float: 'right', color: '#344054' }}>{result.unansweredCount || 0}</Box></Typography>
-            <Typography sx={{ fontWeight: 700, color: '#667085' }}>Best score <Box component="span" sx={{ float: 'right', color: '#0EAD8B' }}>{result.bestScore ?? result.score ?? 0}</Box></Typography>
-            <Typography sx={{ fontWeight: 700, color: '#667085' }}>Duration <Box component="span" sx={{ float: 'right', color: '#344054' }}>{formatExamDuration(result.durationSeconds)}</Box></Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: is960 ? 1 : 1.25, mb: is960 ? 2 : 2.5 }}>
+              {moduleTiles.map((kind) => {
+                const module = moduleByKind.get(kind);
+                const theme = RESULT_MODULE_THEMES[kind];
+                const Icon = RESULT_SECTION_ICONS[kind];
+                return (
+                  <Box
+                    key={kind}
+                    sx={{
+                      bgcolor: theme.tileBg,
+                      borderRadius: is960 ? '10px' : '12px',
+                      p: is960 ? 1.25 : 1.5,
+                      textAlign: 'center',
+                      minWidth: 0,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: is960 ? 30 : 36,
+                        height: is960 ? 30 : 36,
+                        borderRadius: is960 ? '8px' : '10px',
+                        bgcolor: theme.iconBg,
+                        color: theme.accent,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 0.75,
+                      }}
+                    >
+                      <Icon sx={{ fontSize: is960 ? 17 : 20 }} />
+                    </Box>
+                    <Typography sx={{ color: theme.accent, fontSize: is960 ? '1.15rem' : '1.45rem', fontWeight: 900, lineHeight: 1.1 }}>
+                      {module ? formatModuleScoreValue(module, result.scoringMode) : '0'}
+                    </Typography>
+                    <Typography sx={{ color: '#667085', fontWeight: 700, fontSize: is960 ? '0.68rem' : '0.78rem', mt: 0.35, lineHeight: 1.25 }}>
+                      {t(`hskExamIntro.sections.${kind}`)}
+                    </Typography>
+                  </Box>
+                );
+              })}
+              <Box
+                sx={{
+                  bgcolor: '#FFF7ED',
+                  borderRadius: is960 ? '10px' : '12px',
+                  p: is960 ? 1.25 : 1.5,
+                  textAlign: 'center',
+                  minWidth: 0,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: is960 ? 30 : 36,
+                    height: is960 ? 30 : 36,
+                    borderRadius: is960 ? '8px' : '10px',
+                    bgcolor: '#FED7AA',
+                    color: '#EA580C',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mx: 'auto',
+                    mb: 0.75,
+                  }}
+                >
+                  <CheckCircleIcon sx={{ fontSize: is960 ? 17 : 20 }} />
+                </Box>
+                <Typography sx={{ color: '#EA580C', fontSize: is960 ? '1.15rem' : '1.45rem', fontWeight: 900, lineHeight: 1.1 }}>
+                  {result.correctCount ?? 0}/{totalQuestions}
+                </Typography>
+                <Typography sx={{ color: '#667085', fontWeight: 700, fontSize: is960 ? '0.68rem' : '0.78rem', mt: 0.35, lineHeight: 1.25 }}>
+                  {t('hskExamResult.correctCount')}
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1.25 }}>
+              <Typography sx={{ fontSize: is960 ? '1.05rem' : '1.2rem', fontWeight: 900, color: '#111827' }}>
+                {t('hskExamResult.answerReview')}
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 1.25 : 1.75, flexShrink: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#12B76A' }} />
+                  <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', color: '#667085', fontWeight: 700 }}>
+                    {t('hskExamResult.correct')}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#F04438' }} />
+                  <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', color: '#667085', fontWeight: 700 }}>
+                    {t('hskExamResult.incorrect')}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+
+            {reviewError && (
+              <Typography sx={{ color: '#B91C1C', mb: 1.25, fontSize: is960 ? '0.82rem' : '0.9rem' }}>{reviewError}</Typography>
+            )}
+
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: is960 ? 180 : 220,
+                maxHeight: is960 ? 260 : 320,
+                overflowY: 'auto',
+                pr: 0.5,
+              }}
+            >
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: is960 ? 0.75 : 1 }}>
+                {groups.map((group) => {
+                  const color = group.unanswered ? '#667085' : group.correct ? '#0F766E' : '#DC2626';
+                  const bg = group.unanswered ? '#F2F4F7' : group.correct ? '#E9F9F4' : '#FFF0F1';
+                  return (
+                    <ButtonBase
+                      key={group.id}
+                      onClick={() => onOpenReview(group.items[0]?.itemUid)}
+                      sx={{
+                        minHeight: is960 ? 48 : 54,
+                        borderRadius: is960 ? '10px' : '12px',
+                        bgcolor: bg,
+                        color,
+                        fontWeight: 900,
+                        fontSize: is960 ? '0.82rem' : '0.92rem',
+                        '&:active': { transform: 'scale(0.98)' },
+                      }}
+                    >
+                      {group.label}
+                    </ButtonBase>
+                  );
+                })}
+              </Box>
+              {!groups.length && reviewLoading && !reviewError && (
+                <Typography sx={{ color: '#98A2B3', mt: 1 }}>{t('hskExamResult.loadingReview')}</Typography>
+              )}
+              {!groups.length && !reviewLoading && !reviewError && (
+                <Typography sx={{ color: '#98A2B3', mt: 1 }}>{t('hskExamResult.noReview')}</Typography>
+              )}
+            </Box>
           </Box>
 
-          <ButtonBase
-            onClick={() => onOpenReview()}
-            disabled={reviewOpening}
-            sx={{ width: '100%', minHeight: 48, bgcolor: '#19C7AA', color: '#FFFFFF', borderRadius: '8px', fontWeight: 900, mb: 1.25, '&.Mui-disabled': { bgcolor: '#98A2B3', color: '#FFFFFF' } }}
+          {/* Right — summary + actions (match result card mock) */}
+          <Box
+            sx={{
+              bgcolor: '#F3F5F7',
+              borderRadius: is960 ? '22px' : '28px',
+              p: is960 ? 2.5 : 3.25,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              textAlign: 'center',
+              position: 'relative',
+              overflow: 'hidden',
+              border: '1px solid rgba(226,232,240,0.95)',
+              boxShadow: '0 14px 36px rgba(15, 23, 42, 0.07)',
+            }}
           >
-            {reviewOpening ? 'Opening details...' : reviewError && !review ? 'Retry details' : 'View details'}
-          </ButtonBase>
-          <ButtonBase
-            onClick={onRestart}
-            disabled={retakeAvailable !== true && !retakeError}
-            sx={{ width: '100%', minHeight: 46, border: '1px solid #D0D5DD', borderRadius: '8px', fontWeight: 800, mb: 1.25, '&.Mui-disabled': { color: '#98A2B3', bgcolor: '#F2F4F7' } }}
-          >
-            <ReplayIcon sx={{ mr: 0.75 }} />
-            {retakeError ? 'Retry availability' : retakeAvailable === null ? 'Checking availability...' : retakeAvailable ? 'Try again' : 'No longer available'}
-          </ButtonBase>
-          {retakeError && <Typography sx={{ color: '#B42318', fontSize: '0.82rem', mb: 1.25 }}>{retakeError}</Typography>}
-          <ButtonBase onClick={onGoHome} sx={{ color: '#667085', fontWeight: 800 }}>Back</ButtonBase>
+            {passed && (
+              <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+                {[
+                  { top: '10%', left: '14%', color: '#F59E0B', rotate: 18, w: 7, h: 11 },
+                  { top: '8%', left: '72%', color: '#EF4444', rotate: -24, w: 6, h: 9 },
+                  { top: '16%', left: '58%', color: '#12B76A', rotate: 36, w: 8, h: 6 },
+                  { top: '22%', left: '82%', color: '#3B82F6', rotate: -12, w: 7, h: 10 },
+                  { top: '28%', left: '20%', color: '#FBBF24', rotate: 48, w: 6, h: 8 },
+                  { top: '18%', left: '38%', color: '#FFFFFF', rotate: -32, w: 7, h: 7, border: '1px solid #E5E7EB' },
+                  { top: '32%', left: '68%', color: '#06B6D4', rotate: 20, w: 5, h: 9 },
+                ].map((piece, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      position: 'absolute',
+                      width: is960 ? piece.w * 0.85 : piece.w,
+                      height: is960 ? piece.h * 0.85 : piece.h,
+                      borderRadius: '2px',
+                      bgcolor: piece.color,
+                      border: piece.border,
+                      top: piece.top,
+                      left: piece.left,
+                      transform: `rotate(${piece.rotate}deg)`,
+                      opacity: 0.9,
+                    }}
+                  />
+                ))}
+              </Box>
+            )}
+
+            <Typography
+              sx={{
+                fontSize: is960 ? '1.15rem' : '1.35rem',
+                fontWeight: 900,
+                color: '#1E3A5F',
+                mb: is960 ? 1.5 : 2,
+                position: 'relative',
+                zIndex: 1,
+                letterSpacing: '-0.02em',
+              }}
+            >
+              {paper.title}
+            </Typography>
+
+            <Box sx={{ position: 'relative', zIndex: 1, mb: is960 ? 1.1 : 1.4, display: 'flex', alignItems: 'baseline', justifyContent: 'center' }}>
+              <Typography
+                component="span"
+                sx={{
+                  fontSize: is960 ? '3.8rem' : '5rem',
+                  lineHeight: 0.95,
+                  color: passed ? '#12B76A' : '#F04438',
+                  fontWeight: 900,
+                  letterSpacing: '-0.04em',
+                }}
+              >
+                {result.score ?? 0}
+              </Typography>
+              <Typography
+                component="span"
+                sx={{ color: '#98A2B3', fontSize: is960 ? '1.25rem' : '1.55rem', fontWeight: 700, ml: 0.75 }}
+              >
+                /{result.totalScore}
+              </Typography>
+            </Box>
+
+            <Box sx={{ width: '88%', maxWidth: 260, mb: 0.9, position: 'relative', zIndex: 1 }}>
+              <Box sx={{ height: is960 ? 7 : 9, borderRadius: '999px', bgcolor: '#E5E7EB', overflow: 'hidden' }}>
+                <Box
+                  sx={{
+                    height: '100%',
+                    width: `${Math.min(100, Math.max(0, scoreRate))}%`,
+                    borderRadius: '999px',
+                    background: passed
+                      ? 'linear-gradient(90deg, #14B8A6 0%, #38BDF8 100%)'
+                      : 'linear-gradient(90deg, #14B8A6 0%, #38BDF8 100%)',
+                    transition: 'width 600ms ease',
+                  }}
+                />
+              </Box>
+            </Box>
+
+            <Typography
+              sx={{
+                color: '#8A94A6',
+                fontWeight: 600,
+                fontSize: is960 ? '0.82rem' : '0.92rem',
+                mb: is960 ? 2 : 2.5,
+                position: 'relative',
+                zIndex: 1,
+              }}
+            >
+              {t('hskExamResult.overallScoreRate', { rate: scoreRate })}
+            </Typography>
+
+            <Box
+              sx={{
+                width: '100%',
+                bgcolor: '#FFFFFF',
+                borderRadius: is960 ? '16px' : '18px',
+                overflow: 'hidden',
+                mb: is960 ? 2.25 : 2.75,
+                position: 'relative',
+                zIndex: 1,
+                boxShadow: '0 2px 10px rgba(15,23,42,0.04)',
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 1,
+                  px: is960 ? 1.75 : 2.1,
+                  py: is960 ? 1.35 : 1.55,
+                  borderBottom: '1px solid #F1F5F9',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.1, minWidth: 0 }}>
+                  <Box
+                    sx={{
+                      width: is960 ? 30 : 34,
+                      height: is960 ? 30 : 34,
+                      borderRadius: '50%',
+                      bgcolor: '#E8F9F0',
+                      color: '#12B76A',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <TaskAltIcon sx={{ fontSize: is960 ? 17 : 19 }} />
+                  </Box>
+                  <Typography sx={{ fontWeight: 600, color: '#8A94A6', fontSize: is960 ? '0.84rem' : '0.94rem' }}>
+                    {t('hskExamResult.bestScore')}
+                  </Typography>
+                </Box>
+                <Typography sx={{ fontWeight: 900, color: '#12B76A', fontSize: is960 ? '0.95rem' : '1.05rem', flexShrink: 0 }}>
+                  {t('hskExamResult.scorePoints', { score: result.bestScore ?? result.score ?? 0 })}
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 1,
+                  px: is960 ? 1.75 : 2.1,
+                  py: is960 ? 1.35 : 1.55,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.1, minWidth: 0 }}>
+                  <Box
+                    sx={{
+                      width: is960 ? 30 : 34,
+                      height: is960 ? 30 : 34,
+                      borderRadius: '50%',
+                      bgcolor: '#E8F1FF',
+                      color: '#2563EB',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <AccessTimeIcon sx={{ fontSize: is960 ? 17 : 19 }} />
+                  </Box>
+                  <Typography sx={{ fontWeight: 600, color: '#8A94A6', fontSize: is960 ? '0.84rem' : '0.94rem' }}>
+                    {t('hskExamResult.examDuration')}
+                  </Typography>
+                </Box>
+                <Typography sx={{ fontWeight: 700, color: '#667085', fontSize: is960 ? '0.9rem' : '1rem', flexShrink: 0 }}>
+                  {t('hskExamResult.durationFormat', { minutes: durationMinutes, seconds: durationRemainder })}
+                </Typography>
+              </Box>
+            </Box>
+
+            <ButtonBase
+              onClick={() => onOpenReview()}
+              disabled={reviewOpening}
+              sx={{
+                width: '100%',
+                minHeight: is960 ? 50 : 54,
+                borderRadius: is960 ? '16px' : '18px',
+                background: 'linear-gradient(90deg, #14B8A6 0%, #22D3EE 100%)',
+                color: '#FFFFFF',
+                fontWeight: 900,
+                fontSize: is960 ? '0.98rem' : '1.08rem',
+                mb: 1.35,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                zIndex: 1,
+                px: 2,
+                boxShadow: '0 10px 24px rgba(20, 184, 166, 0.28)',
+                '&.Mui-disabled': { bgcolor: '#98A2B3', background: '#98A2B3', color: '#FFFFFF' },
+              }}
+            >
+              <Box component="span" sx={{ flex: 1, textAlign: 'center' }}>
+                {reviewOpening
+                  ? t('hskExamResult.openingDetails')
+                  : reviewError && !review
+                    ? t('hskExamResult.retryDetails')
+                    : t('hskExamResult.viewDetails')}
+              </Box>
+              {!reviewOpening && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    right: is960 ? 10 : 12,
+                    width: is960 ? 28 : 32,
+                    height: is960 ? 28 : 32,
+                    borderRadius: '50%',
+                    bgcolor: 'rgba(255,255,255,0.92)',
+                    color: '#0D9488',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <ArrowForwardIcon sx={{ fontSize: is960 ? 16 : 18 }} />
+                </Box>
+              )}
+            </ButtonBase>
+
+            <ButtonBase
+              onClick={onRestart}
+              disabled={retakeAvailable !== true && !retakeError}
+              sx={{
+                width: '100%',
+                minHeight: is960 ? 48 : 52,
+                borderRadius: is960 ? '16px' : '18px',
+                bgcolor: '#E8EAED',
+                color: '#5B6472',
+                fontWeight: 800,
+                fontSize: is960 ? '0.95rem' : '1.02rem',
+                position: 'relative',
+                zIndex: 1,
+                '&.Mui-disabled': { color: '#98A2B3', bgcolor: '#F2F4F7' },
+              }}
+            >
+              {retakeError
+                ? t('hskExamResult.retryAvailability')
+                : retakeAvailable === null
+                  ? t('hskExamResult.checkingAvailability')
+                  : retakeAvailable
+                    ? t('hskExamResult.tryAgain')
+                    : t('hskExamResult.noLongerAvailable')}
+            </ButtonBase>
+
+            {retakeError && (
+              <Typography sx={{ color: '#B42318', fontSize: '0.82rem', mt: 1.25, position: 'relative', zIndex: 1 }}>
+                {retakeError}
+              </Typography>
+            )}
+          </Box>
         </Box>
       </Box>
     </Box>

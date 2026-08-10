@@ -9,6 +9,9 @@ import {
   Visibility,
   VisibilityOff
 } from '@mui/icons-material';
+import ReadingRubyLine from '../components/ReadingRubyLine';
+
+const KAI_TI = '"KaiTi", "STKaiti", "BiauKai", "DFKai-SB", "TW-Kai", "SimKai", serif';
 
 interface Sentence {
   id: string;
@@ -24,26 +27,27 @@ const AUDIOBOOK_CONTENT = {
     { 
       id: 's1', 
       en: "The People's Republic of China was established on October 1, 1949, and Beijing became its capital city.", 
-      cn: "中华人民共和国成立于1949年10月1日，北京成为其首都。", 
-      pinyin: "Zhōnghuá Rénmín Gònghéguó chénglì yú yījiǔsìjiǔ nián shí yuè yī rì, Běijīng chéngwéi qí shǒudū." 
+      // Manual word spaces match pinyin tokens (GB/T 16159); digits stay as literal segments.
+      cn: "中华 人民 共和国 成立 于 1949 年 10 月 1 日 北京 成为 其 首都", 
+      pinyin: "Zhōnghuá Rénmín Gònghéguó chénglì yú 1949 nián 10 yuè 1 rì Běijīng chéngwéi qí shǒudū" 
     },
     { 
       id: 's2', 
       en: "Beijing is in the north of China, and is the political and cultural center of the country.", 
-      cn: "北京位于中国北部，是国家的政治和文化中心。", 
-      pinyin: "Běijīng wèiyú Zhōngguó běibù, shì guójiā de zhèngzhì hé wénhuà zhōngxīn." 
+      cn: "北京 位于 中国 北部 是 国家 的 政治 和 文化 中心", 
+      pinyin: "Běijīng wèiyú Zhōngguó běibù shì guójiā de zhèngzhì hé wénhuà zhōngxīn" 
     },
     { 
       id: 's3', 
       en: "Tian'anmen Square and the Forbidden City are symbols of Beijing as a modern city.", 
-      cn: "天安门广场和故宫是北京作为现代化城市的象征。", 
-      pinyin: "Tiān'ānmén Guǎngchǎng hé Gùgōng shì Běijīng zuòwéi xiàndàihuà chéngshì de xiàngzhēng." 
+      cn: "天安门 广场 和 故宫 是 北京 作为 现代化 城市 的 象征", 
+      pinyin: "Tiān'ānmén Guǎngchǎng hé Gùgōng shì Běijīng zuòwéi xiàndàihuà chéngshì de xiàngzhēng" 
     },
     { 
       id: 's4', 
       en: "In addition, Beijing hosted both the 2008 Summer Olympics and the 2022 Winter Olympics, making it the world's first dual Olympic city.", 
-      cn: "此外，北京还举办了2008年夏季奥运会和2022年冬季奥运会，成为世界上第一个双奥之城。", 
-      pinyin: "Cǐwài, Běijīng hái jǔbànle èr líng líng bā nián xiàjì àoyùnhuì hé èr líng èr èr nián dōngjì àoyùnhuì, chéngwéi shìjiè shàng dì yī gè shuāng ào zhī chéng." 
+      cn: "此外 北京 还 举办了 2008 年 夏季 奥运会 和 2022 年 冬季 奥运会 成为 世界 上 第一 个 双奥 之 城", 
+      pinyin: "Cǐwài Běijīng hái jǔbànle 2008 nián xiàjì àoyùnhuì hé 2022 nián dōngjì àoyùnhuì chéngwéi shìjiè shàng dìyī gè shuāngào zhī chéng" 
     }
   ]
 };
@@ -85,7 +89,7 @@ export default function AudiobookPage({ onBack }: AudiobookPageProps) {
     const sentence = allSentences[index];
     
     // 使用 Web Speech API
-    const utterance = new SpeechSynthesisUtterance(`${sentence.cn}. ${sentence.en}`);
+    const utterance = new SpeechSynthesisUtterance(`${sentence.cn.replace(/\s+/g, '')}. ${sentence.en}`);
     utterance.lang = 'zh-CN';
     utterance.rate = playbackSpeed;
     utterance.pitch = 1;
@@ -206,7 +210,7 @@ export default function AudiobookPage({ onBack }: AudiobookPageProps) {
             }}
           >
             {showPinyin ? <Visibility sx={{ fontSize: is960 ? 14 : (is1920x1125 ? 20 : 18) }} /> : <VisibilityOff sx={{ fontSize: is960 ? 14 : (is1920x1125 ? 20 : 18) }} />}
-            <Typography sx={{ fontSize: is960 ? '0.7rem' : (is1920x1125 ? '1rem' : '0.85rem'), fontWeight: 700 }}>拼音</Typography>
+            <Typography sx={{ fontSize: is960 ? '0.7rem' : (is1920x1125 ? '1rem' : '0.85rem'), fontWeight: 700 }}>Pinyin</Typography>
           </ButtonBase>
 
           {/* 语言模式 */}
@@ -236,7 +240,7 @@ export default function AudiobookPage({ onBack }: AudiobookPageProps) {
                   border: languageMode === mode ? '1px solid #E5E7EB' : 'none'
                 }}
               >
-                {mode === 'cn' ? '中文' : '双语'}
+                {mode === 'cn' ? 'Chinese' : 'Bilingual'}
               </ButtonBase>
             ))}
           </Box>
@@ -259,7 +263,8 @@ export default function AudiobookPage({ onBack }: AudiobookPageProps) {
             fontSize: is960 ? '1.5rem' : (is1920x1125 ? '3.5rem' : '2.5rem'), 
             fontWeight: 900, 
             color: '#1F2937', 
-            mb: is960 ? 1 : (is1920x1125 ? 3 : 2)
+            mb: is960 ? 1 : (is1920x1125 ? 3 : 2),
+            fontFamily: KAI_TI,
           }}>
             {AUDIOBOOK_CONTENT.subtitle}
           </Typography>
@@ -272,7 +277,6 @@ export default function AudiobookPage({ onBack }: AudiobookPageProps) {
             opacity: 0.3 
           }} />
         </Box>
-
         {/* Sentences */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 4 : (is1920x1125 ? 8 : 6) }}>
           {allSentences.map((sentence, idx) => {
@@ -339,28 +343,15 @@ export default function AudiobookPage({ onBack }: AudiobookPageProps) {
                 )}
 
                 <Box sx={{ display: 'flex', flexDirection: languageMode === 'both' ? 'row' : 'column', gap: 4 }}>
-                  <Box sx={{ flex: 1, pl: isCurrent ? (is960 ? 3 : (is1920x1125 ? 5 : 4)) : 0 }}>
-                    {showPinyin && (
-                      <Typography sx={{ 
-                        fontSize: is960 ? '0.7rem' : (is1920x1125 ? '1.125rem' : '0.8rem'), 
-                        color: '#636E72', 
-                        fontWeight: 600,
-                        fontFamily: 'monospace',
-                        letterSpacing: '0.05em',
-                        mb: is960 ? 1 : (is1920x1125 ? 2 : 1.5),
-                        lineHeight: 1.4
-                      }}>
-                        {sentence.pinyin}
-                      </Typography>
-                    )}
-                    <Typography sx={{ 
-                      fontSize: is960 ? '1.25rem' : (is1920x1125 ? '2.25rem' : '1.8rem'), 
-                      fontWeight: 600,
-                      color: isCurrent ? '#1F2937' : '#6B7280',
-                      lineHeight: 1.6
-                    }}>
-                      {sentence.cn}
-                    </Typography>
+                  <Box sx={{ flex: 1, pl: isCurrent ? (is960 ? 3 : (is1920x1125 ? 5 : 4)) : 0, minWidth: 0 }}>
+                    <ReadingRubyLine
+                      chinese={sentence.cn}
+                      pinyin={sentence.pinyin}
+                      showPinyin={showPinyin}
+                      active={isCurrent}
+                      hanziSize={is960 ? '1.25rem' : (is1920x1125 ? '2.25rem' : '1.8rem')}
+                      pinyinSize={is960 ? '0.7rem' : (is1920x1125 ? '1.125rem' : '0.8rem')}
+                    />
                   </Box>
 
                   {languageMode === 'both' && (
@@ -369,9 +360,10 @@ export default function AudiobookPage({ onBack }: AudiobookPageProps) {
                         display: { xs: 'none', md: 'block' },
                         width: '1px', 
                         bgcolor: '#E5E7EB',
-                        mx: is960 ? 2 : (is1920x1125 ? 4 : 3)
+                        mx: is960 ? 2 : (is1920x1125 ? 4 : 3),
+                        flexShrink: 0,
                       }} />
-                      <Box sx={{ flex: 1 }}>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography sx={{ 
                           fontSize: is960 ? '0.9rem' : (is1920x1125 ? '1.5rem' : '1.2rem'), 
                           fontWeight: 400,
@@ -383,8 +375,7 @@ export default function AudiobookPage({ onBack }: AudiobookPageProps) {
                       </Box>
                     </>
                   )}
-                </Box>
-              </ButtonBase>
+                </Box>              </ButtonBase>
             );
           })}
         </Box>

@@ -3,6 +3,7 @@ import { Box, Typography, ButtonBase } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import StyleIcon from '@mui/icons-material/Style';
 import { resolveBackPath } from '../utils/navigateBack';
+import FeedbackEntryButton from '../components/feedback/FeedbackEntryButton';
 
 export default function FlashcardPage() {
   const navigate = useNavigate();
@@ -39,6 +40,10 @@ export default function FlashcardPage() {
       >
         <ChevronLeftIcon sx={{ fontSize: is960 ? 26 : 30 }} />
       </ButtonBase>
+
+      <Box sx={{ position: 'absolute', top: is960 ? 12 : 20, right: is960 ? 12 : 20, zIndex: 2 }}>
+        <FeedbackEntryButton is960={is960} context={{ screen: 'flashcards' }} />
+      </Box>
 
       <Box
         sx={{

@@ -191,13 +191,24 @@ export function getExamDeviceId(): string {
   return generated;
 }
 
+export function appendGatewayToken(url: string): string {
+  const token = (import.meta.env.VITE_CLINGO_GATEWAY_TOKEN as string | undefined)?.trim();
+  if (!token) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}token=${encodeURIComponent(token)}`;
+}
+
+function buildExamUrl(path: string): string {
+  return appendGatewayToken(`${EXAM_API_BASE}${path}`);
+}
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers = new Headers();
   headers.set('X-Clingo-Device-Id', getExamDeviceId());
   if (options.body) headers.set('Content-Type', 'application/json');
   let response: Response;
   try {
-    response = await fetch(`${EXAM_API_BASE}${path}`, { ...options, headers });
+    response = await fetch(buildExamUrl(path), { ...options, headers });
   } catch (error) {
     throw new ExamApiError(error instanceof Error ? error.message : 'Network request failed');
   }
