@@ -12,6 +12,153 @@ import MenuBookIcon from '@mui/icons-material/MenuBook'
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline'
 import { SxProps, Theme } from '@mui/material/styles'
 import { Lesson, Unit } from '../../types/lesson'
+import FeedbackEntryButton from '../feedback/FeedbackEntryButton'
+
+/** Align with Study Report / soft tablet surfaces (not cold slate). */
+const PAGE_BG = '#F7F9F8'
+
+function countLabel(n: number, singular: string, plural: string) {
+  return `${n} ${n === 1 ? singular : plural}`
+}
+
+function lessonMetaLine(cards: number, practices: number) {
+  return `${countLabel(cards, 'card', 'cards')} + ${countLabel(practices, 'practice', 'practices')}`
+}
+
+function UnlockPill({
+  label,
+  tone,
+  is960,
+}: {
+  label: string
+  tone: 'amber' | 'slate' | 'teal'
+  is960: boolean
+}) {
+  const tones = {
+    amber: { bg: 'rgba(245,158,11,0.14)', color: '#B45309', border: 'rgba(245,158,11,0.28)' },
+    slate: { bg: 'rgba(100,116,139,0.12)', color: '#475569', border: 'rgba(100,116,139,0.22)' },
+    teal: { bg: 'rgba(0,180,160,0.14)', color: '#0F766E', border: 'rgba(0,180,160,0.28)' },
+  }[tone]
+  return (
+    <Box
+      component="span"
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        px: is960 ? 1.15 : 1.35,
+        py: is960 ? 0.4 : 0.5,
+        borderRadius: '999px',
+        bgcolor: tones.bg,
+        color: tones.color,
+        border: `1px solid ${tones.border}`,
+        fontWeight: 800,
+        fontSize: is960 ? '0.68rem' : '0.78rem',
+        letterSpacing: '0.02em',
+      }}
+    >
+      {label}
+    </Box>
+  )
+}
+
+function BonusClassPanel({
+  is960,
+  is1920,
+  cultureUnlocked,
+  onSelectCulture,
+  sx,
+}: {
+  is960: boolean
+  is1920: boolean
+  cultureUnlocked: boolean
+  onSelectCulture: () => void
+  sx?: SxProps<Theme>
+}) {
+  const iconSize = is960 ? 72 : is1920 ? 96 : 84
+  return (
+    <Box
+      sx={{
+        bgcolor: 'white',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        boxSizing: 'border-box',
+        border: '1px solid rgba(15,23,42,0.06)',
+        boxShadow: '0 8px 24px rgba(15,23,42,0.07)',
+        ...sx,
+      }}
+    >
+      <Box
+        sx={{
+          flexShrink: 0,
+          height: is960 ? 56 : is1920 ? 72 : 64,
+          background: 'linear-gradient(135deg, #FDE68A 0%, #FBBF24 45%, #F59E0B 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Box
+          sx={{
+            width: iconSize * 0.55,
+            height: iconSize * 0.55,
+            borderRadius: '50%',
+            bgcolor: 'rgba(255,255,255,0.92)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 14px rgba(180,83,9,0.2)',
+          }}
+        >
+          <CardGiftcardIcon sx={{ fontSize: is960 ? 28 : is1920 ? 36 : 32, color: '#B45309' }} />
+        </Box>
+      </Box>
+
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          textAlign: 'center',
+          px: is960 ? 2 : 2.5,
+          py: is960 ? 1.75 : 2.25,
+          gap: 1.5,
+        }}
+      >
+        <Box>
+          <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1rem' : is1920 ? '1.35rem' : '1.15rem', color: '#1F2937', mb: 0.85, letterSpacing: '-0.01em' }}>
+            Bonus Class
+          </Typography>
+          <UnlockPill
+            label={cultureUnlocked ? 'Content unlocked' : 'Unlock at 60%'}
+            tone={cultureUnlocked ? 'teal' : 'amber'}
+            is960={is960}
+          />
+        </Box>
+        <ButtonBase
+          disabled={!cultureUnlocked}
+          onClick={onSelectCulture}
+          sx={{
+            width: '100%',
+            py: is960 ? 1 : is1920 ? 1.5 : 1.25,
+            borderRadius: is960 ? '12px' : '14px',
+            bgcolor: cultureUnlocked ? '#00B4A0' : '#E8ECEF',
+            color: cultureUnlocked ? 'white' : '#64748B',
+            fontWeight: 900,
+            fontSize: is960 ? '0.8rem' : is1920 ? '1.05rem' : '0.95rem',
+            boxShadow: cultureUnlocked ? '0 6px 16px rgba(0,180,160,0.28)' : 'none',
+            '&:active': { transform: 'scale(0.98)' },
+          }}
+        >
+          {cultureUnlocked ? 'Enter' : 'Locked'}
+        </ButtonBase>
+      </Box>
+    </Box>
+  )
+}
 
 type HubBlockProps = {
   sx?: SxProps<Theme>
@@ -76,62 +223,43 @@ function DeepLearningHubBlock({ sx, is960, is1920, allLessonsDone, onSelectUpsel
             alignSelf: 'stretch',
             borderRadius: 'inherit',
             overflow: 'hidden',
-            isolation: 'isolate',
+            bgcolor: 'white',
+            border: '1px solid rgba(15,23,42,0.06)',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          {/* 玻璃拟态背景：半透明，可透视后方内容 */}
-          <Box
-            aria-hidden
-            sx={{
-              position: 'absolute',
-              inset: 0,
-              bgcolor: 'rgba(255, 255, 255, 0.28)',
-              backdropFilter: 'blur(18px) saturate(150%)',
-              WebkitBackdropFilter: 'blur(18px) saturate(150%)',
-              border: '1.5px solid rgba(255,255,255,0.52)',
-              borderRadius: 'inherit',
-            }}
-          />
-          {/* 淡淡的渐变提升层次 */}
-          <Box
-            aria-hidden
-            sx={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(165deg, rgba(255,255,255,0.18) 0%, rgba(100,116,139,0.08) 100%)',
-              borderRadius: 'inherit',
-            }}
-          />
-
           <Box
             sx={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              zIndex: 3,
-              bgcolor: 'rgba(100,116,139,0.24)',
-              backdropFilter: 'blur(8px)',
-              borderBottomLeftRadius: is960 ? '10px' : '12px',
-              px: is960 ? 1.1 : 1.35,
-              py: is960 ? 0.65 : 0.85,
+              flexShrink: 0,
+              height: is960 ? 56 : is1920 ? 72 : 64,
+              background: 'linear-gradient(135deg, #94A3B8 0%, #64748B 55%, #475569 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-              border: '1px solid rgba(255,255,255,0.4)',
+              position: 'relative',
             }}
           >
-            <LockIcon sx={{ fontSize: is960 ? 20 : 24, color: '#475569' }} />
+            <Box
+              sx={{
+                width: is960 ? 44 : is1920 ? 56 : 50,
+                height: is960 ? 44 : is1920 ? 56 : 50,
+                borderRadius: '50%',
+                bgcolor: 'rgba(255,255,255,0.92)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 14px rgba(15,23,42,0.18)',
+              }}
+            >
+              <LockIcon sx={{ fontSize: is960 ? 22 : is1920 ? 28 : 24, color: '#475569' }} />
+            </Box>
           </Box>
 
           <Box
             sx={{
-              position: 'relative',
-              zIndex: 2,
               flex: 1,
               minHeight: 0,
-              width: '100%',
-              height: '100%',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -140,6 +268,7 @@ function DeepLearningHubBlock({ sx, is960, is1920, allLessonsDone, onSelectUpsel
               py: is960 ? 2 : 2.5,
               textAlign: 'center',
               boxSizing: 'border-box',
+              gap: is960 ? 0.85 : 1.1,
             }}
           >
             <Typography
@@ -148,24 +277,13 @@ function DeepLearningHubBlock({ sx, is960, is1920, allLessonsDone, onSelectUpsel
                 fontSize: is960 ? '1.1rem' : is1920 ? '1.65rem' : '1.35rem',
                 color: '#1F2937',
                 letterSpacing: '-0.02em',
-                textShadow: '0 1px 2px rgba(255,255,255,0.5)',
               }}
             >
               Deep Learning Hub
             </Typography>
+            <UnlockPill label="Unlock at 100%" tone="slate" is960={is960} />
             <Typography
               sx={{
-                mt: is960 ? 1 : 1.25,
-                fontWeight: 700,
-                fontSize: is960 ? '0.78rem' : is1920 ? '1rem' : '0.9rem',
-                color: '#64748B',
-              }}
-            >
-              Unlock at 100%
-            </Typography>
-            <Typography
-              sx={{
-                mt: is960 ? 0.75 : 1,
                 fontWeight: 600,
                 fontSize: is960 ? '0.62rem' : '0.72rem',
                 color: '#94A3B8',
@@ -354,7 +472,7 @@ export default function UnitSelectionStage({ lesson, completedUnitIds, onSelectU
   // 1920x1125 使用设计稿绝对定位布局
   if (is1920) {
     return (
-      <Box sx={{ position: 'relative', width: '100%', height: '100%', minHeight: 0, overflow: 'hidden', bgcolor: '#F1F5F9', boxSizing: 'border-box' }}>
+      <Box sx={{ position: 'relative', width: '100%', height: '100%', minHeight: 0, overflow: 'hidden', bgcolor: PAGE_BG, boxSizing: 'border-box' }}>
         {/* Header — 参考：白顶栏 */}
         <Box sx={{ position: 'absolute', left: 0, top: 0, right: 0, height: 200, display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, boxSizing: 'border-box', bgcolor: 'white', borderBottom: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 1px 0 rgba(0,0,0,0.04)' }}>
           <ButtonBase
@@ -470,19 +588,36 @@ export default function UnitSelectionStage({ lesson, completedUnitIds, onSelectU
                         onSelectUnit(tempUnit)
                       }}
                       sx={{
+                        position: 'relative',
+                        overflow: 'hidden',
                         width: '100%',
                         p: is1920 ? 2 : (is960 ? 1 : 1.5),
+                        pl: is1920 ? 2.5 : (is960 ? 1.35 : 1.85),
                         borderRadius: is1920 ? '16px' : (is960 ? '12px' : '14px'),
-                        bgcolor: isDone ? '#E8F5E9' : isCurrent ? '#FFF4E6' : isLocked ? '#F3F4F6' : 'white',
-                        border: '2px solid',
-                        borderColor: isDone ? '#4CAF50' : isCurrent ? '#FF6B35' : isLocked ? '#E5E7EB' : '#E5E7EB',
+                        bgcolor: isDone ? '#E8F5E9' : isCurrent ? '#FFF8F1' : isLocked ? '#F8FAFC' : 'white',
+                        border: '1.5px solid',
+                        borderColor: isDone ? '#4CAF50' : isCurrent ? '#FF6B35' : isLocked ? '#E5E7EB' : '#E8ECEF',
+                        boxShadow: isCurrent
+                          ? '0 8px 22px rgba(255,107,53,0.16)'
+                          : isDone
+                            ? '0 6px 16px rgba(76,175,80,0.12)'
+                            : '0 2px 10px rgba(15,23,42,0.05)',
                         display: 'flex',
                         alignItems: 'center',
                         gap: is1920 ? 2 : (is960 ? 1 : 1.5),
                         textAlign: 'left',
-                        opacity: isLocked ? 0.7 : 1,
+                        opacity: isLocked ? 0.72 : 1,
                         flexShrink: 0,
                         boxSizing: 'border-box',
+                        '&::before': {
+                          content: '""',
+                          position: 'absolute',
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: isCurrent || isDone ? 5 : 0,
+                          bgcolor: isDone ? '#4CAF50' : '#FF6B35',
+                        },
                         '&:active': { transform: isLocked ? 'none' : 'scale(0.98)' },
                       }}
                     >
@@ -491,7 +626,7 @@ export default function UnitSelectionStage({ lesson, completedUnitIds, onSelectU
                       </Box>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography sx={{ fontFamily: '"Source Han Sans CN", "Noto Sans SC", sans-serif', fontWeight: 700, color: isDone ? '#2E7D32' : isCurrent ? '#E65100' : '#1F2937', fontSize: is1920 ? '32px' : (is960 ? '0.8rem' : '1rem'), lineHeight: 1.6, mb: 0.25 }}>{lessonItem.title}</Typography>
-                        <Typography sx={{ fontFamily: '"Source Han Sans CN", "Noto Sans SC", sans-serif', fontWeight: 400, color: '#6B7280', fontSize: is1920 ? '24px' : (is960 ? '0.65rem' : '0.85rem'), lineHeight: 1.6 }}>{lessonItem.learnings.length} cards + {lessonItem.questions.length} practices</Typography>
+                        <Typography sx={{ fontFamily: '"Source Han Sans CN", "Noto Sans SC", sans-serif', fontWeight: 400, color: '#6B7280', fontSize: is1920 ? '24px' : (is960 ? '0.65rem' : '0.85rem'), lineHeight: 1.6 }}>{lessonMetaLine(lessonItem.learnings.length, lessonItem.questions.length)}</Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
                         <Typography sx={{ fontFamily: '"Source Han Sans CN", "Noto Sans SC", sans-serif', fontWeight: 400, fontSize: is1920 ? '24px' : (is960 ? '0.7rem' : '0.8rem'), color: '#9CA3AF', textAlign: 'right' }}>{totalTasks} tasks</Typography>
@@ -507,7 +642,7 @@ export default function UnitSelectionStage({ lesson, completedUnitIds, onSelectU
 
             {/* 设计稿：1058×110，距左 1px（整体 left 61） */}
             <Box sx={{ flexShrink: 0, height: 110, width: 1058, mx: '1px', mb: 1, display: 'flex', gap: 2, alignItems: 'center', boxSizing: 'border-box' }}>
-              <ButtonBase onClick={() => navigate('/study-report', { state: { lesson } })} sx={{ flex: 1, height: '100%', borderRadius: '16px', bgcolor: '#00B4A0', color: 'white', fontWeight: 900, fontSize: '1.05rem', '&:active': { transform: 'scale(0.98)' } }}>
+              <ButtonBase onClick={() => navigate('/study-report', { state: { lesson, from: `/lesson/${lesson.id}` } })} sx={{ flex: 1, height: '100%', borderRadius: '16px', bgcolor: '#00B4A0', color: 'white', fontWeight: 900, fontSize: '1.05rem', '&:active': { transform: 'scale(0.98)' } }}>
                 Study Report
               </ButtonBase>
               <ButtonBase onClick={() => navigate('/mistakes-review', { state: { lesson } })} sx={{ flex: 1, height: '100%', borderRadius: '16px', bgcolor: '#FF6B35', color: 'white', fontWeight: 900, fontSize: '1.05rem', '&:active': { transform: 'scale(0.98)' } }}>
@@ -517,38 +652,20 @@ export default function UnitSelectionStage({ lesson, completedUnitIds, onSelectU
           </Box>
         </Box>
 
-        {/* Bonus Class - 700×460, left 1160, top 200 */}
-        <Box
+        <BonusClassPanel
+          is960={false}
+          is1920
+          cultureUnlocked={cultureUnlocked}
+          onSelectCulture={onSelectCulture}
           sx={{
             position: 'absolute',
             left: layout1920.bonusClass.left,
             top: layout1920.bonusClass.top,
             width: layout1920.bonusClass.width,
             height: layout1920.bonusClass.height,
-            bgcolor: 'white',
             borderRadius: '16px',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-            p: 3,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            textAlign: 'center',
-            justifyContent: 'center',
-            boxSizing: 'border-box',
-            overflow: 'hidden',
           }}
-        >
-          <Box sx={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', mt: 2 }}>
-            <Box sx={{ width: 80, height: 80, borderRadius: '50%', bgcolor: '#FFD93D', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2 }}>
-              <CardGiftcardIcon sx={{ fontSize: 40, color: '#1F2937' }} />
-            </Box>
-            <Typography sx={{ fontWeight: 900, fontSize: '1.35rem', color: '#1F2937', mb: 0.5 }}>Bonus Class</Typography>
-            <Typography sx={{ color: '#6B7280', fontSize: '1rem' }}>{cultureUnlocked ? 'Content unlocked' : 'Unlock at 60%'}</Typography>
-          </Box>
-          <ButtonBase disabled={!cultureUnlocked} onClick={onSelectCulture} sx={{ width: '100%', py: 1.5, borderRadius: '16px', bgcolor: cultureUnlocked ? '#00B4A0' : '#E8ECEF', color: cultureUnlocked ? 'white' : '#64748B', fontWeight: 900, fontSize: '1.05rem', '&:active': { transform: 'scale(0.98)' } }}>
-            {cultureUnlocked ? 'Enter' : 'Locked'}
-          </ButtonBase>
-        </Box>
+        />
 
         <DeepLearningHubBlock
           is960={false}
@@ -563,7 +680,7 @@ export default function UnitSelectionStage({ lesson, completedUnitIds, onSelectU
             width: layout1920.deepHub.width,
             height: layout1920.deepHub.height,
             borderRadius: '16px',
-            p: 2.5,
+            p: allLessonsDone ? 2.5 : 0,
             boxShadow: '0 8px 28px rgba(15,23,42,0.08)',
           }}
         />
@@ -573,16 +690,16 @@ export default function UnitSelectionStage({ lesson, completedUnitIds, onSelectU
 
   // 非 1920x1125：与参考稿一致的 flex 布局
   return (
-    <Box sx={{ width: '100%', height: '100%', minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', bgcolor: '#F1F5F9', p: is960 ? 1.5 : 2, boxSizing: 'border-box', gap: is960 ? 1 : 1.5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, minHeight: px(56), bgcolor: 'white', borderRadius: is960 ? '14px' : '18px', px: is960 ? 1.5 : 2, py: is960 ? 1 : 1.25, boxShadow: '0 1px 0 rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.05)' }}>
-        <ButtonBase onClick={() => navigate('/')} sx={{ width: px(56), height: px(56), borderRadius: '50%', bgcolor: '#F1F5F9', color: '#374151', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', '&:active': { transform: 'scale(0.95)' } }}>
+    <Box sx={{ width: '100%', height: '100%', minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', bgcolor: PAGE_BG, p: is960 ? 1.5 : 2, boxSizing: 'border-box', gap: is960 ? 1 : 1.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, minHeight: px(56), bgcolor: 'white', borderRadius: is960 ? '14px' : '18px', px: is960 ? 1.5 : 2, py: is960 ? 1 : 1.25, boxShadow: '0 2px 12px rgba(15,23,42,0.05)', border: '1px solid rgba(0,0,0,0.05)' }}>
+        <ButtonBase onClick={() => navigate('/')} sx={{ width: px(56), height: px(56), borderRadius: '50%', bgcolor: PAGE_BG, color: '#374151', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', '&:active': { transform: 'scale(0.95)' } }}>
           <ChevronLeftIcon sx={{ fontSize: px(28) }} />
         </ButtonBase>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box sx={{ px: 2, py: 0.6, bgcolor: '#00B4A0', color: 'white', borderRadius: '12px', fontSize: is960 ? '0.75rem' : '0.875rem', fontWeight: 900 }}>Level {lesson.hskLevel ?? 1}</Box>
           <Typography sx={{ fontWeight: 900, color: '#1F2937', fontSize: is960 ? '1rem' : '1.25rem', letterSpacing: '-0.02em' }}>C-Lingo Chinese</Typography>
         </Box>
-        <Box sx={{ width: px(56) }} />
+        <FeedbackEntryButton is960={is960} context={{ screen: 'unit_selection', lessonId: lesson.id }} />
       </Box>
 
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', gap: is960 ? 1.5 : 2, overflow: 'hidden', boxSizing: 'border-box' }}>
@@ -634,10 +751,36 @@ export default function UnitSelectionStage({ lesson, completedUnitIds, onSelectU
                       disabled={isLocked}
                       onClick={() => onSelectUnit({ ...firstUnit, id: currentLessonId, title: lessonItem.title, questions: lessonItem.questions, learnings: lessonItem.learnings })}
                       sx={{
-                        width: '100%', p: is960 ? 1 : 1.5, borderRadius: is960 ? '12px' : '14px',
-                        bgcolor: isDone ? '#E8F5E9' : isCurrent ? '#FFF4E6' : isLocked ? '#F3F4F6' : 'white',
-                        border: '2px solid', borderColor: isDone ? '#4CAF50' : isCurrent ? '#FF6B35' : isLocked ? '#E5E7EB' : '#E5E7EB',
-                        display: 'flex', alignItems: 'center', gap: is960 ? 1 : 1.5, textAlign: 'left', opacity: isLocked ? 0.7 : 1, flexShrink: 0, boxSizing: 'border-box',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        width: '100%',
+                        p: is960 ? 1 : 1.5,
+                        pl: is960 ? 1.35 : 1.85,
+                        borderRadius: is960 ? '12px' : '14px',
+                        bgcolor: isDone ? '#E8F5E9' : isCurrent ? '#FFF8F1' : isLocked ? '#F8FAFC' : 'white',
+                        border: '1.5px solid',
+                        borderColor: isDone ? '#4CAF50' : isCurrent ? '#FF6B35' : isLocked ? '#E5E7EB' : '#E8ECEF',
+                        boxShadow: isCurrent
+                          ? '0 8px 22px rgba(255,107,53,0.16)'
+                          : isDone
+                            ? '0 6px 16px rgba(76,175,80,0.12)'
+                            : '0 2px 10px rgba(15,23,42,0.05)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: is960 ? 1 : 1.5,
+                        textAlign: 'left',
+                        opacity: isLocked ? 0.72 : 1,
+                        flexShrink: 0,
+                        boxSizing: 'border-box',
+                        '&::before': {
+                          content: '""',
+                          position: 'absolute',
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: isCurrent || isDone ? 5 : 0,
+                          bgcolor: isDone ? '#4CAF50' : '#FF6B35',
+                        },
                         '&:active': { transform: isLocked ? 'none' : 'scale(0.98)' },
                       }}
                     >
@@ -646,7 +789,7 @@ export default function UnitSelectionStage({ lesson, completedUnitIds, onSelectU
                       </Box>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography sx={{ fontWeight: 900, color: isDone ? '#2E7D32' : isCurrent ? '#E65100' : '#1F2937', fontSize: is960 ? '0.8rem' : '1rem', mb: 0.25 }}>{lessonItem.title}</Typography>
-                        <Typography sx={{ color: '#6B7280', fontSize: is960 ? '0.65rem' : '0.85rem' }}>{lessonItem.learnings.length} cards + {lessonItem.questions.length} practices</Typography>
+                        <Typography sx={{ color: '#6B7280', fontSize: is960 ? '0.65rem' : '0.85rem' }}>{lessonMetaLine(lessonItem.learnings.length, lessonItem.questions.length)}</Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
                         <Typography sx={{ fontSize: is960 ? '0.7rem' : '0.8rem', fontWeight: 700, color: '#9CA3AF' }}>{totalTasks} tasks</Typography>
@@ -660,7 +803,7 @@ export default function UnitSelectionStage({ lesson, completedUnitIds, onSelectU
               })()}
             </Box>
             <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #E5E7EB', display: 'flex', gap: 1.5, flexShrink: 0 }}>
-              <ButtonBase onClick={() => navigate('/study-report', { state: { lesson } })} sx={{ flex: 1, py: is960 ? 0.75 : 1.25, borderRadius: is960 ? '12px' : '14px', bgcolor: '#00B4A0', color: 'white', fontWeight: 900, fontSize: is960 ? '0.75rem' : '0.95rem', '&:active': { transform: 'scale(0.98)' } }}>Study Report</ButtonBase>
+              <ButtonBase onClick={() => navigate('/study-report', { state: { lesson, from: `/lesson/${lesson.id}` } })} sx={{ flex: 1, py: is960 ? 0.75 : 1.25, borderRadius: is960 ? '12px' : '14px', bgcolor: '#00B4A0', color: 'white', fontWeight: 900, fontSize: is960 ? '0.75rem' : '0.95rem', '&:active': { transform: 'scale(0.98)' } }}>Study Report</ButtonBase>
               <ButtonBase onClick={() => navigate('/mistakes-review', { state: { lesson } })} sx={{ flex: 1, py: is960 ? 0.75 : 1.25, borderRadius: is960 ? '12px' : '14px', bgcolor: '#FF6B35', color: 'white', fontWeight: 900, fontSize: is960 ? '0.75rem' : '0.95rem', '&:active': { transform: 'scale(0.98)' } }}>Mistakes</ButtonBase>
             </Box>
           </Box>
@@ -679,33 +822,17 @@ export default function UnitSelectionStage({ lesson, completedUnitIds, onSelectU
             height: '100%',
           }}
         >
-          <Box
+          <BonusClassPanel
+            is960={is960}
+            is1920={false}
+            cultureUnlocked={cultureUnlocked}
+            onSelectCulture={onSelectCulture}
             sx={{
               flex: '4 1 0%',
               minHeight: 0,
-              overflow: 'auto',
-              bgcolor: 'white',
               borderRadius: rightColCardRadius,
-              boxShadow: '0 4px 20px rgba(15,23,42,0.06)',
-              border: '1px solid rgba(0,0,0,0.05)',
-              p: is960 ? 2 : 2.5,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              textAlign: 'center',
-              justifyContent: 'space-between',
-              boxSizing: 'border-box',
             }}
-          >
-            <Box>
-              <Box sx={{ width: px(80), height: px(80), borderRadius: '50%', bgcolor: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2, border: '1px solid rgba(245,158,11,0.25)' }}>
-                <CardGiftcardIcon sx={{ fontSize: px(40), color: '#B45309' }} />
-              </Box>
-              <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1rem' : '1.15rem', color: '#1F2937', mb: 0.5 }}>Bonus Class</Typography>
-              <Typography sx={{ color: '#6B7280', fontSize: is960 ? '0.75rem' : '0.85rem' }}>{cultureUnlocked ? 'Content unlocked' : 'Unlock at 60%'}</Typography>
-            </Box>
-            <ButtonBase disabled={!cultureUnlocked} onClick={onSelectCulture} sx={{ width: '100%', py: is960 ? 1 : 1.25, borderRadius: is960 ? '12px' : '14px', bgcolor: cultureUnlocked ? '#00B4A0' : '#E8ECEF', color: cultureUnlocked ? 'white' : '#64748B', fontWeight: 900, fontSize: is960 ? '0.8rem' : '0.95rem', '&:active': { transform: 'scale(0.98)' } }}>{cultureUnlocked ? 'Enter' : 'Locked'}</ButtonBase>
-          </Box>
+          />
           <DeepLearningHubBlock
             is960={is960}
             is1920={false}
@@ -716,8 +843,8 @@ export default function UnitSelectionStage({ lesson, completedUnitIds, onSelectU
               flex: '6 1 0%',
               minHeight: 0,
               borderRadius: rightColCardRadius,
-              p: is960 ? 1.75 : 2,
-              boxShadow: '0 4px 20px rgba(15,23,42,0.06)',
+              p: allLessonsDone ? (is960 ? 1.75 : 2) : 0,
+              boxShadow: '0 8px 24px rgba(15,23,42,0.07)',
             }}
           />
         </Box>

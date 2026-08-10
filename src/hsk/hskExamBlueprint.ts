@@ -40,6 +40,18 @@ export interface HskLevelBlueprint {
   parts: HskExamPartDef[];
 }
 
+interface ImageOptionContainer {
+  options?: Array<{ image?: string }>;
+  questions?: ImageOptionContainer[];
+}
+
+export function hasCompositeImageOptions(question: ImageOptionContainer): boolean {
+  return Boolean(
+    question.options?.some((option) => Boolean(option.image))
+    || question.questions?.some((child) => child.options?.some((option) => Boolean(option.image))),
+  );
+}
+
 export const TEMPLATE_LABELS: Record<HskTemplateCode, string> = {
   L01: 'Listening · picture / word choice',
   L02: 'Listening · dialogue (composite)',
@@ -47,7 +59,7 @@ export const TEMPLATE_LABELS: Record<HskTemplateCode, string> = {
   L04: 'Listening · long passage choice',
   L05: 'Listening · interview / lecture (composite)',
   L06: 'Listening · Happy Chinese intro',
-  R01: 'Reading · fill in words (composite)',
+  R01: 'Reading · picture matching (composite)',
   R02: 'Reading · sentence arrangement (composite)',
   R03: 'Reading · gap filling (composite)',
   R05: 'Reading · passage matching (composite)',
@@ -199,6 +211,32 @@ export function getExamBlueprint(level: HSKLevel, source: PaperSource): HskLevel
   return source === 'official' ? buildOfficialBlueprint(level) : buildClingoBlueprint(level);
 }
 
+export function clampActiveSubIndex(activeIndex: number, groupLength: number): number {
+  if (groupLength <= 0 || !Number.isFinite(activeIndex)) return 0;
+  return Math.min(Math.max(0, Math.trunc(activeIndex)), groupLength - 1);
+}
+
+export function runtimeScoredQuestionId(
+  questionNumber: string | number | undefined,
+  runtimeId: string | number,
+): string {
+  const normalizedQuestionNumber = String(questionNumber ?? '').trim();
+  return normalizedQuestionNumber || String(runtimeId);
+}
+
+export function createSectionPartNumberResolver() {
+  const sectionNumbers = new Map<ExamSectionKind, Map<string, number>>();
+  return (section: ExamSectionKind, sectionId: string): number => {
+    let parts = sectionNumbers.get(section);
+    if (!parts) {
+      parts = new Map<string, number>();
+      sectionNumbers.set(section, parts);
+    }
+    if (!parts.has(sectionId)) parts.set(sectionId, parts.size + 1);
+    return parts.get(sectionId) || 1;
+  };
+}
+
 export function formatSectionSummary(blueprint: HskLevelBlueprint): string {
   return formatSectionSummaryLines(blueprint).join(' · ');
 }
@@ -255,12 +293,16 @@ export interface GeneratedExamQuestion {
   options: string[];
   correctAnswer: string;
   /** text = 文字四选一；image = 图片三选一；image-match = 图片库 + 多题匹配；text-composite = 共享音频 + 多题文字选择；pinyin-text = 拼音 + 汉字卡片（L04） */
-  displayMode: 'text' | 'image' | 'image-match' | 'text-composite' | 'pinyin-text';
+  displayMode: 'text' | 'image' | 'image-match' | 'text-composite' | 'pinyin-text' | 'writing';
   optionImages?: string[];
   /** L04 等题型：选项拼音 + 汉字 */
   optionLabels?: { pinyin: string; text: string }[];
   /** 复合题共享题干（如 L02 对话） */
   sharedPrompt?: string;
+  optionTextByValue?: Record<string, string>;
+  audioUrl?: string;
+  audioGroupId?: string;
+  maxPlayCount?: number;
 }
 
 const IMAGE_TEMPLATE_CODES = new Set<HskTemplateCode>(['L01', 'R08']);

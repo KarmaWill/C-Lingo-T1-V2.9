@@ -154,7 +154,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isLingoFlashPage || 
     isGrammarPuzzlePage || 
     isSyntaxSnapPage ||
-    isHSKPrepTrainingPage ||
+    (isHSKPrepTrainingPage && !isWebsiteEmbed) ||
     isHSKSkillDrillPage ||
     isHSKOralReviewPage ||
     isGrammarSnapPage ||

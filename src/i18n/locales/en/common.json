@@ -69,5 +69,104 @@
     "writingTraining2": "Training",
     "studyWork1": "Study & Work",
     "studyWork2": "in China"
+  },
+  "hskExamIntro": {
+    "volume": "Volume {{volume}}",
+    "mockTest": "HSK {{level}} Mock Test",
+    "practiceTest": "HSK {{level}} Practice Test",
+    "durationMin": "Duration · min",
+    "totalQuestions": "Total questions",
+    "fullScore": "Full score",
+    "examRules": "Exam rules",
+    "questionTypes": "Question types",
+    "rule1": "Stay focused and complete the test independently.",
+    "rule2Prefix": "Listening audio plays",
+    "rule2Suffix": ". Pay close attention.",
+    "rule3Prefix": "You may submit early. When time is up, the system will",
+    "rule3Suffix": ".",
+    "rule4": "Manage your time wisely — easier questions first, then harder ones.",
+    "listenOnce": "once",
+    "listenTwice": "twice",
+    "autoSubmit": "auto-submit",
+    "questions": "{{count}} questions",
+    "minutesApprox": "~{{count}} min",
+    "rulesAccepted": "I have read and understand the exam rules",
+    "startExam": "Start exam",
+    "starting": "Starting...",
+    "sections": {
+      "listening": "Listening",
+      "reading": "Reading",
+      "writing": "Writing"
+    }
+  },
+  "hskExamResult": {
+    "scoreDetails": "Score details",
+    "correctCount": "Questions correct",
+    "answerReview": "Answer review",
+    "correct": "Correct",
+    "incorrect": "Incorrect",
+    "loadingReview": "Loading answer details…",
+    "noReview": "No answer details",
+    "overallScoreRate": "Overall score rate {{rate}}%",
+    "bestScore": "Best score",
+    "scorePoints": "{{score}} pts",
+    "examDuration": "Time taken",
+    "durationFormat": "{{minutes}} min {{seconds}} sec",
+    "viewDetails": "View details",
+    "openingDetails": "Opening details…",
+    "retryDetails": "Retry details",
+    "tryAgain": "Try again",
+    "checkingAvailability": "Checking availability…",
+    "retryAvailability": "Retry availability",
+    "noLongerAvailable": "No longer available"
+  },
+  "feedback": {
+    "title": "Problem Feedback",
+    "subtitle": "Choose the closest issue type so we can locate and handle it faster.",
+    "typeLabel": "Feedback type · single choice",
+    "tagsLabel": "Specific issues · multiple choice",
+    "detailsLabel": "Details · required · max 400 characters",
+    "detailsPlaceholder": "Describe the issue or idea you encountered…",
+    "screenshotHint": "Add a screenshot · 1 image only · at least 1 required",
+    "remainingToday": "{{count}} submissions left today",
+    "cancel": "Cancel",
+    "submit": "Submit feedback",
+    "submitting": "Submitting…",
+    "categories": {
+      "content_error": {
+        "title": "Content error",
+        "desc": "Translation, characters, pinyin, or knowledge point mistakes."
+      },
+      "functional_failure": {
+        "title": "Functional failure",
+        "desc": "Lag, audio failed to load, or abnormal behavior."
+      },
+      "user_experience": {
+        "title": "User experience",
+        "desc": "Interface feel, feature expectations, or usage feedback."
+      },
+      "suggestion": {
+        "title": "Suggestions & requests",
+        "desc": "Ideas for improvements or new features you want."
+      }
+    },
+    "tags": {
+      "font_too_small": "Font too small to read",
+      "more_interactive_games": "Want more interactive games",
+      "too_few_rewards": "Too few rewards",
+      "parental_controls": "Want parental controls",
+      "more_levels": "Want more levels",
+      "other": "Other"
+    },
+    "toast": {
+      "success": "Submitted successfully. You can submit {{count}} more times today.",
+      "limitReached": "To ensure every report is reviewed, please come back tomorrow.",
+      "authRequired": "Please log in before submitting feedback."
+    },
+    "errors": {
+      "imageType": "Please upload an image file.",
+      "imageSize": "Image must be 4 MB or smaller."
+    },
+    "contextHint": "Context: {{module}} · {{route}}"
   }
 }

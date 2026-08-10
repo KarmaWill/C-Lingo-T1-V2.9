@@ -1,7 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
-import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded';
-import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
+import { Box } from '@mui/material';
 import HomeLessonHero from '../components/home/HomeLessonHero';
 import {
   HomePageShell,
@@ -14,7 +12,7 @@ export default function HomePage() {
   const navigate = useNavigate();
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
   const is960 = screenSize === '960x540';
-  const { sideCardSx, sideArrowSx, sideNextSx } = useHomeSideStyles(is960);
+  const { sideCardSx, sideArrowSx } = useHomeSideStyles(is960);
 
   return (
     <HomePageShell is960={is960}>
@@ -27,33 +25,50 @@ export default function HomePage() {
 
       <HomeSideCardStack is960={is960}>
         <HomeSideCard
-          lines={['Speaking', 'Tutor']}
-          bgcolor="#F97316"
-          icon={<SmartToyIcon sx={{ fontSize: is960 ? 24 : 28, opacity: 0.96 }} />}
+          variant="spotlight"
+          label="AI Tutor"
+          bgcolor="#0D9F72"
+          accentColor="#0D9F72"
           is960={is960}
           sideCardSx={sideCardSx}
           sideArrowSx={sideArrowSx}
-          sideNextSx={sideNextSx}
+          spotlightVisual={
+            <Box
+              component="img"
+              src="/images/clingo-ai-mascot-head.png?v=3d"
+              alt=""
+              sx={{
+                width: '118%',
+                height: '118%',
+                maxWidth: 'none',
+                objectFit: 'contain',
+                objectPosition: 'left center',
+                display: 'block',
+                pointerEvents: 'none',
+                transform: 'translateX(-12%)',
+              }}
+            />
+          }
           onClick={() => navigate('/ai-chat')}
         />
         <HomeSideCard
+          variant="tool"
           lines={['Reading', 'Buddy']}
-          bgcolor="#2563EB"
-          icon={<MenuBookRoundedIcon sx={{ fontSize: is960 ? 25 : 29, opacity: 0.96 }} />}
+          subtitle="Improve your reading"
+          bgcolor="#3761E2"
           is960={is960}
           sideCardSx={sideCardSx}
           sideArrowSx={sideArrowSx}
-          sideNextSx={sideNextSx}
           onClick={() => navigate('/reading-buddy')}
         />
         <HomeSideCard
+          variant="tool"
           label="Class Generator"
-          bgcolor="#791F87"
-          icon={<AutoAwesomeRoundedIcon sx={{ fontSize: is960 ? 26 : 30, opacity: 0.98 }} />}
+          subtitle="Build custom lessons"
+          bgcolor="#6F2682"
           is960={is960}
           sideCardSx={sideCardSx}
           sideArrowSx={sideArrowSx}
-          sideNextSx={sideNextSx}
           onClick={() => navigate('/grammar-puzzle')}
         />
       </HomeSideCardStack>
