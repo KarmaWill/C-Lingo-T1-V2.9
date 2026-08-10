@@ -4,6 +4,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { LocaleProvider, useLocale } from './context/LocaleContext'
 import MainLayout from './components/MainUI/MainLayout'
+import { FeedbackProvider } from './components/feedback/FeedbackProvider'
 import HomePage from './pages/HomePage'
 import HSKStandardHomePage from './pages/HSKStandardHomePage'
 import HSKStandardSpeakingProPage from './pages/hsk-standard/HSKStandardSpeakingProPage'
@@ -137,6 +138,7 @@ function ThemedApp() {
         {/* Regular pages with MainLayout */}
         <Route path="*" element={
       <MainLayout>
+        <FeedbackProvider>
         <Routes>
           <Route path="/" element={<Navigate to="/AI" replace />} />
               <Route path="/AI" element={<HomePage />} />
@@ -205,6 +207,7 @@ function ThemedApp() {
               <Route path="/question-review" element={<QuestionReviewPage />} />
               <Route path="/hsk-mock-exam" element={<HSKMockExamPage />} />
         </Routes>
+        </FeedbackProvider>
       </MainLayout>
         } />
       </Routes>

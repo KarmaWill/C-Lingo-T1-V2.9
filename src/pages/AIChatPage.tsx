@@ -75,14 +75,35 @@ import {
   Assessment,
   Star,
   Visibility,
-  VisibilityOff
+  VisibilityOff,
+  SlowMotionVideo,
+  GraphicEq,
+  GTranslate,
+  ExpandMore,
+  KeyboardArrowLeft,
+  KeyboardArrowRight,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store/store';
 import { addHistory, deleteHistory, ChatHistoryItem } from '../store/slices/chatHistorySlice';
 import { aiService } from '../services/aiService';
+import FeedbackEntryButton from '../components/feedback/FeedbackEntryButton';
 import { AiRequestTimeoutError } from '../utils/requestWrapper';
+import { buildRubySegmentsFromText } from '../utils/pinyinRuby';
+import { pickDeepDiveKeywords } from '../utils/deepDiveKeywords';
+import {
+  canSpendDeepDiveCredit,
+  DEEP_DIVE_COST,
+  DEEP_DIVE_DAILY_LIMIT,
+  getDeepDiveCredits,
+  refreshDeepDiveCredits,
+  spendDeepDiveCredit,
+  type DeepDiveCreditState,
+} from '../utils/deepDiveCredits';
+
+const ROLE_A_AVATAR = '/images/ai-chat-role-student.png';
+const ROLE_B_AVATAR = '/images/ai-chat-role-classmate.png';
 import {
   AiConversationPipeline,
   type PipelineStage,
@@ -113,6 +134,13 @@ interface Topic {
   badge?: string;
 }
 
+interface SpeechScoreBreakdown {
+  speech: number;
+  fluency: number;
+  accuracy: number;
+  completeness: number;
+}
+
 interface Message {
   id: string;
   text: string;
@@ -121,10 +149,137 @@ interface Message {
   translation?: string;
   timestamp: Date;
   score?: number;
+  speechBreakdown?: SpeechScoreBreakdown;
   isVoiceInput?: boolean; // 标识是否为语音输入
   systemKind?: 'llm_fail' | 'tts_fail';
   replayText?: string;
   replayMessageId?: string;
+}
+
+interface ConversationRubyTextProps {
+  text: string;
+  pinyin?: string;
+  showPinyin?: boolean;
+  align?: 'left' | 'center' | 'right';
+  textColor?: string;
+  pinyinColor?: string;
+  textSize?: string;
+  pinyinSize?: string;
+  /** Hanzi typeface — Deep Dive / reading surfaces prefer KaiTi. */
+  hanziFontFamily?: string;
+  columnGap?: string | number;
+  rowGap?: number;
+}
+
+const DEFAULT_HANZI_FONT = '"Noto Sans SC", "PingFang SC", sans-serif';
+const KAI_TI = '"KaiTi", "STKaiti", "BiauKai", "DFKai-SB", "TW-Kai", "SimKai", serif';
+const PINYIN_SANS = 'Inter, "Noto Sans", system-ui, sans-serif';
+
+/** ~半高半低，方便同时看到 ≥60 / <60 两种样式 */
+function mockVoiceScore(): number {
+  if (Math.random() < 0.5) {
+    return Math.floor(Math.random() * 39) + 60; // 60–98
+  }
+  return Math.floor(Math.random() * 40) + 20; // 20–59
+}
+
+function buildSpeechBreakdown(total: number): SpeechScoreBreakdown {
+  const clamp = (n: number) => Math.min(100, Math.max(5, Math.round(n)));
+  const jitter = () => (Math.random() - 0.5) * 14;
+  return {
+    speech: clamp(total + jitter()),
+    fluency: clamp(total + jitter()),
+    accuracy: clamp(total + jitter()),
+    completeness: clamp(total * 0.75 + jitter()),
+  };
+}
+
+function ConversationRubyText({
+  text,
+  pinyin,
+  showPinyin = true,
+  align = 'left',
+  textColor = 'inherit',
+  pinyinColor = 'inherit',
+  textSize = '1.15rem',
+  pinyinSize = '0.72rem',
+  hanziFontFamily = DEFAULT_HANZI_FONT,
+  columnGap = '0.38em',
+  rowGap = 1.25,
+}: ConversationRubyTextProps) {
+  const segments = React.useMemo(
+    () => buildRubySegmentsFromText(text, showPinyin ? (pinyin ?? '') : ''),
+    [text, pinyin, showPinyin],
+  );
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'flex-end',
+        justifyContent: align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start',
+        columnGap,
+        rowGap,
+        textAlign: align,
+        width: '100%',
+      }}
+    >
+      {segments.map((segment, index) => (
+        segment.pinyin ? (
+          <Box
+            component="span"
+            key={`${segment.text}-${index}`}
+            sx={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', maxWidth: '100%' }}
+          >
+            <Box
+              component="span"
+              sx={{
+                mb: 0.3,
+                color: pinyinColor,
+                fontFamily: PINYIN_SANS,
+                fontSize: pinyinSize,
+                fontWeight: 700,
+                lineHeight: 1.15,
+                letterSpacing: '0.02em',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {segment.pinyin}
+            </Box>
+            <Box
+              component="span"
+              sx={{
+                color: textColor,
+                fontFamily: hanziFontFamily,
+                fontSize: textSize,
+                fontWeight: 600,
+                lineHeight: 1.35,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {segment.text}
+            </Box>
+          </Box>
+        ) : (
+          <Box
+            component="span"
+            key={`${segment.text}-${index}`}
+            sx={{
+              color: textColor,
+              fontFamily: hanziFontFamily,
+              fontSize: textSize,
+              fontWeight: 600,
+              lineHeight: 1.35,
+              whiteSpace: 'pre-wrap',
+            }}
+          >
+            {segment.text}
+          </Box>
+        )
+      ))}
+    </Box>
+  );
 }
 
 type LlmSnackState =
@@ -143,38 +298,40 @@ const TOPICS: Topic[] = [
 
 // Difficulty descriptions
 const DIFFICULTY_DESCRIPTIONS = {
-  '简单': {
-    title: '初级水平',
-    features: ['基础词汇和句型', '慢速对话', '简单场景', 'HSK 1-2 级水平']
+  Easy: {
+    title: 'Beginner',
+    features: ['Basic vocabulary & sentence patterns', 'Slower speech', 'Simple scenes', 'HSK 1–2 level'],
   },
-  '中等': {
-    title: '中级水平',
-    features: ['常用词汇和表达', '正常语速', '日常场景', 'HSK 3-4 级水平']
+  Medium: {
+    title: 'Intermediate',
+    features: ['Everyday vocabulary & expressions', 'Natural speech rate', 'Daily scenes', 'HSK 3–4 level'],
   },
-  '困难': {
-    title: '高级水平',
-    features: ['复杂词汇和语法', '快速对话', '专业场景', 'HSK 5-6 级水平']
-  }
-};
+  Hard: {
+    title: 'Advanced',
+    features: ['Complex vocabulary & grammar', 'Faster speech', 'Professional scenes', 'HSK 5–6 level'],
+  },
+} as const;
+
+type DifficultyLevel = keyof typeof DIFFICULTY_DESCRIPTIONS;
 
 // Random role generators
 const RANDOM_USER_ROLES = [
-  '学生', '顾客', '游客', '求职者', '朋友', '同事', '邻居', '访客'
+  'Student', 'Customer', 'Tourist', 'Job seeker', 'Friend', 'Colleague', 'Neighbor', 'Visitor',
 ];
 
 const RANDOM_AI_ROLES = [
-  '同学', '咖啡师', '导游', '面试官', '朋友', '同事', '邻居', '服务员'
+  'Classmate', 'Barista', 'Tour guide', 'Interviewer', 'Friend', 'Colleague', 'Neighbor', 'Waiter',
 ];
 
 const RANDOM_SCENE_DESCS = [
-  '在咖啡店点餐，练习日常对话',
-  '邀请朋友看电影，学习社交表达',
-  '在市场购物，掌握购物词汇',
-  '旅行时问路，练习方向表达',
-  '面试工作，学习职场用语',
-  '和朋友聊天，练习日常交流',
-  '在餐厅用餐，学习点餐用语',
-  '询问时间地点，练习基础对话'
+  'Order drinks at a café and practice everyday conversation.',
+  'Invite a friend to a movie and practice social expressions.',
+  'Shop at a market and learn shopping vocabulary.',
+  'Ask for directions while traveling.',
+  'Practice a job interview and workplace language.',
+  'Chat with a friend about daily life.',
+  'Order food at a restaurant.',
+  'Ask about time and places in basic conversation.',
 ];
 
 export default function AIChatPage() {
@@ -184,7 +341,6 @@ export default function AIChatPage() {
   const [screen, setScreen] = useState<ScreenState>(ScreenState.HOME);
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isMagicGenerating, setIsMagicGenerating] = useState(false);
   const [deepLearningSentence, setDeepLearningSentence] = useState<string | null>(null);
@@ -196,11 +352,12 @@ export default function AIChatPage() {
   const [showAITranslation, setShowAITranslation] = useState(false);
   const [toolLoading, setToolLoading] = useState(false);
   const [llmSnack, setLlmSnack] = useState<LlmSnackState>({ open: false });
-  const [playbackSnack, setPlaybackSnack] = useState<{ text: string; messageId: string } | null>(null);
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [pipelineStage, setPipelineStage] = useState<PipelineStage>('idle');
 
   const pendingLlmRetryRef = useRef<{ text: string; isVoiceInput: boolean } | null>(null);
+  const clearChatInputRef = useRef<(() => void) | null>(null);
+  const speechRateRef = useRef(0.9);
   const pipelineRef = useRef<AiConversationPipeline | null>(null);
   const getPipeline = () => {
     if (!pipelineRef.current) {
@@ -210,11 +367,13 @@ export default function AIChatPage() {
   };
 
   // Config Screen State
-  const [difficulty, setDifficulty] = useState<'简单' | '中等' | '困难'>('中等');
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>('Medium');
   const [userRole, setUserRole] = useState<string>('');
   const [aiRole, setAiRole] = useState<string>('');
   const [sceneDesc, setSceneDesc] = useState<string>('');
   const [isEditing, setIsEditing] = useState<{ userRole?: boolean; aiRole?: boolean; sceneDesc?: boolean }>({});
+  /** Which role card the learner plays in chat (A = student avatar, B = classmate). */
+  const [playedRole, setPlayedRole] = useState<'A' | 'B' | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -229,28 +388,27 @@ export default function AIChatPage() {
     setPlayingAudioId(null);
     setPipelineStage('idle');
     setLlmSnack({ open: false });
-    setPlaybackSnack(null);
     pendingLlmRetryRef.current = null;
     setScreen(ScreenState.HOME);
     setSelectedTopic(null);
     setMessages([]);
+    setPlayedRole(null);
   };
 
   const handleStartChat = (topic: Topic) => {
     setSelectedTopic(topic);
     // Initialize config values based on topic
     if (topic.id === 'free') {
-      // Free mode: preset default names and places
-      setUserRole('李明');
-      setAiRole('王老师');
-      setSceneDesc('在咖啡店，李明想点一杯拿铁，王老师是咖啡师');
+      setUserRole('Li Ming');
+      setAiRole('Teacher Wang');
+      setSceneDesc('At a café, Li Ming wants a latte. Teacher Wang is the barista.');
     } else if (topic.id === 'ordering') {
-      setUserRole('顾客');
-      setAiRole('咖啡师');
+      setUserRole('Customer');
+      setAiRole('Barista');
       setSceneDesc(topic.desc);
     } else {
-      setUserRole('学生');
-      setAiRole('同学');
+      setUserRole('Student');
+      setAiRole('Classmate');
       setSceneDesc(topic.desc);
     }
     setScreen(ScreenState.CONFIG);
@@ -284,7 +442,7 @@ export default function AIChatPage() {
       setPlayingAudioId(messageId);
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'zh-CN';
-      utterance.rate = 0.9;
+      utterance.rate = speechRateRef.current;
       utterance.pitch = 1;
       utterance.onend = () => {
         setPlayingAudioId(null);
@@ -319,29 +477,41 @@ export default function AIChatPage() {
     const generatePinyin = (text: string): string => {
       // 更完善的拼音映射
       const pinyinMap: { [key: string]: string } = {
-        '你好': 'Nǐ hǎo',
-        '您好': 'Nín hǎo',
+        '你好': 'Nǐhǎo',
+        '您好': 'Nínhǎo',
         '咖啡': 'kāfēi',
+        '我想要一杯': 'Wǒ xiǎngyào yìbēi',
+        '我想要': 'Wǒ xiǎngyào',
         '我想': 'Wǒ xiǎng',
-        '我想要': 'Wǒ xiǎng yào',
-        '想要': 'xiǎng yào',
-        '一杯': 'yì bēi',
-        '拿铁': 'ná tiě',
-        '美式': 'měi shì',
-        '卡布奇诺': 'kǎ bù qí nuò',
+        '想要': 'xiǎngyào',
+        '想喝': 'xiǎng hē',
+        '点': 'diǎn',
+        '一杯': 'yìbēi',
+        '一个': 'yígè',
+        '热': 'rè',
+        '拿铁': 'nátiě',
+        '美式': 'měishì',
+        '卡布奇诺': 'kǎbùqínuò',
         '谢谢': 'Xièxiè',
-        '请问': 'Qǐng wèn',
-        '多少钱': 'duō shǎo qián',
+        '请问': 'Qǐngwèn',
+        '多少钱': 'duōshaoqián',
         '可以': 'kěyǐ',
-        '不要': 'bù yào',
+        '不要': 'búyào',
         '要': 'yào',
         '有': 'yǒu',
-        '没有': 'méi yǒu',
+        '没有': 'méiyǒu',
         '是': 'shì',
-        '不是': 'bú shì',
-        '好的': 'hǎo de',
+        '不是': 'búshì',
+        '好的': 'hǎode',
         '好': 'hǎo',
-        '不好': 'bù hǎo'
+        '不好': 'bùhǎo',
+        '坐': 'zuò',
+        '这里': 'zhèlǐ',
+        '吗': 'ma',
+        '什么': 'shénme',
+        '喝': 'hē',
+        '今天': 'jīntiān',
+        '欢迎': 'huānyíng',
       };
       
       // 尝试匹配最长的短语
@@ -423,6 +593,7 @@ export default function AIChatPage() {
       return result || text;
     };
 
+    const voiceScore = isVoiceInput ? mockVoiceScore() : undefined;
     const userMsg: Message = { 
       id: Date.now().toString(),
       text: textToSend, 
@@ -430,14 +601,15 @@ export default function AIChatPage() {
       timestamp: new Date(),
       isVoiceInput: isVoiceInput,
       // 只有语音输入才设置评分，但所有消息都有拼音和翻译
-      score: isVoiceInput ? Math.floor(Math.random() * 15) + 85 : undefined,
+      score: voiceScore,
+      speechBreakdown: voiceScore != null ? buildSpeechBreakdown(voiceScore) : undefined,
       pinyin: generatePinyin(textToSend),
       translation: generateTranslation(textToSend)
     };
 
     if (!skipUserMessage) {
       setMessages((prev) => [...prev, userMsg]);
-      setInputText('');
+      clearChatInputRef.current?.();
       setShowAITranslation(false);
     }
     setIsTyping(true);
@@ -451,7 +623,7 @@ export default function AIChatPage() {
         text: response,
         sender: 'ai',
         timestamp: new Date(),
-        pinyin: "Zhè shì nǐ de kāfēi, qǐng màn yòng.",
+        pinyin: "Zhè shì nǐ de kāfēi, qǐng mànyòng.",
         translation: "Here is your coffee, please enjoy."
       };
       setMessages((prev) => [...prev, aiMsg]);
@@ -490,14 +662,13 @@ export default function AIChatPage() {
   }, []);
 
   const handlePlaybackFailed = useCallback((info: PlaybackFailedInfo) => {
-    setPlaybackSnack({ text: info.text, messageId: info.messageId });
     setMessages((prev) => [
       ...prev,
       {
         id: `sys-tts-${Date.now()}`,
         sender: 'system',
         systemKind: 'tts_fail',
-        text: 'Playback failed. You can still read the reply below.',
+        text: 'Playback failed. You can still read the reply.',
         timestamp: new Date(),
         replayText: info.text,
         replayMessageId: info.messageId,
@@ -515,63 +686,204 @@ export default function AIChatPage() {
     });
   }, [runFullTurn, speakUtterance, handleLlmFailed, handlePlaybackFailed]);
 
-  const handleSend = () => {
-    const t = inputText.trim();
-    if (!t) return;
-    getPipeline().enqueueKeyboardTurn(t);
-  };
-
   const handleSendLine = (line: string) => {
     const t = line.trim();
     if (!t) return;
     getPipeline().enqueueKeyboardTurn(t);
   };
 
-  const FloatingBackButton = () => (
+  const FloatingBackButton = ({ variant = 'light' }: { variant?: 'light' | 'dark' } = {}) => {
+    const onDark = variant === 'dark';
+    return (
     <ButtonBase 
       onClick={() => {
         if (screen === ScreenState.HOME) navigate('/');
         else if (screen === ScreenState.DEEP_LEARNING) setScreen(ScreenState.CHAT);
         else if (screen === ScreenState.HISTORY_LIST) setScreen(ScreenState.TOPIC_SELECTION);
         else if (screen === ScreenState.CONFIG) setScreen(ScreenState.TOPIC_SELECTION);
+        else if (screen === ScreenState.ROLE_SELECTION) setScreen(ScreenState.CONFIG);
+        else if (screen === ScreenState.CHAT) setScreen(ScreenState.ROLE_SELECTION);
         else setScreen(ScreenState.HOME);
       }}
-        sx={{
+      aria-label="Back"
+      sx={{
         position: 'absolute',
         top: 24,
         left: 24,
         zIndex: 200,
         width: 48,
         height: 48,
-        borderRadius: '16px',
-        bgcolor: 'rgba(0,0,0,0.05)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(0,0,0,0.1)',
-        color: '#1F2937',
-        '&:active': { transform: 'scale(0.9)' }
+        minWidth: 48,
+        minHeight: 48,
+        borderRadius: '50%',
+        bgcolor: onDark ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.82)',
+        backdropFilter: 'blur(16px)',
+        border: onDark ? '1px solid rgba(255,255,255,0.32)' : '1px solid rgba(23,63,53,0.12)',
+        color: onDark ? '#FFFFFF' : '#173F35',
+        boxShadow: onDark ? '0 8px 20px rgba(0,0,0,0.22)' : '0 6px 16px rgba(23,63,53,0.08)',
+        '&:active': { transform: 'scale(0.92)' },
       }}
     >
-      <BackIcon sx={{ fontSize: 20 }} />
+      <BackIcon sx={{ fontSize: 22 }} />
     </ButtonBase>
-  );
+    );
+  };
 
   const HomeScreen = () => (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 4, bgcolor: '#FFF8F0', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        p: 4,
+        background: 'radial-gradient(circle at 34% 48%, rgba(77,214,151,0.16) 0%, rgba(255,249,243,0) 34%), #FFF9F3',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
       <FloatingBackButton />
-      <Box sx={{ position: 'absolute', top: 32, right: 40, display: 'flex', alignItems: 'center', gap: 1.5, bgcolor: 'rgba(79,70,229,0.05)', px: 2, py: 0.5, borderRadius: '30px', border: '1px solid rgba(79,70,229,0.1)' }}>
-        <Typography sx={{ fontSize: '1rem' }}>✨</Typography>
-        <Typography sx={{ fontSize: '0.7rem', fontWeight: 900, color: '#4F46E5' }}>AI 智能导师已就绪</Typography>
+
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 32,
+          right: 40,
+          minHeight: 40,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          bgcolor: 'rgba(255,255,255,0.82)',
+          px: 2,
+          py: 0.75,
+          borderRadius: '999px',
+          border: '1px solid rgba(13,170,120,0.22)',
+          boxShadow: '0 8px 24px rgba(4,120,87,0.08)',
+          backdropFilter: 'blur(16px)',
+        }}
+      >
+        <Box
+          sx={{
+            width: 9,
+            height: 9,
+            borderRadius: '50%',
+            bgcolor: '#15B879',
+            boxShadow: '0 0 0 4px rgba(21,184,121,0.13)',
+          }}
+        />
+        <Typography sx={{ fontSize: '0.9rem', fontWeight: 900, color: '#087A58', letterSpacing: '0.02em' }}>
+          C-Lingo AI ready
+        </Typography>
       </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 6, maxWidth: 850 }}>
-        <Box sx={{ position: 'relative', width: 260, height: 260, flexShrink: 0 }}>
-          <Box component="img" src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=800" sx={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '48px', border: '8px solid white', boxShadow: '0 20px 50px rgba(0,0,0,0.12)', rotate: '-2deg' }} />
+
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, width: '100%', maxWidth: 900 }}>
+        <Box
+          sx={{
+            position: 'relative',
+            width: 270,
+            height: 320,
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              width: 248,
+              height: 248,
+              borderRadius: '50%',
+              background: 'linear-gradient(145deg, rgba(255,255,255,0.96), rgba(222,249,235,0.9))',
+              border: '1px solid rgba(13,170,120,0.14)',
+              boxShadow: '0 24px 60px rgba(4,120,87,0.14)',
+            },
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              bottom: 8,
+              width: 180,
+              height: 24,
+              borderRadius: '50%',
+              bgcolor: 'rgba(7,95,70,0.13)',
+              filter: 'blur(10px)',
+            },
+          }}
+        >
+          <Box
+            component="img"
+            src="/images/clingo-ai-mascot-point.png"
+            alt="C-Lingo AI"
+            sx={{
+              position: 'relative',
+              zIndex: 1,
+              width: 'auto',
+              height: 310,
+              maxWidth: '100%',
+              objectFit: 'contain',
+              filter: 'drop-shadow(0 16px 18px rgba(4,80,59,0.12))',
+            }}
+          />
         </Box>
-        <Box sx={{ textAlign: 'left', maxWidth: 420 }}>
-          <Typography variant="h1" sx={{ fontWeight: 900, fontSize: '2.5rem', mb: 1.5, color: '#1F2937' }}>AI 陪练<br /><Box component="span" sx={{ color: '#4F46E5' }}>自然开口说</Box></Typography>
-          <Typography sx={{ fontSize: '0.9rem', color: '#6B7280', fontWeight: 500, mb: 3 }}>实时纠错，地道表达，自信开口。</Typography>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <ButtonBase onClick={() => setScreen(ScreenState.TOPIC_SELECTION)} sx={{ height: 52, px: 3.5, bgcolor: '#4F46E5', color: 'white', borderRadius: '16px', fontWeight: 900, fontSize: '1rem' }}>开启对话</ButtonBase>
+
+        <Box sx={{ textAlign: 'left', maxWidth: 430 }}>
+          <Box
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 0.75,
+              mb: 1.5,
+              px: 1.5,
+              py: 0.65,
+              borderRadius: '999px',
+              bgcolor: '#EAF9F2',
+              color: '#087A58',
+            }}
+          >
+            <AutoAwesomeIcon sx={{ fontSize: 18, color: '#E6A817' }} />
+            <Typography sx={{ fontSize: '0.95rem', fontWeight: 900, letterSpacing: '0.08em' }}>
+              C-LINGO AI SPEAKING
+            </Typography>
           </Box>
+          <Typography
+            variant="h1"
+            sx={{
+              fontWeight: 900,
+              fontSize: '2.65rem',
+              lineHeight: 1.12,
+              mb: 1.5,
+              color: '#173F35',
+              letterSpacing: '-0.04em',
+            }}
+          >
+            Speaking practice
+            <br />
+            <Box component="span" sx={{ color: '#0DAA78' }}>Speak naturally</Box>
+          </Typography>
+          <Typography sx={{ fontSize: '1rem', lineHeight: 1.7, color: '#5E746D', fontWeight: 600, mb: 3 }}>
+            Practice Chinese with C-Lingo AI.
+            <br />
+            Review pronunciation and phrasing after the conversation.
+          </Typography>
+          <ButtonBase
+            onClick={() => setScreen(ScreenState.TOPIC_SELECTION)}
+            sx={{
+              minHeight: 54,
+              px: 3.5,
+              borderRadius: '16px',
+              background: 'linear-gradient(135deg, #19BD82 0%, #07966A 100%)',
+              color: 'white',
+              boxShadow: '0 12px 26px rgba(7,150,106,0.24)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 1,
+              fontWeight: 900,
+              fontSize: '1rem',
+              '&:active': { transform: 'scale(0.98)' },
+            }}
+          >
+            Start chatting
+            <ArrowForward sx={{ fontSize: 21 }} />
+          </ButtonBase>
         </Box>
       </Box>
     </Box>
@@ -628,14 +940,20 @@ export default function AIChatPage() {
       </ButtonBase>
       {/* Center title */}
       <Box sx={{ textAlign: 'center', mb: is960 ? 2 : (is1920x1125 ? 3 : 2.5), pt: is960 ? 0 : (is1920x1125 ? 1 : 0) }}>
-        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.5rem' : (is1920x1125 ? '2.25rem' : '2rem'), color: '#1F2937' }}>选择练习模式</Typography>
+        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.65rem' : (is1920x1125 ? '2.4rem' : '2.15rem'), color: '#1F2937' }}>Choose practice mode</Typography>
       </Box>
       {/* Two cards side by side */}
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', px: is960 ? 1 : (is1920x1125 ? 2 : 1.5) }}>
         <Box sx={{ display: 'flex', gap: is960 ? 2 : (is1920x1125 ? 3 : 2.5), maxWidth: is960 ? 700 : (is1920x1125 ? 1100 : 900), width: '100%', height: is960 ? '85%' : '90%', alignItems: 'stretch' }}>
           {/* Left card: Mode 1 - Free Dialogue (same height as right) */}
           <Box
-            onClick={() => { setSelectedTopic({ id: 'free', title: '自由练习', emoji: '🎙️', desc: 'DIY 自由对话模式' }); setScreen(ScreenState.CONFIG); }}
+            onClick={() => {
+              setSelectedTopic({ id: 'free', title: 'Free Practice', emoji: '🎙️', desc: 'DIY free conversation mode' });
+              setUserRole('Li Ming');
+              setAiRole('Teacher Wang');
+              setSceneDesc('At a café, Li Ming wants a latte. Teacher Wang is the barista.');
+              setScreen(ScreenState.CONFIG);
+            }}
             sx={{
               flex: is960 ? '0 0 38%' : '0 0 40%',
               p: is960 ? 2.5 : (is1920x1125 ? 3.5 : 3),
@@ -653,9 +971,9 @@ export default function AIChatPage() {
               '&:active': { transform: 'scale(0.98)' }
             }}
           >
-            <Typography sx={{ fontSize: is960 ? '0.75rem' : (is1920x1125 ? '1rem' : '0.9rem'), fontWeight: 900, color: '#DC2626', mb: is960 ? 2 : (is1920x1125 ? 2.5 : 2) }}>模式1: 自由对话</Typography>
+            <Typography sx={{ fontSize: is960 ? '1rem' : (is1920x1125 ? '1.25rem' : '1.15rem'), fontWeight: 900, color: '#DC2626', mb: is960 ? 2 : (is1920x1125 ? 2.5 : 2) }}>Mode 1: Free talk</Typography>
             <Box sx={{ width: is960 ? 72 : (is1920x1125 ? 100 : 88), height: is960 ? 72 : (is1920x1125 ? 100 : 88), borderRadius: is1920x1125 ? '20px' : '16px', bgcolor: '#EA580C', mb: is960 ? 1.5 : (is1920x1125 ? 2 : 1.75), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: is960 ? '2rem' : (is1920x1125 ? '3rem' : '2.5rem') }}>💬</Box>
-            <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.1rem' : (is1920x1125 ? '1.5rem' : '1.35rem'), color: '#1F2937' }}>DIY: 自由练习</Typography>
+            <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.2rem' : (is1920x1125 ? '1.65rem' : '1.45rem'), color: '#1F2937' }}>DIY: Free practice</Typography>
           </Box>
           {/* Right card: Mode 2 - Scenario Simulation (taller, 3x2 grid) */}
           <Box sx={{
@@ -668,7 +986,7 @@ export default function AIChatPage() {
             flexDirection: 'column',
             minHeight: 0
           }}>
-            <Typography sx={{ fontSize: is960 ? '0.75rem' : (is1920x1125 ? '1rem' : '0.9rem'), fontWeight: 900, color: '#2563EB', mb: is960 ? 1.5 : (is1920x1125 ? 2 : 1.75), textAlign: 'center' }}>模式2: 场景模拟</Typography>
+            <Typography sx={{ fontSize: is960 ? '1rem' : (is1920x1125 ? '1.25rem' : '1.15rem'), fontWeight: 900, color: '#0D9F72', mb: is960 ? 1.5 : (is1920x1125 ? 2 : 1.75), textAlign: 'center' }}>Mode 2: Scenario practice</Typography>
             <Box sx={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gridTemplateRows: 'repeat(2, 1fr)', gap: is960 ? 1 : (is1920x1125 ? 1.5 : 1.25) }}>
               {TOPICS.map(topic => (
                 <ButtonBase
@@ -724,17 +1042,17 @@ export default function AIChatPage() {
           </ButtonBase>
         </Box>
         <Box sx={{ textAlign: 'center', py: is960 ? 1 : (is1920x1125 ? 1.5 : 1.25) }}>
-          <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.25rem' : (is1920x1125 ? '1.75rem' : '1.5rem'), color: '#1F2937' }}>{isFreeMode ? '自由模式' : '场景模式'}</Typography>
+          <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.25rem' : (is1920x1125 ? '1.75rem' : '1.5rem'), color: '#1F2937' }}>{isFreeMode ? 'Free mode' : 'Scenario mode'}</Typography>
         </Box>
         {/* Main content: blue card + white section */}
         <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto' }}>
           <Box sx={{ width: '100%', maxWidth: is960 ? 640 : (is1920x1125 ? 900 : 800), height: is960 ? 380 : (is1920x1125 ? 520 : 450), bgcolor: 'white', borderRadius: is1920x1125 ? '32px' : '28px', boxShadow: '0 4px 24px rgba(0,0,0,0.08)', display: 'flex', overflow: 'hidden' }}>
             {/* Left: Blue Scenario Configuration card */}
-            <Box sx={{ width: '35%', p: is960 ? 2.5 : (is1920x1125 ? 4 : 3), bgcolor: '#4F46E5', color: 'white', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-              <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.1rem' : (is1920x1125 ? '1.5rem' : '1.35rem'), mb: is960 ? 1.5 : (is1920x1125 ? 2 : 1.75) }}>场景配置</Typography>
+            <Box sx={{ width: '35%', p: is960 ? 2.5 : (is1920x1125 ? 4 : 3), background: 'linear-gradient(160deg, #16B77E 0%, #087A58 100%)', color: 'white', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.1rem' : (is1920x1125 ? '1.5rem' : '1.35rem'), mb: is960 ? 1.5 : (is1920x1125 ? 2 : 1.75) }}>Scene setup</Typography>
               <Box onClick={(e) => e.stopPropagation()} sx={{ display: 'flex', gap: 0.75, p: 0.5, borderRadius: '16px', bgcolor: 'rgba(0,0,0,0.15)', mb: is960 ? 2 : (is1920x1125 ? 2.5 : 2) }}>
-                {(['简单', '中等', '困难'] as const).map(lv => (
-                  <ButtonBase key={lv} onClick={(e) => { e.stopPropagation(); setDifficulty(lv); }} sx={{ flexGrow: 1, py: 1, borderRadius: '12px', fontSize: is960 ? '0.8rem' : (is1920x1125 ? '1rem' : '0.9rem'), fontWeight: 900, color: lv === difficulty ? '#1E3A8A' : 'white', bgcolor: lv === difficulty ? 'white' : 'transparent', transition: 'all 0.2s', cursor: 'pointer', '&:hover': { bgcolor: lv === difficulty ? 'white' : 'rgba(255,255,255,0.15)' }, '&:active': { transform: 'scale(0.95)' } }}>
+                {(['Easy', 'Medium', 'Hard'] as const).map(lv => (
+                  <ButtonBase key={lv} onClick={(e) => { e.stopPropagation(); setDifficulty(lv); }} sx={{ flexGrow: 1, py: 1, borderRadius: '12px', fontSize: is960 ? '0.8rem' : (is1920x1125 ? '1rem' : '0.9rem'), fontWeight: 900, color: lv === difficulty ? '#087A58' : 'white', bgcolor: lv === difficulty ? 'white' : 'transparent', transition: 'all 0.2s', cursor: 'pointer', '&:hover': { bgcolor: lv === difficulty ? 'white' : 'rgba(255,255,255,0.15)' }, '&:active': { transform: 'scale(0.95)' } }}>
                     {lv}
                   </ButtonBase>
                 ))}
@@ -752,19 +1070,19 @@ export default function AIChatPage() {
             <Box sx={{ flexGrow: 1, p: is960 ? 3 : (is1920x1125 ? 5 : 4), display: 'flex', flexDirection: 'column', gap: is960 ? 2 : (is1920x1125 ? 3 : 2.5), justifyContent: 'center', minHeight: 0 }}>
             {/* Role A */}
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-              <Box sx={{ width: is960 ? 40 : (is1920x1125 ? 56 : 48), height: is960 ? 40 : (is1920x1125 ? 56 : 48), borderRadius: is1920x1125 ? '16px' : '14px', bgcolor: '#DBEAFE', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Box sx={{ width: is960 ? 40 : (is1920x1125 ? 56 : 48), height: is960 ? 40 : (is1920x1125 ? 56 : 48), borderRadius: is1920x1125 ? '16px' : '14px', bgcolor: '#EAF9F2', color: '#0D9F72', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Person sx={{ fontSize: is960 ? 20 : (is1920x1125 ? 28 : 24) }} />
               </Box>
               <Box sx={{ flexGrow: 1, minWidth: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontSize: is960 ? '0.75rem' : (is1920x1125 ? '0.95rem' : '0.85rem'), fontWeight: 700, color: '#6B7280', mb: 0.25 }}>角色A</Typography>
+                  <Typography sx={{ fontSize: is960 ? '0.75rem' : (is1920x1125 ? '0.95rem' : '0.85rem'), fontWeight: 700, color: '#6B7280', mb: 0.25 }}>Role A</Typography>
                   {isEditing.userRole ? (
                     <TextField value={userRole} onChange={(e) => setUserRole(e.target.value)} onBlur={() => setIsEditing({ ...isEditing, userRole: false })} onKeyDown={(e) => { if (e.key === 'Enter') setIsEditing({ ...isEditing, userRole: false }); }} variant="standard" autoFocus InputProps={{ disableUnderline: true, sx: { fontSize: is960 ? '0.9rem' : (is1920x1125 ? '1.15rem' : '1rem'), fontWeight: 900, color: '#1F2937' } }} sx={{ width: '100%' }} />
                   ) : (
                     <Typography onClick={() => isFreeMode && setIsEditing({ ...isEditing, userRole: true })} sx={{ fontSize: is960 ? '0.9rem' : (is1920x1125 ? '1.15rem' : '1rem'), fontWeight: 900, color: '#1F2937', cursor: isFreeMode ? 'text' : 'default' }}>{userRole}</Typography>
                   )}
                 </Box>
-                <ButtonBase onClick={(e) => { e.stopPropagation(); generateRandomRole('user'); }} sx={{ color: '#4F46E5', p: 0.5, borderRadius: '8px', '&:hover': { bgcolor: 'rgba(79,70,229,0.08)' } }}>
+                <ButtonBase onClick={(e) => { e.stopPropagation(); generateRandomRole('user'); }} sx={{ color: '#E6A817', p: 0.5, borderRadius: '8px', '&:hover': { bgcolor: 'rgba(230,168,23,0.1)' } }}>
                   <Star sx={{ fontSize: is960 ? 18 : (is1920x1125 ? 24 : 22) }} />
                 </ButtonBase>
               </Box>
@@ -772,19 +1090,19 @@ export default function AIChatPage() {
 
             {/* Role B */}
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-              <Box sx={{ width: is960 ? 40 : (is1920x1125 ? 56 : 48), height: is960 ? 40 : (is1920x1125 ? 56 : 48), borderRadius: is1920x1125 ? '16px' : '14px', bgcolor: '#DBEAFE', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Box sx={{ width: is960 ? 40 : (is1920x1125 ? 56 : 48), height: is960 ? 40 : (is1920x1125 ? 56 : 48), borderRadius: is1920x1125 ? '16px' : '14px', bgcolor: '#EAF9F2', color: '#0D9F72', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <BotIcon sx={{ fontSize: is960 ? 20 : (is1920x1125 ? 28 : 24) }} />
               </Box>
               <Box sx={{ flexGrow: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontSize: is960 ? '0.75rem' : (is1920x1125 ? '0.95rem' : '0.85rem'), fontWeight: 700, color: '#6B7280', mb: 0.25 }}>角色B</Typography>
+                  <Typography sx={{ fontSize: is960 ? '0.75rem' : (is1920x1125 ? '0.95rem' : '0.85rem'), fontWeight: 700, color: '#6B7280', mb: 0.25 }}>Role B</Typography>
                   {isEditing.aiRole ? (
                     <TextField value={aiRole} onChange={(e) => setAiRole(e.target.value)} onBlur={() => setIsEditing({ ...isEditing, aiRole: false })} onKeyDown={(e) => { if (e.key === 'Enter') setIsEditing({ ...isEditing, aiRole: false }); }} variant="standard" autoFocus InputProps={{ disableUnderline: true, sx: { fontSize: is960 ? '0.9rem' : (is1920x1125 ? '1.15rem' : '1rem'), fontWeight: 900, color: '#1F2937' } }} sx={{ width: '100%' }} />
                   ) : (
                     <Typography onClick={() => isFreeMode && setIsEditing({ ...isEditing, aiRole: true })} sx={{ fontSize: is960 ? '0.9rem' : (is1920x1125 ? '1.15rem' : '1rem'), fontWeight: 900, color: '#1F2937', cursor: isFreeMode ? 'text' : 'default' }}>{aiRole}</Typography>
                   )}
                 </Box>
-                <ButtonBase onClick={(e) => { e.stopPropagation(); generateRandomRole('ai'); }} sx={{ color: '#4F46E5', p: 0.5, borderRadius: '8px', '&:hover': { bgcolor: 'rgba(79,70,229,0.08)' } }}>
+                <ButtonBase onClick={(e) => { e.stopPropagation(); generateRandomRole('ai'); }} sx={{ color: '#E6A817', p: 0.5, borderRadius: '8px', '&:hover': { bgcolor: 'rgba(230,168,23,0.1)' } }}>
                   <Star sx={{ fontSize: is960 ? 18 : (is1920x1125 ? 24 : 22) }} />
                 </ButtonBase>
               </Box>
@@ -792,19 +1110,19 @@ export default function AIChatPage() {
 
             {/* 场景描述 */}
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-              <Box sx={{ width: is960 ? 40 : (is1920x1125 ? 56 : 48), height: is960 ? 40 : (is1920x1125 ? 56 : 48), borderRadius: is1920x1125 ? '16px' : '14px', bgcolor: '#DBEAFE', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Box sx={{ width: is960 ? 40 : (is1920x1125 ? 56 : 48), height: is960 ? 40 : (is1920x1125 ? 56 : 48), borderRadius: is1920x1125 ? '16px' : '14px', bgcolor: '#EAF9F2', color: '#0D9F72', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Book sx={{ fontSize: is960 ? 20 : (is1920x1125 ? 28 : 24) }} />
               </Box>
               <Box sx={{ flexGrow: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontSize: is960 ? '0.75rem' : (is1920x1125 ? '0.95rem' : '0.85rem'), fontWeight: 700, color: '#6B7280', mb: 0.25 }}>场景描述</Typography>
+                  <Typography sx={{ fontSize: is960 ? '0.75rem' : (is1920x1125 ? '0.95rem' : '0.85rem'), fontWeight: 700, color: '#6B7280', mb: 0.25 }}>Scene</Typography>
                   {isEditing.sceneDesc ? (
                     <TextField value={sceneDesc} onChange={(e) => setSceneDesc(e.target.value)} onBlur={() => setIsEditing({ ...isEditing, sceneDesc: false })} variant="standard" autoFocus multiline maxRows={2} InputProps={{ disableUnderline: true, sx: { fontSize: is960 ? '0.9rem' : (is1920x1125 ? '1.15rem' : '1rem'), fontWeight: 900, color: '#1F2937' } }} sx={{ width: '100%' }} />
                   ) : (
                     <Typography onClick={() => isFreeMode && setIsEditing({ ...isEditing, sceneDesc: true })} sx={{ fontSize: is960 ? '0.9rem' : (is1920x1125 ? '1.15rem' : '1rem'), fontWeight: 900, color: '#1F2937', cursor: isFreeMode ? 'text' : 'default' }}>{sceneDesc}</Typography>
                   )}
                 </Box>
-                <ButtonBase onClick={(e) => { e.stopPropagation(); generateRandomScene(); }} sx={{ color: '#4F46E5', p: 0.5, borderRadius: '8px', '&:hover': { bgcolor: 'rgba(79,70,229,0.08)' } }}>
+                <ButtonBase onClick={(e) => { e.stopPropagation(); generateRandomScene(); }} sx={{ color: '#E6A817', p: 0.5, borderRadius: '8px', '&:hover': { bgcolor: 'rgba(230,168,23,0.1)' } }}>
                   <Star sx={{ fontSize: is960 ? 18 : (is1920x1125 ? 24 : 22) }} />
                 </ButtonBase>
               </Box>
@@ -822,7 +1140,7 @@ export default function AIChatPage() {
               sx={{ 
                 mt: is960 ? 1.5 : (is1920x1125 ? 2.5 : 2), 
                 height: is960 ? 48 : (is1920x1125 ? 60 : 56), 
-                bgcolor: (userRole && aiRole && sceneDesc) ? '#4F46E5' : '#9CA3AF', 
+                background: (userRole && aiRole && sceneDesc) ? 'linear-gradient(135deg, #19BD82 0%, #07966A 100%)' : '#9CA3AF',
                 color: 'white', 
                 borderRadius: is1920x1125 ? '16px' : '14px', 
                 fontWeight: 900,
@@ -830,11 +1148,11 @@ export default function AIChatPage() {
                 cursor: (userRole && aiRole && sceneDesc) ? 'pointer' : 'not-allowed',
                 opacity: (userRole && aiRole && sceneDesc) ? 1 : 0.5,
                 transition: 'all 0.2s',
-                '&:hover': { bgcolor: (userRole && aiRole && sceneDesc) ? '#4338CA' : '#9CA3AF' },
+                '&:hover': { background: (userRole && aiRole && sceneDesc) ? 'linear-gradient(135deg, #16B77E 0%, #087A58 100%)' : '#9CA3AF' },
                 '&:active': { transform: (userRole && aiRole && sceneDesc) ? 'scale(0.98)' : 'none' }
               }}
             >
-              开始实战确认
+              Start practice
             </ButtonBase>
           </Box>
         </Box>
@@ -844,8 +1162,8 @@ export default function AIChatPage() {
   };
 
   const RoleSelectionScreen = () => {
-    const [selectedRole, setSelectedRole] = useState<'A' | 'B' | null>(null);
     const [isStarting, setIsStarting] = useState(false);
+    const selectedRole = playedRole;
 
     const handleConfirm = () => {
       if (!selectedRole) return;
@@ -857,7 +1175,7 @@ export default function AIChatPage() {
           text: '你好！欢迎来到我们的咖啡店。今天想喝点什么？',
           sender: 'ai',
           timestamp: new Date(),
-          pinyin: 'Nǐ hǎo! Huānyíng lái dào wǒmen de kāfēi diàn. Jīntiān xiǎng hē diǎn shénme?',
+          pinyin: 'Nǐhǎo! Huānyíng láidào wǒmen de kāfēidiàn. Jīntiān xiǎng hē diǎn shénme?',
           translation: 'Hello! Welcome to our coffee shop. What would you like to drink today?'
         };
         setMessages([aiGreeting]);
@@ -868,12 +1186,12 @@ export default function AIChatPage() {
 
     if (isStarting) {
   return (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#111', color: 'white' }}>
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(145deg, #0D3F32 0%, #062A22 100%)', color: 'white' }}>
           <Box sx={{ 
             width: 80, 
             height: 80, 
             border: '6px solid rgba(255,255,255,0.1)', 
-            borderTopColor: '#00B4A0', 
+            borderTopColor: '#19BD82',
             borderRadius: '50%',
             '@keyframes spin': {
               from: { transform: 'rotate(0deg)' },
@@ -881,7 +1199,7 @@ export default function AIChatPage() {
             },
             animation: 'spin 1s linear infinite' 
           }} />
-          <Typography sx={{ mt: 4, fontSize: '1.5rem', fontWeight: 900, letterSpacing: '0.1em' }}>AI 导师正在准备...</Typography>
+          <Typography sx={{ mt: 4, fontSize: '1.5rem', fontWeight: 900, letterSpacing: '0.1em' }}>AI tutor is getting ready...</Typography>
         </Box>
       );
   }
@@ -891,23 +1209,23 @@ export default function AIChatPage() {
   const is960 = screenSize === '960x540';
 
   return (
-      <Box sx={{ height: '100%', width: '100%', bgcolor: '#1E1E22', color: 'white', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', boxSizing: 'border-box' }}>
-        <FloatingBackButton />
+      <Box sx={{ height: '100%', width: '100%', background: 'radial-gradient(circle at 50% 45%, #145A46 0%, #0A372C 58%, #06271F 100%)', color: 'white', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', boxSizing: 'border-box' }}>
+        <FloatingBackButton variant="dark" />
 
         <Box sx={{ position: 'relative', zIndex: 1, flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: is1920 ? 6 : (is960 ? 2 : 4), boxSizing: 'border-box' }}>
           {/* 标题 - 设计稿：选择您的身份 */}
           <Typography sx={{ fontWeight: 900, fontSize: is1920 ? '2.5rem' : (is960 ? '1.5rem' : '2rem'), color: 'white', textAlign: 'center', mb: is1920 ? 1.5 : 1 }}>
-            选择您的身份
+            Choose your role
           </Typography>
           <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: is1920 ? '1.25rem' : (is960 ? '0.9rem' : '1.1rem'), textAlign: 'center', mb: is1920 ? 5 : (is960 ? 3 : 4) }}>
-            点击选择您的角色,AI将根据您的选择开始对话
+            Tap a role. The AI will play the other side.
           </Typography>
 
           {/* 两个角色卡片 - 设计稿：左右并排，图片在左、文字在右 */}
           <Box sx={{ display: 'flex', gap: is1920 ? 4 : (is960 ? 2 : 3), maxWidth: is1920 ? 1200 : (is960 ? 640 : 900), width: '100%', justifyContent: 'center', flexWrap: 'wrap', mb: is1920 ? 5 : (is960 ? 3 : 4) }}>
             {/* 角色A - 顾客 */}
             <ButtonBase
-              onClick={() => setSelectedRole('A')}
+              onClick={() => setPlayedRole('A')}
               sx={{
                 flex: is1920 ? '0 1 480px' : (is960 ? '0 1 300px' : '0 1 420px'),
                 minWidth: 0,
@@ -916,38 +1234,38 @@ export default function AIChatPage() {
                 textAlign: 'left',
                 borderRadius: is1920 ? '32px' : '24px',
                 bgcolor: 'rgba(255,255,255,0.06)',
-                border: selectedRole === 'A' ? '3px solid #2DE0A2' : '1px solid rgba(255,255,255,0.12)',
+                border: selectedRole === 'A' ? '3px solid #43D69C' : '1px solid rgba(255,255,255,0.14)',
                 overflow: 'hidden',
                 transition: 'all 0.3s',
                 position: 'relative',
-                boxShadow: selectedRole === 'A' ? '0 0 32px rgba(45,224,162,0.25)' : 'none',
+                boxShadow: selectedRole === 'A' ? '0 0 32px rgba(67,214,156,0.24)' : 'none',
                 '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
                 '&:active': { transform: 'scale(0.99)' },
               }}
             >
               {selectedRole === 'A' && (
-                <Box sx={{ position: 'absolute', top: 16, left: 16, width: 36, height: 36, bgcolor: '#2DE0A2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+                <Box sx={{ position: 'absolute', top: 16, left: 16, width: 36, height: 36, bgcolor: '#19BD82', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
                   <CheckCircle sx={{ fontSize: 22, color: 'white' }} />
                 </Box>
               )}
-              <Box sx={{ position: 'absolute', top: 0, right: 0, bgcolor: '#2DE0A2', color: 'white', px: 2, py: 0.5, borderRadius: '0 32px 0 16px', fontSize: is1920 ? '0.95rem' : '0.8rem', fontWeight: 900, zIndex: 2 }}>
-                角色A
+              <Box sx={{ position: 'absolute', top: 0, right: 0, bgcolor: '#19BD82', color: 'white', px: 2, py: 0.5, borderRadius: '0 32px 0 16px', fontSize: is1920 ? '0.95rem' : '0.8rem', fontWeight: 900, zIndex: 2 }}>
+                Role A
               </Box>
               <Box
                 component="img"
-                src="https://picsum.photos/seed/customer/400/400"
-                alt="顾客"
+                src={ROLE_A_AVATAR}
+                alt={userRole || 'Role A'}
                 sx={{ width: is1920 ? 200 : (is960 ? 120 : 160), height: 'auto', aspectRatio: '1', objectFit: 'cover', borderRadius: is1920 ? '24px 0 0 24px' : '20px 0 0 20px', flexShrink: 0 }}
               />
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', p: is1920 ? 3 : (is960 ? 2 : 2.5), minWidth: 0 }}>
-                <Typography sx={{ fontWeight: 900, fontSize: is1920 ? '2rem' : (is960 ? '1.2rem' : '1.6rem'), color: 'white', mb: 0.5 }}>顾客</Typography>
-                <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: is1920 ? '1.1rem' : (is960 ? '0.8rem' : '0.95rem') }}>一位想要点咖啡的顾客</Typography>
+                <Typography sx={{ fontWeight: 900, fontSize: is1920 ? '2rem' : (is960 ? '1.2rem' : '1.6rem'), color: 'white', mb: 0.5 }}>{userRole || 'You'}</Typography>
+                <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: is1920 ? '1.1rem' : (is960 ? '0.8rem' : '0.95rem') }}>Play as Role A</Typography>
               </Box>
             </ButtonBase>
 
             {/* 角色B - 咖啡师 */}
             <ButtonBase
-              onClick={() => setSelectedRole('B')}
+              onClick={() => setPlayedRole('B')}
               sx={{
                 flex: is1920 ? '0 1 480px' : (is960 ? '0 1 300px' : '0 1 420px'),
                 minWidth: 0,
@@ -956,32 +1274,32 @@ export default function AIChatPage() {
                 textAlign: 'left',
                 borderRadius: is1920 ? '32px' : '24px',
                 bgcolor: 'rgba(255,255,255,0.06)',
-                border: selectedRole === 'B' ? '3px solid #6B4FF6' : '1px solid rgba(255,255,255,0.12)',
+                border: selectedRole === 'B' ? '3px solid #E7B92F' : '1px solid rgba(255,255,255,0.14)',
                 overflow: 'hidden',
                 transition: 'all 0.3s',
                 position: 'relative',
-                boxShadow: selectedRole === 'B' ? '0 0 32px rgba(107,79,246,0.25)' : 'none',
+                boxShadow: selectedRole === 'B' ? '0 0 32px rgba(231,185,47,0.22)' : 'none',
                 '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
                 '&:active': { transform: 'scale(0.99)' },
               }}
             >
               {selectedRole === 'B' && (
-                <Box sx={{ position: 'absolute', top: 16, left: 16, width: 36, height: 36, bgcolor: '#6B4FF6', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+                <Box sx={{ position: 'absolute', top: 16, left: 16, width: 36, height: 36, bgcolor: '#E7B92F', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
                   <CheckCircle sx={{ fontSize: 22, color: 'white' }} />
                 </Box>
               )}
-              <Box sx={{ position: 'absolute', top: 0, right: 0, bgcolor: '#6B4FF6', color: 'white', px: 2, py: 0.5, borderRadius: '0 32px 0 16px', fontSize: is1920 ? '0.95rem' : '0.8rem', fontWeight: 900, zIndex: 2 }}>
-                角色B
+              <Box sx={{ position: 'absolute', top: 0, right: 0, bgcolor: '#E7B92F', color: '#173F35', px: 2, py: 0.5, borderRadius: '0 32px 0 16px', fontSize: is1920 ? '0.95rem' : '0.8rem', fontWeight: 900, zIndex: 2 }}>
+                Role B
               </Box>
               <Box
                 component="img"
-                src="https://picsum.photos/seed/barista/400/400"
-                alt="咖啡师"
+                src={ROLE_B_AVATAR}
+                alt={aiRole || 'Role B'}
                 sx={{ width: is1920 ? 200 : (is960 ? 120 : 160), height: 'auto', aspectRatio: '1', objectFit: 'cover', borderRadius: is1920 ? '24px 0 0 24px' : '20px 0 0 20px', flexShrink: 0 }}
               />
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', p: is1920 ? 3 : (is960 ? 2 : 2.5), minWidth: 0 }}>
-                <Typography sx={{ fontWeight: 900, fontSize: is1920 ? '2rem' : (is960 ? '1.2rem' : '1.6rem'), color: 'white', mb: 0.5 }}>咖啡师</Typography>
-                <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: is1920 ? '1.1rem' : (is960 ? '0.8rem' : '0.95rem') }}>一位友好的咖啡店服务员</Typography>
+                <Typography sx={{ fontWeight: 900, fontSize: is1920 ? '2rem' : (is960 ? '1.2rem' : '1.6rem'), color: 'white', mb: 0.5 }}>{aiRole || 'AI partner'}</Typography>
+                <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: is1920 ? '1.1rem' : (is960 ? '0.8rem' : '0.95rem') }}>Play as Role B</Typography>
               </Box>
             </ButtonBase>
           </Box>
@@ -994,7 +1312,7 @@ export default function AIChatPage() {
               px: is1920 ? 10 : (is960 ? 5 : 8),
               py: is1920 ? 2 : (is960 ? 1.25 : 1.5),
               borderRadius: '9999px',
-              bgcolor: !selectedRole ? 'rgba(255,255,255,0.1)' : '#6B4FF6',
+              background: !selectedRole ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #19BD82 0%, #07966A 100%)',
               color: 'white',
               fontWeight: 900,
               fontSize: is1920 ? '1.5rem' : (is960 ? '1rem' : '1.25rem'),
@@ -1007,7 +1325,7 @@ export default function AIChatPage() {
               '&:active': { transform: !selectedRole ? 'none' : 'scale(0.97)' },
             }}
           >
-            {!selectedRole ? '请选择角色' : '进入实战对话'}
+            {!selectedRole ? 'Select a role' : 'Start conversation'}
             {selectedRole && <ArrowForward sx={{ fontSize: is1920 ? 28 : 24 }} />}
           </ButtonBase>
         </Box>
@@ -1021,9 +1339,22 @@ export default function AIChatPage() {
     const is960 = screenSize === '960x540';
     const [maskedIds, setMaskedIds] = useState<string[]>([]);
     const [showPinyin, setShowPinyin] = useState(true);
+    const [slowSpeech, setSlowSpeech] = useState(false);
+    const [showPipeline, setShowPipeline] = useState(false);
+    const [inputText, setInputText] = useState('');
     const [inputMode, setInputMode] = useState<'text' | 'voice'>('voice');
+    const headerActionHeight = is1920 ? 52 : 48;
     const [activeDeepLearning, setActiveDeepLearning] = useState<Message | null>(null);
+    const [deepDiveCredits, setDeepDiveCredits] = useState<DeepDiveCreditState>(() => getDeepDiveCredits());
+    const [deepDiveCreditToast, setDeepDiveCreditToast] = useState(false);
+    const [creditChipPulse, setCreditChipPulse] = useState(false);
+    const [deepDiveOpenSections, setDeepDiveOpenSections] = useState({
+      when: true,
+      grammar: false,
+      culture: false,
+    });
     const [showTranslationIds, setShowTranslationIds] = useState<string[]>([]); // Track which messages show translation
+    const [expandedSpeechIds, setExpandedSpeechIds] = useState<string[]>([]); // <60 Speech metrics panel
     
     // 语音录音相关状态
     const [isRecording, setIsRecording] = useState(false);
@@ -1035,6 +1366,53 @@ export default function AIChatPage() {
     /** 与 recognition 实际是否在跑同步；避免 stopRecording 读到过期的 isRecording 闭包（快速点按尤其明显） */
     const isRecordingActiveRef = useRef(false);
     const [voiceUiError, setVoiceUiError] = useState<string | null>(null);
+
+    useEffect(() => {
+      clearChatInputRef.current = () => setInputText('');
+      return () => {
+        clearChatInputRef.current = null;
+      };
+    }, []);
+
+    useEffect(() => {
+      speechRateRef.current = slowSpeech ? 0.65 : 0.9;
+    }, [slowSpeech]);
+
+    useEffect(() => {
+      const refreshCredits = () => setDeepDiveCredits(getDeepDiveCredits());
+      refreshCredits();
+      window.addEventListener('online', refreshCredits);
+      window.addEventListener('focus', refreshCredits);
+      return () => {
+        window.removeEventListener('online', refreshCredits);
+        window.removeEventListener('focus', refreshCredits);
+      };
+    }, []);
+
+    const handleSend = () => {
+      const t = inputText.trim();
+      if (!t) return;
+      getPipeline().enqueueKeyboardTurn(t);
+    };
+
+    const openDeepDive = (msg: Message) => {
+      if (activeDeepLearning?.id === msg.id) return;
+      if (!canSpendDeepDiveCredit(DEEP_DIVE_COST)) {
+        setDeepDiveCredits(getDeepDiveCredits());
+        setDeepDiveCreditToast(true);
+        return;
+      }
+      const next = spendDeepDiveCredit(DEEP_DIVE_COST);
+      if (!next) {
+        setDeepDiveCreditToast(true);
+        return;
+      }
+      setDeepDiveCredits(next);
+      setCreditChipPulse(true);
+      window.setTimeout(() => setCreditChipPulse(false), 420);
+      setDeepDiveOpenSections({ when: true, grammar: false, culture: false });
+      setActiveDeepLearning(msg);
+    };
 
     // 初始化语音识别
     useEffect(() => {
@@ -1066,6 +1444,14 @@ export default function AIChatPage() {
           
           recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => {
             console.error('Speech recognition error:', event.error);
+            const voiceErrorMessages: Record<string, string> = {
+              'not-allowed': 'Microphone permission is off. Allow C-LingoAIOS to use the mic in system settings.',
+              'audio-capture': 'Cannot access the microphone. Check if another app is using it.',
+              network: 'Speech recognition failed to connect. Check your network, or switch to keyboard input.',
+              'no-speech': 'Didn’t catch that. Move closer to the mic and try again.',
+              aborted: 'Recording cancelled.',
+            };
+            setVoiceUiError(voiceErrorMessages[event.error] || 'Speech recognition is unavailable right now. Please try again.');
             isRecordingActiveRef.current = false;
             setIsRecording(false);
             recordedTextRef.current = '';
@@ -1199,10 +1585,12 @@ export default function AIChatPage() {
 
     return (
       <>
-      <Box sx={{ height: '100%', display: 'flex', bgcolor: '#F3F4F6', position: 'relative' }}>
+      <Box sx={{ height: '100%', minHeight: 0, display: 'flex', bgcolor: '#F3F4F6', position: 'relative', overflow: 'hidden' }}>
         {/* Main Chat Area */}
         <Box sx={{ 
-          flex: activeDeepLearning ? '0 0 55%' : '1', 
+          flex: activeDeepLearning ? '0 0 55%' : '1',
+          minWidth: 0,
+          minHeight: 0,
           display: 'flex', 
           flexDirection: 'column', 
           bgcolor: 'white',
@@ -1216,17 +1604,79 @@ export default function AIChatPage() {
                 <BackIcon sx={{ fontSize: is1920 ? 24 : 20 }} />
               </ButtonBase>
               <Box>
-                <Typography sx={{ fontWeight: 900, fontSize: is1920 ? '1.5rem' : '1.1rem', color: '#1F2937' }}>AI导师-沉浸模式</Typography>
-                <Typography sx={{ fontSize: is1920 ? '0.95rem' : '0.8rem', fontWeight: 600, color: '#6B7280' }}>实时对话练习中</Typography>
+                <Typography sx={{ fontWeight: 900, fontSize: is1920 ? '1.5rem' : '1.1rem', color: '#1F2937' }}>AI Tutor · Immersive</Typography>
+                <Typography sx={{ fontSize: is1920 ? '0.95rem' : '0.8rem', fontWeight: 600, color: '#6B7280' }}>Live practice</Typography>
               </Box>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: is1920 ? 2 : 1.5 }}>
-              <ButtonBase onClick={() => setShowPinyin(!showPinyin)} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, px: 2, py: 1, borderRadius: '12px', bgcolor: showPinyin ? '#F0FDF4' : '#F9FAFB', color: showPinyin ? '#16A34A' : '#6B7280', border: '1px solid', borderColor: showPinyin ? '#86EFAC' : '#E5E7EB', '&:active': { transform: 'scale(0.98)' } }}>
-                {showPinyin ? <Visibility sx={{ fontSize: is1920 ? 22 : 20 }} /> : <VisibilityOff sx={{ fontSize: is1920 ? 22 : 20 }} />}
-                <Typography sx={{ fontWeight: 700, fontSize: is1920 ? '1rem' : '0.9rem' }}>拼音</Typography>
+              <ButtonBase
+                onClick={() => setSlowSpeech((prev) => !prev)}
+                aria-label={slowSpeech ? 'Slow speech on' : 'Normal speech speed'}
+                aria-pressed={slowSpeech}
+                sx={{
+                  width: headerActionHeight,
+                  height: headerActionHeight,
+                  minWidth: headerActionHeight,
+                  borderRadius: '12px',
+                  border: '1px solid',
+                  borderColor: slowSpeech ? '#86EFAC' : '#E5E7EB',
+                  bgcolor: slowSpeech ? '#F0FDF4' : '#F9FAFB',
+                  color: slowSpeech ? '#0D9F72' : '#6B7280',
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background 160ms ease, color 160ms ease, border-color 160ms ease',
+                  '&:active': { transform: 'scale(0.98)' },
+                }}
+              >
+                <SlowMotionVideo sx={{ fontSize: is1920 ? 24 : 22 }} />
               </ButtonBase>
-              <ButtonBase onClick={() => setScreen(ScreenState.FEEDBACK)} sx={{ height: is1920 ? 52 : 48, px: is1920 ? 4 : 3, py: 0, borderRadius: '14px', bgcolor: '#16A34A', color: 'white', fontWeight: 900, fontSize: is1920 ? '1rem' : '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', '&:active': { transform: 'scale(0.98)' } }}>
-                结束练习
+              <ButtonBase
+                onClick={() => setShowPinyin(!showPinyin)}
+                aria-label={showPinyin ? 'Hide pinyin' : 'Show pinyin'}
+                aria-pressed={showPinyin}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.75,
+                  height: headerActionHeight,
+                  px: 2,
+                  py: 0,
+                  borderRadius: '12px',
+                  bgcolor: showPinyin ? '#F0FDF4' : '#F9FAFB',
+                  color: showPinyin ? '#0D9F72' : '#6B7280',
+                  border: '1px solid',
+                  borderColor: showPinyin ? '#86EFAC' : '#E5E7EB',
+                  flexShrink: 0,
+                  '&:active': { transform: 'scale(0.98)' },
+                }}
+              >
+                {showPinyin
+                  ? <Visibility sx={{ fontSize: is1920 ? 22 : 20 }} />
+                  : <VisibilityOff sx={{ fontSize: is1920 ? 22 : 20 }} />}
+                <Typography sx={{ fontWeight: 700, fontSize: is1920 ? '1rem' : '0.9rem', lineHeight: 1 }}>Pinyin</Typography>
+              </ButtonBase>
+              <ButtonBase
+                onClick={() => setScreen(ScreenState.FEEDBACK)}
+                sx={{
+                  height: headerActionHeight,
+                  px: is1920 ? 4 : 3,
+                  py: 0,
+                  borderRadius: '14px',
+                  bgcolor: '#0D9F72',
+                  color: 'white',
+                  fontWeight: 900,
+                  fontSize: is1920 ? '1rem' : '0.85rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap',
+                  '&:active': { transform: 'scale(0.98)' },
+                }}
+              >
+                End practice
               </ButtonBase>
             </Box>
           </Box>
@@ -1238,23 +1688,35 @@ export default function AIChatPage() {
                 const showRetryLlm = msg.systemKind === 'llm_fail';
                 const showReplayTts =
                   msg.systemKind === 'tts_fail' && msg.replayText && msg.replayMessageId;
+                const compact = msg.systemKind === 'tts_fail';
                 return (
                   <Box key={msg.id} sx={{ alignSelf: 'stretch', maxWidth: '100%', px: 0.25 }}>
                     <Paper
                       elevation={0}
                       sx={{
                         display: 'flex',
-                        flexWrap: 'wrap',
+                        flexWrap: 'nowrap',
                         alignItems: 'center',
-                        gap: 2,
-                        p: 2,
-                        borderRadius: '16px',
-                        bgcolor: '#FEF2F2',
-                        border: '1px solid #FECACA',
+                        gap: compact ? 1 : 2,
+                        px: compact ? 1.25 : 2,
+                        py: compact ? 0.75 : 2,
+                        borderRadius: compact ? '12px' : '16px',
+                        bgcolor: compact ? '#FFF7ED' : '#FEF2F2',
+                        border: '1px solid',
+                        borderColor: compact ? '#FED7AA' : '#FECACA',
                       }}
                     >
-                      <AlertCircle sx={{ color: '#DC2626', fontSize: 28, flexShrink: 0 }} />
-                      <Typography sx={{ flex: 1, minWidth: 200, fontWeight: 700, color: '#7F1D1D', fontSize: '0.95rem' }}>
+                      <AlertCircle sx={{ color: compact ? '#EA580C' : '#DC2626', fontSize: compact ? 18 : 28, flexShrink: 0 }} />
+                      <Typography
+                        sx={{
+                          flex: 1,
+                          minWidth: 0,
+                          fontWeight: 700,
+                          color: compact ? '#9A3412' : '#7F1D1D',
+                          fontSize: compact ? '0.8rem' : '0.95rem',
+                          lineHeight: 1.35,
+                        }}
+                      >
                         {msg.text}
                       </Typography>
                       {showRetryLlm && (
@@ -1272,13 +1734,20 @@ export default function AIChatPage() {
                       )}
                       {showReplayTts && (
                         <Button
-                          variant="contained"
-                          size="large"
+                          variant="text"
+                          size="small"
                           onClick={() => {
                             getPipeline().enqueuePlayback(msg.replayText!, msg.replayMessageId!);
-                            setPlaybackSnack(null);
                           }}
-                          sx={{ borderRadius: '12px', fontWeight: 800, minHeight: 48, px: 3, bgcolor: '#4F46E5', '&:hover': { bgcolor: '#4338CA' } }}
+                          sx={{
+                            flexShrink: 0,
+                            borderRadius: '10px',
+                            fontWeight: 800,
+                            minHeight: 36,
+                            px: 1.25,
+                            color: '#C2410C',
+                            '&:hover': { bgcolor: 'rgba(194,65,12,0.08)' },
+                          }}
                         >
                           Replay
                         </Button>
@@ -1288,85 +1757,233 @@ export default function AIChatPage() {
                 );
               }
               return (
-              <Box key={msg.id} sx={{ alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
+              <Box
+                key={msg.id}
+                sx={{
+                  alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                  width: msg.sender === 'user' ? (is1920 ? 560 : 460) : 'auto',
+                  maxWidth: '82%',
+                }}
+              >
                 <Box sx={{ display: 'flex', gap: 2, flexDirection: msg.sender === 'user' ? 'row-reverse' : 'row', alignItems: 'flex-start' }}>
-                  <Avatar 
-                    sx={{ 
-                      width: is1920 ? 56 : 44, 
-                      height: is1920 ? 56 : 44, 
-                      bgcolor: msg.sender === 'user' ? '#00B4A0' : '#4F46E5',
+                  <Avatar
+                    src={
+                      msg.sender === 'user'
+                        ? (playedRole === 'B' ? ROLE_B_AVATAR : ROLE_A_AVATAR)
+                        : (playedRole === 'B' ? ROLE_A_AVATAR : ROLE_B_AVATAR)
+                    }
+                    alt={msg.sender === 'user' ? (userRole || 'You') : (aiRole || 'Partner')}
+                    sx={{
+                      width: is1920 ? 60 : 48,
+                      height: is1920 ? 60 : 48,
+                      bgcolor: '#EAF9F2',
                       borderRadius: is1920 ? '20px' : '16px',
                       border: '2px solid white',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      '& .MuiAvatar-img': { objectFit: 'cover' },
                     }}
-                  >
-                    {msg.sender === 'user' ? <Person fontSize="small" /> : <BotIcon fontSize="small" />}
-                </Avatar>
+                  />
                   
-                  <Box sx={{ flexGrow: 1 }}>
-                    {/* Score Badge - only for user messages */}
-                    {msg.sender === 'user' && msg.score && (
-                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
-                        <Box sx={{ 
-                          display: 'inline-flex', 
-                          alignItems: 'center', 
-                          gap: 0.75,
-                          px: 2, 
-                          py: 0.75, 
-                          borderRadius: '12px', 
-                          bgcolor: msg.score >= 90 ? '#DCFCE7' : msg.score >= 80 ? '#FEF3C7' : '#FEE2E2',
-                          border: '2px solid',
-                          borderColor: msg.score >= 90 ? '#86EFAC' : msg.score >= 80 ? '#FDE047' : '#FCA5A5'
-                        }}>
-                          <Typography sx={{ fontSize: '0.7rem', fontWeight: 900, color: msg.score >= 90 ? '#16A34A' : msg.score >= 80 ? '#D97706' : '#DC2626' }}>
-                            发音
-                          </Typography>
-                          <Typography sx={{ fontSize: '1rem', fontWeight: 900, color: msg.score >= 90 ? '#16A34A' : msg.score >= 80 ? '#D97706' : '#DC2626' }}>
-                            {msg.score}
-                          </Typography>
-              </Box>
-                      </Box>
-                    )}
+                  <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                    {msg.sender === 'user' && msg.score != null ? (
+                      (() => {
+                        const high = msg.score >= 60;
+                        const breakdown = msg.speechBreakdown ?? buildSpeechBreakdown(msg.score);
+                        const metricsOpen = expandedSpeechIds.includes(msg.id);
+                        const accentBg = high
+                          ? 'linear-gradient(90deg, #2DD4BF 0%, #14B8A6 55%, #0D9488 100%)'
+                          : 'linear-gradient(90deg, #FB923C 0%, #F97316 50%, #EA580C 100%)';
+                        const badgeHeight = is1920 ? 40 : 36;
+                        const metricsBarHeight = is1920 ? 40 : 34;
+                        const metricItems = [
+                          { label: 'Speech', value: breakdown.speech },
+                          { label: 'Fluency', value: breakdown.fluency },
+                          { label: 'Accuracy', value: breakdown.accuracy },
+                          { label: 'Completeness', value: breakdown.completeness },
+                        ];
+                        return (
+                          <Box
+                            sx={{
+                              position: 'relative',
+                              borderRadius: '22px',
+                              overflow: 'hidden',
+                              bgcolor: '#FFFFFF',
+                              border: '1px solid #E5E7EB',
+                              boxShadow: '0 8px 22px rgba(15,23,42,0.08)',
+                            }}
+                          >
+                            {metricsOpen && (
+                              <Box
+                                sx={{
+                                  background: accentBg,
+                                  px: is1920 ? 2.25 : 1.6,
+                                  height: metricsBarHeight,
+                                  display: 'flex',
+                                  flexWrap: 'nowrap',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  gap: is1920 ? 1.5 : 0.9,
+                                }}
+                              >
+                                {metricItems.map((item) => (
+                                  <Typography
+                                    key={item.label}
+                                    sx={{
+                                      fontSize: is1920 ? '0.8rem' : '0.68rem',
+                                      fontWeight: 800,
+                                      color: '#FFFFFF',
+                                      letterSpacing: '0.01em',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    {item.label}: {item.value}
+                                  </Typography>
+                                ))}
+                              </Box>
+                            )}
 
+                            {/* Speech score toggle — tucked into the card's top-right corner */}
+                            <ButtonBase
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedSpeechIds((prev) =>
+                                  prev.includes(msg.id) ? prev.filter((id) => id !== msg.id) : [...prev, msg.id],
+                                );
+                              }}
+                              aria-label={metricsOpen ? 'Collapse speech scores' : 'Expand speech scores'}
+                              aria-expanded={metricsOpen}
+                              sx={{
+                                position: 'absolute',
+                                top: metricsOpen ? metricsBarHeight : 0,
+                                right: 0,
+                                zIndex: 3,
+                                height: badgeHeight,
+                                minHeight: badgeHeight,
+                                pl: is1920 ? 1.6 : 1.35,
+                                pr: is1920 ? 1.1 : 0.9,
+                                borderRadius: metricsOpen ? '0 0 0 16px' : '0 22px 0 16px',
+                                background: accentBg,
+                                color: '#FFFFFF',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 0.2,
+                                '&:active': { transform: 'scale(0.97)' },
+                              }}
+                            >
+                              <Typography sx={{ fontSize: is1920 ? '0.95rem' : '0.85rem', fontWeight: 800, letterSpacing: '0.01em', lineHeight: 1 }}>
+                                Speech {msg.score}
+                              </Typography>
+                              {metricsOpen
+                                ? <KeyboardArrowLeft sx={{ fontSize: is1920 ? 20 : 18 }} />
+                                : <KeyboardArrowRight sx={{ fontSize: is1920 ? 20 : 18 }} />}
+                            </ButtonBase>
+
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1.5,
+                                px: is1920 ? 2.25 : 1.6,
+                                pt: `${badgeHeight + (is1920 ? 12 : 10)}px`,
+                                pb: is1920 ? 2.25 : 1.75,
+                              }}
+                            >
+                                <ButtonBase
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    playTTS(msg.text, msg.id);
+                                  }}
+                                  aria-label="Play sentence"
+                                  sx={{
+                                    width: is1920 ? 48 : 44,
+                                    height: is1920 ? 48 : 44,
+                                    minWidth: 44,
+                                    minHeight: 44,
+                                    borderRadius: '50%',
+                                    bgcolor: '#F97316',
+                                    color: '#FFFFFF',
+                                    flexShrink: 0,
+                                    boxShadow: '0 6px 14px rgba(249,115,22,0.35)',
+                                    '&:active': { transform: 'scale(0.94)' },
+                                  }}
+                                >
+                                  <VolumeUp sx={{ fontSize: is1920 ? 24 : 22 }} />
+                                </ButtonBase>
+
+                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                  <ConversationRubyText
+                                    text={msg.text}
+                                    pinyin={msg.pinyin}
+                                    showPinyin={showPinyin}
+                                    align="left"
+                                    textColor="#111827"
+                                    pinyinColor="#6B7280"
+                                    textSize={is1920 ? '1.55rem' : '1.35rem'}
+                                    pinyinSize={is1920 ? '0.9rem' : '0.78rem'}
+                                    hanziFontFamily={KAI_TI}
+                                    columnGap="0.55em"
+                                    rowGap={1.1}
+                                  />
+                                  {showTranslationIds.includes(msg.id) && msg.translation && (
+                                    <Typography
+                                      sx={{
+                                        mt: 1.5,
+                                        pt: 1.5,
+                                        borderTop: '1px solid #E5E7EB',
+                                        fontSize: '0.9rem',
+                                        fontWeight: 600,
+                                        fontStyle: 'italic',
+                                        color: '#6B7280',
+                                        lineHeight: 1.5,
+                                      }}
+                                    >
+                                      {msg.translation}
+                                    </Typography>
+                                  )}
+                                </Box>
+                            </Box>
+                          </Box>
+                        );
+                      })()
+                    ) : (
+                      <>
                     {/* Message Bubble */}
                     <Box 
                       onClick={() => msg.sender === 'ai' && setMaskedIds(prev => prev.includes(msg.id) ? prev.filter(mid => mid !== msg.id) : [...prev, msg.id])}
                       sx={{ 
-                        p: 3, 
-                        borderRadius: '24px', 
-                        bgcolor: msg.sender === 'user' ? '#4F46E5' : 'white', 
+                        px: msg.sender === 'user' ? 4 : 3,
+                        py: msg.sender === 'user' ? 3.5 : 3,
+                        minHeight: msg.sender === 'user' ? (is1920 ? 164 : 140) : 'auto',
+                        borderRadius: msg.sender === 'user' ? '30px' : '24px',
+                        bgcolor: msg.sender === 'user' ? '#0D9F72' : 'white',
                         color: msg.sender === 'user' ? 'white' : '#1F2937', 
                         border: msg.sender === 'ai' ? '2px solid #E5E7EB' : 'none',
-                        boxShadow: msg.sender === 'user' ? '0 4px 12px rgba(79,70,229,0.2)' : '0 2px 8px rgba(0,0,0,0.05)',
+                        boxShadow: msg.sender === 'user' ? '0 4px 12px rgba(13,159,114,0.2)' : '0 2px 8px rgba(0,0,0,0.05)',
                         cursor: msg.sender === 'ai' ? 'pointer' : 'default',
                         transition: 'all 0.3s',
-                        '&:hover': msg.sender === 'ai' ? { borderColor: '#4F46E5' } : {},
-                        position: 'relative'
+                        '&:hover': msg.sender === 'ai' ? { borderColor: '#63CFAA' } : {},
+                        position: 'relative',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
                       }}
                     >
-                      {showPinyin && msg.pinyin && (
-                        <Typography sx={{ 
-                          fontSize: '0.7rem', 
-                          opacity: 0.7, 
-                          mb: 0.75, 
-                          fontWeight: 700,
-                          fontFamily: 'monospace',
-                          letterSpacing: '0.05em',
-                          filter: playingAudioId === msg.id ? 'blur(4px)' : 'none',
-                          transition: 'filter 0.5s'
-                        }}>
-                          {msg.pinyin}
-              </Typography>
-                      )}
-                      <Typography sx={{ 
-                        fontWeight: 700, 
-                        fontSize: '1.15rem', 
-                        lineHeight: 1.6,
+                      <Box sx={{
                         filter: (msg.sender === 'ai' && maskedIds.includes(msg.id)) || playingAudioId === msg.id ? 'blur(6px)' : 'none',
                         transition: 'filter 0.5s'
                       }}>
-                        {msg.text}
-                      </Typography>
+                        <ConversationRubyText
+                          text={msg.text}
+                          pinyin={msg.pinyin}
+                          showPinyin={showPinyin}
+                          align={msg.sender === 'user' ? 'center' : 'left'}
+                          textColor={msg.sender === 'user' ? '#FFFFFF' : '#1F2937'}
+                          pinyinColor={msg.sender === 'user' ? 'rgba(255,255,255,0.78)' : '#5E746D'}
+                          textSize={msg.sender === 'user' ? (is1920 ? '2.1rem' : '1.8rem') : (is1920 ? '1.35rem' : '1.15rem')}
+                          pinyinSize={msg.sender === 'user' ? (is1920 ? '1.1rem' : '0.95rem') : (is1920 ? '0.85rem' : '0.72rem')}
+                          hanziFontFamily={KAI_TI}
+                        />
+                      </Box>
                       
                       {/* Audio Playing Indicator */}
                       {playingAudioId === msg.id && (
@@ -1383,7 +2000,7 @@ export default function AIChatPage() {
                         }}>
                           <VolumeUp sx={{ 
                             fontSize: 40, 
-                            color: '#00B4A0',
+                            color: '#0D9F72',
                             animation: 'pulse 1.5s ease-in-out infinite',
                             '@keyframes pulse': {
                               '0%, 100%': { opacity: 1, transform: 'scale(1)' },
@@ -1393,7 +2010,7 @@ export default function AIChatPage() {
                           <Typography sx={{ 
                             fontSize: '0.75rem', 
                             fontWeight: 900, 
-                            color: '#00B4A0', 
+                            color: '#0D9F72',
                             textTransform: 'uppercase', 
                             letterSpacing: '0.1em',
                             bgcolor: 'rgba(255,255,255,0.9)',
@@ -1402,7 +2019,7 @@ export default function AIChatPage() {
                             borderRadius: '12px',
                             boxShadow: '0 2px 8px rgba(0,180,160,0.2)'
                           }}>
-                            播放中...
+                            Playing...
                           </Typography>
                         </Box>
                       )}
@@ -1427,8 +2044,10 @@ export default function AIChatPage() {
                         </Box>
                       )}
                     </Box>
+                      </>
+                    )}
 
-                    {/* Action Buttons */}
+                    {/* Action Buttons — structure from ref, brand green primary */}
                     <Box sx={{ 
                       display: 'flex', 
                       gap: 1, 
@@ -1436,7 +2055,6 @@ export default function AIChatPage() {
                       justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
                       flexWrap: 'wrap'
                     }}>
-                      {/* TTS Button - 所有消息都显示朗读按钮 */}
                       <ButtonBase
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1444,30 +2062,30 @@ export default function AIChatPage() {
                         }}
                         sx={{
                           px: 2,
-                          py: 0.75,
-                          borderRadius: '12px',
-                          bgcolor: playingAudioId === msg.id ? 'white' : msg.sender === 'user' ? 'white' : 'white',
-                          color: playingAudioId === msg.id ? '#16A34A' : msg.sender === 'user' ? '#4F46E5' : '#6B7280',
-                          border: '2px solid',
-                          borderColor: playingAudioId === msg.id ? '#16A34A' : msg.sender === 'user' ? '#E5E7EB' : '#E5E7EB',
+                          py: 0,
+                          minHeight: 42,
+                          borderRadius: '14px',
+                          bgcolor: '#F3F4F6',
+                          color: playingAudioId === msg.id ? '#0D9F72' : '#374151',
+                          border: '1px solid',
+                          borderColor: playingAudioId === msg.id ? '#86EFAC' : '#E5E7EB',
                           display: 'flex',
                           alignItems: 'center',
                           gap: 0.75,
                           transition: 'all 0.2s',
                           '&:hover': {
-                            borderColor: playingAudioId === msg.id ? '#16A34A' : '#16A34A',
-                            color: playingAudioId === msg.id ? '#16A34A' : '#16A34A',
+                            bgcolor: '#EEF2F7',
+                            borderColor: '#D1D5DB',
                           },
-                          '&:active': { transform: 'scale(0.95)' }
+                          '&:active': { transform: 'scale(0.96)' }
                         }}
                       >
-                        <VolumeUp sx={{ fontSize: 16, color: playingAudioId === msg.id ? '#16A34A' : 'inherit' }} />
-                        <Typography sx={{ fontSize: '0.75rem', fontWeight: 700 }}>
-                          {playingAudioId === msg.id ? '播放中' : '朗读'}
+                        <GraphicEq sx={{ fontSize: 18, color: playingAudioId === msg.id ? '#0D9F72' : '#4B5563' }} />
+                        <Typography sx={{ fontSize: '0.88rem', fontWeight: 700, letterSpacing: '-0.01em' }}>
+                          {playingAudioId === msg.id ? 'Playing' : 'Speak'}
                         </Typography>
                       </ButtonBase>
 
-                      {/* Translation Button - 所有有翻译的消息都显示 */}
                       {msg.translation && (
                         <ButtonBase 
                           onClick={(e) => {
@@ -1479,48 +2097,79 @@ export default function AIChatPage() {
                             );
                           }}
                           sx={{ 
-                            px: 2, 
-                            py: 0.75, 
-                            borderRadius: '12px', 
-                            bgcolor: 'white', 
-                            border: '2px solid #E5E7EB',
-                            fontWeight: 700, 
-                            color: '#374151',
+                            px: 2,
+                            py: 0,
+                            minHeight: 42,
+                            borderRadius: '14px',
+                            bgcolor: showTranslationIds.includes(msg.id) ? '#F0FDF4' : '#F3F4F6',
+                            border: '1px solid',
+                            borderColor: showTranslationIds.includes(msg.id) ? '#86EFAC' : '#E5E7EB',
+                            color: showTranslationIds.includes(msg.id) ? '#0D9F72' : '#374151',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 0.5,
+                            gap: 0.75,
                             transition: 'all 0.2s',
-                            '&:hover': { borderColor: '#9CA3AF', bgcolor: '#F9FAFB' },
-                            '&:active': { transform: 'scale(0.95)' }
+                            '&:hover': { bgcolor: '#EEF2F7', borderColor: '#D1D5DB' },
+                            '&:active': { transform: 'scale(0.96)' }
                           }}
                         >
-                          <Abc sx={{ fontSize: 14 }} />
-                          <Typography sx={{ fontSize: '0.75rem' }}>译文</Typography>
+                          <GTranslate sx={{ fontSize: 18 }} />
+                          <Typography sx={{ fontSize: '0.88rem', fontWeight: 700, letterSpacing: '-0.01em' }}>Translate</Typography>
                         </ButtonBase>
                       )}
 
-                      {/* Deep Learning Button - 所有消息都显示 */}
                       <ButtonBase 
                         onClick={(e) => {
                           e.stopPropagation();
-                          setActiveDeepLearning(msg);
+                          openDeepDive(msg);
                         }}
                         sx={{ 
-                          px: 2, 
-                          py: 0.75, 
-                          borderRadius: '12px', 
-                          bgcolor: '#374151', 
-                          color: 'white',
-                          fontWeight: 700,
+                          pl: 2,
+                          pr: 0.85,
+                          py: 0,
+                          minHeight: 42,
+                          borderRadius: '14px',
+                          background: deepDiveCredits.remaining > 0
+                            ? 'linear-gradient(135deg, #12B981 0%, #0D9F72 55%, #059669 100%)'
+                            : 'linear-gradient(135deg, #9CA3AF 0%, #6B7280 100%)',
+                          color: '#FFFFFF',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 0.75,
-                          '&:hover': { bgcolor: '#4B5563' },
-                          '&:active': { transform: 'scale(0.95)' }
+                          gap: 0.85,
+                          boxShadow: deepDiveCredits.remaining > 0 ? '0 6px 14px rgba(13,159,114,0.28)' : 'none',
+                          opacity: deepDiveCredits.remaining > 0 || activeDeepLearning?.id === msg.id ? 1 : 0.72,
+                          '&:hover': {
+                            background: deepDiveCredits.remaining > 0
+                              ? 'linear-gradient(135deg, #10B981 0%, #0B8F66 55%, #047857 100%)'
+                              : 'linear-gradient(135deg, #9CA3AF 0%, #6B7280 100%)',
+                          },
+                          '&:active': { transform: 'scale(0.96)' }
                         }}
                       >
-                        <Typography sx={{ fontSize: '0.75rem' }}>深度剖析</Typography>
-                        <ArrowForward sx={{ fontSize: 14 }} />
+                        <AutoAwesomeIcon sx={{ fontSize: 17 }} />
+                        <Typography sx={{ fontSize: '0.88rem', fontWeight: 800, letterSpacing: '-0.01em' }}>
+                          Deep Dive
+                        </Typography>
+                        <Box
+                          sx={{
+                            minWidth: 24,
+                            height: 24,
+                            px: 0.65,
+                            borderRadius: '999px',
+                            bgcolor: 'rgba(255,255,255,0.92)',
+                            color: deepDiveCredits.remaining > 0 ? '#0D9F72' : '#6B7280',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '0.75rem',
+                            fontWeight: 900,
+                            lineHeight: 1,
+                            transform: creditChipPulse ? 'scale(1.08)' : 'scale(1)',
+                            transition: 'transform 180ms ease',
+                          }}
+                        >
+                          {deepDiveCredits.remaining}
+                        </Box>
                       </ButtonBase>
                     </Box>
                   </Box>
@@ -1565,7 +2214,7 @@ export default function AIChatPage() {
                     animation: 'bounce 1.4s infinite ease-in-out 0.4s'
                   }} />
                 </Box>
-                <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: 700 }}>AI 导师正在思考...</Typography>
+                <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: 700 }}>AI tutor is thinking...</Typography>
               </Box>
             )}
             <div ref={messagesEndRef} />
@@ -1573,79 +2222,203 @@ export default function AIChatPage() {
 
           {/* AI Translation Popup */}
           {showAITranslation && (
-            <Box sx={{ position: 'absolute', bottom: 110, left: 24, right: 24, bgcolor: 'white', p: 3, borderRadius: '20px', border: '2px solid #4F46E5', zIndex: 50, boxShadow: '0 10px 40px rgba(79,70,229,0.2)' }}>
+            <Box sx={{ position: 'absolute', bottom: 110, left: 24, right: 24, bgcolor: 'white', p: 3, borderRadius: '20px', border: '2px solid #0D9F72', zIndex: 50, boxShadow: '0 10px 40px rgba(13,159,114,0.18)' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5, alignItems: 'center' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Translate sx={{ fontSize: 18, color: '#4F46E5' }} />
-                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 900, color: '#4F46E5' }}>AI 翻译建议</Typography>
+                  <Translate sx={{ fontSize: 18, color: '#0D9F72' }} />
+                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 900, color: '#0D9F72' }}>AI translation tip</Typography>
                 </Box>
                 <IconButton size="small" onClick={() => setShowAITranslation(false)}><Close sx={{ fontSize: 16 }} /></IconButton>
               </Box>
-              <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', mb: 2, color: '#1F2937' }}>我想点一杯热拿铁。</Typography>
-              <ButtonBase onClick={() => handleSendLine("我想点一杯热拿铁。")} sx={{ width: '100%', py: 2, bgcolor: '#4F46E5', color: 'white', borderRadius: '14px', fontWeight: 900, fontSize: '0.95rem', '&:active': { transform: 'scale(0.98)' } }}>
-                发送此句
+              <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', mb: 2, color: '#1F2937', fontFamily: KAI_TI }}>我想点一杯热拿铁。</Typography>
+              <ButtonBase onClick={() => handleSendLine("我想点一杯热拿铁。")} sx={{ width: '100%', py: 2, bgcolor: '#0D9F72', color: 'white', borderRadius: '14px', fontWeight: 900, fontSize: '0.95rem', '&:active': { transform: 'scale(0.98)' } }}>
+                Send this line
               </ButtonBase>
             </Box>
           )}
 
           {/* Input Area - 设计稿：底部固定，grid图标+紫色按住说话 */}
           <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, p: is1920 ? 4 : 3, bgcolor: 'white', borderTop: '2px solid #F3F4F6', pb: is1920 ? 5 : 4, zIndex: 20 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 0.75,
-                flexWrap: 'wrap',
-                mb: 1.5,
-                px: 1,
-                py: 0.75,
-                borderRadius: '12px',
-                bgcolor: '#F9FAFB',
-                border: '1px solid #E5E7EB',
-              }}
-              aria-label="Conversation pipeline"
-            >
-              {(
-                [
-                  { id: 'mic', label: 'Mic', on: isRecording },
-                  { id: 'asr', label: 'ASR', on: pipelineStage === 'asr_finalize' },
-                  { id: 'llm', label: 'LLM', on: pipelineStage === 'llm' },
-                  { id: 'tts', label: 'TTS', on: pipelineStage === 'playback' },
-                  { id: 'audio', label: 'Audio', on: pipelineStage === 'playback' },
-                ] as const
-              ).map((step, i, arr) => (
-                <React.Fragment key={step.id}>
-                  <Box
-                    sx={{
-                      px: 1.25,
-                      py: 0.5,
-                      borderRadius: '10px',
-                      bgcolor: step.on ? 'rgba(79,70,229,0.12)' : 'transparent',
-                      border: '1px solid',
-                      borderColor: step.on ? '#4F46E5' : 'transparent',
-                      minHeight: 36,
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Typography
-                      sx={{
-                        fontSize: is1920 ? '0.85rem' : '0.75rem',
-                        fontWeight: 800,
-                        color: step.on ? '#4338CA' : '#9CA3AF',
-                        letterSpacing: '0.04em',
-                      }}
-                    >
-                      {step.label}
+            {isRecording ? (
+              <Box
+                role="status"
+                aria-live="polite"
+                sx={{
+                  minHeight: 82,
+                  mb: 1.5,
+                  px: 2.5,
+                  py: 1.5,
+                  borderRadius: '18px',
+                  bgcolor: '#F3FBF7',
+                  border: '1.5px solid #B8E7D3',
+                  boxShadow: '0 8px 24px rgba(7,150,106,0.1)',
+                  display: 'grid',
+                  gridTemplateColumns: '48px minmax(0, 1fr) auto',
+                  alignItems: 'center',
+                  gap: 2,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 46,
+                    height: 46,
+                    borderRadius: '50%',
+                    bgcolor: '#E5484D',
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 0 0 7px rgba(229,72,77,0.1)',
+                    animation: 'recordingPulse 1.4s ease-in-out infinite',
+                    '@keyframes recordingPulse': {
+                      '0%, 100%': { boxShadow: '0 0 0 7px rgba(229,72,77,0.08)' },
+                      '50%': { boxShadow: '0 0 0 11px rgba(229,72,77,0.15)' },
+                    },
+                  }}
+                >
+                  <Mic sx={{ fontSize: 25 }} />
+                </Box>
+
+                <Box sx={{ minWidth: 0 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.7 }}>
+                    <Typography sx={{ color: '#173F35', fontSize: '0.95rem', fontWeight: 900 }}>
+                      Listening
                     </Typography>
+                    <Box sx={{ height: 22, display: 'flex', alignItems: 'center', gap: 0.45 }}>
+                      {[10, 18, 13, 22, 16, 9, 19, 12].map((height, i) => (
+                        <Box
+                          key={i}
+                          sx={{
+                            width: 3,
+                            height,
+                            borderRadius: '999px',
+                            bgcolor: '#19A976',
+                            animation: `recordingWave ${0.55 + i * 0.05}s ease-in-out infinite alternate`,
+                            animationDelay: `${i * 0.06}s`,
+                            '@keyframes recordingWave': {
+                              from: { transform: 'scaleY(0.45)', opacity: 0.45 },
+                              to: { transform: 'scaleY(1)', opacity: 1 },
+                            },
+                          }}
+                        />
+                      ))}
+                    </Box>
                   </Box>
-                  {i < arr.length - 1 && (
-                    <Typography sx={{ fontSize: '0.65rem', fontWeight: 900, color: '#D1D5DB', px: 0.25 }}>→</Typography>
-                  )}
-                </React.Fragment>
-              ))}
+                  <Typography noWrap sx={{ color: recordedText ? '#425B53' : '#82938D', fontSize: '0.78rem', fontWeight: 700 }}>
+                    {recordedText || 'Speak Chinese, release to send'}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ minWidth: 66, px: 1.5, py: 0.9, bgcolor: '#FFFFFF', border: '1px solid #DCE9E3', borderRadius: '12px', textAlign: 'center' }}>
+                  <Typography sx={{ color: '#087A58', fontSize: '1rem', fontWeight: 900, fontVariantNumeric: 'tabular-nums' }}>
+                    00:{String(countdown).padStart(2, '0')}
+                  </Typography>
+                </Box>
+              </Box>
+            ) : (
+            <Box sx={{ mb: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 0.75 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.75, flexWrap: 'wrap' }}>
+                <ButtonBase
+                  onClick={() => {
+                    setDeepDiveCredits(refreshDeepDiveCredits());
+                    setCreditChipPulse(true);
+                    window.setTimeout(() => setCreditChipPulse(false), 420);
+                  }}
+                  aria-label="Refresh Deep Dive credits"
+                  sx={{
+                    px: 1.25,
+                    py: 0.5,
+                    minHeight: 36,
+                    borderRadius: '10px',
+                    border: '1px solid #E5E7EB',
+                    bgcolor: '#FFFBEB',
+                    color: '#B45309',
+                    '&:active': { transform: 'scale(0.98)' },
+                  }}
+                >
+                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.04em' }}>
+                    Refresh credits ({deepDiveCredits.remaining}/{DEEP_DIVE_DAILY_LIMIT})
+                  </Typography>
+                </ButtonBase>
+                <ButtonBase
+                  onClick={() => setShowPipeline((prev) => !prev)}
+                  aria-expanded={showPipeline}
+                  aria-label={showPipeline ? 'Hide pipeline' : 'Show pipeline'}
+                  sx={{
+                    px: 1.25,
+                    py: 0.5,
+                    minHeight: 36,
+                    borderRadius: '10px',
+                    border: '1px solid #E5E7EB',
+                    bgcolor: showPipeline ? '#F0FDF4' : '#F9FAFB',
+                    color: showPipeline ? '#087A58' : '#6B7280',
+                    '&:active': { transform: 'scale(0.98)' },
+                  }}
+                >
+                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.04em' }}>
+                    {showPipeline ? 'Hide pipeline' : 'Pipeline'}
+                  </Typography>
+                </ButtonBase>
+              </Box>
+              {showPipeline && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 0.75,
+                    flexWrap: 'wrap',
+                    px: 1,
+                    py: 0.75,
+                    borderRadius: '12px',
+                    bgcolor: '#F9FAFB',
+                    border: '1px solid #E5E7EB',
+                  }}
+                  aria-label="Conversation pipeline"
+                >
+                  {(
+                    [
+                      { id: 'mic', label: 'Mic', on: isRecording },
+                      { id: 'asr', label: 'ASR', on: pipelineStage === 'asr_finalize' },
+                      { id: 'llm', label: 'LLM', on: pipelineStage === 'llm' },
+                      { id: 'tts', label: 'TTS', on: pipelineStage === 'playback' },
+                      { id: 'audio', label: 'Audio', on: pipelineStage === 'playback' },
+                    ] as const
+                  ).map((step, i, arr) => (
+                    <React.Fragment key={step.id}>
+                      <Box
+                        sx={{
+                          px: 1.25,
+                          py: 0.5,
+                          borderRadius: '10px',
+                          bgcolor: step.on ? 'rgba(13,159,114,0.12)' : 'transparent',
+                          border: '1px solid',
+                          borderColor: step.on ? '#0D9F72' : 'transparent',
+                          minHeight: 36,
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontSize: is1920 ? '0.85rem' : '0.75rem',
+                            fontWeight: 800,
+                            color: step.on ? '#087A58' : '#9CA3AF',
+                            letterSpacing: '0.04em',
+                          }}
+                        >
+                          {step.label}
+                        </Typography>
+                      </Box>
+                      {i < arr.length - 1 && (
+                        <Typography sx={{ fontSize: '0.65rem', fontWeight: 900, color: '#D1D5DB', px: 0.25 }}>→</Typography>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </Box>
+              )}
             </Box>
+            )}
             {/* AI Tools - Only show in text mode */}
             {inputMode === 'text' && (
               <Box sx={{ display: 'flex', gap: 1.5, mb: 2.5, overflowX: 'auto', px: 0.5 }}>
@@ -1670,7 +2443,7 @@ export default function AIChatPage() {
                     '&:active': { transform: inputText.trim() ? 'scale(0.95)' : 'none' }
                   }}
                 >
-                  <Search sx={{ fontSize: 16 }} /> AI 查词
+                  <Search sx={{ fontSize: 16 }} /> Look up
                 </ButtonBase>
                 <ButtonBase 
                   onClick={() => {
@@ -1690,7 +2463,7 @@ export default function AIChatPage() {
                     bgcolor: (inputText.trim() && hasNonChineseContent(inputText)) ? '#EEF2FF' : '#F3F4F6', 
                     border: '1.5px solid',
                     borderColor: (inputText.trim() && hasNonChineseContent(inputText)) ? '#C7D2FE' : '#E5E7EB',
-                    color: (inputText.trim() && hasNonChineseContent(inputText)) ? '#4F46E5' : '#9CA3AF', 
+                    color: (inputText.trim() && hasNonChineseContent(inputText)) ? '#0D9F72' : '#9CA3AF',
                     fontSize: '0.8rem', 
                     fontWeight: 900,
                     display: 'flex',
@@ -1709,7 +2482,7 @@ export default function AIChatPage() {
                     },
                     animation: 'spin 1s infinite linear' 
                   }} /> : <Translate sx={{ fontSize: 16 }} />} 
-                  AI 翻译
+                  AI Translate
                 </ButtonBase>
               </Box>
             )}
@@ -1745,9 +2518,8 @@ export default function AIChatPage() {
                         handleSend();
                       }
                     }} 
-                    placeholder="输入中文或英文..." 
+                    placeholder="Type Chinese or English..." 
                     variant="standard"
-                    autoFocus
                     InputProps={{ 
                       disableUnderline: true, 
                       sx: { 
@@ -1761,7 +2533,7 @@ export default function AIChatPage() {
                         transition: 'all 0.2s',
                         '&:focus-within': {
                           bgcolor: 'white',
-                          borderColor: '#00B4A0',
+                          borderColor: '#0D9F72',
                           boxShadow: '0 0 0 3px rgba(0,180,160,0.1)'
                         }
                       } 
@@ -1810,7 +2582,7 @@ export default function AIChatPage() {
                     sx={{ 
                       width: '100%', 
                       height: is1920 ? 60 : 52, 
-                      bgcolor: isRecording ? '#EF4444' : pipelineBusy ? '#9CA3AF' : '#6B4FF6', 
+                      background: isRecording ? '#EF4444' : pipelineBusy ? '#9CA3AF' : 'linear-gradient(135deg, #19BD82 0%, #07966A 100%)',
                       color: 'white', 
                       borderRadius: is1920 ? '20px' : '16px', 
                       fontWeight: 900, 
@@ -1819,7 +2591,7 @@ export default function AIChatPage() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: 1.5,
-                      boxShadow: isRecording ? '0 4px 12px rgba(239,68,68,0.4)' : pipelineBusy ? 'none' : '0 4px 12px rgba(107,79,246,0.3)',
+                      boxShadow: isRecording ? '0 4px 12px rgba(239,68,68,0.4)' : pipelineBusy ? 'none' : '0 8px 20px rgba(7,150,106,0.24)',
                       transition: 'all 0.2s',
                       userSelect: 'none',
                       WebkitUserSelect: 'none',
@@ -1832,68 +2604,16 @@ export default function AIChatPage() {
                   >
                     {isRecording ? (
                       <>
-                        {/* 声波动画 */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-                          {[0, 1, 2, 3, 4].map((i) => (
-                            <Box
-                              key={i}
-                              sx={{
-                                width: 3,
-                                height: 20,
-                                bgcolor: 'white',
-                                borderRadius: '2px',
-                                animation: `soundwave ${0.6 + i * 0.1}s infinite`,
-                                '@keyframes soundwave': {
-                                  '0%, 100%': { 
-                                    height: 8,
-                                    opacity: 0.4
-                                  },
-                                  '50%': { 
-                                    height: 24,
-                                    opacity: 1
-                                  }
-                                },
-                                animationDelay: `${i * 0.1}s`
-                              }}
-                            />
-                          ))}
-                        </Box>
-                        {/* 倒计时显示 */}
-                        <Box sx={{ 
-                          ml: 1, 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: 1,
-                          bgcolor: 'rgba(255,255,255,0.2)',
-                          px: 2,
-                          py: 0.5,
-                          borderRadius: '12px'
-                        }}>
-                          <Typography sx={{ fontSize: '0.85rem', fontWeight: 700 }}>
-                            正在录音
-                          </Typography>
-                          <Box sx={{
-                            minWidth: 32,
-                            textAlign: 'center',
-                            bgcolor: 'rgba(255,255,255,0.3)',
-                            px: 1.5,
-                            py: 0.25,
-                            borderRadius: '8px',
-                            border: '1.5px solid rgba(255,255,255,0.5)'
-                          }}>
-                            <Typography sx={{ fontSize: '1rem', fontWeight: 900 }}>
-                              {countdown}
-                            </Typography>
-                          </Box>
-                          <Typography sx={{ fontSize: '0.75rem', opacity: 0.9 }}>
-                            秒
-                          </Typography>
-                        </Box>
+                        <Box sx={{ width: 9, height: 9, borderRadius: '50%', bgcolor: '#FFFFFF', animation: 'recordDot 0.9s ease-in-out infinite alternate', '@keyframes recordDot': { from: { opacity: 0.4 }, to: { opacity: 1 } } }} />
+                        Release to send
+                        <Typography component="span" sx={{ fontSize: '0.8rem', fontWeight: 800, opacity: 0.86, fontVariantNumeric: 'tabular-nums' }}>
+                          00:{String(countdown).padStart(2, '0')}
+                        </Typography>
                       </>
                     ) : (
                       <>
                         <Mic sx={{ fontSize: 24 }} />
-                        {pipelineBusy ? 'Please wait…' : '按住说话'}
+                        {pipelineBusy ? 'Please wait…' : 'Hold to talk'}
                       </>
                     )}
                   </ButtonBase>
@@ -1914,7 +2634,7 @@ export default function AIChatPage() {
                     cursor: inputText.trim() ? 'pointer' : 'not-allowed',
                     boxShadow: inputText.trim() ? '0 4px 12px rgba(0,0,0,0.2)' : 'none',
                     transition: 'all 0.2s',
-                    '&:hover': inputText.trim() ? { bgcolor: '#00B4A0' } : {},
+                    '&:hover': inputText.trim() ? { bgcolor: '#0D9F72' } : {},
                     '&:active': inputText.trim() ? { transform: 'scale(0.95)' } : {}
                   }}
                 >
@@ -1928,10 +2648,14 @@ export default function AIChatPage() {
         {/* Deep Learning Split Panel */}
         {activeDeepLearning && (
           <Box sx={{ 
-            flex: '0 0 45%', 
+            flex: '0 0 45%',
+            minWidth: 0,
+            minHeight: 0,
+            height: '100%',
             display: 'flex', 
             flexDirection: 'column', 
-            bgcolor: '#FAFAFA', 
+            bgcolor: '#FAFAFA',
+            overflow: 'hidden',
             animation: 'slideInRight 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
             '@keyframes slideInRight': {
               from: { transform: 'translateX(100%)', opacity: 0 },
@@ -1939,155 +2663,300 @@ export default function AIChatPage() {
             }
           }}>
             {/* Deep Learning Header */}
-            <Box sx={{ px: 4, py: 3, borderBottom: '2px solid #E5E7EB', bgcolor: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Box sx={{ width: 10, height: 10, bgcolor: '#00B4A0', borderRadius: '50%' }} />
-                <Typography sx={{ fontWeight: 900, fontSize: '1.2rem', color: '#1F2937' }}>句子深度剖析</Typography>
+            <Box sx={{ flexShrink: 0, px: 2.5, py: 2, borderBottom: '1px solid #E5E7EB', bgcolor: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ minWidth: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                  <Box sx={{ width: 10, height: 10, bgcolor: '#0D9F72', borderRadius: '50%', flexShrink: 0 }} />
+                  <Typography sx={{ fontWeight: 900, fontSize: '1.15rem', color: '#1F2937', lineHeight: 1.15 }}>Deep Dive</Typography>
+                </Box>
+                <Typography sx={{ mt: 0.55, ml: 2.75, fontSize: '0.78rem', fontWeight: 700, color: '#64748B' }}>
+                  −{DEEP_DIVE_COST} credit · {deepDiveCredits.remaining} left today
+                </Typography>
               </Box>
               <IconButton 
                 onClick={() => setActiveDeepLearning(null)} 
                 sx={{ 
                   bgcolor: '#F3F4F6', 
+                  flexShrink: 0,
                   '&:hover': { bgcolor: '#FEE2E2', color: '#EF4444' } 
                 }}
               >
                 <Close sx={{ fontSize: 20 }} />
-        </IconButton>
-      </Box>
+              </IconButton>
+            </Box>
 
-            {/* Deep Learning Content */}
-            <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 4, display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {/* Main Sentence Display */}
-              <Box sx={{ 
-                bgcolor: 'white', 
-                p: 5, 
-                borderRadius: '24px', 
-                border: '2px solid #E5E7EB',
-                textAlign: 'center',
-                position: 'relative',
-                overflow: 'hidden'
-              }}>
-                <Box sx={{ position: 'absolute', top: 0, right: 0, p: 2, opacity: 0.1 }}>
-                  <AutoAwesomeIcon sx={{ fontSize: 60 }} />
-    </Box>
-                {activeDeepLearning.pinyin && (
-                  <Typography sx={{ 
-                    fontSize: '0.85rem', 
-                    fontWeight: 900, 
-                    color: '#00B4A0', 
-                    fontFamily: 'monospace',
-                    letterSpacing: '0.15em',
-                    mb: 2
-                  }}>
-                    {activeDeepLearning.pinyin}
-                  </Typography>
-                )}
-                <Typography sx={{ 
-                  fontSize: '2rem', 
-                  fontWeight: 900, 
-                  color: '#1F2937', 
-                  lineHeight: 1.6,
-                  mb: 3
-                }}>
-                  {activeDeepLearning.text}
+            {/* Scrollable body */}
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                overscrollBehavior: 'contain',
+                p: 2.5,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2.25,
+              }}
+            >
+              {/* Sentence — KaiTi ruby */}
+              <Box
+                sx={{
+                  bgcolor: 'white',
+                  p: 2.5,
+                  borderRadius: '20px',
+                  border: '1px solid #E5E7EB',
+                  flexShrink: 0,
+                }}
+              >
+                <Typography
+                  sx={{
+                    mb: 1.25,
+                    fontSize: '0.68rem',
+                    fontWeight: 800,
+                    color: '#94A3B8',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Sentence
                 </Typography>
+                <ConversationRubyText
+                  text={activeDeepLearning.text}
+                  pinyin={activeDeepLearning.pinyin}
+                  showPinyin
+                  align="left"
+                  textColor="#1F2937"
+                  pinyinColor="#0D9F72"
+                  textSize="1.35rem"
+                  pinyinSize="0.72rem"
+                  hanziFontFamily={KAI_TI}
+                  columnGap="0.45em"
+                  rowGap={1.5}
+                />
                 {activeDeepLearning.translation && (
-                  <Box sx={{ 
-                    display: 'inline-block',
-                    px: 4, 
-                    py: 2, 
-                    bgcolor: '#F9FAFB', 
-                    borderRadius: '16px',
-                    border: '2px solid #E5E7EB'
-                  }}>
-                    <Typography sx={{ 
-                      fontSize: '1rem', 
-                      fontWeight: 600, 
-                      color: '#6B7280',
-                      fontStyle: 'italic'
-                    }}>
-                      {activeDeepLearning.translation}
-                    </Typography>
-                  </Box>
+                  <Typography
+                    sx={{
+                      mt: 2,
+                      pt: 1.75,
+                      borderTop: '1px solid #F1F5F9',
+                      fontSize: '0.92rem',
+                      fontWeight: 500,
+                      color: '#64748B',
+                      lineHeight: 1.55,
+                    }}
+                  >
+                    {activeDeepLearning.translation}
+                  </Typography>
                 )}
               </Box>
 
-              {/* Word Breakdown */}
-              <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-                  <Box sx={{ width: 4, height: 20, bgcolor: '#00B4A0', borderRadius: '2px' }} />
-                  <Typography sx={{ fontSize: '0.85rem', fontWeight: 900, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                    词法单元拆解
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {['咖', '啡'].map((word, idx) => (
-                    <Box 
-                      key={idx}
-                      sx={{ 
-                        bgcolor: 'white', 
-                        p: 3, 
-                        borderRadius: '20px', 
-                        border: '2px solid #E5E7EB',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 3,
-                        transition: 'all 0.2s',
-                        '&:hover': {
-                          borderColor: '#00B4A0',
-                          boxShadow: '0 4px 12px rgba(0,180,160,0.1)'
-                        }
+              {/* Keywords — 2–3 core words */}
+              {(() => {
+                const keywords = pickDeepDiveKeywords(
+                  activeDeepLearning.text,
+                  activeDeepLearning.pinyin ?? '',
+                  3,
+                );
+                if (!keywords.length) return null;
+                return (
+                  <Box
+                    sx={{
+                      bgcolor: 'white',
+                      p: 2.25,
+                      borderRadius: '20px',
+                      border: '1px solid #E5E7EB',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        mb: 1.5,
+                        fontSize: '0.68rem',
+                        fontWeight: 800,
+                        color: '#94A3B8',
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
                       }}
                     >
-                      <Typography sx={{ fontSize: '2rem', fontWeight: 900, color: '#1F2937' }}>
-                        {word}
-                      </Typography>
-                      <Box sx={{ flexGrow: 1 }}>
-                        <Typography sx={{ fontSize: '0.75rem', fontWeight: 900, color: '#00B4A0', fontFamily: 'monospace', mb: 0.5 }}>
-                          kā{idx === 1 ? 'fēi' : ''}
+                      Keywords
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                      {keywords.map((kw) => (
+                        <Box
+                          key={`${kw.chinese}-${kw.pinyin}`}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.5,
+                            p: 1.35,
+                            borderRadius: '14px',
+                            bgcolor: '#F8FAFC',
+                            border: '1px solid #EEF2F7',
+                          }}
+                        >
+                          <Box sx={{ minWidth: 0, flex: 1 }}>
+                            <Typography
+                              sx={{
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                color: '#0D9F72',
+                                lineHeight: 1.1,
+                                letterSpacing: '0.02em',
+                              }}
+                            >
+                              {kw.pinyin}
+                            </Typography>
+                            <Typography
+                              sx={{
+                                mt: 0.25,
+                                fontFamily: KAI_TI,
+                                fontSize: '1.35rem',
+                                fontWeight: 700,
+                                color: '#0F172A',
+                                lineHeight: 1.15,
+                              }}
+                            >
+                              {kw.chinese}
+                            </Typography>
+                            <Box sx={{ mt: 0.75, display: 'flex', flexWrap: 'wrap', gap: 0.6 }}>
+                              <Box
+                                sx={{
+                                  px: 0.9,
+                                  py: 0.25,
+                                  borderRadius: '8px',
+                                  bgcolor: '#EEF2FF',
+                                  color: '#4338CA',
+                                  fontSize: '0.68rem',
+                                  fontWeight: 800,
+                                  lineHeight: 1.2,
+                                }}
+                              >
+                                {kw.pos}
+                              </Box>
+                              {kw.hsk != null && (
+                                <Box
+                                  sx={{
+                                    px: 0.9,
+                                    py: 0.25,
+                                    borderRadius: '8px',
+                                    bgcolor: '#EEFDF9',
+                                    color: '#0D9F72',
+                                    fontSize: '0.68rem',
+                                    fontWeight: 800,
+                                    lineHeight: 1.2,
+                                  }}
+                                >
+                                  HSK {kw.hsk}
+                                </Box>
+                              )}
+                            </Box>
+                          </Box>
+                          <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748B', textAlign: 'right' }}>
+                            {kw.gloss}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                );
+              })()}
+
+              {/* Multilingual knowledge — 3 expandable blocks */}
+              {([
+                {
+                  key: 'when' as const,
+                  title: 'When to use',
+                  subtitle: 'Situations & timing',
+                  body:
+                    'Use this line when greeting a guest and inviting an order — opening a service conversation in a café, restaurant, or shop. Pair it with a smile and clear pace so the question feels welcoming, not rushed.',
+                },
+                {
+                  key: 'grammar' as const,
+                  title: 'Grammar structure',
+                  subtitle: 'Pattern to reuse',
+                  body:
+                    'Pattern: 想 + Verb + 点 + Question word？ → “want to [do] a bit of what?” Example core: 想喝点什么？ Softens the request versus a bare 喝什么？ Keep 点 for a casual, polite offer.',
+                },
+                {
+                  key: 'culture' as const,
+                  title: 'Culture tip',
+                  subtitle: 'Local feel',
+                  body:
+                    '咖啡 is a phonetic loanword from “coffee.” Mandarin often borrows foreign drink and brand names by sound. Staff may also say 来点什么？ — same invite, slightly more colloquial.',
+                },
+              ]).map((section) => {
+                const open = deepDiveOpenSections[section.key];
+                return (
+                  <Box
+                    key={section.key}
+                    sx={{
+                      bgcolor: 'white',
+                      borderRadius: '18px',
+                      border: '1px solid #E5E7EB',
+                      overflow: 'hidden',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <ButtonBase
+                      onClick={() =>
+                        setDeepDiveOpenSections((prev) => ({
+                          ...prev,
+                          [section.key]: !prev[section.key],
+                        }))
+                      }
+                      sx={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 1.5,
+                        px: 2,
+                        py: 1.6,
+                        textAlign: 'left',
+                        '&:active': { bgcolor: '#F8FAFC' },
+                      }}
+                    >
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#0F172A', lineHeight: 1.2 }}>
+                          {section.title}
                         </Typography>
-                        <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: '#6B7280' }}>
-                          Coffee {idx === 0 ? '(part 1)' : '(part 2)'}
+                        <Typography sx={{ mt: 0.35, fontSize: '0.75rem', fontWeight: 600, color: '#94A3B8' }}>
+                          {section.subtitle}
                         </Typography>
                       </Box>
-                      <IconButton 
-                        sx={{ 
-                          bgcolor: '#F9FAFB', 
-                          '&:hover': { bgcolor: '#00B4A010', color: '#00B4A0' } 
+                      <ExpandMore
+                        sx={{
+                          color: '#64748B',
+                          transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 180ms ease',
+                          flexShrink: 0,
                         }}
-                      >
-                        <VolumeUp sx={{ fontSize: 20 }} />
-                      </IconButton>
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
+                      />
+                    </ButtonBase>
+                    {open && (
+                      <Box sx={{ px: 2, pb: 2 }}>
+                        <Typography
+                          sx={{
+                            fontSize: '0.88rem',
+                            fontWeight: 500,
+                            color: '#475569',
+                            lineHeight: 1.65,
+                            pt: 0.25,
+                            borderTop: '1px solid #F1F5F9',
+                          }}
+                        >
+                          {section.body}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                );
+              })}
 
-              {/* Grammar Points */}
-              <Box sx={{ pb: 4 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-                  <Box sx={{ width: 4, height: 20, bgcolor: '#4F46E5', borderRadius: '2px' }} />
-                  <Typography sx={{ fontSize: '0.85rem', fontWeight: 900, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                    关键语法逻辑
-                  </Typography>
-                </Box>
-                <Box sx={{ 
-                  bgcolor: 'white', 
-                  p: 4, 
-                  borderRadius: '24px',
-                  border: '2px solid #C7D2FE',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  <Box sx={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, bgcolor: '#4F46E5', opacity: 0.05, borderRadius: '50%' }} />
-                  <Typography sx={{ fontSize: '1.1rem', fontWeight: 900, color: '#4F46E5', mb: 2, position: 'relative' }}>
-                    外来词音译
-                  </Typography>
-                  <Typography sx={{ fontSize: '0.95rem', fontWeight: 500, color: '#6B7280', lineHeight: 1.7, position: 'relative' }}>
-                    "咖啡"是一个音译词，来自英语 "coffee" 的发音，这是中文中常见的处理外来词汇的方式。
-                  </Typography>
-                </Box>
-              </Box>
+              <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: '#94A3B8', textAlign: 'center', pb: 1.5, flexShrink: 0 }}>
+                Credits refresh daily · {deepDiveCredits.remaining}/{DEEP_DIVE_DAILY_LIMIT} left
+              </Typography>
             </Box>
           </Box>
         )}
@@ -2114,30 +2983,30 @@ export default function AIChatPage() {
             }
           }}>
             <Box sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #F3F4F6' }}>
-              <Typography sx={{ fontWeight: 900, fontSize: '1.2rem' }}>AI 词典助手</Typography>
+              <Typography sx={{ fontWeight: 900, fontSize: '1.2rem' }}>AI Dictionary</Typography>
               <IconButton onClick={() => setShowDictionary(false)} sx={{ '&:hover': { bgcolor: '#FEE2E2', color: '#EF4444' } }}>
                 <Close />
               </IconButton>
             </Box>
             <Tabs value={dictTab} onChange={(_, v) => setDictTab(v)} centered sx={{ borderBottom: '2px solid #F3F4F6' }}>
-              <Tab label="释义" icon={<Book fontSize="small" />} iconPosition="start" sx={{ fontWeight: 900, fontSize: '0.9rem' }} />
-              <Tab label="词汇网" icon={<BubbleChart fontSize="small" />} iconPosition="start" sx={{ fontWeight: 900, fontSize: '0.9rem' }} />
-              <Tab label="字源" icon={<Timeline fontSize="small" />} iconPosition="start" sx={{ fontWeight: 900, fontSize: '0.9rem' }} />
+              <Tab label="Meaning" icon={<Book fontSize="small" />} iconPosition="start" sx={{ fontWeight: 900, fontSize: '0.9rem' }} />
+              <Tab label="Word map" icon={<BubbleChart fontSize="small" />} iconPosition="start" sx={{ fontWeight: 900, fontSize: '0.9rem' }} />
+              <Tab label="Etymology" icon={<Timeline fontSize="small" />} iconPosition="start" sx={{ fontWeight: 900, fontSize: '0.9rem' }} />
             </Tabs>
             <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 4 }}>
               {dictTab === 0 && (
                 <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 900, color: '#4F46E5', mb: 1 }}>咖啡 (kāfēi)</Typography>
-                  <Typography sx={{ color: '#6B7280', mb: 3, fontSize: '1rem', fontWeight: 600 }}>Coffee - 来自外来语的音译词。</Typography>
-                  <Typography sx={{ fontWeight: 900, mb: 2, fontSize: '0.9rem', color: '#6B7280' }}>例句：</Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 900, color: '#0D9F72', mb: 1, fontFamily: KAI_TI }}>咖啡 (kāfēi)</Typography>
+                  <Typography sx={{ color: '#6B7280', mb: 3, fontSize: '1rem', fontWeight: 600 }}>Coffee — a phonetic loanword.</Typography>
+                  <Typography sx={{ fontWeight: 900, mb: 2, fontSize: '0.9rem', color: '#6B7280' }}>Example:</Typography>
                   <Box sx={{ p: 3, bgcolor: '#F9FAFB', borderRadius: '16px', border: '2px solid #E5E7EB' }}>
-                    <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', mb: 1 }}>我想喝一杯热咖啡。</Typography>
+                    <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', mb: 1, fontFamily: KAI_TI }}>我想喝一杯热咖啡。</Typography>
                     <Typography sx={{ fontSize: '0.9rem', color: '#9CA3AF', fontStyle: 'italic' }}>I want to drink a cup of hot coffee.</Typography>
                   </Box>
                 </Box>
               )}
-              {dictTab === 1 && <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Typography sx={{ color: '#9CA3AF', fontWeight: 600 }}>词汇关联图谱生成中...</Typography></Box>}
-              {dictTab === 2 && <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Typography sx={{ color: '#9CA3AF', fontWeight: 600 }}>字形演变历史加载中...</Typography></Box>}
+              {dictTab === 1 && <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Typography sx={{ color: '#9CA3AF', fontWeight: 600 }}>Building word map...</Typography></Box>}
+              {dictTab === 2 && <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Typography sx={{ color: '#9CA3AF', fontWeight: 600 }}>Loading character history...</Typography></Box>}
             </Box>
           </Box>
         )}
@@ -2153,6 +3022,16 @@ export default function AIChatPage() {
           {voiceUiError}
         </Alert>
       </Snackbar>
+      <Snackbar
+        open={deepDiveCreditToast}
+        autoHideDuration={4000}
+        onClose={() => setDeepDiveCreditToast(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setDeepDiveCreditToast(false)} severity="info" variant="filled" sx={{ width: '100%' }}>
+          No Deep Dive credits left today. Refreshes to {DEEP_DIVE_DAILY_LIMIT} daily.
+        </Alert>
+      </Snackbar>
       </>
     );
   };
@@ -2166,10 +3045,10 @@ export default function AIChatPage() {
       </Box>
       <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
         <Grid container spacing={3}>
-          <Grid item xs={12}><Box sx={{ p: 3, borderRadius: '24px', bgcolor: '#F9FAFB' }}><Typography sx={{ fontWeight: 900, mb: 2 }}>单词拆解</Typography><Box sx={{ display: 'flex', justifyContent: 'space-between', p: 2, bgcolor: 'white', borderRadius: '16px' }}><Box><Typography sx={{ fontWeight: 900 }}>咖啡 (kāfēi)</Typography><Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>Coffee</Typography></Box><IconButton size="small"><VolumeUp fontSize="small" /></IconButton></Box></Box></Grid>
+          <Grid item xs={12}><Box sx={{ p: 3, borderRadius: '24px', bgcolor: '#F9FAFB' }}><Typography sx={{ fontWeight: 900, mb: 2 }}>Word breakdown</Typography><Box sx={{ display: 'flex', justifyContent: 'space-between', p: 2, bgcolor: 'white', borderRadius: '16px' }}><Box><Typography sx={{ fontWeight: 900, fontFamily: KAI_TI }}>咖啡 (kāfēi)</Typography><Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>Coffee</Typography></Box><IconButton size="small"><VolumeUp fontSize="small" /></IconButton></Box></Box></Grid>
         </Grid>
       </Box>
-      <ButtonBase onClick={() => setScreen(ScreenState.CHAT)} sx={{ mt: 'auto', py: 2, bgcolor: '#111827', color: 'white', borderRadius: '18px', fontWeight: 900 }}>返回对话</ButtonBase>
+      <ButtonBase onClick={() => setScreen(ScreenState.CHAT)} sx={{ mt: 'auto', py: 2, bgcolor: '#111827', color: 'white', borderRadius: '18px', fontWeight: 900 }}>Back to chat</ButtonBase>
     </Box>
   );
 
@@ -2181,45 +3060,52 @@ export default function AIChatPage() {
     // Mock feedback data - in production, this would come from AI analysis
     const mockFeedback = {
       score: 88,
-      summary: "今天的对话练习表现出色！你的语法使用准确，词汇量也比较丰富。继续保持这样的学习状态，很快就能达到HSK 3级水平。",
-      suggestedFocus: "语调和自然度",
+      summary: 'Strong session. Your grammar was accurate and your vocabulary covered the scene well. Keep this pace and you will be ready for HSK 3 soon.',
+      suggestedFocus: 'Tone and natural phrasing',
       corrections: [
         {
-          original: "我想要一个咖啡",
-          corrected: "我想要一杯咖啡",
-          explanation: '在中文里，咖啡要用量词"杯"，而不是"个"。不同的名词需要搭配不同的量词。',
-          type: "vocabulary" as const
+          original: '我想要一个咖啡',
+          corrected: '我想要一杯咖啡',
+          explanation: 'Use the measure word 杯 for coffee, not 个.',
+          type: 'vocabulary' as const,
         },
         {
-          original: "多少钱这个？",
-          corrected: "这个多少钱？",
-          explanation: '疑问词"多少钱"应该放在句末，符合中文的语序习惯。正确的语序是：主语 + 谓语 + 宾语。',
-          type: "grammar" as const
+          original: '多少钱这个？',
+          corrected: '这个多少钱？',
+          explanation: 'Put 多少钱 at the end: subject + object + how much.',
+          type: 'grammar' as const,
         },
         {
-          original: "可以我坐在这里吗？",
-          corrected: "我可以坐在这里吗？",
-          explanation: '在疑问句中，"可以"应该放在主语"我"之后。中文语序：主语 + 助动词 + 动词。',
-          type: "grammar" as const
-        }
-      ]
+          original: '可以我坐在这里吗？',
+          corrected: '我可以坐在这里吗？',
+          explanation: 'In questions, 可以 comes after the subject 我.',
+          type: 'grammar' as const,
+        },
+      ],
     };
 
+    const typeLabel = (type: string) =>
+      type === 'grammar' ? 'Grammar' : type === 'vocabulary' ? 'Vocabulary' : 'Fluency';
+
     return (
-      <Box sx={{ height: '100%', bgcolor: 'white', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* Header - Compact */}
-        <Box sx={{ px: 8, py: 3, borderBottom: '2px solid #F3F4F6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ width: 40, height: 40, bgcolor: '#DCFCE7', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(22,163,74,0.2)' }}>
-              <CheckCircle sx={{ fontSize: 24, color: '#16A34A' }} />
-            </Box>
-            <Box>
-              <Typography sx={{ fontSize: '1.25rem', fontWeight: 900, color: '#1F2937', lineHeight: 1 }}>实战学习报告</Typography>
-              <Typography sx={{ fontSize: '0.6rem', fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.15em', mt: 0.5 }}>
-                SESSION REPORT · {new Date().toLocaleDateString('zh-CN')}
-              </Typography>
-            </Box>
+      <Box sx={{ height: '100%', bgcolor: '#F7F9F8', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Header */}
+        <Box sx={{ px: 3, py: 1.5, minHeight: 84, bgcolor: '#FFFFFF', borderBottom: '1px solid #E7ECEA', display: 'grid', gridTemplateColumns: '48px 1fr auto', gap: 2, alignItems: 'center' }}>
+          <ButtonBase
+            onClick={() => setScreen(ScreenState.CHAT)}
+            aria-label="Back to chat"
+            sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: '#FFFFFF', border: '1px solid #E1E7E4', color: '#425B53', boxShadow: '0 2px 8px rgba(23,63,53,0.05)' }}
+          >
+            <BackIcon sx={{ fontSize: 22 }} />
+          </ButtonBase>
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography sx={{ fontSize: '1.5rem', fontWeight: 900, color: '#173F35', lineHeight: 1.15 }}>Practice report</Typography>
+            <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#82938D', mt: 0.5 }}>
+              {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </Typography>
           </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <FeedbackEntryButton is960={false} context={{ screen: 'ai_tutor_report' }} />
           <ButtonBase 
             onClick={() => {
               // Save history before going home
@@ -2243,54 +3129,71 @@ export default function AIChatPage() {
               goHome();
             }} 
             sx={{ 
-              px: 6, 
-              py: 2, 
-              bgcolor: '#111827', 
+              minHeight: 44,
+              px: 3,
+              py: 0,
+              background: 'linear-gradient(135deg, #19BD82 0%, #07966A 100%)',
               color: 'white', 
-              borderRadius: '16px', 
+              borderRadius: '14px',
               fontWeight: 900, 
               fontSize: '0.95rem',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-              '&:hover': { bgcolor: '#00B4A0' },
+              boxShadow: '0 8px 18px rgba(7,150,106,0.18)',
               '&:active': { transform: 'scale(0.98)' }
             }}
           >
-            完成练习
+            Done
           </ButtonBase>
+          </Box>
         </Box>
 
-        {/* Content - Single Screen Layout */}
-        <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4, overflow: 'hidden' }}>
-          <Box sx={{ maxWidth: 920, width: '100%', display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {/* Content - Reference two-column layout */}
+        <Box sx={{ flexGrow: 1, minHeight: 0, p: 2.5, overflow: 'hidden' }}>
+          <Box sx={{ height: '100%', width: '100%', display: 'grid', gridTemplateColumns: '38% minmax(0, 1fr)', gap: 2.5 }}>
             
             {/* Top Stats Grid */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 3 }}>
+            <Box sx={{ minHeight: 0, display: 'grid', gridTemplateColumns: '1fr', gridTemplateRows: '1.2fr 0.8fr 0.8fr', gap: 2, bgcolor: '#FFFFFF', border: '1px solid #DDE6E2', borderRadius: '22px', overflow: 'hidden', p: 0 }}>
               {/* Score Card */}
               <Box sx={{ 
-                bgcolor: '#111827', 
+                background: 'linear-gradient(145deg, #16B77E 0%, #087A58 100%)',
                 color: 'white', 
-                p: 3, 
-                borderRadius: '20px', 
-                textAlign: 'center',
+                p: 3,
+                borderRadius: '20px 20px 14px 14px',
+                textAlign: 'left',
                 position: 'relative',
                 overflow: 'hidden',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.15)'
+                boxShadow: '0 12px 26px rgba(7,122,88,0.2)'
               }}>
-                <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(0,180,160,0.2) 0%, transparent 100%)' }} />
+                <Box
+                  component="img"
+                  src={
+                    mockFeedback.score >= 60
+                      ? '/images/clingo-ai-mascot-score.png'
+                      : '/images/clingo-ai-mascot-score-low.png'
+                  }
+                  alt=""
+                  sx={{
+                    position: 'absolute',
+                    right: 8,
+                    bottom: -24,
+                    height: '108%',
+                    objectFit: 'contain',
+                    opacity: 0.42,
+                  }}
+                />
                 <Box sx={{ position: 'relative', zIndex: 1 }}>
-                  <Typography sx={{ fontSize: '0.55rem', fontWeight: 900, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.2em', mb: 1 }}>
-                    综合评分
+                  <Typography sx={{ fontSize: '0.95rem', fontWeight: 800, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.04em', mb: 1 }}>
+                    Overall score
                   </Typography>
-                  <Typography sx={{ fontSize: '2.75rem', fontWeight: 900, lineHeight: 1, mb: 1 }}>
+                  <Typography sx={{ fontSize: '4rem', fontWeight: 900, lineHeight: 1, mb: 1 }}>
                     {mockFeedback.score}
                   </Typography>
-                  <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                  <Box sx={{ display: 'flex', gap: 0.5 }}>
                     {[1,2,3,4,5].map(i => (
                       <Box 
                         key={i} 
                         sx={{ 
-                          fontSize: '0.85rem',
-                          color: i <= Math.floor(mockFeedback.score / 20) ? '#00B4A0' : 'rgba(255,255,255,0.2)'
+                          fontSize: '1rem',
+                          color: i <= Math.floor(mockFeedback.score / 20) ? '#F8CF4A' : 'rgba(255,255,255,0.24)'
                         }}
                       >
                         ★
@@ -2302,132 +3205,141 @@ export default function AIChatPage() {
 
               {/* Study Duration Card */}
               <Box sx={{ 
-                bgcolor: 'white', 
-                p: 3, 
-                borderRadius: '20px', 
-                textAlign: 'center',
-                border: '2px solid #F3F4F6',
+                bgcolor: '#F0F8F4',
+                mx: 2.5,
+                p: 2.5,
+                borderRadius: '18px',
+                textAlign: 'left',
+                border: '1px solid #DCEFE6',
                 display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+                alignItems: 'center',
+                justifyContent: 'space-between'
               }}>
-                <Typography sx={{ fontSize: '0.55rem', fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.2em', mb: 1 }}>
-                  学习时长
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 1, mb: 0.5 }}>
-                  <Typography sx={{ fontSize: '2.75rem', fontWeight: 900, color: '#4F46E5', lineHeight: 1 }}>
+                <Box>
+                  <Typography sx={{ fontSize: '0.9rem', fontWeight: 800, color: '#8A9B95', mb: 0.6 }}>Study time</Typography>
+                  <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: '#425B53' }}>{messageCount} turns completed</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.6 }}>
+                  <Typography sx={{ fontSize: '2.25rem', fontWeight: 900, color: '#0D9F72', lineHeight: 1 }}>
                     {sessionDuration}
                   </Typography>
-                  <Typography sx={{ fontSize: '1.1rem', fontWeight: 900, color: '#9CA3AF' }}>
-                    分钟
+                  <Typography sx={{ fontSize: '1.05rem', fontWeight: 900, color: '#5E746D' }}>
+                    min
                   </Typography>
                 </Box>
-                <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: '#6B7280' }}>
-                  完成 {messageCount} 轮对话
-                </Typography>
               </Box>
 
               {/* Messages Count Card */}
               <Box sx={{ 
-                bgcolor: 'white', 
-                p: 3, 
-                borderRadius: '20px', 
-                textAlign: 'center',
-                border: '2px solid #F3F4F6',
+                bgcolor: '#F0F8F4',
+                mx: 2.5,
+                mb: 2.5,
+                p: 2.5,
+                borderRadius: '18px',
+                textAlign: 'left',
+                border: '1px solid #DCEFE6',
                 display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+                alignItems: 'center',
+                justifyContent: 'space-between'
               }}>
-                <Typography sx={{ fontSize: '0.55rem', fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.2em', mb: 1 }}>
-                  表现亮点
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 1, mb: 0.5 }}>
-                  <Typography sx={{ fontSize: '2.75rem', fontWeight: 900, color: '#00B4A0', lineHeight: 1 }}>
+                <Box>
+                  <Typography sx={{ fontSize: '0.9rem', fontWeight: 800, color: '#8A9B95', mb: 0.6 }}>Highlights</Typography>
+                  <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: '#425B53' }}>Strong lines</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.6 }}>
+                  <Typography sx={{ fontSize: '2.25rem', fontWeight: 900, color: '#0D9F72', lineHeight: 1 }}>
                     {Math.max(0, messageCount - mockFeedback.corrections.length)}
                   </Typography>
-                  <Typography sx={{ fontSize: '1.1rem', fontWeight: 900, color: '#9CA3AF' }}>
-                    句
+                  <Typography sx={{ fontSize: '1.05rem', fontWeight: 900, color: '#5E746D' }}>
+                    lines
                   </Typography>
                 </Box>
-                <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: '#6B7280' }}>
-                  完美表达
-                </Typography>
               </Box>
             </Box>
 
             {/* Bottom Row: AI Summary + Corrections */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }}>
+            <Box sx={{ minHeight: 0, display: 'grid', gridTemplateColumns: '1fr', gridTemplateRows: 'auto minmax(0, 1fr)', gap: 2.5 }}>
               {/* AI Summary Card */}
               <Box sx={{ 
-                bgcolor: '#F3F4F6', 
-                p: 4, 
-                borderRadius: '20px',
+                bgcolor: '#FFFFFF',
+                p: 3,
+                borderRadius: '22px',
+                border: '1px solid #DDE6E2',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between'
               }}>
                 <Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                    <Target sx={{ fontSize: 20, color: '#00B4A0' }} />
-                    <Typography sx={{ fontSize: '0.95rem', fontWeight: 900, color: '#1F2937' }}>
-                      AI 导师总结
+                    <Box
+                      component="img"
+                      src="/images/clingo-ai-mascot-head.png"
+                      alt=""
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        objectFit: 'contain',
+                        flexShrink: 0,
+                      }}
+                    />
+                    <Typography sx={{ fontSize: '1.15rem', fontWeight: 900, color: '#173F35' }}>
+                      AI Feedback
                     </Typography>
                   </Box>
                   <Typography sx={{ 
-                    fontSize: '0.8rem', 
+                    fontSize: '1rem', 
                     fontWeight: 600, 
                     color: '#4B5563', 
-                    lineHeight: 1.5,
-                    fontStyle: 'italic',
+                    lineHeight: 1.55,
+                    fontStyle: 'normal',
                     mb: 2
                   }}>
                     "{mockFeedback.summary}"
                   </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 1.5, bgcolor: '#00B4A010', borderRadius: '12px', border: '2px solid #00B4A020' }}>
-                  <TrendingUp sx={{ fontSize: 16, color: '#00B4A0' }} />
-                  <Typography sx={{ fontSize: '0.65rem', fontWeight: 900, color: '#00B4A0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    建议关注: {mockFeedback.suggestedFocus}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 1.5, bgcolor: 'rgba(13,159,114,0.06)', borderRadius: '12px', border: '2px solid rgba(13,159,114,0.12)' }}>
+                  <TrendingUp sx={{ fontSize: 18, color: '#0D9F72' }} />
+                  <Typography sx={{ fontSize: '0.82rem', fontWeight: 900, color: '#0D9F72', letterSpacing: '0.02em' }}>
+                    Focus next: {mockFeedback.suggestedFocus}
                   </Typography>
                 </Box>
               </Box>
 
               {/* Corrections Summary Card */}
               <Box sx={{ 
-                bgcolor: 'white', 
-                p: 4, 
-                borderRadius: '20px',
-                border: '2px solid #F3F4F6',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                bgcolor: '#FFFFFF',
+                p: 3,
+                borderRadius: '22px',
+                border: '1px solid #DDE6E2',
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                minHeight: 0,
+                overflow: 'hidden'
               }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <AlertCircle sx={{ fontSize: 20, color: '#F59E0B' }} />
-                    <Typography sx={{ fontSize: '0.95rem', fontWeight: 900, color: '#1F2937' }}>
-                      核心纠错
+                    <AlertCircle sx={{ fontSize: 22, color: '#F59E0B' }} />
+                    <Typography sx={{ fontSize: '1.15rem', fontWeight: 900, color: '#173F35' }}>
+                      Key Fixes
                     </Typography>
                   </Box>
-                  <Box sx={{ px: 2, py: 0.5, bgcolor: '#FEF3C7', borderRadius: '10px', border: '2px solid #FDE68A' }}>
-                    <Typography sx={{ fontSize: '0.6rem', fontWeight: 900, color: '#D97706', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                      {mockFeedback.corrections.length} 处改进
+                  <Box sx={{ px: 2, py: 0.65, bgcolor: '#FEF3C7', borderRadius: '10px', border: '2px solid #FDE68A' }}>
+                    <Typography sx={{ fontSize: '0.78rem', fontWeight: 900, color: '#D97706', letterSpacing: '0.04em' }}>
+                      {mockFeedback.corrections.length} fixes
                     </Typography>
                   </Box>
                 </Box>
                 
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  {mockFeedback.corrections.slice(0, 2).map((item, idx) => (
+                <Box sx={{ minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1.5, pr: 0.5 }}>
+                  {mockFeedback.corrections.map((item, idx) => (
                     <Box key={idx} sx={{ 
                       p: 2.5, 
-                      bgcolor: '#F9FAFB', 
-                      borderRadius: '12px',
-                      border: '1px solid #E5E7EB'
+                      bgcolor: '#F0F8F4',
+                      borderRadius: '14px',
+                      border: '1px solid #DCEFE6'
                     }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                        <Typography sx={{ fontSize: '0.55rem', fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.1 }}>
+                        <Typography sx={{ fontSize: '0.75rem', fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                           #{idx + 1}
                         </Typography>
                         <Box sx={{ 
@@ -2439,29 +3351,23 @@ export default function AIChatPage() {
                           borderColor: item.type === 'grammar' ? '#FCA5A5' : item.type === 'vocabulary' ? '#93C5FD' : '#86EFAC'
                         }}>
                           <Typography sx={{ 
-                            fontSize: '0.55rem', 
+                            fontSize: '0.72rem', 
                             fontWeight: 900, 
                             color: item.type === 'grammar' ? '#DC2626' : item.type === 'vocabulary' ? '#2563EB' : '#16A34A',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em'
+                            letterSpacing: '0.03em'
                           }}>
-                            {item.type === 'grammar' ? '语法' : item.type === 'vocabulary' ? '词汇' : '自然度'}
+                            {typeLabel(item.type)}
                           </Typography>
                         </Box>
                       </Box>
-                      <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#6B7280', textDecoration: 'line-through', mb: 0.75 }}>
+                      <Typography sx={{ fontSize: '1.05rem', fontWeight: 700, color: '#6B7280', textDecoration: 'line-through', mb: 0.75, fontFamily: KAI_TI, lineHeight: 1.45 }}>
                         {item.original}
                       </Typography>
-                      <Typography sx={{ fontSize: '0.8rem', fontWeight: 900, color: '#00B4A0' }}>
+                      <Typography sx={{ fontSize: '1.15rem', fontWeight: 800, color: '#0D9F72', fontFamily: KAI_TI, lineHeight: 1.45 }}>
                         → {item.corrected}
                       </Typography>
                     </Box>
                   ))}
-                  {mockFeedback.corrections.length > 2 && (
-                    <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, color: '#9CA3AF', textAlign: 'center', mt: 0.5 }}>
-                      还有 {mockFeedback.corrections.length - 2} 处建议
-                    </Typography>
-                  )}
                 </Box>
               </Box>
             </Box>
@@ -2479,13 +3385,13 @@ export default function AIChatPage() {
       {/* Header */}
       <Box sx={{ px: 4, py: 3, borderBottom: '2px solid #E5E7EB', bgcolor: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, ml: 8 }}>
-          <History sx={{ fontSize: 28, color: '#4F46E5' }} />
-          <Typography sx={{ fontSize: '1.5rem', fontWeight: 900, color: '#1F2937' }}>历史记录</Typography>
+          <History sx={{ fontSize: 28, color: '#0D9F72' }} />
+          <Typography sx={{ fontSize: '1.5rem', fontWeight: 900, color: '#1F2937' }}>History</Typography>
         </Box>
         {histories.length > 0 && (
           <ButtonBase
             onClick={() => {
-              if (window.confirm('确定要清空所有历史记录吗？')) {
+              if (window.confirm('Clear all history?')) {
                 histories.forEach(h => dispatch(deleteHistory(h.id)));
               }
             }}
@@ -2502,7 +3408,7 @@ export default function AIChatPage() {
               '&:active': { transform: 'scale(0.95)' }
             }}
           >
-            清空全部
+            Clear all
           </ButtonBase>
         )}
       </Box>
@@ -2512,8 +3418,8 @@ export default function AIChatPage() {
         {histories.length === 0 ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 2 }}>
             <History sx={{ fontSize: 64, color: '#D1D5DB' }} />
-            <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, color: '#9CA3AF' }}>暂无历史记录</Typography>
-            <Typography sx={{ fontSize: '0.85rem', color: '#D1D5DB' }}>完成对话练习后，记录会自动保存</Typography>
+            <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, color: '#9CA3AF' }}>No history yet</Typography>
+            <Typography sx={{ fontSize: '0.85rem', color: '#D1D5DB' }}>Finished sessions will show up here</Typography>
           </Box>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 1000, mx: 'auto' }}>
@@ -2532,8 +3438,8 @@ export default function AIChatPage() {
                   transition: 'all 0.3s',
                   cursor: 'pointer',
                   '&:hover': {
-                    borderColor: '#4F46E5',
-                    boxShadow: '0 4px 12px rgba(79,70,229,0.15)',
+                    borderColor: '#0D9F72',
+                    boxShadow: '0 4px 12px rgba(13,159,114,0.15)',
                     transform: 'translateY(-2px)'
                   }
                 }}
@@ -2568,16 +3474,16 @@ export default function AIChatPage() {
                       borderColor: history.score >= 90 ? '#86EFAC' : history.score >= 80 ? '#FDE047' : '#FCA5A5'
                     }}>
                       <Typography sx={{ fontSize: '0.75rem', fontWeight: 900, color: history.score >= 90 ? '#16A34A' : history.score >= 80 ? '#D97706' : '#DC2626' }}>
-                        {history.score} 分
+                        {history.score}
                       </Typography>
                     </Box>
                   </Box>
                   <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
                     <Typography sx={{ fontSize: '0.8rem', color: '#6B7280', fontWeight: 600 }}>
-                      {new Date(history.date).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      {new Date(history.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </Typography>
                     <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF' }}>
-                      {history.duration} 分钟 · {history.messageCount} 轮对话
+                      {history.duration} min · {history.messageCount} turns
                     </Typography>
                   </Box>
                 </Box>
@@ -2594,21 +3500,21 @@ export default function AIChatPage() {
                       px: 3,
                       py: 1.5,
                       borderRadius: '12px',
-                      bgcolor: '#4F46E5',
+                      bgcolor: '#0D9F72',
                       color: 'white',
                       fontSize: '0.85rem',
                       fontWeight: 900,
-                      '&:hover': { bgcolor: '#4338CA' },
+                      '&:hover': { bgcolor: '#087A58' },
                       '&:active': { transform: 'scale(0.95)' }
                     }}
                   >
                     <Assessment sx={{ fontSize: 16, mr: 0.5 }} />
-                    查看报告
+                    View report
                   </ButtonBase>
                   <IconButton
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (window.confirm('确定要删除这条记录吗？')) {
+                      if (window.confirm('Delete this record?')) {
                         dispatch(deleteHistory(history.id));
                       }
                     }}
@@ -2655,10 +3561,10 @@ export default function AIChatPage() {
             </ButtonBase>
             <Box>
               <Typography sx={{ fontSize: '1.25rem', fontWeight: 900, color: '#1F2937', lineHeight: 1 }}>
-                学习反馈报告
+                Practice report
               </Typography>
-              <Typography sx={{ fontSize: '0.6rem', fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.15em', mt: 0.5 }}>
-                {selectedHistory.topic} · {new Date(selectedHistory.date).toLocaleDateString('zh-CN')}
+              <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#9CA3AF', letterSpacing: '0.04em', mt: 0.5 }}>
+                {selectedHistory.topic} · {new Date(selectedHistory.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </Typography>
             </Box>
           </Box>
@@ -2683,8 +3589,8 @@ export default function AIChatPage() {
               }}>
                 <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(0,180,160,0.2) 0%, transparent 100%)' }} />
                 <Box sx={{ position: 'relative', zIndex: 1 }}>
-                  <Typography sx={{ fontSize: '0.55rem', fontWeight: 900, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.2em', mb: 1 }}>
-                    综合评分
+                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 900, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.12em', mb: 1 }}>
+                    Overall score
                   </Typography>
                   <Typography sx={{ fontSize: '2.75rem', fontWeight: 900, lineHeight: 1, mb: 1 }}>
                     {selectedHistory.score}
@@ -2695,7 +3601,7 @@ export default function AIChatPage() {
                         key={i} 
                         sx={{ 
                           fontSize: '0.85rem',
-                          color: i <= Math.floor(selectedHistory.score / 20) ? '#00B4A0' : 'rgba(255,255,255,0.2)'
+                          color: i <= Math.floor(selectedHistory.score / 20) ? '#0D9F72' : 'rgba(255,255,255,0.2)'
                         }}
                       >
                         ★
@@ -2717,19 +3623,19 @@ export default function AIChatPage() {
                 justifyContent: 'center',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
               }}>
-                <Typography sx={{ fontSize: '0.55rem', fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.2em', mb: 1 }}>
-                  学习时长
+                <Typography sx={{ fontSize: '0.75rem', fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.12em', mb: 1 }}>
+                  Study time
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 1, mb: 0.5 }}>
-                  <Typography sx={{ fontSize: '2.75rem', fontWeight: 900, color: '#4F46E5', lineHeight: 1 }}>
+                  <Typography sx={{ fontSize: '2.75rem', fontWeight: 900, color: '#0D9F72', lineHeight: 1 }}>
                     {selectedHistory.duration}
                   </Typography>
                   <Typography sx={{ fontSize: '1.1rem', fontWeight: 900, color: '#9CA3AF' }}>
-                    分钟
+                    min
                   </Typography>
                 </Box>
-                <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: '#6B7280' }}>
-                  完成 {selectedHistory.messageCount} 轮对话
+                <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#6B7280' }}>
+                  {selectedHistory.messageCount} turns completed
                 </Typography>
               </Box>
 
@@ -2745,19 +3651,19 @@ export default function AIChatPage() {
                 justifyContent: 'center',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
               }}>
-                <Typography sx={{ fontSize: '0.55rem', fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.2em', mb: 1 }}>
-                  表现亮点
+                <Typography sx={{ fontSize: '0.75rem', fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.12em', mb: 1 }}>
+                  Highlights
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 1, mb: 0.5 }}>
-                  <Typography sx={{ fontSize: '2.75rem', fontWeight: 900, color: '#00B4A0', lineHeight: 1 }}>
+                  <Typography sx={{ fontSize: '2.75rem', fontWeight: 900, color: '#0D9F72', lineHeight: 1 }}>
                     {Math.max(0, selectedHistory.messageCount - selectedHistory.feedback.corrections.length)}
                   </Typography>
                   <Typography sx={{ fontSize: '1.1rem', fontWeight: 900, color: '#9CA3AF' }}>
-                    句
+                    lines
                   </Typography>
                 </Box>
-                <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: '#6B7280' }}>
-                  完美表达
+                <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#6B7280' }}>
+                  Strong lines
                 </Typography>
               </Box>
             </Box>
@@ -2775,26 +3681,26 @@ export default function AIChatPage() {
               }}>
                 <Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                    <Target sx={{ fontSize: 20, color: '#00B4A0' }} />
-                    <Typography sx={{ fontSize: '0.95rem', fontWeight: 900, color: '#1F2937' }}>
-                      AI 导师总结
+                    <Target sx={{ fontSize: 20, color: '#0D9F72' }} />
+                    <Typography sx={{ fontSize: '1.05rem', fontWeight: 900, color: '#1F2937' }}>
+                      AI Feedback
                     </Typography>
                   </Box>
                   <Typography sx={{ 
-                    fontSize: '0.8rem', 
+                    fontSize: '0.95rem', 
                     fontWeight: 600, 
                     color: '#4B5563', 
-                    lineHeight: 1.5,
+                    lineHeight: 1.55,
                     fontStyle: 'italic',
                     mb: 2
                   }}>
                     "{selectedHistory.feedback.summary}"
                   </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 1.5, bgcolor: '#00B4A010', borderRadius: '12px', border: '2px solid #00B4A020' }}>
-                  <TrendingUp sx={{ fontSize: 16, color: '#00B4A0' }} />
-                  <Typography sx={{ fontSize: '0.65rem', fontWeight: 900, color: '#00B4A0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    建议关注: {selectedHistory.feedback.suggestedFocus}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 1.5, bgcolor: 'rgba(13,159,114,0.06)', borderRadius: '12px', border: '2px solid rgba(13,159,114,0.12)' }}>
+                  <TrendingUp sx={{ fontSize: 16, color: '#0D9F72' }} />
+                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 900, color: '#0D9F72', letterSpacing: '0.02em' }}>
+                    Focus next: {selectedHistory.feedback.suggestedFocus}
                   </Typography>
                 </Box>
               </Box>
@@ -2812,13 +3718,13 @@ export default function AIChatPage() {
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     <AlertCircle sx={{ fontSize: 20, color: '#F59E0B' }} />
-                    <Typography sx={{ fontSize: '0.95rem', fontWeight: 900, color: '#1F2937' }}>
-                      核心纠错
+                    <Typography sx={{ fontSize: '1.05rem', fontWeight: 900, color: '#1F2937' }}>
+                      Key Fixes
                     </Typography>
                   </Box>
                   <Box sx={{ px: 2, py: 0.5, bgcolor: '#FEF3C7', borderRadius: '10px', border: '2px solid #FDE68A' }}>
-                    <Typography sx={{ fontSize: '0.6rem', fontWeight: 900, color: '#D97706', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                      {selectedHistory.feedback.corrections.length} 处改进
+                    <Typography sx={{ fontSize: '0.78rem', fontWeight: 900, color: '#D97706', letterSpacing: '0.04em' }}>
+                      {selectedHistory.feedback.corrections.length} fixes
                     </Typography>
                   </Box>
                 </Box>
@@ -2832,7 +3738,7 @@ export default function AIChatPage() {
                       border: '1px solid #E5E7EB'
                     }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                        <Typography sx={{ fontSize: '0.55rem', fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                        <Typography sx={{ fontSize: '0.72rem', fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                           #{idx + 1}
                         </Typography>
                         <Box sx={{ 
@@ -2844,27 +3750,26 @@ export default function AIChatPage() {
                           borderColor: item.type === 'grammar' ? '#FCA5A5' : item.type === 'vocabulary' ? '#93C5FD' : '#86EFAC'
                         }}>
                           <Typography sx={{ 
-                            fontSize: '0.55rem', 
+                            fontSize: '0.72rem', 
                             fontWeight: 900, 
                             color: item.type === 'grammar' ? '#DC2626' : item.type === 'vocabulary' ? '#2563EB' : '#16A34A',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em'
+                            letterSpacing: '0.03em'
                           }}>
-                            {item.type === 'grammar' ? '语法' : item.type === 'vocabulary' ? '词汇' : '自然度'}
+                            {item.type === 'grammar' ? 'Grammar' : item.type === 'vocabulary' ? 'Vocabulary' : 'Fluency'}
                           </Typography>
                         </Box>
                       </Box>
-                      <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#6B7280', textDecoration: 'line-through', mb: 0.75 }}>
+                      <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: '#6B7280', textDecoration: 'line-through', mb: 0.75, fontFamily: KAI_TI }}>
                         {item.original}
                       </Typography>
-                      <Typography sx={{ fontSize: '0.8rem', fontWeight: 900, color: '#00B4A0' }}>
+                      <Typography sx={{ fontSize: '1.1rem', fontWeight: 900, color: '#0D9F72', fontFamily: KAI_TI }}>
                         → {item.corrected}
                       </Typography>
                     </Box>
                   ))}
                   {selectedHistory.feedback.corrections.length > 2 && (
-                    <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, color: '#9CA3AF', textAlign: 'center', mt: 0.5 }}>
-                      还有 {selectedHistory.feedback.corrections.length - 2} 处建议
+                    <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#9CA3AF', textAlign: 'center', mt: 0.5 }}>
+                      +{selectedHistory.feedback.corrections.length - 2} more tips
                     </Typography>
                   )}
                 </Box>
@@ -2930,45 +3835,6 @@ export default function AIChatPage() {
             : llmSnack.mode === 'timeout'
               ? 'Request timed out. Check your connection, then tap Retry.'
               : llmSnack.detail}
-        </Alert>
-      </Snackbar>
-      <Snackbar
-        open={!!playbackSnack}
-        autoHideDuration={10000}
-        onClose={() => setPlaybackSnack(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        sx={{ maxWidth: 'min(92vw, 560px)', bottom: { xs: 96, sm: 112 } }}
-      >
-        <Alert
-          onClose={() => setPlaybackSnack(null)}
-          severity="info"
-          variant="filled"
-          sx={{
-            width: '100%',
-            alignItems: 'center',
-            fontSize: '1rem',
-            py: 1.5,
-            px: 2,
-            borderRadius: 2,
-            boxShadow: 4,
-          }}
-          action={
-            playbackSnack ? (
-              <Button
-                color="inherit"
-                size="large"
-                sx={{ fontWeight: 800, minHeight: 48, px: 2 }}
-                onClick={() => {
-                  getPipeline().enqueuePlayback(playbackSnack.text, playbackSnack.messageId);
-                  setPlaybackSnack(null);
-                }}
-              >
-                Replay
-              </Button>
-            ) : undefined
-          }
-        >
-          Playback failed. The reply is still on screen — tap Replay to try audio again.
         </Alert>
       </Snackbar>
     </Box>

@@ -7,7 +7,7 @@ import { Box, Typography, ButtonBase } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import InfoIcon from '@mui/icons-material/InfoOutlined';
-import { resolveBackPath } from '../utils/navigateBack';
+import { resolveWritingPracticeExit } from '../utils/navigateBack';
 
 // 汉字笔画信息（示例数据）
 const CHARACTER_INFO: Record<string, {
@@ -54,11 +54,19 @@ export default function CharacterWritingPage() {
   
   const charInfo = CHARACTER_INFO[character || '你'] || CHARACTER_INFO['你'];
 
+  const exitWritingPractice = () => {
+    const exit = resolveWritingPracticeExit(location, { defaultPath: '/character-writing' });
+    navigate(exit.path, {
+      replace: true,
+      state: exit.restore ? { restore: exit.restore } : undefined,
+    });
+  };
+
   const handleNextStep = () => {
     if (step < 3) {
       setStep((step + 1) as 1 | 2 | 3);
     } else {
-      navigate(resolveBackPath(location, { defaultPath: '/character-writing' }), { replace: true });
+      exitWritingPractice();
     }
   };
 
@@ -113,7 +121,7 @@ export default function CharacterWritingPage() {
       </Box>
 
       <ButtonBase
-        onClick={() => navigate(resolveBackPath(location, { defaultPath: '/character-writing' }), { replace: true })}
+        onClick={exitWritingPractice}
         aria-label="Close writing practice"
         sx={{
           position: 'absolute',

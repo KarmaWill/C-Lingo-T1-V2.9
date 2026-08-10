@@ -81,7 +81,7 @@ export const CURRENT_LESSON: Lesson = {
           type: 'vocab',
           content: '米饭',
           pinyin: 'mǐfàn',
-          meaning: '米饭 / Rice',
+          meaning: 'Rice',
           // TODO: 替换为用户上传的蓝色碗装米饭图片
           imageUrl: '/assets/images/rice-bowl-blue.jpg' // 蓝色碗装米饭图片
         },
@@ -90,7 +90,7 @@ export const CURRENT_LESSON: Lesson = {
           type: 'vocab',
           content: '饺子',
           pinyin: 'jiǎozi',
-          meaning: '饺子 / Dumplings',
+          meaning: 'Dumplings',
           imageUrl: 'https://picsum.photos/id/1004/300/300'
         },
         {
@@ -98,8 +98,15 @@ export const CURRENT_LESSON: Lesson = {
           type: 'vocab',
           content: '包子',
           pinyin: 'bāozi',
-          meaning: '包子 / Steamed bun',
+          meaning: 'Steamed bun',
           imageUrl: 'https://picsum.photos/id/1/300/300'
+        },
+        {
+          id: 'l1-s1',
+          type: 'sentence',
+          content: '这是米饭。',
+          pinyin: 'Zhè shì mǐfàn.',
+          meaning: 'This is rice.',
         }
       ],
       questions: [
@@ -265,19 +272,19 @@ export const CURRENT_LESSON: Lesson = {
       description: '学习水、茶、牛奶等饮品',
       learnings: [
         {
-          id: 'l2-v1',
-          type: 'vocab',
+          id: 'l2-h1',
+          type: 'hanzi',
           content: '水',
           pinyin: 'shuǐ',
-          meaning: '水 / Water',
+          meaning: 'Water',
           imageUrl: 'https://picsum.photos/id/1004/300/300'
         },
         {
-          id: 'l2-v2',
-          type: 'vocab',
+          id: 'l2-h2',
+          type: 'hanzi',
           content: '茶',
           pinyin: 'chá',
-          meaning: '茶 / Tea',
+          meaning: 'Tea',
           imageUrl: 'https://picsum.photos/id/1/300/300'
         },
         {
@@ -285,8 +292,15 @@ export const CURRENT_LESSON: Lesson = {
           type: 'vocab',
           content: '牛奶',
           pinyin: 'niúnǎi',
-          meaning: '牛奶 / Milk',
+          meaning: 'Milk',
           imageUrl: 'https://picsum.photos/id/2/300/300'
+        },
+        {
+          id: 'l2-s1',
+          type: 'sentence',
+          content: '我喝茶。',
+          pinyin: 'Wǒ hē chá.',
+          meaning: 'I drink tea.',
         }
       ],
       questions: [
@@ -413,25 +427,32 @@ export const CURRENT_LESSON: Lesson = {
       description: '学习"这是"和"这不是"的表达',
       learnings: [
         {
-          id: 'l3-v1',
-          type: 'vocab',
+          id: 'l3-h1',
+          type: 'hanzi',
           content: '这',
           pinyin: 'zhè',
-          meaning: '这 / This',
+          meaning: 'This',
         },
         {
-          id: 'l3-v2',
-          type: 'vocab',
+          id: 'l3-h2',
+          type: 'hanzi',
           content: '是',
           pinyin: 'shì',
-          meaning: '是 / Is',
+          meaning: 'Is / to be',
         },
         {
-          id: 'l3-v3',
-          type: 'vocab',
+          id: 'l3-h3',
+          type: 'hanzi',
           content: '不',
           pinyin: 'bù',
-          meaning: '不 / Not',
+          meaning: 'Not',
+        },
+        {
+          id: 'l3-s1',
+          type: 'sentence',
+          content: '这是包子。',
+          pinyin: 'Zhè shì bāozi.',
+          meaning: 'This is a steamed bun.',
         }
       ],
       questions: [
@@ -551,25 +572,32 @@ export const CURRENT_LESSON: Lesson = {
       description: '学习"我"、"叫"、"是"等自我介绍用语',
       learnings: [
         {
-          id: 'l4-v1',
-          type: 'vocab',
+          id: 'l4-h1',
+          type: 'hanzi',
           content: '我',
           pinyin: 'wǒ',
-          meaning: '我 / I',
+          meaning: 'I / me',
         },
         {
-          id: 'l4-v2',
-          type: 'vocab',
+          id: 'l4-h2',
+          type: 'hanzi',
           content: '叫',
           pinyin: 'jiào',
-          meaning: '叫 / Called',
+          meaning: 'Called / named',
         },
         {
           id: 'l4-v3',
           type: 'vocab',
           content: '学生',
           pinyin: 'xuéshēng',
-          meaning: '学生 / Student',
+          meaning: 'Student',
+        },
+        {
+          id: 'l4-s1',
+          type: 'sentence',
+          content: '我是学生。',
+          pinyin: 'Wǒ shì xuéshēng.',
+          meaning: 'I am a student.',
         }
       ],
       questions: [
@@ -681,25 +709,32 @@ export const CURRENT_LESSON: Lesson = {
       description: '学习"这"、"谁"、"有"等表达',
       learnings: [
         {
-          id: 'l5-v1',
-          type: 'vocab',
+          id: 'l5-h1',
+          type: 'hanzi',
           content: '猫',
           pinyin: 'māo',
-          meaning: '猫 / Cat',
+          meaning: 'Cat',
         },
         {
-          id: 'l5-v2',
-          type: 'vocab',
+          id: 'l5-h2',
+          type: 'hanzi',
           content: '狗',
           pinyin: 'gǒu',
-          meaning: '狗 / Dog',
+          meaning: 'Dog',
         },
         {
-          id: 'l5-v3',
-          type: 'vocab',
+          id: 'l5-h3',
+          type: 'hanzi',
           content: '谁',
           pinyin: 'shéi',
-          meaning: '谁 / Who',
+          meaning: 'Who',
+        },
+        {
+          id: 'l5-s1',
+          type: 'sentence',
+          content: '这是我的猫。',
+          pinyin: 'Zhè shì wǒ de māo.',
+          meaning: 'This is my cat.',
         }
       ],
       questions: [
@@ -815,32 +850,39 @@ export const CURRENT_LESSON: Lesson = {
       description: '学习"他"、"她"、"爸爸"、"妈妈"等家庭成员',
       learnings: [
         {
-          id: 'l6-v1',
-          type: 'vocab',
+          id: 'l6-h1',
+          type: 'hanzi',
           content: '他',
           pinyin: 'tā',
-          meaning: '他 / He',
+          meaning: 'He',
         },
         {
-          id: 'l6-v2',
-          type: 'vocab',
+          id: 'l6-h2',
+          type: 'hanzi',
           content: '她',
           pinyin: 'tā',
-          meaning: '她 / She',
+          meaning: 'She',
         },
         {
           id: 'l6-v3',
           type: 'vocab',
           content: '爸爸',
           pinyin: 'bàba',
-          meaning: '爸爸 / Dad',
+          meaning: 'Dad',
         },
         {
           id: 'l6-v4',
           type: 'vocab',
           content: '妈妈',
           pinyin: 'māma',
-          meaning: '妈妈 / Mom',
+          meaning: 'Mom',
+        },
+        {
+          id: 'l6-s1',
+          type: 'sentence',
+          content: '她是我的妈妈。',
+          pinyin: 'Tā shì wǒ de māma.',
+          meaning: 'She is my mom.',
         }
       ],
       questions: [

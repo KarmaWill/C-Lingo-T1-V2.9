@@ -15,7 +15,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ReplayIcon from '@mui/icons-material/Replay';
 import LayersIcon from '@mui/icons-material/Layers';
 import CheckIcon from '@mui/icons-material/Check';
-import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined';
+import FeedbackEntryButton from '../components/feedback/FeedbackEntryButton';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import { uploadFunChineseOfflineData } from '../utils/funChineseOfflineSync';
 import { buildHubLessons, loadCompletedLessonIds, type HubLessonStatus } from '../utils/funChineseUnitProgress';
@@ -325,10 +325,6 @@ export default function FunChineseHubPage() {
     }
   };
 
-  const handleFeedback = () => {
-    setSnackbar({ open: true, message: 'Thanks! Unit feedback will open here in a later build.' });
-  };
-
   return (
     <Box
       sx={{
@@ -512,46 +508,7 @@ export default function FunChineseHubPage() {
               <CloudUploadOutlinedIcon sx={{ fontSize: is960 ? 18 : 20 }} />
             </ButtonBase>
           </Box>
-          <ButtonBase
-            onClick={handleFeedback}
-            aria-label="Feedback"
-            sx={{
-              width: is960 ? 38 : 44,
-              height: is960 ? 38 : 44,
-              minWidth: is960 ? 38 : 44,
-              minHeight: is960 ? 38 : 44,
-              p: 0,
-              boxSizing: 'border-box',
-              flexShrink: 0,
-              borderRadius: is960 ? '14px' : '16px',
-              border: '1.5px solid #FDBA74',
-              boxShadow: '0 8px 20px rgba(249,115,22,0.2)',
-              overflow: 'hidden',
-              transition: 'all 180ms ease',
-              '&:hover': {
-                boxShadow: '0 10px 24px rgba(249,115,22,0.28)',
-                '& .feedback-icon-wrap': {
-                  background: 'linear-gradient(135deg, #FB923C 0%, #F97316 55%, #EA580C 100%)',
-                },
-              },
-              '&:active': { transform: 'scale(0.96)' },
-            }}
-          >
-            <Box
-              className="feedback-icon-wrap"
-              sx={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'linear-gradient(135deg, #FDBA74 0%, #F97316 52%, #EA580C 100%)',
-                transition: 'background 180ms ease',
-              }}
-            >
-              <RateReviewOutlinedIcon sx={{ fontSize: is960 ? 20 : 23, color: '#FFFFFF' }} />
-            </Box>
-          </ButtonBase>
+          <FeedbackEntryButton is960={is960} context={{ screen: 'fun_chinese_hub' }} />
         </Box>
       </Box>
 

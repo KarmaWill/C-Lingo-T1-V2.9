@@ -679,7 +679,7 @@ export default function TopBanner() {
           {/* Profile entrance — same fox avatar as Profile sidebar */}
           <Avatar
             src="/images/nora-avatar.png"
-            alt="Nora"
+            alt="Lumi"
             onClick={() => navigate('/profile')}
             sx={{
               width: is960 ? 36 : (is2000x1200 ? 60 : (is1920x1125 ? 56 : 44)),
@@ -690,7 +690,7 @@ export default function TopBanner() {
               border: chrome.avatarBorder,
               transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
               overflow: 'hidden',
-              '& img': { objectFit: 'cover' },
+              '& img': { objectFit: 'contain', p: '2px', bgcolor: '#EAF9F2' },
               '&:active': {
                 transform: 'scale(0.95)',
                 boxShadow: '0 4px 16px rgba(234, 88, 12, 0.22)',

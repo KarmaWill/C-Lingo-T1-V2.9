@@ -22,7 +22,7 @@ export default function ProfileEditPage() {
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768'
   const is960 = screenSize === '960x540'
 
-  const [nickname, setNickname] = useState('Nora')
+  const [nickname, setNickname] = useState('Lumi')
   const [dob] = useState('2024-3-12')
   const [gender, setGender] = useState<Gender>('female')
   const [email] = useState('1234567891@qq.com')
@@ -88,7 +88,7 @@ export default function ProfileEditPage() {
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
             <Avatar
               src="/images/nora-avatar.png"
-              alt="Nora"
+              alt="Lumi"
               sx={{
                 width: is960 ? 88 : 104,
                 height: is960 ? 88 : 104,
@@ -96,7 +96,7 @@ export default function ProfileEditPage() {
                 boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
                 border: '4px solid rgba(255,255,255,0.45)',
                 mb: 1.5,
-                '& img': { objectFit: 'cover' },
+                '& img': { objectFit: 'contain', bgcolor: '#EAF9F2' },
               }}
             />
 
@@ -294,13 +294,13 @@ export default function ProfileEditPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
                 <Avatar
                   src="/images/nora-avatar.png"
-                  alt="Nora"
+                  alt="Lumi"
                   sx={{
                     width: is960 ? 56 : 64,
                     height: is960 ? 56 : 64,
                     bgcolor: 'white',
                     border: '2px solid #E2E8F0',
-                    '& img': { objectFit: 'cover' },
+                    '& img': { objectFit: 'contain', bgcolor: '#EAF9F2' },
                   }}
                 />
                 <Box sx={{ minWidth: 0 }}>

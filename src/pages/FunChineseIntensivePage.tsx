@@ -13,11 +13,15 @@ import {
   VisibilityOff,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import ReadingRubyLine from '../components/ReadingRubyLine';
 import { FUN_CHINESE_UNIT1_PODCAST_TITLE } from '../utils/funChineseUnitPodcastCopy';
+
+const KAI_TI = '"KaiTi", "STKaiti", "BiauKai", "DFKai-SB", "TW-Kai", "SimKai", serif';
 
 interface PodcastSentence {
   id: string;
   title: string;
+  /** Space-separated word pinyin (GB/T 16159); not character-split. */
   pinyin: string;
   zh: string;
   en: string;
@@ -27,32 +31,34 @@ const PODCAST_CONTENT: PodcastSentence[] = [
   {
     id: 'p1',
     title: 'Greetings',
-    pinyin: 'Nǐ hǎo! Nǐ hǎo ma?',
+    pinyin: 'Nǐhǎo Nǐhǎo ma',
     zh: '你好！你好吗？',
     en: 'Hello! How are you?',
   },
   {
     id: 'p2',
     title: 'Name',
-    pinyin: 'Nǐ jiào shénme? Wǒ jiào Anna.',
+    pinyin: 'Nǐ jiào shénme Wǒ jiào Ānnà',
     zh: '你叫什么？我叫安娜。',
     en: 'What is your name? My name is Anna.',
   },
   {
     id: 'p3',
     title: 'Home',
-    pinyin: 'Nǐ jiā zài nǎr? Wǒ jiā zài Běijīng.',
+    pinyin: 'Nǐ jiā zài nǎr Wǒ jiā zài Běijīng',
     zh: '你家在哪儿？我家在北京。',
     en: 'Where is your home? My home is in Beijing.',
   },
   {
     id: 'p4',
     title: 'Polite Closing',
-    pinyin: 'Xièxie! Bú kèqi.',
+    pinyin: 'Xièxie Búkèqi',
     zh: '谢谢！不客气。',
     en: 'Thank you! You are welcome.',
   },
 ];
+
+const CONTENT_TITLE = '你好';
 
 export default function FunChineseIntensivePage() {
   const navigate = useNavigate();
@@ -164,7 +170,7 @@ export default function FunChineseIntensivePage() {
             }}
           >
             {showPinyin ? <Visibility sx={{ fontSize: is960 ? 14 : is1920x1125 ? 20 : 18 }} /> : <VisibilityOff sx={{ fontSize: is960 ? 14 : is1920x1125 ? 20 : 18 }} />}
-            <Typography sx={{ fontSize: is960 ? '0.7rem' : is1920x1125 ? '1rem' : '0.85rem', fontWeight: 700 }}>拼音</Typography>
+            <Typography sx={{ fontSize: is960 ? '0.7rem' : is1920x1125 ? '1rem' : '0.85rem', fontWeight: 700 }}>Pinyin</Typography>
           </ButtonBase>
 
           <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: '#F3F4F6', p: is960 ? 0.375 : 0.5, borderRadius: is960 ? '12px' : '14px', border: '1px solid #E5E7EB', gap: is960 ? 0.25 : 0.4 }}>
@@ -184,7 +190,7 @@ export default function FunChineseIntensivePage() {
                   boxShadow: languageMode === mode ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
                 }}
               >
-                {mode === 'zh' ? '中文' : '双语'}
+                {mode === 'zh' ? 'Chinese' : 'Bilingual'}
               </ButtonBase>
             ))}
           </Box>
@@ -193,8 +199,16 @@ export default function FunChineseIntensivePage() {
 
       <Box sx={{ flex: 1, overflowY: 'auto', px: is960 ? 2 : is1920x1125 ? 6 : 4, py: is960 ? 3 : is1920x1125 ? 8 : 6, maxWidth: is960 ? 800 : is1920x1125 ? 1600 : 1000, mx: 'auto', width: '100%' }}>
         <Box sx={{ textAlign: 'center', mb: is960 ? 6 : is1920x1125 ? 12 : 10 }}>
-          <Typography sx={{ fontSize: is960 ? '1.5rem' : is1920x1125 ? '3.5rem' : '2.5rem', fontWeight: 900, color: '#1F2937', mb: is960 ? 1 : is1920x1125 ? 3 : 2 }}>
-            北京：中国的首都
+          <Typography
+            sx={{
+              fontSize: is960 ? '1.5rem' : is1920x1125 ? '3.5rem' : '2.5rem',
+              fontWeight: 900,
+              color: '#1F2937',
+              mb: is960 ? 1 : is1920x1125 ? 3 : 2,
+              fontFamily: KAI_TI,
+            }}
+          >
+            {CONTENT_TITLE}
           </Typography>
           <Box sx={{ width: is960 ? 60 : is1920x1125 ? 120 : 80, height: is960 ? 3 : is1920x1125 ? 6 : 4, bgcolor: '#00A396', mx: 'auto', borderRadius: 99, opacity: 0.3 }} />
         </Box>
@@ -212,12 +226,15 @@ export default function FunChineseIntensivePage() {
                 sx={{
                   p: is960 ? 3 : is1920x1125 ? 6 : 5,
                   borderRadius: is960 ? '20px' : is1920x1125 ? '32px' : '28px',
-                  border: '1px solid',
+                  border: isCurrent ? '1px solid' : 'none',
                   borderColor: isCurrent ? '#00B4A0' : 'transparent',
                   bgcolor: isCurrent ? '#FFFFFF' : 'transparent',
-                  textAlign: 'left',
-                  position: 'relative',
                   transition: 'all 0.3s',
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'stretch',
+                  textAlign: 'left',
                   '&:hover': { borderColor: '#E5E7EB', bgcolor: '#FFFFFF' },
                 }}
               >
@@ -231,25 +248,25 @@ export default function FunChineseIntensivePage() {
                   </Box>
                 )}
 
-                <Typography sx={{ fontSize: is960 ? '0.6rem' : is1920x1125 ? '0.9rem' : '0.7rem', fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', mb: is960 ? 0.8 : is1920x1125 ? 1.4 : 1.1 }}>
+                <Typography sx={{ fontSize: is960 ? '0.6rem' : is1920x1125 ? '0.9rem' : '0.7rem', fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', mb: is960 ? 0.8 : is1920x1125 ? 1.4 : 1.1, pl: isCurrent ? (is960 ? 3 : is1920x1125 ? 5 : 4) : 0 }}>
                   {sentence.title}
                 </Typography>
 
                 <Box sx={{ display: 'flex', flexDirection: languageMode === 'both' ? 'row' : 'column', gap: is960 ? 3 : 4 }}>
-                  <Box sx={{ flex: 1, pl: isCurrent ? (is960 ? 3 : is1920x1125 ? 5 : 4) : 0 }}>
-                    {showPinyin && (
-                      <Typography sx={{ fontSize: is960 ? '0.7rem' : is1920x1125 ? '1.125rem' : '0.8rem', color: '#636E72', fontWeight: 600, fontFamily: 'monospace', letterSpacing: '0.05em', mb: is960 ? 1 : is1920x1125 ? 2 : 1.5, lineHeight: 1.4 }}>
-                        {sentence.pinyin}
-                      </Typography>
-                    )}
-                    <Typography sx={{ fontSize: is960 ? '1.25rem' : is1920x1125 ? '2.25rem' : '1.8rem', fontWeight: 600, color: isCurrent ? '#1F2937' : '#6B7280', lineHeight: 1.6 }}>
-                      {sentence.zh}
-                    </Typography>
+                  <Box sx={{ flex: 1, pl: isCurrent ? (is960 ? 3 : is1920x1125 ? 5 : 4) : 0, minWidth: 0 }}>
+                    <ReadingRubyLine
+                      chinese={sentence.zh}
+                      pinyin={sentence.pinyin}
+                      showPinyin={showPinyin}
+                      active={isCurrent}
+                      hanziSize={is960 ? '1.25rem' : is1920x1125 ? '2.25rem' : '1.8rem'}
+                      pinyinSize={is960 ? '0.7rem' : is1920x1125 ? '1.125rem' : '0.8rem'}
+                    />
                   </Box>
                   {languageMode === 'both' && (
                     <>
-                      <Box sx={{ width: '1px', bgcolor: '#E5E7EB', mx: is960 ? 2 : is1920x1125 ? 4 : 3 }} />
-                      <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: { xs: 'none', md: 'block' }, width: '1px', bgcolor: '#E5E7EB', mx: is960 ? 2 : is1920x1125 ? 4 : 3, flexShrink: 0 }} />
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography sx={{ fontSize: is960 ? '0.9rem' : is1920x1125 ? '1.5rem' : '1.2rem', fontWeight: 400, color: isCurrent ? '#1F2937' : '#9CA3AF', lineHeight: 1.6 }}>
                           {sentence.en}
                         </Typography>
@@ -262,7 +279,6 @@ export default function FunChineseIntensivePage() {
           })}
         </Box>
       </Box>
-
       <Box sx={{ px: is960 ? 2 : is1920x1125 ? 6 : 4, pb: is960 ? 2 : is1920x1125 ? 6 : 4 }}>
         <Box sx={{ maxWidth: is960 ? 600 : is1920x1125 ? 1400 : 800, mx: 'auto', bgcolor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', borderRadius: is960 ? '20px' : is1920x1125 ? '40px' : '32px', px: is960 ? 3 : is1920x1125 ? 7 : 5, py: is960 ? 2 : is1920x1125 ? 4 : 3, display: 'flex', alignItems: 'center', gap: is960 ? 2 : is1920x1125 ? 5 : 4 }}>
           <Box sx={{ flex: 1 }}>

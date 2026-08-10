@@ -33,7 +33,7 @@ import FlightIcon from '@mui/icons-material/Flight';
 import TuneIcon from '@mui/icons-material/Tune';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined';
+import FeedbackEntryButton from '../components/feedback/FeedbackEntryButton';
 import { getFunChineseFlashWordsForHub } from '../utils/funChineseUnitVocab';
 import { resolveBackPath } from '../utils/navigateBack';
 import { LINGOFLASH_SAVED_IDS_KEY } from '../utils/favoritesHub';
@@ -44,17 +44,16 @@ const DECK: Word[] = LINGO_FLASH_DECK;
 
 function Flashcard({
   word,
-  isFlipped,
-  setIsFlipped,
   onAssess,
   is960,
+  onFlipChange,
 }: {
   word: Word;
-  isFlipped: boolean;
-  setIsFlipped: (v: boolean) => void;
   onAssess: (a: 'know' | 'uncertain' | 'unknown') => void;
   is960: boolean;
+  onFlipChange?: (flipped: boolean) => void;
 }) {
+  const [isFlipped, setIsFlipped] = useState(false);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-18, 18]);
@@ -63,6 +62,11 @@ function Flashcard({
   const rightOpacity = useTransform(x, [40, 130], [0, 1]);
   const leftOpacity = useTransform(x, [-130, -40], [1, 0]);
   const upOpacity = useTransform(y, [-130, -40], [1, 0]);
+
+  const setFlipped = (next: boolean) => {
+    setIsFlipped(next);
+    onFlipChange?.(next);
+  };
 
   const handleDragEnd = (_: unknown, info: { offset: { x: number; y: number } }) => {
     const th = 90;
@@ -80,20 +84,40 @@ function Flashcard({
 
   return (
     <Box sx={{ position: 'relative', width: cardW, aspectRatio: cardAspect, perspective: '1200px' }}>
+      {/* Drag layer: 2D translate/tilt only — keep separate from rotateY to avoid mirror glitches */}
       <motion.div
         drag={isFlipped}
         dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
         onDragEnd={handleDragEnd}
-        style={{ x, y, rotate, opacity: cardOpacity, position: 'relative', width: '100%', height: '100%', transformStyle: 'preserve-3d', cursor: isFlipped ? 'grab' : 'default' }}
-        animate={{ rotateY: isFlipped ? 180 : 0 }}
-        transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+        style={{
+          x,
+          y,
+          rotate,
+          opacity: cardOpacity,
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          cursor: isFlipped ? 'grab' : 'default',
+        }}
         whileTap={isFlipped ? { cursor: 'grabbing' } : {}}
       >
+        {/* Flip layer: rotateY only */}
+        <motion.div
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: '100%',
+            transformStyle: 'preserve-3d',
+          }}
+          animate={{ rotateY: isFlipped ? 180 : 0 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+        >
         {/* ── Front ── */}
         <Box
           sx={{
             position: 'absolute', inset: 0,
             backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
             bgcolor: 'white',
             borderRadius: is960 ? '24px' : '32px',
             boxShadow: '0 20px 60px rgba(0,0,0,0.12)',
@@ -132,7 +156,7 @@ function Flashcard({
             </Typography>
           </Box>
 
-          <ButtonBase onClick={() => setIsFlipped(true)} sx={{ position: 'absolute', inset: 0, borderRadius: 'inherit' }} aria-label="Flip card" />
+          <ButtonBase onClick={() => setFlipped(true)} sx={{ position: 'absolute', inset: 0, borderRadius: 'inherit' }} aria-label="Flip card" />
         </Box>
 
         {/* ── Back ── */}
@@ -140,6 +164,7 @@ function Flashcard({
           sx={{
             position: 'absolute', inset: 0,
             backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
             transform: 'rotateY(180deg)',
             bgcolor: 'white',
             borderRadius: is960 ? '24px' : '32px',
@@ -225,6 +250,7 @@ function Flashcard({
             </Typography>
           </Box>
         </Box>
+        </motion.div>
       </motion.div>
     </Box>
   );
@@ -325,8 +351,6 @@ function LearningSession({
   const [direction, setDirection] = useState(0);
   const [complete, setComplete] = useState(false);
   const [stats, setStats] = useState({ total: words.length, known: 0, uncertain: 0, unknown: 0 });
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [feedbackText, setFeedbackText] = useState('');
 
   const progress = ((idx + 1) / words.length) * 100;
 
@@ -339,9 +363,10 @@ function LearningSession({
     }));
     if (idx < words.length - 1) {
       setDirection(1);
-      setFlipped(false);
+      // Keep exiting card flipped; reset footer only after the next card mounts.
       setTimeout(() => {
         setIdx(i => i + 1);
+        setFlipped(false);
         setDirection(0);
       }, 280);
     } else {
@@ -383,68 +408,7 @@ function LearningSession({
           </Box>
         </Box>
 
-        <ButtonBase
-          onClick={() => setFeedbackOpen(true)}
-          aria-label="Feedback on this word or experience"
-          sx={{
-            width: 44,
-            height: 44,
-            borderRadius: '50%',
-            color: '#64748B',
-            flexShrink: 0,
-            '&:hover': { bgcolor: '#F3F4F6' },
-            '&:active': { transform: 'scale(0.96)' },
-          }}
-        >
-          <RateReviewOutlinedIcon sx={{ fontSize: 26 }} />
-        </ButtonBase>
-
-        <Dialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} fullWidth maxWidth="sm" aria-labelledby="lingo-feedback-title">
-          <DialogTitle id="lingo-feedback-title" sx={{ fontWeight: 800 }}>
-            Feedback
-          </DialogTitle>
-          <DialogContent>
-            <Typography sx={{ mb: 2, color: '#64748B', fontSize: is960 ? '0.85rem' : '0.95rem', lineHeight: 1.5 }}>
-              Tell us about a problem with this card, the word content, or anything that felt confusing. This demo does not send data to a server yet.
-            </Typography>
-            <Typography sx={{ mb: 1, fontWeight: 700, fontSize: is960 ? '0.8rem' : '0.88rem', color: '#334155' }}>
-              Current card: <Box component="span" sx={{ color: '#2563EB' }}>{words[idx]?.word}</Box>
-            </Typography>
-            <TextField
-              autoFocus
-              multiline
-              minRows={4}
-              fullWidth
-              placeholder="What went wrong or what could be better?"
-              value={feedbackText}
-              onChange={(e) => setFeedbackText(e.target.value)}
-              sx={{ mt: 0.5 }}
-            />
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={() => setFeedbackOpen(false)} color="inherit">
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              disableElevation
-              onClick={() => {
-                const text = feedbackText.trim();
-                if (import.meta.env.DEV && text) {
-                  globalThis.console?.info?.('[LingoFlash feedback]', {
-                    wordId: words[idx]?.id,
-                    word: words[idx]?.word,
-                    text,
-                  });
-                }
-                setFeedbackText('');
-                setFeedbackOpen(false);
-              }}
-            >
-              Submit
-            </Button>
-          </DialogActions>
-        </Dialog>
+        <FeedbackEntryButton is960={is960} context={{ screen: 'flashcard_session', lessonId: words[idx]?.id }} />
       </Box>
 
       {/* Card area */}
@@ -468,50 +432,55 @@ function LearningSession({
           >
             <Flashcard
               word={words[idx]}
-              isFlipped={flipped}
-              setIsFlipped={setFlipped}
               onAssess={handleAssess}
+              onFlipChange={setFlipped}
               is960={is960}
             />
           </motion.div>
         </AnimatePresence>
       </Box>
 
-      {/* Footer: hint or assessment buttons */}
-      <AnimatePresence>
+      {/* Footer: fixed height so flip doesn't reflow the centered card */}
+      <Box
+        sx={{
+          flexShrink: 0,
+          height: is960 ? 72 : 84,
+          bgcolor: 'white',
+          borderTop: '1px solid #F1F3F5',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: is960 ? 2 : 3,
+          boxSizing: 'border-box',
+        }}
+      >
         {!flipped ? (
-          <motion.div key="hint" initial={{ y: 80 }} animate={{ y: 0 }} exit={{ y: 80 }} transition={{ type: 'spring', damping: 22, stiffness: 200 }}>
-            <Box sx={{ bgcolor: 'white', borderTop: '1px solid #F1F3F5', px: 2, py: is960 ? 2 : 2.5, display: 'flex', justifyContent: 'center' }}>
-              <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: '#9CA3AF', fontWeight: 500 }}>
-                点击卡片翻转，查看详细释义与例句
-              </Typography>
-            </Box>
-          </motion.div>
+          <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: '#9CA3AF', fontWeight: 500, textAlign: 'center' }}>
+            点击卡片翻转，查看详细释义与例句
+          </Typography>
         ) : (
-          <motion.div key="buttons" initial={{ y: 80 }} animate={{ y: 0 }} exit={{ y: 80 }} transition={{ type: 'spring', damping: 22, stiffness: 200 }}>
-            <Box sx={{ bgcolor: 'white', borderTop: '1px solid #F1F3F5', px: is960 ? 2 : 3, py: is960 ? 1.75 : 2.5, display: 'flex', gap: is960 ? 1.25 : 2, justifyContent: 'center' }}>
-              <ButtonBase
-                onClick={() => handleAssess('unknown')}
-                sx={{ flex: 1, maxWidth: is960 ? 140 : 180, py: is960 ? 1.2 : 1.5, borderRadius: '16px', bgcolor: '#FEF2F2', color: '#DC2626', fontWeight: 800, fontSize: is960 ? '0.8rem' : '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75, border: '1.5px solid #FECACA', '&:active': { bgcolor: '#FEE2E2' } }}
-              >
-                <CloseIcon sx={{ fontSize: 18 }} /> 不认识
-              </ButtonBase>
-              <ButtonBase
-                onClick={() => handleAssess('uncertain')}
-                sx={{ flex: 1, maxWidth: is960 ? 140 : 180, py: is960 ? 1.2 : 1.5, borderRadius: '16px', bgcolor: '#FFFBEB', color: '#D97706', fontWeight: 800, fontSize: is960 ? '0.8rem' : '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75, border: '1.5px solid #FDE68A', '&:active': { bgcolor: '#FEF3C7' } }}
-              >
-                <HelpOutlineIcon sx={{ fontSize: 18 }} /> 模糊
-              </ButtonBase>
-              <ButtonBase
-                onClick={() => handleAssess('know')}
-                sx={{ flex: 1, maxWidth: is960 ? 140 : 180, py: is960 ? 1.2 : 1.5, borderRadius: '16px', bgcolor: '#F0FDF4', color: '#16A34A', fontWeight: 800, fontSize: is960 ? '0.8rem' : '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75, border: '1.5px solid #BBF7D0', '&:active': { bgcolor: '#DCFCE7' } }}
-              >
-                <CheckIcon sx={{ fontSize: 18 }} /> 认识
-              </ButtonBase>
-            </Box>
-          </motion.div>
+          <Box sx={{ width: '100%', display: 'flex', gap: is960 ? 1.25 : 2, justifyContent: 'center' }}>
+            <ButtonBase
+              onClick={() => handleAssess('unknown')}
+              sx={{ flex: 1, maxWidth: is960 ? 140 : 180, py: is960 ? 1.2 : 1.5, borderRadius: '16px', bgcolor: '#FEF2F2', color: '#DC2626', fontWeight: 800, fontSize: is960 ? '0.8rem' : '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75, border: '1.5px solid #FECACA', '&:active': { bgcolor: '#FEE2E2' } }}
+            >
+              <CloseIcon sx={{ fontSize: 18 }} /> 不认识
+            </ButtonBase>
+            <ButtonBase
+              onClick={() => handleAssess('uncertain')}
+              sx={{ flex: 1, maxWidth: is960 ? 140 : 180, py: is960 ? 1.2 : 1.5, borderRadius: '16px', bgcolor: '#FFFBEB', color: '#D97706', fontWeight: 800, fontSize: is960 ? '0.8rem' : '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75, border: '1.5px solid #FDE68A', '&:active': { bgcolor: '#FEF3C7' } }}
+            >
+              <HelpOutlineIcon sx={{ fontSize: 18 }} /> 模糊
+            </ButtonBase>
+            <ButtonBase
+              onClick={() => handleAssess('know')}
+              sx={{ flex: 1, maxWidth: is960 ? 140 : 180, py: is960 ? 1.2 : 1.5, borderRadius: '16px', bgcolor: '#F0FDF4', color: '#16A34A', fontWeight: 800, fontSize: is960 ? '0.8rem' : '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75, border: '1.5px solid #BBF7D0', '&:active': { bgcolor: '#DCFCE7' } }}
+            >
+              <CheckIcon sx={{ fontSize: 18 }} /> 认识
+            </ButtonBase>
+          </Box>
         )}
-      </AnimatePresence>
+      </Box>
     </Box>
   );
 }

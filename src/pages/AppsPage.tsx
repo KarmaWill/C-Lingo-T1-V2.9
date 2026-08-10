@@ -1370,17 +1370,47 @@ export default function AppsPage() {
         </Box>
       )}
 
-      {/* Utility Tools Catalog Modal — portaled above iPad shell */}
+      {/* Utility Tools Catalog Modal — constrained to tablet screen */}
       {showUtilityToolsCatalog && createPortal(
-        <Box sx={{ position: 'fixed', inset: 0, bgcolor: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 15000, pt: '6vh', px: 2 }} onClick={() => setShowUtilityToolsCatalog(false)}>
-          <Box sx={{ bgcolor: 'white', borderRadius: is960 ? '24px' : '28px', p: is960 ? 2.5 : 3, maxWidth: 520, width: '92%', maxHeight: '84vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 80px rgba(0,0,0,0.35)' }} onClick={(e) => e.stopPropagation()}>
-            <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.05rem' : '1.2rem', color: '#111827', mb: 0.5 }}>
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            bgcolor: 'rgba(0,0,0,0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 15000,
+            px: is960 ? 1.5 : 2.5,
+            py: is960 ? 1.5 : 2,
+            boxSizing: 'border-box',
+          }}
+          onClick={() => setShowUtilityToolsCatalog(false)}
+        >
+          <Box
+            sx={{
+              bgcolor: 'white',
+              borderRadius: is960 ? '22px' : '26px',
+              p: is960 ? 2 : 2.5,
+              width: '100%',
+              maxWidth: is960 ? 440 : 480,
+              maxHeight: '100%',
+              minHeight: 0,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 24px 80px rgba(0,0,0,0.35)',
+              boxSizing: 'border-box',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.05rem' : '1.2rem', color: '#111827', mb: 0.5, flexShrink: 0 }}>
               Add System Tools
             </Typography>
-            <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: '#9CA3AF', mb: 2 }}>
+            <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: '#9CA3AF', mb: 1.5, flexShrink: 0 }}>
               Pin up to {MAX_UTILITY_TOOLS} custom tools · {utilityToolIds.length}/{MAX_UTILITY_TOOLS} used · long-press toolbar to remove
             </Typography>
-            <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: 'flex', flexDirection: 'column', gap: 1, pr: 0.25 }}>
               <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: '#6B7280', letterSpacing: '0.04em', px: 0.5 }}>BUILT-IN TOOLS</Typography>
               {BUILTIN_UTILITY_ITEMS.map((item) => {
                 const installed = builtinUtilityIds.includes(item.id);
@@ -1430,12 +1460,12 @@ export default function AppsPage() {
                 );
               })}
             </Box>
-            <ButtonBase onClick={() => setShowUtilityToolsCatalog(false)} sx={{ mt: 2, width: '100%', py: 1.5, borderRadius: '14px', bgcolor: '#00B4A0', color: 'white', fontWeight: 900 }}>
+            <ButtonBase onClick={() => setShowUtilityToolsCatalog(false)} sx={{ mt: 1.5, width: '100%', py: 1.5, borderRadius: '14px', bgcolor: '#00B4A0', color: 'white', fontWeight: 900, flexShrink: 0 }}>
               Done
             </ButtonBase>
           </Box>
         </Box>,
-        document.body
+        document.getElementById('main-content-area') ?? document.getElementById('ipad-container') ?? document.body
       )}
 
       {/* Toast Notification */}
