@@ -281,11 +281,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
   const shellTopBar = (
     <Box id="shell-top-bar" sx={shellTopBarSx}>
-      <ShellSloganHeadline
-        onClick={() => openExternal('https://dashboard-app-sable-tau.vercel.app/#c6')}
-      />
+      <ShellSloganHeadline />
       <ShellTopBarProductLinks
-        onOpenAdmin={() => openExternal('https://nsk-back-end.vercel.app/')}
         onOpenScanPen={() => openExternal('https://c-lingo-scan-pen.vercel.app/')}
       />
     </Box>

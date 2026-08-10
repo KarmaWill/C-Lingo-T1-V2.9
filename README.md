@@ -19,8 +19,7 @@ C-Lingo AIOS Tablet 1 Version 2.9 is the front-end shell and learning hub for th
 
 | Control | Label | Destination |
 |---------|-------|---------------|
-| Top slogan | Beyond Language. To Bigger Worlds. | [Product roadmap](https://dashboard-app-sable-tau.vercel.app/#c6) |
-| Top right | C-Lingo Admin | [Admin console](https://nsk-back-end.vercel.app/) |
+| Top slogan | Beyond Language. To Bigger Worlds. | Display only (no link) |
 | Top right | C-Lingo ScanPen | [ScanPen demo](https://c-lingo-scan-pen.vercel.app/) |
 | Bottom center | C-Lingo AIOS | [clingoaios.com](https://www.clingoaios.com/) |
 
