@@ -9,7 +9,6 @@ import type { ReactNode } from 'react';
 import HubScoreBadge from '../components/HubScoreBadge';
 import { loadDiagnosticBestScore, DIAGNOSTIC_PASS_LINE } from '../hsk/diagnosticScore';
 import { loadSpeakingLatestScore, SPEAKING_PASS_LINE } from '../hsk/speakingScore';
-
 function CardMetaBadge({
   children,
   is960,
@@ -122,6 +121,7 @@ export default function HSKTestPage() {
         pb: is960 ? 1.5 : 2,
         boxSizing: 'border-box',
         overflow: 'auto',
+        position: 'relative',
       }}
     >
       <Box
