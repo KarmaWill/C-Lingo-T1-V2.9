@@ -736,7 +736,10 @@ export default function AIChatPage() {
         display: 'flex',
         flexDirection: 'column',
         p: 4,
-        background: 'radial-gradient(circle at 34% 48%, rgba(77,214,151,0.16) 0%, rgba(255,249,243,0) 34%), #FFF9F3',
+        backgroundImage: 'url(/images/ai-speaking-bg.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
@@ -754,7 +757,7 @@ export default function AIChatPage() {
           display: 'flex',
           alignItems: 'center',
           gap: 1,
-          bgcolor: 'rgba(255,255,255,0.82)',
+          bgcolor: 'rgba(255,255,255,0.72)',
           px: 2,
           py: 0.75,
           borderRadius: '999px',
@@ -781,46 +784,26 @@ export default function AIChatPage() {
         <Box
           sx={{
             position: 'relative',
-            width: 270,
-            height: 320,
+            width: 280,
+            height: 300,
             flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              width: 248,
-              height: 248,
-              borderRadius: '50%',
-              background: 'linear-gradient(145deg, rgba(255,255,255,0.96), rgba(222,249,235,0.9))',
-              border: '1px solid rgba(13,170,120,0.14)',
-              boxShadow: '0 24px 60px rgba(4,120,87,0.14)',
-            },
-            '&::after': {
-              content: '""',
-              position: 'absolute',
-              bottom: 8,
-              width: 180,
-              height: 24,
-              borderRadius: '50%',
-              bgcolor: 'rgba(7,95,70,0.13)',
-              filter: 'blur(10px)',
-            },
           }}
         >
           <Box
             component="img"
-            src="/images/clingo-ai-mascot-point.png"
+            src="/images/clingo-ai-mascot-peace.png?v=wink"
             alt="C-Lingo AI"
             sx={{
               position: 'relative',
               zIndex: 1,
-              width: 'auto',
-              height: 310,
+              width: 280,
+              height: 280,
               maxWidth: '100%',
               objectFit: 'contain',
-              filter: 'drop-shadow(0 16px 18px rgba(4,80,59,0.12))',
+              filter: 'drop-shadow(0 18px 28px rgba(4,80,59,0.16))',
             }}
           />
         </Box>

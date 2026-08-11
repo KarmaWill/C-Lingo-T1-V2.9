@@ -181,18 +181,20 @@ export function HomeSideCard({
   const accent = accentColor ?? bgcolor;
 
   if (variant === 'spotlight') {
+    const isGradient = typeof bgcolor === 'string' && bgcolor.includes('gradient');
     return (
       <Box
         onClick={onClick}
         sx={{
           ...sideCardSx,
-          bgcolor,
+          ...(isGradient ? { background: bgcolor, bgcolor: 'transparent' } : { bgcolor }),
           alignItems: 'stretch',
           // Match tool-card left inset so "AI Tutor" lines up with "Reading"
           pl: is960 ? '1.25rem' : '1.65rem',
           pr: 0,
           py: 0,
-          overflow: 'visible',
+          // Clip to card radius so bottom edge stays seamless with the gradient
+          overflow: 'hidden',
         }}
       >
         <Box
@@ -206,14 +208,14 @@ export function HomeSideCard({
             justifyContent: 'center',
             py: is960 ? 1.15 : 1.4,
             // Nudge content slightly down to match tool-card visual weight
-            pt: is960 ? 1.55 : 1.85,
+            pt: is960 ? 1.35 : 1.55,
             pb: is960 ? 1.05 : 1.2,
           }}
         >
           <TitleBlock label={label} lines={lines} is960={is960} />
           <Box
             sx={{
-              mt: is960 ? 1.15 : 1.4,
+              mt: is960 ? 0.95 : 1.15,
               ml: is960 ? 0.35 : 0.5,
               width: is960 ? 42 : 48,
               height: is960 ? 42 : 48,
@@ -234,16 +236,16 @@ export function HomeSideCard({
         <Box
           sx={{
             position: 'relative',
-            width: is960 ? '48%' : '52%',
+            width: is960 ? '52%' : '56%',
             flexShrink: 0,
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-end',
             justifyContent: 'flex-start',
             alignSelf: 'stretch',
-            overflow: 'visible',
-            // Pull mascot left into the card so ears stay visible
-            ml: is960 ? -2.5 : -3.5,
-            pr: is960 ? 0.25 : 0.5,
+            overflow: 'hidden',
+            // Pull mascot further into the card (left) and pin to bottom edge
+            ml: is960 ? -4 : -5.5,
+            mr: is960 ? -0.5 : -0.75,
             zIndex: 2,
           }}
         >

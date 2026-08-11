@@ -27,25 +27,26 @@ export default function HomePage() {
         <HomeSideCard
           variant="spotlight"
           label="AI Tutor"
-          bgcolor="#0D9F72"
-          accentColor="#0D9F72"
+          bgcolor="linear-gradient(90deg, #43B05C 0%, #8FCF4A 52%, #D4E157 100%)"
+          accentColor="#43B05C"
           is960={is960}
           sideCardSx={sideCardSx}
           sideArrowSx={sideArrowSx}
           spotlightVisual={
             <Box
               component="img"
-              src="/images/clingo-ai-mascot-head.png?v=3d"
+              src="/images/clingo-ai-mascot-tutor.png?v=star-eyes"
               alt=""
               sx={{
                 width: '118%',
-                height: '118%',
+                height: '108%',
                 maxWidth: 'none',
                 objectFit: 'contain',
-                objectPosition: 'left center',
+                objectPosition: 'left bottom',
                 display: 'block',
                 pointerEvents: 'none',
-                transform: 'translateX(-12%)',
+                transform: 'translateX(-18%) translateY(4%)',
+                filter: 'drop-shadow(0 8px 14px rgba(15,23,42,0.14))',
               }}
             />
           }
