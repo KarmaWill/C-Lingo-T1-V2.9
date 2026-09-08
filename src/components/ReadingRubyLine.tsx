@@ -5,6 +5,7 @@
 import { useMemo } from 'react';
 import { Box } from '@mui/material';
 import { buildRubySegmentsFromText } from '../utils/pinyinRuby';
+import { APP_FONT_FAMILY } from '../theme/appFont';
 
 const KAI_TI = '"KaiTi", "STKaiti", "BiauKai", "DFKai-SB", "TW-Kai", "SimKai", serif';
 
@@ -85,7 +86,7 @@ export default function ReadingRubyLine({
                 sx={{
                   mb: 0.35,
                   color: pinyinColor,
-                  fontFamily: 'Inter, system-ui, sans-serif',
+                  fontFamily: APP_FONT_FAMILY,
                   fontSize: pinyinSize,
                   fontWeight: 700,
                   lineHeight: 1.15,

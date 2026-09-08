@@ -62,9 +62,9 @@ export default function ShellTopBarProductLinks({ onOpenScanPen }: ShellTopBarPr
       sx={{
         position: 'absolute',
         right: { xs: 10, sm: 16 },
-        bottom: 8,
+        top: 10,
         display: 'flex',
-        alignItems: 'flex-end',
+        alignItems: 'center',
         gap: { xs: 1, sm: 1.5 },
         zIndex: 2,
       }}
@@ -72,8 +72,8 @@ export default function ShellTopBarProductLinks({ onOpenScanPen }: ShellTopBarPr
       <ProductLink ariaLabel="C-Lingo ScanPen" label="C-Lingo ScanPen" onClick={onOpenScanPen}>
         <Box
           sx={{
-            width: 38,
-            height: 38,
+            width: 32,
+            height: 32,
             borderRadius: '11px',
             overflow: 'hidden',
             bgcolor: '#000',

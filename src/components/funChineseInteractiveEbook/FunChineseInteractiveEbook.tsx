@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { saveSpeakingLatestScore } from '../../hsk/speakingScore';
 import './funChineseInteractiveEbook.css';
 import EbookRubyLine from './EbookRubyLine';
+import { APP_FONT_FAMILY } from '../../theme/appFont';
 import {
-  Volume2, Play, Pause, Mic, Tv,
+  Volume2, Play, Pause, Mic, Tv, User,
   ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Check, X, RotateCcw,
   Star, Sliders, Eye, EyeOff, Sparkles, Smile, RefreshCw,
   Link2, ListTodo, CircleHelp, MessageCircle, PenLine,
@@ -721,14 +722,29 @@ export default function FunChineseInteractiveEbook() {
         className={`textbook-speech-bubble ${align === 'left' ? 'textbook-speech-bubble-left self-start' : 'textbook-speech-bubble-right self-end'} ${
           mode === 'shadow' ? 'textbook-speech-bubble-shadow' : ''
         } ${
-          isActiveReadSentence || isSentencePlaying ? 'ring-2 ring-orange-300' :
-          isShadowSelected ? 'ring-2 ring-[#008B8B]/40 textbook-speech-bubble-shadow-selected' : ''
+          isActiveReadSentence || isSentencePlaying ? 'ring-2 ring-orange-300' : ''
+        } ${
+          isShadowSelected && shadowSelectionIndex === 0 ? 'is-hotspot-a' : ''
+        } ${
+          isShadowSelected && shadowSelectionIndex > 0 ? 'is-hotspot-b' : ''
         }`}
       >
-        {(mode === 'shadow' && isShadowSelected) && (
-          <span className="absolute -top-2 -left-2 w-5 h-5 bg-[#008B8B] text-white text-[9px] font-bold rounded-full flex items-center justify-center">{shadowSelectionIndex + 1}</span>
+        {mode === 'shadow' && isShadowSelected && (
+          <span
+            className={`textbook-hotspot-badge ${shadowSelectionIndex === 0 ? 'is-a' : 'is-b'}`}
+            aria-hidden
+          >
+            {shadowSelectionIndex === 0 ? (
+              <>
+                <Volume2 className="textbook-hotspot-badge-icon" strokeWidth={2.4} />
+                <span className="textbook-hotspot-badge-letter">A</span>
+              </>
+            ) : (
+              <User className="textbook-hotspot-badge-icon" strokeWidth={2.4} />
+            )}
+          </span>
         )}
-        <p className="text-[10px] text-sky-700 font-semibold leading-snug mb-0.5" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>{sentence.pinyin}</p>
+        <p className="text-[10px] text-sky-700 font-semibold leading-snug mb-0.5" style={{ fontFamily: APP_FONT_FAMILY }}>{sentence.pinyin}</p>
         <p className="text-sm font-bold text-slate-800 leading-snug" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>{sentence.chinese}</p>
         {mode === 'shadow' && (
           <p className="text-[9px] text-slate-500 mt-0.5 leading-snug">{sentence.english}</p>
@@ -1156,8 +1172,8 @@ export default function FunChineseInteractiveEbook() {
     <div
       className={`flex flex-col selection:bg-orange-100 font-sans overflow-hidden ${
         isFocusMode
-          ? 'absolute inset-0 z-10 bg-[#F6F2E9]'
-          : 'h-full w-full bg-[#F6F2E9] relative'
+          ? 'absolute inset-0 z-10 bg-[#F3F4F6]'
+          : 'h-full w-full bg-[#F3F4F6] relative'
       }`}
     >
       
@@ -1172,10 +1188,8 @@ export default function FunChineseInteractiveEbook() {
       {/* Main Container - Elegant Bound Notebook sitting on Desk */}
       <div 
         id="book-notebook-body" 
-        className={`w-full h-full min-h-0 bg-[#FAF8F5] relative flex flex-col overflow-hidden ${
-          isFocusMode
-            ? 'p-3 rounded-2xl shadow-none border-0'
-            : 'rounded-2xl p-4 shadow-lg border border-amber-900/10'
+        className={`ebook-notebook-body w-full h-full min-h-0 relative flex flex-col overflow-hidden ${
+          isFocusMode ? 'is-focus' : ''
         }`}
         onClick={(e) => {
           if (!isFocusMode || focusChromeVisible) return;
@@ -1187,8 +1201,8 @@ export default function FunChineseInteractiveEbook() {
         
         {/* --- HEADER CONTROLS & DYNAMIC MODE SELECTOR BAR --- */}
         {!isFocusMode && (
-        <header className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pb-3 border-b border-orange-100/80 z-10">
-          <div className="flex items-center gap-3 shrink-0">
+        <header className="ebook-chrome-header z-10">
+          <div className="ebook-chrome-header-inner">
             <button
               type="button"
               onClick={() => navigate(-1)}
@@ -1197,64 +1211,61 @@ export default function FunChineseInteractiveEbook() {
             >
               <ChevronLeft className="ebook-header-circle-icon" strokeWidth={2.25} />
             </button>
-          </div>
 
-          {/* Core mode bar — icon-only until selected (reference capsule UI) */}
-          <div className="ebook-mode-bar" role="tablist" aria-label="Learning modes">
-            {LEARNING_MODES.map(({ id, label, Icon }) => {
-              const isActive = mode === id;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  aria-label={label}
-                  onClick={() => switchMode(id)}
-                  className={`ebook-mode-btn ${isActive ? 'ebook-mode-btn-active' : ''}`}
-                >
-                  <Icon className="ebook-mode-icon" strokeWidth={2} aria-hidden />
-                  {isActive && (
-                    <>
-                      <span className="ebook-mode-divider" aria-hidden />
+            {/* Core mode bar — icon-only until selected (Figma capsule) */}
+            <div className="ebook-mode-bar" role="tablist" aria-label="Learning modes">
+              {LEARNING_MODES.map(({ id, label, Icon }) => {
+                const isActive = mode === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    aria-label={label}
+                    onClick={() => switchMode(id)}
+                    className={`ebook-mode-btn ${isActive ? 'ebook-mode-btn-active' : ''}`}
+                  >
+                    <Icon className="ebook-mode-icon" strokeWidth={2} aria-hidden />
+                    {isActive && (
                       <span className="ebook-mode-label">{label}</span>
-                    </>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
 
-          <div className="flex items-center gap-2.5">
-            <button
-              type="button"
-              onClick={() => {
-                setShowLessonPicker((v) => !v);
-                setShowSettings(false);
-              }}
-              id="btn-lesson-picker"
-              className={`ebook-header-circle-btn ${showLessonPicker ? 'ebook-header-circle-btn-active' : ''}`}
-              title="Lessons"
-              aria-label="Lessons"
-              aria-pressed={showLessonPicker}
-            >
-              <EbookLessonsIcon className="ebook-header-circle-icon" />
-            </button>
+            <div className="ebook-chrome-header-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLessonPicker((v) => !v);
+                  setShowSettings(false);
+                }}
+                id="btn-lesson-picker"
+                className={`ebook-header-circle-btn ${showLessonPicker ? 'ebook-header-circle-btn-active' : ''}`}
+                title="Lessons"
+                aria-label="Lessons"
+                aria-pressed={showLessonPicker}
+              >
+                <EbookLessonsIcon className="ebook-header-circle-icon" />
+              </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                setShowSettings((v) => !v);
-                setShowLessonPicker(false);
-              }}
-              id="btn-settings-toggle"
-              className={`ebook-header-circle-btn ${showSettings ? 'ebook-header-circle-btn-active' : ''}`}
-              title="Settings"
-              aria-label="Settings"
-              aria-pressed={showSettings}
-            >
-              <EbookSettingsIcon className="ebook-header-circle-icon ebook-settings-gear-icon" />
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSettings((v) => !v);
+                  setShowLessonPicker(false);
+                }}
+                id="btn-settings-toggle"
+                className={`ebook-header-circle-btn ${showSettings ? 'ebook-header-circle-btn-active' : ''}`}
+                title="Settings"
+                aria-label="Settings"
+                aria-pressed={showSettings}
+              >
+                <EbookSettingsIcon className="ebook-header-circle-icon ebook-settings-gear-icon" />
+              </button>
+            </div>
           </div>
         </header>
         )}
@@ -1274,42 +1285,28 @@ export default function FunChineseInteractiveEbook() {
         )}
 
         {/* --- MAIN DOUBLE-PAGE TEXTBOOK SPREAD --- */}
-        <main className={`textbook-spread flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 relative overflow-hidden transition-all duration-300 ${
-          isFocusMode
-            ? 'textbook-spread-focus mt-0 gap-2 p-2 rounded-xl border border-orange-100/25 bg-[#FFFAF1]'
-            : 'gap-5 mt-3 p-3 rounded-2xl border border-orange-100/30 bg-orange-100/10'
+        <main className={`textbook-spread flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 relative overflow-hidden ${
+          mode === 'shadow' ? 'textbook-spread-shadow' : ''
+        } ${
+          isFocusMode ? 'textbook-spread-focus' : ''
         }`}>
-          
-          {/* Ring binder division effect in landscape mode to resemble physical workbook */}
-          {!isFocusMode && (
-          <div className="hidden lg:flex absolute left-1/2 top-4 bottom-4 w-1 bg-amber-800/10 -translate-x-1/2 z-20 flex-col justify-around py-6 pointer-events-none">
-            {[...Array(9)].map((_, i) => (
-              <div key={i} className="w-6 h-4 bg-gradient-to-r from-orange-300 via-amber-400 to-amber-600 rounded-full border border-amber-900/15 -ml-[11px] shadow-[0_1.5px_3px_rgba(0,0,0,0.15)]" />
-            ))}
-          </div>
-          )}
 
           {/* =========================================
               LEFT PAGE: TEXTBOOK CORES / READING SPREADS
               ========================================= */}
-          <section className={`textbook-left-page-shell flex flex-col relative transition-all duration-300 bg-[#FDFDFB] text-slate-800 ${
-            isFocusMode
-              ? 'p-3 rounded-xl shadow-sm border border-orange-100/50 md:mr-0'
-              : 'rounded-2xl p-4 shadow-sm border border-orange-100/60 md:mr-1'
-          }`}>
+          <section className={`textbook-left-page-shell flex flex-col relative text-slate-800 ${
+            mode === 'shadow' ? 'is-shadow-book' : ''
+          } ${isFocusMode ? 'is-focus' : ''}`}>
 
             <div className="textbook-left-content flex-1 flex flex-col min-h-0 overflow-hidden py-1">
-              {mode !== 'shadow' && (
-              <>
-              {/* Textbook left page — lesson header + scene */}
               <div className="textbook-left-header relative mb-2 shrink-0">
-                <div className="textbook-wave-band flex items-end gap-3 pr-[58px] min-h-[72px]">
+                <div className="textbook-wave-band flex items-end gap-3 pr-[88px] min-h-[72px]">
                   <div className="textbook-lesson-badge shrink-0">{currentLesson.id}</div>
                   <div className="min-w-0 pb-2">
                     <h2 className="textbook-lesson-title" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
                       {currentLesson.title}
                     </h2>
-                    <p className="text-[11px] text-sky-800/80 font-semibold mt-0.5" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>
+                    <p className="text-[11px] text-sky-800/80 font-semibold mt-0.5" style={{ fontFamily: APP_FONT_FAMILY }}>
                       {currentLesson.pinyin}
                     </p>
                   </div>
@@ -1318,12 +1315,11 @@ export default function FunChineseInteractiveEbook() {
                   type="button"
                   id="btn-video-guide"
                   onClick={() => { setIsVideoOpen(true); setVideoScene(0); }}
-                  className="absolute top-1 right-0 shrink-0 flex flex-col items-center justify-center gap-0.5 px-2.5 py-1.5 min-w-[52px] min-h-[52px] rounded-xl bg-orange-100 hover:bg-orange-200 border border-orange-200/70 text-orange-700 transition-colors cursor-pointer z-10"
+                  className="ebook-video-chip"
                   title="Intro Video"
                   aria-label="Intro Video"
                 >
-                  <Tv className="w-4 h-4" />
-                  <span className="text-[9px] font-bold leading-none">Video</span>
+                  <Tv className="ebook-video-chip-icon" strokeWidth={2} />
                 </button>
                 <div className="textbook-objectives-box absolute top-1 right-[58px] max-w-[48%] hidden sm:block">
                   <p className="text-[10px] font-extrabold text-sky-800 mb-1">Learning Objectives</p>
@@ -1335,15 +1331,17 @@ export default function FunChineseInteractiveEbook() {
                 </div>
               </div>
 
-              {/* Mode hint — compact */}
               {mode === 'exercise' && (
                 <div className="mb-2 px-2.5 py-1.5 rounded-xl bg-[#F9F7F1]/90 border border-orange-100/40 text-[10px] text-slate-600 shrink-0">
                   <p><strong className="text-emerald-700">Practice</strong> — Use the right page for exercises.</p>
                 </div>
               )}
 
-              {/* Scene illustration with speech bubbles */}
-              <div className="textbook-scene flex-1 min-h-[220px] relative rounded-2xl overflow-hidden border border-sky-100/80 mb-2">
+              <div
+                className={`textbook-scene flex-1 min-h-[220px] relative overflow-hidden mb-2${
+                  mode === 'shadow' && selectedShadowIds.length >= 2 ? ' is-range-selected' : ''
+                }`}
+              >
                 <div className="absolute inset-0 textbook-scene-bg" />
                 <div className="relative z-10 h-full flex flex-col p-3">
                   <div className="textbook-scene-symbol flex items-center justify-center gap-4 py-2 shrink-0">
@@ -1364,7 +1362,6 @@ export default function FunChineseInteractiveEbook() {
                 </div>
               </div>
 
-              {/* Extra sentence bubbles (not in main scene) */}
               {getExtraSceneSentences(currentLesson).length > 0 && (
                 <div className="space-y-2 mb-2 shrink-0">
                   {getExtraSceneSentences(currentLesson).map((sentence, idx) =>
@@ -1373,14 +1370,13 @@ export default function FunChineseInteractiveEbook() {
                 </div>
               )}
 
-              {/* Word-level tap strip — read & repeat */}
               {(mode === 'read' || mode === 'repeat') && activeBubble && (() => {
                 const activeSent = currentLesson.textbookLeft.sentences.find((s) => s.id === activeBubble.sentenceId);
                 if (!activeSent) return null;
                 const segments = getSentenceSegments(activeSent);
                 return (
                   <div className="shrink-0 p-2.5 rounded-xl bg-orange-50/80 border border-orange-200/60 mb-2">
-                    <p className="text-[9px] uppercase text-orange-600 font-extrabold mb-1.5">Tap words</p>
+                    <p className="text-[9px] font-extrabold mb-1.5" style={{ color: '#FF6B35' }}>Tap words</p>
                     <div className="flex flex-wrap items-end gap-x-1 gap-y-1">
                       {segments.map((segment, segIdx) => {
                         const wordKey = `word-${activeSent.id}-${segIdx}`;
@@ -1401,7 +1397,7 @@ export default function FunChineseInteractiveEbook() {
                             <ruby className="text-base font-bold">
                               {segment.text}
                               {segment.pinyin ? (
-                                <rt className="text-[9px] text-amber-800 block" style={{ fontFamily: 'OPPO Sans, sans-serif' }}>{segment.pinyin}</rt>
+                                <rt className="text-[9px] text-amber-800 block" style={{ fontFamily: APP_FONT_FAMILY }}>{segment.pinyin}</rt>
                               ) : null}
                             </ruby>
                           </button>
@@ -1411,65 +1407,6 @@ export default function FunChineseInteractiveEbook() {
                   </div>
                 );
               })()}
-
-              </>
-              )}
-
-              {mode === 'shadow' && (
-                <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 pr-0.5 textbook-shadow-left">
-                  <div className="shrink-0 flex items-center gap-2 px-1 pt-1">
-                    <span className="textbook-lesson-badge shrink-0">{currentLesson.id}</span>
-                    <div className="min-w-0">
-                      <h2 className="text-sm font-bold text-slate-800" style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
-                        {currentLesson.title}
-                      </h2>
-                      <p className="text-[10px] text-slate-500 font-semibold">{currentLesson.pinyin}</p>
-                    </div>
-                  </div>
-
-                  <div className="shrink-0 px-1">
-                    {currentLesson.textbookLeft.sentences.slice(0, 1).map((sentence) => (
-                      <div key={sentence.id} className="textbook-shadow-featured-bubble">
-                        {renderTextbookBubble(sentence, 'left')}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="shrink-0 px-1 space-y-2.5">
-                    <div className="textbook-shadow-exercise-block">
-                      <p className="textbook-shadow-exercise-title">
-                        <span className="textbook-shadow-exercise-num">1</span>
-                        听一听，标一标。 Listen and number the pictures.
-                      </p>
-                      <div className="textbook-shadow-exercise-grid" aria-hidden="true">
-                        {['😴', '⏰', '👥', '📅'].map((icon) => (
-                          <div key={icon} className="textbook-shadow-exercise-cell">{icon}</div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="textbook-shadow-exercise-block">
-                      <p className="textbook-shadow-exercise-title">
-                        <span className="textbook-shadow-exercise-num">2</span>
-                        听一听，选一选。 Listen and choose.
-                      </p>
-                      <div className="textbook-shadow-exercise-choices" aria-hidden="true">
-                        {['🏀', '📺', '🍜'].map((icon) => (
-                          <div key={icon} className="textbook-shadow-exercise-choice">{icon}</div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="px-1 pb-2 space-y-2">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#008B8B]">Tap lines to shadow</p>
-                    {currentLesson.textbookLeft.sentences.slice(1).map((sentence, idx) => (
-                      <div key={sentence.id} className="max-w-full">
-                        {renderTextbookBubble(sentence, idx % 2 === 0 ? 'left' : 'right')}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
             {/* Pagination textbook footer navigation indicators */}
             {!isFocusMode && mode !== 'shadow' && (
@@ -1526,7 +1463,7 @@ export default function FunChineseInteractiveEbook() {
             {mode === 'shadow' ? (
               <div className="speaking-reading-panel">
                 <div className="speaking-reading-header">
-                  <h3 className="speaking-reading-title">Speaking Reading</h3>
+                  <h3 className="speaking-reading-title">Speaking Challenge</h3>
                   <div className="speaking-reading-toolbar">
                     <button
                       type="button"
@@ -1555,16 +1492,18 @@ export default function FunChineseInteractiveEbook() {
                   </div>
                 </div>
 
-                <div className="speaking-reading-tip" role="note">
-                  <p className="speaking-reading-tip-text">
-                    Tap a word, listen, then shadow it aloud.
-                  </p>
-                  <span className="speaking-reading-tip-icon" aria-hidden />
-                </div>
-
                 <div className="speaking-reading-scroll textbook-right-scroll">
                   {selectedShadowSentences.length === 0 ? (
-                    <div className="speaking-reading-empty" aria-hidden />
+                    <div className="speaking-reading-empty" role="status">
+                      <div className="speaking-reading-empty-icon" aria-hidden>
+                        <Mic className="speaking-reading-empty-mic" strokeWidth={2.25} />
+                      </div>
+                      <p className="speaking-reading-empty-title">Tap a word to start</p>
+                      <p className="speaking-reading-empty-sub">Listen first then shadow</p>
+                      <div className="speaking-reading-empty-chip">
+                        Choose any highlighted word
+                      </div>
+                    </div>
                   ) : (
                     <div className="speaking-reading-list">
                       {selectedShadowSentences.map((sentence, idx) => {
@@ -1581,6 +1520,19 @@ export default function FunChineseInteractiveEbook() {
                                   : ''
                             }`}
                           >
+                            <span
+                              className={`speaking-reading-card-badge ${idx === 0 ? 'is-a' : 'is-b'}`}
+                              aria-hidden
+                            >
+                              {idx === 0 ? (
+                                <>
+                                  <Volume2 className="speaking-reading-card-badge-icon" strokeWidth={2.4} />
+                                  <span className="speaking-reading-card-badge-letter">A</span>
+                                </>
+                              ) : (
+                                <User className="speaking-reading-card-badge-icon" strokeWidth={2.4} />
+                              )}
+                            </span>
                             {score != null && (
                               <span className={`speaking-reading-card-score${
                                 score >= 80 ? ' is-pass' : ' is-retry'
@@ -1590,9 +1542,6 @@ export default function FunChineseInteractiveEbook() {
                             )}
 
                             <div className="speaking-reading-card-top">
-                              <span className="speaking-reading-card-num" aria-hidden>
-                                {idx + 1}
-                              </span>
                               <div className="speaking-reading-ruby-line">
                                 {segments.map((segment, segIdx) => {
                                   const wordKey = `word-${sentence.id}-${segIdx}`;
@@ -1618,7 +1567,7 @@ export default function FunChineseInteractiveEbook() {
                                       <ruby style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
                                         {segment.text}
                                         {showPinyin && segment.pinyin ? (
-                                          <rt style={{ fontFamily: 'OPPO Sans, sans-serif' }}>{segment.pinyin}</rt>
+                                          <rt style={{ fontFamily: APP_FONT_FAMILY }}>{segment.pinyin}</rt>
                                         ) : null}
                                       </ruby>
                                     </button>
@@ -1627,12 +1576,8 @@ export default function FunChineseInteractiveEbook() {
                               </div>
                             </div>
 
-                            {aiAssistEnabled && (
-                              <>
-                                <div className="speaking-reading-card-divider" aria-hidden />
-                                <p className="speaking-reading-card-en">{sentence.english}</p>
-                              </>
-                            )}
+                            <div className="speaking-reading-card-divider" aria-hidden />
+                            <p className="speaking-reading-card-en">{sentence.english}</p>
 
                             <div className="speaking-reading-card-actions">
                               <button
@@ -2218,13 +2163,16 @@ export default function FunChineseInteractiveEbook() {
             onClick={toggleFocusMode}
             aria-label="Focus reading"
             title="Hide controls for full-page reading"
-            className="ebook-header-circle-btn justify-self-center"
+            className="ebook-footer-focus-btn justify-self-center"
           >
-            <Maximize2 className="ebook-header-circle-icon" strokeWidth={2.25} />
+            <Maximize2 className="ebook-footer-focus-icon" strokeWidth={2.5} />
           </button>
 
           <div className="ebook-footer-chip ebook-footer-chip-static justify-self-end" aria-live="polite">
-            Pages {leftPageNum}–{rightPageNum} of {totalPages}
+            <span className="ebook-footer-pages-label">PAGES</span>
+            <span className="ebook-footer-pages-value">
+              {leftPageNum}-{rightPageNum}
+            </span>
           </div>
         </footer>
         )}
@@ -2427,7 +2375,7 @@ export default function FunChineseInteractiveEbook() {
                           <ruby>
                             {segment.text}
                             {showPinyin && segment.pinyin ? (
-                              <rt style={{ fontFamily: 'OPPO Sans, sans-serif' }}>{segment.pinyin}</rt>
+                              <rt style={{ fontFamily: APP_FONT_FAMILY }}>{segment.pinyin}</rt>
                             ) : null}
                           </ruby>
                         </span>

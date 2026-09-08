@@ -1,9 +1,9 @@
 import { ReactNode, useState, useEffect } from 'react'
 import { Box, ButtonBase } from '@mui/material'
 import { useLocation } from 'react-router-dom'
-import BottomNavigator from './BottomNavigator'
+import BottomNavigator, { getBottomNavReserve } from './BottomNavigator'
 import TopBanner from './TopBanner'
-import SystemStatusBar from './SystemStatusBar'
+import SystemStatusBar, { getSystemBarMetrics } from './SystemStatusBar'
 import ShellSloganHeadline from './ShellSloganHeadline'
 import ShellTopBarProductLinks from './ShellTopBarProductLinks'
 import IpadDeviceShell from './IpadDeviceShell'
@@ -15,8 +15,8 @@ interface MainLayoutProps {
 
 const DESIGN_1920 = 1920
 const DESIGN_1125 = 1125
-/** Top + bottom chrome bars (px) — symmetric frame for centered iPad */
-const SHELL_BAR_RESERVE = 72
+/** Top + bottom chrome bars (px) — air band around the centered tablet */
+const SHELL_BAR_RESERVE = 88
 const SHELL_CHROME_RESERVE = SHELL_BAR_RESERVE * 2
 
 export default function MainLayout({ children }: MainLayoutProps) {
@@ -28,7 +28,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   }
   
   // Read screen size from environment variable
-  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768'
+  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '2000x1200'
   const [screenWidth, screenHeight] = screenSize.split('x').map(Number)
   const is2000x1200 = screenSize === '2000x1200'
   const is1920x1125 = screenSize === '1920x1125'
@@ -53,14 +53,11 @@ export default function MainLayout({ children }: MainLayoutProps) {
       )
     : 1
 
-  const breakpointDeviceScale =
-    viewport.w < 600 ? 0.35 : viewport.w < 900 ? 0.6 : viewport.w < 1200 ? 0.85 : 1
   const fitDeviceScale = Math.min(
-    breakpointDeviceScale,
-    (viewport.h - (isWebsiteEmbed ? 0 : SHELL_CHROME_RESERVE) - 12) / screenHeight,
-    (viewport.w - 24) / screenWidth,
+    (viewport.h - (isWebsiteEmbed ? 0 : SHELL_CHROME_RESERVE) - 8) / screenHeight,
+    (viewport.w - 8) / screenWidth,
   )
-  const deviceScale = Math.max(0.28, fitDeviceScale)
+  const deviceScale = Math.max(0.28, Math.min(1, fitDeviceScale))
   
   const isCameraPage = location.pathname === '/camera'
   const isAIPage = location.pathname === '/ai-chat'
@@ -148,13 +145,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isGrammarSnapPage ||
     isLibraryBookSelectionPage || isStartingLearningPage || isFunChineseTeacherGuidePage || isFunChineseHubPage || isFunChineseCardCollectionPage || isFunChineseIntensivePage || isFunChineseLessonPage || isCultureMapPage || isCharacterWritingPage || isHSKStandardSubPage || isBusinessChineseSubPage
 
-  // 主四 tab + LingoFlash + GrammarPuzzle + SyntaxSnap + HSKPrepTraining + LibraryBookSelection + FunChineseHub + FunChineseLesson + CultureMap + CharacterWriting：显示系统状态栏；其它全屏页不显示
+  // 主四 tab + LingoFlash 等：壳层状态栏。/hsk-prep-training 由页面自己画 Group 17，不在这里铺。
   const showSystemBar =
     ['/', '/AI', '/Home', '/library', '/specialized', '/apps', '/hsk-test', '/hsk-standard', '/business-chinese'].includes(location.pathname) || 
     isLingoFlashPage || 
     isGrammarPuzzlePage || 
     isSyntaxSnapPage ||
-    (isHSKPrepTrainingPage && !isWebsiteEmbed) ||
     isHSKSkillDrillPage ||
     isHSKOralReviewPage ||
     isGrammarSnapPage ||
@@ -168,7 +164,16 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isHSKStandardSubPage ||
     isBusinessChineseSubPage
 
-  const showTopBanner = !hideChromeNav
+  const isLibraryHomePage =
+    location.pathname === '/Home' || location.pathname === '/library'
+  const isStudioHomePage =
+    location.pathname === '/AI' ||
+    location.pathname === '/' ||
+    location.pathname === '/hsk-standard' ||
+    location.pathname === '/business-chinese'
+
+  // Figma 主界面2：三轨 Studio 页内自带顶栏，隐藏全局 TopBanner
+  const showTopBanner = !hideChromeNav && !isLibraryHomePage && !isStudioHomePage
   const showBottomNav = !hideChromeNav
   
   // Calculate scaled heights based on screen size
@@ -181,10 +186,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
       ) * 0.9
     : null
   const effectiveDeviceScale = Math.max(0.28, websiteEmbedScale ?? deviceScale)
-  const systemBarHeight = is960 ? 24 : (is2000x1200 ? 44 : (is1920x1125 ? 40 : 32))
+  // Figma 主界面2：dock 130 + 底边 40；Library 自带顶栏故无 TopBanner
+  const systemBarHeight = getSystemBarMetrics(screenSize).height
   const topBannerHeight = is960 ? 56 : (is2000x1200 ? 110 : (is1920x1125 ? 100 : 80))
-  // Reserve space for BottomNavigator: 4-dot tab indicator + dock + camera (absolute bottom)
-  const bottomNavHeight = is960 ? 96 : (is2000x1200 ? 158 : (is1920x1125 ? 146 : 124))
+  const bottomNavHeight = getBottomNavReserve(screenSize)
   const totalTopHeight = (showSystemBar ? systemBarHeight : 0) + (showTopBanner ? topBannerHeight : 0)
   const mainChromeBottom = showBottomNav ? bottomNavHeight : 0
   /** SystemStatusBar is absolute; immersive pages must start below it. */
@@ -267,16 +272,16 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const shellTopBarSx = {
     ...shellBarBaseSx,
     position: 'relative' as const,
-    alignItems: 'flex-end',
-    pt: 0.5,
-    pb: 0.75,
+    alignItems: 'flex-start',
+    pt: 1.25,
+    pb: 0,
   }
 
   const shellBottomBarSx = {
     ...shellBarBaseSx,
-    alignItems: 'flex-start',
-    pt: 0.75,
-    pb: 0.5,
+    alignItems: 'flex-end',
+    pt: 0,
+    pb: 1.25,
   }
 
   const shellTopBar = (
@@ -296,9 +301,11 @@ export default function MainLayout({ children }: MainLayoutProps) {
         sx={{
           display: 'block',
           borderRadius: 0,
-          p: 0,
+          py: '6px',
+          px: '8px',
           m: 0,
-          minWidth: 0,
+          minWidth: 44,
+          minHeight: 44,
           lineHeight: 0,
           cursor: 'pointer',
           flexShrink: 0,
@@ -314,7 +321,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           alt="C-Lingo AIOS"
           draggable={false}
           sx={{
-            height: '44px',
+            height: '32px',
             width: 'auto',
             maxWidth: 'none',
             objectFit: 'contain',

@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "bookId": "happy-chinese-demo",
+  "unitId": 1,
+  "lessonId": 1,
+  "lessonTitle": "你好",
+  "lessonTitleEn": "Hello",
+  "hskLevel": 1,
+  "sourcePages": "demo-L1",
+  "periods": [
+    {
+      "period": 1,
+      "title": "生词与练习",
+      "titleEn": "Vocabulary",
+      "goal": "掌握本课核心生词，完成听说入门练习",
+      "durationMinutes": 45,
+      "steps": [
+        { "kind": "review", "label": "复习前课相关生词", "skills": ["听", "说"] },
+        { "kind": "objectives", "label": "展示生词目标", "skills": ["听"] },
+        { "kind": "listen", "label": "听生词与例句", "skills": ["听"] },
+        { "kind": "speak", "label": "跟读与生词练习", "skills": ["说"] },
+        { "kind": "practice", "label": "综合练习", "skills": ["听", "说"] }
+      ],
+      "flow": {
+        "phases": ["warmup", "learn"],
+        "vocabRange": [0, 3]
+      }
+    },
+    {
+      "period": 2,
+      "title": "课文与句型",
+      "titleEn": "Text & Patterns",
+      "goal": "理解对话与句型，完成配套练习",
+      "durationMinutes": 45,
+      "steps": [
+        { "kind": "review", "label": "复习生词与句型", "skills": ["听", "说"] },
+        { "kind": "objectives", "label": "展示句型目标", "skills": ["听"] },
+        { "kind": "practice", "label": "知识卡片与句型练习", "skills": ["听", "说"] },
+        { "kind": "extension", "label": "拓展听说法", "skills": ["听", "说"] },
+        { "kind": "assessment", "label": "小测", "skills": ["听", "说", "读"] }
+      ],
+      "flow": {
+        "phases": ["cards", "practice"],
+        "cardIndices": [0, 1, 2],
+        "exerciseIndices": [0, 1]
+      }
+    },
+    {
+      "period": 3,
+      "title": "综合练习",
+      "titleEn": "Integrated Practice",
+      "goal": "综合运用本课内容，完成单元内综合训练",
+      "durationMinutes": 45,
+      "steps": [
+        { "kind": "review", "label": "复习生词与句型", "skills": ["听", "说"] },
+        { "kind": "practice", "label": "综合练习", "skills": ["听", "说"] },
+        { "kind": "extension", "label": "拓展读写", "skills": ["读", "写"] },
+        { "kind": "assessment", "label": "课时测评", "skills": ["听", "说", "读", "写"] }
+      ],
+      "flow": {
+        "phases": ["practice", "complete"],
+        "exerciseIndices": [0, 1]
+      }
+    }
+  ],
+  "unitAssessment": {
+    "vocab": ["你", "好", "你好", "吗", "我", "很", "谢谢"],
+    "patterns": ["你好", "你好吗", "我很好"],
+    "extension": ["打招呼", "语气助词 吗"]
+  },
+  "meta": {
+    "generatedBy": "lesson-package-agent",
+    "generatedAt": "2026-08-21T00:00:00Z",
+    "reviewedBy": "gold-sample"
+  }
+}

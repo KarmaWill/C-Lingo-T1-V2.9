@@ -1,10 +1,11 @@
 import { Box } from '@mui/material';
 import FunChineseInteractiveEbook from './FunChineseInteractiveEbook';
+import { figmaPx } from '../../utils/figmaScale';
 
-/** Full-area shell for Happy Chinese interactive e-book. */
+/** Full-area shell — Figma「书本选中时」底色 #F3F4F6 */
 export default function FunChineseEbookPageLayout() {
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
-  const is960 = screenSize === '960x540';
+  const p = (n: number) => figmaPx(n, screenSize);
 
   return (
     <Box
@@ -12,16 +13,17 @@ export default function FunChineseEbookPageLayout() {
       sx={{
         height: '100%',
         minHeight: 0,
-        bgcolor: '#F6F2E9',
+        bgcolor: '#F3F4F6',
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        p: is960 ? 1 : 1.5,
+        p: 0,
         boxSizing: 'border-box',
+        fontFamily: 'var(--app-font-family)',
         '&[data-focus-mode="true"]': {
-          p: is960 ? 1 : 1.25,
-          bgcolor: '#F6F2E9',
+          p: `${p(16)}px`,
+          bgcolor: '#F3F4F6',
         },
       }}
     >

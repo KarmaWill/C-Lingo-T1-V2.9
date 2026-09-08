@@ -1,216 +1,220 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Box, ButtonBase, Typography } from '@mui/material'
-import HomeRoundedIcon from '@mui/icons-material/HomeRounded'
-import SmartToyIcon from '@mui/icons-material/SmartToy'
-import SchoolIcon from '@mui/icons-material/School'
-import AppsIcon from '@mui/icons-material/Apps'
-import CameraIcon from '@mui/icons-material/CameraAlt'
-import { getChromeThemeFromPath } from '../../data/programTracks'
+import { Box, ButtonBase } from '@mui/material'
+import { figmaPx } from '../../utils/figmaScale'
 
-// Order: Library first, then Learn, then HSK, then Explore (round button is Camera)
-const navItems = [
-  { labelKey: 'nav.library', value: '/Home', icon: HomeRoundedIcon },
-  { labelKey: 'nav.learn', value: '/AI', icon: SmartToyIcon },
-  { labelKey: 'nav.hsk', value: '/hsk-test', icon: SchoolIcon },
-  { labelKey: 'nav.explore', value: '/apps', icon: AppsIcon },
+/**
+ * Figma Frame 1171277717（画布 1920×1200）
+ * 4 Tab 胶囊 870×130 + gap 40 + 外侧 Camera 150×130
+ */
+const FIGMA = {
+  dockW: 870,
+  dockH: 130,
+  dockRadius: 108,
+  dockPadX: 120,
+  icon: 60,
+  iconGap: 130,
+  cameraW: 150,
+  cameraH: 130,
+  cameraRadius: 1002,
+  cameraGap: 40,
+  bottom: 40,
+} as const
+
+const DOCK_SHADOW = '0px 4px 20px rgba(213, 213, 213, 0.6)'
+const ICON_ACTIVE = 'linear-gradient(150.37deg, #1BE0CA -2.7%, #00B4A0 94.5%)'
+const ICON_IDLE = '#D5D5D5'
+const SURFACE = '#FFFFFF'
+
+type NavItem = {
+  labelKey: string
+  value: string
+  iconSrc: string
+  match: (path: string) => boolean
+}
+
+/** dock 内仅 4 项；Camera 不进 dock。稿：主界面1 Home=教材，主界面2 书签=Studio */
+const dockItems: NavItem[] = [
+  {
+    labelKey: 'nav.learn',
+    value: '/Home',
+    iconSrc: '/shell/nav/home.svg',
+    match: (p) =>
+      p === '/Home' ||
+      p === '/library' ||
+      p === '/starting-learning' ||
+      p.startsWith('/library/'),
+  },
+  {
+    labelKey: 'nav.library',
+    value: '/AI',
+    iconSrc: '/shell/nav/library.svg',
+    match: (p) =>
+      p === '/AI' ||
+      p === '/' ||
+      p === '/hsk-standard' ||
+      p === '/business-chinese' ||
+      p.startsWith('/lesson'),
+  },
+  {
+    labelKey: 'nav.hsk',
+    value: '/hsk-test',
+    iconSrc: '/shell/nav/plan.svg',
+    match: (p) =>
+      p === '/hsk-test' ||
+      p === '/hsk-prep-test' ||
+      p === '/hsk-mock-exam' ||
+      p === '/hsk-prep-training' ||
+      p === '/hsk-skill-drill' ||
+      p === '/hsk-oral-review',
+  },
+  {
+    labelKey: 'nav.explore',
+    value: '/apps',
+    iconSrc: '/shell/nav/apps.svg',
+    match: (p) => p === '/apps',
+  },
 ]
+
+export function getBottomNavReserve(screenSize: string) {
+  return figmaPx(Math.max(FIGMA.dockH, FIGMA.cameraH) + FIGMA.bottom, screenSize)
+}
+
+function NavGlyph({ src, active, size }: { src: string; active: boolean; size: number }) {
+  return (
+    <Box
+      sx={{
+        width: size,
+        height: size,
+        flexShrink: 0,
+        background: active ? ICON_ACTIVE : ICON_IDLE,
+        WebkitMaskImage: `url(${src})`,
+        WebkitMaskRepeat: 'no-repeat',
+        WebkitMaskPosition: 'center',
+        WebkitMaskSize: 'contain',
+        maskImage: `url(${src})`,
+        maskRepeat: 'no-repeat',
+        maskPosition: 'center',
+        maskSize: 'contain',
+      }}
+    />
+  )
+}
 
 export default function BottomNavigator() {
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useTranslation()
-  const chrome = getChromeThemeFromPath(location.pathname)
 
-  const goCamera = () => {
-    navigate('/camera')
-    // Fallback: ensure route change even if SPA navigation is blocked by runtime state
-    setTimeout(() => {
-      if (window.location.pathname !== '/camera') {
-        window.location.assign('/camera')
-      }
-    }, 0)
-  }
-
-  // Read screen size from environment variable
-  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768'
-  const is960 = screenSize === '960x540'
-  const is2000x1200 = screenSize === '2000x1200'
-  const is1920x1125 = screenSize === '1920x1125'
+  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '2000x1200'
+  const dockW = figmaPx(FIGMA.dockW, screenSize)
+  const dockH = figmaPx(FIGMA.dockH, screenSize)
+  const icon = figmaPx(FIGMA.icon, screenSize)
+  const gap = figmaPx(FIGMA.iconGap, screenSize)
+  const padX = figmaPx(FIGMA.dockPadX, screenSize)
+  const bottom = figmaPx(FIGMA.bottom, screenSize)
+  const radius = figmaPx(FIGMA.dockRadius, screenSize)
+  const cameraW = figmaPx(FIGMA.cameraW, screenSize)
+  const cameraH = figmaPx(FIGMA.cameraH, screenSize)
+  const cameraRadius = figmaPx(FIGMA.cameraRadius, screenSize)
+  const cameraGap = figmaPx(FIGMA.cameraGap, screenSize)
 
   const isCameraPage = location.pathname === '/camera'
   const isAIPage = location.pathname === '/ai-chat'
   const isFullScreen = isCameraPage || isAIPage
+  const isCameraActive = isCameraPage
 
-  const isNavSelected = (item: (typeof navItems)[number]) => {
-    if (item.value === '/AI') {
-      return (
-        location.pathname === '/AI' ||
-        location.pathname === '/' ||
-        location.pathname === '/hsk-standard' ||
-        location.pathname === '/business-chinese' ||
-        location.pathname.startsWith('/lesson')
-      )
-    }
-    if (item.value === '/Home') {
-      return location.pathname === '/Home' || location.pathname === '/library'
-    }
-    if (item.value === '/hsk-test') {
-      return (
-        location.pathname === '/hsk-test' ||
-        location.pathname === '/hsk-prep-test' ||
-        location.pathname === '/hsk-mock-exam' ||
-        location.pathname === '/hsk-prep-training' ||
-        location.pathname === '/hsk-skill-drill' ||
-        location.pathname === '/hsk-oral-review'
-      )
-    }
-    return location.pathname === item.value
+  const goCamera = () => {
+    navigate('/camera')
+    setTimeout(() => {
+      if (window.location.pathname !== '/camera') window.location.assign('/camera')
+    }, 0)
   }
-
-  const isCameraActive = location.pathname === '/camera'
 
   return (
     <Box
       id="bottom-nav-container"
       sx={{
         position: 'absolute',
-        bottom: is960 ? 16 : (is2000x1200 ? 36 : (is1920x1125 ? 32 : 24)),
+        bottom,
         left: '50%',
         transform: `translateX(-50%) ${isFullScreen ? 'translateY(150px)' : 'translateY(0)'}`,
         opacity: isFullScreen ? 0 : 1,
         transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
         zIndex: 1100,
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: 'row',
         alignItems: 'center',
-        gap: is960 ? 1 : (is2000x1200 ? 1.75 : (is1920x1125 ? 1.5 : 1.25)),
+        padding: 0,
+        gap: `${cameraGap}px`,
+        width: dockW + cameraGap + cameraW,
+        height: dockH,
         pointerEvents: isFullScreen ? 'none' : 'auto',
       }}
     >
-      {/* 四 Tab 页位置指示 — 与主导航同步，全 App 通用 */}
-      <Box
-        aria-hidden
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: is960 ? 0.75 : 1,
-          height: is960 ? 14 : 16,
-        }}
-      >
-        {navItems.map((item) => {
-          const active = isNavSelected(item)
-          return (
-            <Box
-              key={`dot-${item.value}`}
-              sx={{
-                width: is960 ? 7 : 8,
-                height: is960 ? 7 : 8,
-                borderRadius: '50%',
-                bgcolor: active ? chrome.bottomNavAccent : chrome.bottomNavDotInactive,
-                flexShrink: 0,
-                transition: 'background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-              }}
-            />
-          )
-        })}
-      </Box>
-
       <Box
         sx={{
+          width: dockW,
+          height: dockH,
+          borderRadius: `${radius}px`,
+          backgroundColor: SURFACE,
+          boxShadow: DOCK_SHADOW,
           display: 'flex',
+          flexDirection: 'row',
           alignItems: 'center',
-          gap: is960 ? 1.5 : (is2000x1200 ? 3 : (is1920x1125 ? 2.5 : 2)),
+          justifyContent: 'flex-start',
+          gap: `${gap}px`,
+          px: `${padX}px`,
+          boxSizing: 'border-box',
+          flexShrink: 0,
         }}
       >
-      {/* Main Dock */}
-      <Box
-        sx={{
-          backgroundColor: chrome.bottomNavDockBg,
-          backdropFilter: 'blur(25px) saturate(180%)',
-          border: chrome.bottomNavDockBorder,
-          borderRadius: is960 ? '24px' : (is2000x1200 ? '44px' : (is1920x1125 ? '40px' : '32px')),
-          height: is960 ? 64 : (is2000x1200 ? 110 : (is1920x1125 ? 100 : 84)),
-          display: 'flex',
-          alignItems: 'center',
-          px: is960 ? 1.5 : (is2000x1200 ? 3 : (is1920x1125 ? 2.5 : 2)),
-          gap: is960 ? 0.75 : (is2000x1200 ? 1.75 : (is1920x1125 ? 1.5 : 1)),
-          boxShadow: chrome.bottomNavShadow,
-          transition: 'background-color 0.5s, border-color 0.5s, box-shadow 0.5s',
-        }}
-      >
-        {navItems.map((item) => {
-          const isSelected = isNavSelected(item)
-          const Icon = item.icon
-
+        {dockItems.map((item) => {
+          const active = item.match(location.pathname)
           return (
             <ButtonBase
               key={item.value}
-              onClick={() => (item.value === '/camera' ? goCamera() : navigate(item.value))}
+              onClick={() => navigate(item.value)}
               aria-label={t(item.labelKey)}
+              aria-current={active ? 'page' : undefined}
               sx={{
-                width: is960 ? 56 : (is2000x1200 ? 96 : (is1920x1125 ? 88 : 72)),
-                height: is960 ? 52 : (is2000x1200 ? 92 : (is1920x1125 ? 84 : 68)),
+                width: icon,
+                height: dockH,
                 display: 'flex',
-                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: is960 ? '16px' : (is2000x1200 ? '26px' : (is1920x1125 ? '24px' : '20px')),
-                transition: 'all 0.2s ease, color 0.5s',
-                color: isSelected ? chrome.bottomNavAccent : chrome.bottomNavInactive,
-                gap: 0.5,
-                '&:active': {
-                  transform: 'scale(0.9)',
-                  bgcolor: 'rgba(0, 0, 0, 0.05)',
-                }
+                flexShrink: 0,
+                borderRadius: `${Math.round(icon * 0.28)}px`,
+                transition: 'transform 0.15s ease',
+                '&:active': { transform: 'scale(0.92)' },
               }}
             >
-              <Icon sx={{ fontSize: is960 ? 28 : (is2000x1200 ? 48 : (is1920x1125 ? 44 : 36)) }} />
-              {isSelected && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    bottom: is960 ? 6 : (is2000x1200 ? 10 : (is1920x1125 ? 8 : 2)),
-                    width: is960 ? 4 : (is2000x1200 ? 7 : (is1920x1125 ? 6 : 5)),
-                    height: is960 ? 4 : (is2000x1200 ? 7 : (is1920x1125 ? 6 : 5)),
-                    borderRadius: '50%',
-                    bgcolor: chrome.bottomNavAccent,
-                    transition: 'background-color 0.5s',
-                  }}
-                />
-              )}
+              <NavGlyph src={item.iconSrc} active={active} size={icon} />
             </ButtonBase>
           )
         })}
       </Box>
 
-      {/* Camera shortcut */}
       <ButtonBase
         onClick={goCamera}
+        aria-label={t('nav.camera')}
+        aria-current={isCameraActive ? 'page' : undefined}
         sx={{
-          width: is960 ? 64 : (is1920x1125 ? 100 : 84),
-          height: is960 ? 64 : (is1920x1125 ? 100 : 84),
-          borderRadius: is960 ? '24px' : (is1920x1125 ? '40px' : '32px'),
-          backgroundColor: isCameraActive ? chrome.cameraBtnActiveBg : chrome.cameraBtnBg,
-          backdropFilter: 'blur(25px) saturate(180%)',
-          border: chrome.bottomNavDockBorder,
-          boxShadow: chrome.bottomNavShadow,
+          width: cameraW,
+          height: cameraH,
+          borderRadius: `${cameraRadius}px`,
+          backgroundColor: SURFACE,
+          boxShadow: DOCK_SHADOW,
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          color: isCameraActive ? (chrome.cameraBtnActiveBg === '#D4A853' ? '#0D0D0D' : 'white') : chrome.cameraBtnColor,
-          transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-          gap: 0.5,
-          '&:active': {
-            transform: 'scale(0.9)',
-          }
+          flexShrink: 0,
+          transition: 'transform 0.15s ease',
+          '&:active': { transform: 'scale(0.92)' },
         }}
       >
-        <CameraIcon sx={{ fontSize: is960 ? 30 : (is2000x1200 ? 48 : (is1920x1125 ? 44 : 36)) }} />
+        <NavGlyph src="/shell/nav/camera.svg" active={isCameraActive} size={icon} />
       </ButtonBase>
-      </Box>
     </Box>
   )
 }

@@ -1,55 +1,60 @@
-import { useNavigate } from 'react-router-dom';
-import { Box, Typography, ButtonBase } from '@mui/material';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { Box, Typography, ButtonBase } from '@mui/material'
+import { useNavigate } from 'react-router-dom'
+import { figmaPx, FIGMA_FONT } from '../../utils/figmaScale'
 
 interface HomeLessonHeroProps {
-  is960: boolean;
-  from: string;
-  lessonId?: string;
-  imageSrc?: string;
-  imagePosition?: string;
-  eyebrow?: string;
-  title?: string;
-  wordCount?: number;
-  patternCount?: number;
-  durationLabel?: string;
-  masteryLabel?: string;
-  masteryValue?: number;
-  progressColor?: string;
+  screenSize: string
+  from: string
+  lessonId?: string
+  imageSrc?: string
+  imagePosition?: string
+  eyebrow?: string
+  title?: string
+  wordCount?: number
+  patternCount?: number
+  wordLabel?: string
+  patternLabel?: string
+  durationLabel?: string
+  masteryLabel?: string
+  masteryValue?: number
+  progressColor?: string
 }
 
+/** Figma 主界面7 · 主课卡 1250×710 · radius 61 · 底渐变 0.6 */
 export default function HomeLessonHero({
-  is960,
+  screenSize,
   from,
   lessonId = '1',
-  imageSrc = '/images/homepage-hero-portrait.png',
-  imagePosition = 'center',
+  imageSrc = '/images/c-lingo-hero.png',
+  imagePosition = '42% center',
   eyebrow = 'CURRENT LEARNING',
   title = 'Lesson 1 | How many people in your family?',
   wordCount = 31,
   patternCount = 3,
+  wordLabel = 'Words',
+  patternLabel = 'Patterns',
   durationLabel = '15 MINS',
   masteryLabel = 'Unit Mastery',
   masteryValue = 65,
   progressColor = '#00B4A0',
 }: HomeLessonHeroProps) {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
+  const p = (n: number) => figmaPx(n, screenSize)
 
   const onStartLesson = () => {
-    navigate(`/lesson/${lessonId}`, { state: { from } });
-  };
+    navigate(`/lesson/${lessonId}`, { state: { from } })
+  }
 
   return (
-    <Box sx={{ minWidth: 0, minHeight: 0, height: { lg: '100%' }, boxSizing: 'border-box', overflow: 'hidden' }}>
+    <Box sx={{ minWidth: 0, minHeight: 0, height: '100%', boxSizing: 'border-box', overflow: 'hidden' }}>
       <Box
         sx={{
           position: 'relative',
           height: '100%',
-          minHeight: is960 ? 220 : 280,
-          borderRadius: is960 ? '24px' : '32px',
+          borderRadius: `${p(61)}px`,
           overflow: 'hidden',
-          border: is960 ? '3px solid white' : '4px solid white',
-          boxShadow: '0 15px 40px rgba(0,0,0,0.08)',
+          isolation: 'isolate',
+          bgcolor: '#D9D9D9',
         }}
       >
         <Box
@@ -58,90 +63,70 @@ export default function HomeLessonHero({
           alt=""
           sx={{
             position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
+            left: '-0.3%',
+            top: '-4%',
+            width: '100.6%',
+            height: '105.6%',
             objectFit: 'cover',
             objectPosition: imagePosition,
             zIndex: 1,
+            pointerEvents: 'none',
           }}
         />
-        <Box sx={{ position: 'absolute', inset: 0, background: 'rgba(12, 16, 24, 0.24)', zIndex: 2 }} />
         <Box
           sx={{
             position: 'absolute',
             inset: 0,
-            background: 'linear-gradient(to top, rgba(0,0,0,0.64) 0%, rgba(0,0,0,0.28) 42%, transparent 70%)',
+            background: 'linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, #000000 100%)',
+            opacity: 0.6,
             zIndex: 2,
+            pointerEvents: 'none',
           }}
         />
 
-        <ButtonBase
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate('/course-intro', { state: { from, lessonId } });
-          }}
-          aria-label="Lesson overview"
-          sx={{
-            position: 'absolute',
-            top: is960 ? 16 : 32,
-            right: is960 ? 16 : 32,
-            zIndex: 4,
-            minWidth: 44,
-            minHeight: 44,
-            px: is960 ? 1.25 : 1.5,
-            borderRadius: is960 ? '12px' : '16px',
-            bgcolor: 'rgba(255,255,255,0.16)',
-            color: '#FFF9EA',
-            border: '1px solid rgba(255,255,255,0.38)',
-            backdropFilter: 'blur(12px)',
-            boxShadow: '0 10px 24px rgba(0,0,0,0.22)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 0.75,
-            '&:active': { transform: 'scale(0.96)', bgcolor: 'rgba(255,255,255,0.22)' },
-          }}
-        >
-          <InfoOutlinedIcon sx={{ fontSize: is960 ? 20 : 22 }} />
-          <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.78rem', fontWeight: 800, letterSpacing: '0.02em' }}>
-            About
-          </Typography>
-        </ButtonBase>
-
+        {/* Badges — Figma 36/24 · 28 */}
         <Box
           sx={{
             position: 'absolute',
-            top: is960 ? 16 : 32,
-            left: is960 ? 16 : 32,
+            top: p(50),
+            left: p(50),
             display: 'flex',
             flexDirection: 'column',
-            gap: is960 ? 1 : 2,
+            gap: `${p(35)}px`,
             zIndex: 3,
+            fontFamily: FIGMA_FONT,
           }}
         >
           <Box
             sx={{
               display: 'flex',
               alignItems: 'center',
-              gap: is960 ? 0.75 : 1.5,
-              bgcolor: 'rgba(255,255,255,0.16)',
-              color: '#FFF9EA',
-              px: is960 ? 1.5 : 2.5,
-              py: is960 ? 0.65 : 1.2,
-              borderRadius: is960 ? '12px' : '16px',
-              border: '1px solid rgba(255,255,255,0.38)',
-              backdropFilter: 'blur(12px)',
-              boxShadow: '0 10px 24px rgba(0,0,0,0.22)',
+              gap: `${p(28)}px`,
+              height: p(84),
+              px: `${p(40)}px`,
+              borderRadius: `${p(30)}px`,
+              bgcolor: 'rgba(255,255,255,0.2)',
+              border: '3px solid rgba(255,255,255,0.4)',
+              backdropFilter: 'blur(2px)',
+              width: 'fit-content',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.4 }}>
-              <Typography sx={{ fontSize: is960 ? '0.85rem' : '1.25rem', fontWeight: 900, lineHeight: 1 }}>{wordCount}</Typography>
-              <Typography sx={{ fontSize: is960 ? '0.55rem' : '0.75rem', fontWeight: 600 }}>Words</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'baseline', color: '#fff' }}>
+              <Typography sx={{ fontSize: p(36), fontWeight: 700, lineHeight: 1, fontFamily: 'inherit' }}>
+                {wordCount}
+              </Typography>
+              <Typography sx={{ fontSize: p(24), fontWeight: 700, lineHeight: 1, fontFamily: 'inherit' }}>
+                {wordLabel}
+              </Typography>
             </Box>
-            <Box sx={{ width: 1.5, height: is960 ? 10 : 16, bgcolor: 'rgba(255,249,234,0.48)', borderRadius: '2px', mx: 0.5 }} />
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.4 }}>
-              <Typography sx={{ fontSize: is960 ? '0.85rem' : '1.25rem', fontWeight: 900, lineHeight: 1 }}>{patternCount}</Typography>
-              <Typography sx={{ fontSize: is960 ? '0.55rem' : '0.75rem', fontWeight: 600 }}>Patterns</Typography>
+            <Box sx={{ width: p(4), height: p(30), bgcolor: 'rgba(255,255,255,0.4)', borderRadius: 61 }} />
+            <Box sx={{ display: 'flex', alignItems: 'baseline', color: '#fff' }}>
+              <Typography sx={{ fontSize: p(36), fontWeight: 700, lineHeight: 1, fontFamily: 'inherit' }}>
+                {patternCount}
+              </Typography>
+              <Typography sx={{ fontSize: p(24), fontWeight: 700, lineHeight: 1, fontFamily: 'inherit' }}>
+                {patternLabel}
+              </Typography>
             </Box>
           </Box>
 
@@ -149,93 +134,121 @@ export default function HomeLessonHero({
             sx={{
               display: 'flex',
               alignItems: 'center',
-              gap: is960 ? 0.6 : 1,
-              bgcolor: 'rgba(255,255,255,0.16)',
-              color: '#FFF9EA',
-              px: is960 ? 1.5 : 2.5,
-              py: is960 ? 0.6 : 1,
-              borderRadius: is960 ? '12px' : '16px',
+              gap: `${p(9)}px`,
+              height: p(84),
+              px: `${p(36)}px`,
+              borderRadius: `${p(30)}px`,
+              bgcolor: 'rgba(255,255,255,0.2)',
+              border: '3px solid rgba(255,255,255,0.4)',
+              backdropFilter: 'blur(2px)',
               width: 'fit-content',
-              border: '1px solid rgba(255,255,255,0.38)',
-              backdropFilter: 'blur(12px)',
-              boxShadow: '0 10px 24px rgba(0,0,0,0.22)',
+              color: '#fff',
             }}
           >
-            <Typography sx={{ fontSize: is960 ? '0.8rem' : '1.125rem' }}>⏱</Typography>
-            <Typography sx={{ fontSize: is960 ? '0.65rem' : '0.875rem', fontWeight: 900, letterSpacing: '0.05em' }}>
-              {durationLabel}
-            </Typography>
+            <Typography sx={{ fontSize: p(28), fontWeight: 700, fontFamily: 'inherit' }}>⏱</Typography>
+            <Typography sx={{ fontSize: p(28), fontWeight: 700, fontFamily: 'inherit' }}>{durationLabel}</Typography>
           </Box>
         </Box>
 
-        <Box sx={{ position: 'absolute', bottom: is960 ? 20 : 40, left: is960 ? 20 : 40, right: is960 ? 20 : 40, zIndex: 3 }}>
+        {/* Bottom copy + CTA */}
+        <Box
+          sx={{
+            position: 'absolute',
+            left: p(50),
+            right: p(50),
+            bottom: p(40),
+            zIndex: 3,
+            fontFamily: FIGMA_FONT,
+          }}
+        >
           <Typography
             sx={{
-              color: '#FFDFA3',
-              fontWeight: 900,
-              fontSize: is960 ? '0.75rem' : '1.125rem',
-              mb: is960 ? 0.75 : 1.5,
-              letterSpacing: '0.05em',
-              opacity: 0.98,
+              color: '#FDD83B',
+              fontWeight: 500,
+              fontSize: p(28),
+              letterSpacing: `${p(4.48)}px`,
+              mb: `${p(12)}px`,
+              fontFamily: 'inherit',
             }}
           >
             {eyebrow}
           </Typography>
           <Typography
             sx={{
-              color: 'white',
-              fontSize: is960 ? '1.05rem' : '1.75rem',
-              fontWeight: 900,
-              lineHeight: 1.25,
-              mb: is960 ? 1.25 : 2.25,
-              letterSpacing: '-0.02em',
+              color: '#fff',
+              fontSize: p(60),
+              fontWeight: 500,
+              lineHeight: `${p(80)}px`,
+              mb: `${p(24)}px`,
+              maxWidth: p(1130),
+              fontFamily: 'inherit',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
             }}
           >
             {title}
           </Typography>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 1.5 : 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: `${p(40)}px` }}>
             <ButtonBase
               onClick={(e) => {
-                e.stopPropagation();
-                onStartLesson();
+                e.stopPropagation()
+                onStartLesson()
               }}
               sx={{
-                bgcolor: 'white',
-                color: '#111827',
-                px: is960 ? 2.25 : 5,
-                py: is960 ? 0.9 : 2,
-                minHeight: 44,
-                borderRadius: is960 ? '12px' : '18px',
-                fontSize: is960 ? '0.8rem' : '1.25rem',
-                fontWeight: 900,
-                boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
-                '&:active': { transform: 'scale(0.95)' },
+                width: p(400),
+                height: p(120),
+                borderRadius: `${p(30)}px`,
+                bgcolor: '#fff',
+                color: '#000',
+                fontSize: p(36),
+                fontWeight: 700,
+                fontFamily: FIGMA_FONT,
+                flexShrink: 0,
+                '&:active': { transform: 'scale(0.97)' },
               }}
             >
               Start Session
             </ButtonBase>
-            <Box sx={{ flexGrow: 1 }}>
+
+            <Box sx={{ flex: 1, minWidth: 0, pb: `${p(8)}px` }}>
               <Box
                 sx={{
                   display: 'flex',
                   justifyContent: 'space-between',
-                  color: 'rgba(255,255,255,0.9)',
-                  fontSize: is960 ? '0.7rem' : '1rem',
-                  fontWeight: 900,
-                  mb: is960 ? 0.6 : 1,
+                  color: '#fff',
+                  fontSize: p(32),
+                  fontWeight: 500,
+                  mb: `${p(16)}px`,
+                  fontFamily: FIGMA_FONT,
                 }}
               >
                 <span>{masteryLabel}</span>
                 <span>{masteryValue}%</span>
               </Box>
-              <Box sx={{ height: is960 ? 5 : 8, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: is960 ? '5px' : '8px', overflow: 'hidden' }}>
-                <Box sx={{ height: '100%', bgcolor: progressColor, width: `${masteryValue}%`, borderRadius: is960 ? '5px' : '8px' }} />
+              <Box
+                sx={{
+                  height: p(16),
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  borderRadius: `${p(68)}px`,
+                  overflow: 'hidden',
+                }}
+              >
+                <Box
+                  sx={{
+                    height: '100%',
+                    width: `${masteryValue}%`,
+                    bgcolor: progressColor,
+                    borderRadius: `${p(68)}px`,
+                  }}
+                />
               </Box>
             </Box>
           </Box>
         </Box>
       </Box>
     </Box>
-  );
+  )
 }

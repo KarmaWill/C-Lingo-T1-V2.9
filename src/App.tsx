@@ -108,7 +108,7 @@ const baseThemeOptions = {
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          fontFamily: 'var(--app-font-family, "Google Sans", "Roboto", sans-serif)',
+          fontFamily: 'var(--app-font-family, "Google Sans Flex Variable", "Noto Sans SC", sans-serif)',
         },
       },
     },
@@ -140,7 +140,7 @@ function ThemedApp() {
       <MainLayout>
         <FeedbackProvider>
         <Routes>
-          <Route path="/" element={<Navigate to="/AI" replace />} />
+          <Route path="/" element={<Navigate to="/Home" replace />} />
               <Route path="/AI" element={<HomePage />} />
               <Route path="/hsk-standard" element={<HSKStandardHomePage />} />
               <Route path="/hsk-standard/speaking-pro" element={<HSKStandardSpeakingProPage />} />

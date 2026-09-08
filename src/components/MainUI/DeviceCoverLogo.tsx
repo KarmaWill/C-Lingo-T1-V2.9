@@ -5,9 +5,10 @@ import coverLogo from '../../assets/c-lingo-cover.png'
 type SizeTier = '960' | 'default' | '2000' | '1920'
 
 export function coverLogoHeight(tier: SizeTier) {
-  if (tier === '960') return 120
-  if (tier === '2000') return 180
-  return 168
+  if (tier === '960') return 220
+  if (tier === '1920') return 420
+  if (tier === '2000') return 440
+  return 320
 }
 
 interface DeviceCoverLogoProps {
@@ -16,12 +17,12 @@ interface DeviceCoverLogoProps {
 }
 
 export default function DeviceCoverLogo({ sizeTier, animated = false }: DeviceCoverLogoProps) {
-  const logoH = coverLogoHeight(sizeTier)
+  const logoH = Math.round(coverLogoHeight(sizeTier) * (animated ? 1.12 : 1))
 
   const imgSx = {
     height: logoH,
     width: 'auto',
-    maxWidth: '88%',
+    maxWidth: '82%',
     objectFit: 'contain' as const,
     pointerEvents: 'none' as const,
     userSelect: 'none' as const,

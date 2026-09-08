@@ -1,6 +1,5 @@
 import { Box, Typography } from '@mui/material'
-
-const OPPO_FONT = '"OPPO Sans", "Helvetica Neue", Arial, sans-serif'
+import { APP_FONT_FAMILY } from '../../theme/appFont'
 
 function SloganStarIcon({ gradientId }: { gradientId: string }) {
   return (
@@ -87,8 +86,8 @@ export default function ShellSloganHeadline() {
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: 'min(240px, 55vw)',
-          height: 'min(240px, 55vw)',
+          width: 'min(180px, 42vw)',
+          height: 'min(180px, 42vw)',
           background:
             'radial-gradient(circle, rgba(185, 255, 90, 0.22) 0%, rgba(185, 255, 90, 0.08) 42%, transparent 72%)',
           filter: 'blur(24px)',
@@ -103,12 +102,12 @@ export default function ShellSloganHeadline() {
           position: 'relative',
           zIndex: 1,
           m: 0,
-          fontFamily: OPPO_FONT,
-          fontSize: 'clamp(0.88rem, 1.85vw, 1.32rem)',
+          fontFamily: APP_FONT_FAMILY,
+          fontSize: 'clamp(0.76rem, 1.45vw, 1.05rem)',
           fontWeight: 700,
           color: '#F7FFF6',
           lineHeight: 1.1,
-          letterSpacing: '-0.8px',
+          letterSpacing: '-0.03em',
           whiteSpace: 'nowrap',
           WebkitFontSmoothing: 'antialiased',
           textRendering: 'optimizeLegibility',

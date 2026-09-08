@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Box, Typography, IconButton, Avatar, ButtonBase, Button, TextField, Grid, Tab, Tabs, List, ListItem, ListItemText, ListItemSecondaryAction, Dialog, DialogTitle, DialogContent, Paper, Divider, Snackbar, Alert } from '@mui/material';
+import { APP_FONT_FAMILY } from '../theme/appFont';
 
 // 语音识别类型定义
 interface SpeechRecognition extends EventTarget {
@@ -83,7 +84,9 @@ import {
   KeyboardArrowLeft,
   KeyboardArrowRight,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { resolveBackPath } from '../utils/navigateBack';
+import { figmaPx, FIGMA_FONT } from '../utils/figmaScale';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store/store';
 import { addHistory, deleteHistory, ChatHistoryItem } from '../store/slices/chatHistorySlice';
@@ -171,9 +174,9 @@ interface ConversationRubyTextProps {
   rowGap?: number;
 }
 
-const DEFAULT_HANZI_FONT = '"Noto Sans SC", "PingFang SC", sans-serif';
+const DEFAULT_HANZI_FONT = APP_FONT_FAMILY;
 const KAI_TI = '"KaiTi", "STKaiti", "BiauKai", "DFKai-SB", "TW-Kai", "SimKai", serif';
-const PINYIN_SANS = 'Inter, "Noto Sans", system-ui, sans-serif';
+const PINYIN_SANS = APP_FONT_FAMILY;
 
 /** ~半高半低，方便同时看到 ≥60 / <60 两种样式 */
 function mockVoiceScore(): number {
@@ -336,6 +339,9 @@ const RANDOM_SCENE_DESCS = [
 
 export default function AIChatPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  /** AI Tutor 的入口在 /AI（AI Class Studio），课内入口会带 state.from */
+  const exitPath = resolveBackPath(location, { defaultPath: '/AI' });
   const dispatch = useDispatch();
   const { histories } = useSelector((state: RootState) => state.chatHistory);
   const [screen, setScreen] = useState<ScreenState>(ScreenState.HOME);
@@ -694,10 +700,15 @@ export default function AIChatPage() {
 
   const FloatingBackButton = ({ variant = 'light' }: { variant?: 'light' | 'dark' } = {}) => {
     const onDark = variant === 'dark';
+    /** 与 TopicSelection 顶栏返回一致：Figma 80×80 → 视口约 40×40 */
+    const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
+    const btn = figmaPx(80, screenSize);
+    const icon = figmaPx(40, screenSize);
+    const inset = figmaPx(24, screenSize);
     return (
     <ButtonBase 
       onClick={() => {
-        if (screen === ScreenState.HOME) navigate('/');
+        if (screen === ScreenState.HOME) navigate(exitPath);
         else if (screen === ScreenState.DEEP_LEARNING) setScreen(ScreenState.CHAT);
         else if (screen === ScreenState.HISTORY_LIST) setScreen(ScreenState.TOPIC_SELECTION);
         else if (screen === ScreenState.CONFIG) setScreen(ScreenState.TOPIC_SELECTION);
@@ -708,228 +719,398 @@ export default function AIChatPage() {
       aria-label="Back"
       sx={{
         position: 'absolute',
-        top: 24,
-        left: 24,
+        top: inset,
+        left: inset,
         zIndex: 200,
-        width: 48,
-        height: 48,
-        minWidth: 48,
-        minHeight: 48,
+        width: btn,
+        height: btn,
+        minWidth: btn,
+        minHeight: btn,
         borderRadius: '50%',
-        bgcolor: onDark ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.82)',
-        backdropFilter: 'blur(16px)',
-        border: onDark ? '1px solid rgba(255,255,255,0.32)' : '1px solid rgba(23,63,53,0.12)',
-        color: onDark ? '#FFFFFF' : '#173F35',
-        boxShadow: onDark ? '0 8px 20px rgba(0,0,0,0.22)' : '0 6px 16px rgba(23,63,53,0.08)',
-        '&:active': { transform: 'scale(0.92)' },
+        bgcolor: onDark ? 'rgba(255,255,255,0.14)' : '#FFFFFF',
+        backdropFilter: onDark ? 'blur(16px)' : undefined,
+        border: onDark ? '1px solid rgba(255,255,255,0.32)' : '1px solid #E0E0DF',
+        color: onDark ? '#FFFFFF' : '#2D3436',
+        boxShadow: onDark ? '0 8px 20px rgba(0,0,0,0.22)' : 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        '&:active': { transform: 'scale(0.95)' },
       }}
     >
-      <BackIcon sx={{ fontSize: 22 }} />
+      <BackIcon sx={{ fontSize: icon }} />
     </ButtonBase>
     );
   };
 
-  const HomeScreen = () => (
-    <Box
-      sx={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        p: 4,
-        backgroundImage: 'url(/images/ai-speaking-bg.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      <FloatingBackButton />
+  /**
+   * 首次进入页 —— Figma「首次进入页_全屏弥散」，画布 1920×1200。
+   * 位置用画布百分比、尺寸用 figmaPx：实际内容区约 1968×1168，不等于画布。
+   */
+  const HomeScreen = () => {
+    const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
+    const px = (n: number) => (n === 0 ? 0 : n < 0 ? -figmaPx(-n, screenSize) : figmaPx(n, screenSize));
+    const diffuseBlur = `blur(${px(125)}px)`;
 
+    return (
       <Box
         sx={{
-          position: 'absolute',
-          top: 32,
-          right: 40,
-          minHeight: 40,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          bgcolor: 'rgba(255,255,255,0.72)',
-          px: 2,
-          py: 0.75,
-          borderRadius: '999px',
-          border: '1px solid rgba(13,170,120,0.22)',
-          boxShadow: '0 8px 24px rgba(4,120,87,0.08)',
-          backdropFilter: 'blur(16px)',
+          position: 'relative',
+          height: '100%',
+          width: '100%',
+          overflow: 'hidden',
+          bgcolor: '#FFFFFF',
+          fontFamily: APP_FONT_FAMILY,
         }}
       >
+        <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, #F5FDED 0%, #FAFAFA 100%)' }} />
         <Box
           sx={{
-            width: 9,
-            height: 9,
-            borderRadius: '50%',
-            bgcolor: '#15B879',
-            boxShadow: '0 0 0 4px rgba(21,184,121,0.13)',
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: '1.92%',
+            bottom: 0,
+            background: 'linear-gradient(180deg, #EDF5FD 0%, #FAFAFA 100%)',
           }}
         />
-        <Typography sx={{ fontSize: '0.9rem', fontWeight: 900, color: '#087A58', letterSpacing: '0.02em' }}>
-          C-Lingo AI ready
-        </Typography>
-      </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, width: '100%', maxWidth: 900 }}>
+        {[
+          {
+            width: '53.85%',
+            height: '31.42%',
+            left: '-22.71%',
+            top: '53.75%',
+            background:
+              'linear-gradient(122.91deg, rgba(254,252,182,0.47) 33.45%, rgba(227,241,251,0) 91.58%)',
+            filter: diffuseBlur,
+          },
+          {
+            width: '95.30%',
+            height: '33.63%',
+            left: '51.67%',
+            top: '69.48%',
+            background:
+              'linear-gradient(122.91deg, rgba(254,252,182,0.3995) 33.45%, rgba(227,241,251,0) 91.58%)',
+            filter: diffuseBlur,
+            transform: 'rotate(-8.29deg)',
+          },
+          {
+            width: '81.39%',
+            height: '31.44%',
+            left: '39.17%',
+            top: '-10.05%',
+            background: 'linear-gradient(200.45deg, #E9FFCD 40.04%, #F1FFEB 86.42%)',
+            filter: diffuseBlur,
+          },
+          {
+            width: '78.25%',
+            height: '41.33%',
+            left: '-7.19%',
+            top: '76.31%',
+            background:
+              'linear-gradient(180deg, rgba(166,255,170,0) 0%, rgba(138,200,141,0.23) 51.92%)',
+            filter: `blur(${px(27)}px)`,
+            transform: 'rotate(5.79deg)',
+          },
+        ].map((blob, i) => (
+          <Box key={i} sx={{ position: 'absolute', borderRadius: '50%', pointerEvents: 'none', ...blob }} />
+        ))}
+
+        <FloatingBackButton />
+
         <Box
           sx={{
-            position: 'relative',
-            width: 280,
-            height: 300,
-            flexShrink: 0,
+            position: 'absolute',
+            top: px(32),
+            right: px(40),
+            minHeight: 44,
+            minWidth: 44,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            gap: `${px(12)}px`,
+            bgcolor: 'rgba(255,255,255,0.72)',
+            px: `${Math.max(16, px(28))}px`,
+            py: `${Math.max(10, px(14))}px`,
+            borderRadius: '999px',
+            border: '1px solid rgba(63,178,102,0.24)',
+            boxShadow: `0 ${px(8)}px ${px(24)}px rgba(0,84,53,0.08)`,
+            backdropFilter: 'blur(16px)',
+          }}
+        >
+          <Box
+            sx={{
+              width: 10,
+              height: 10,
+              flexShrink: 0,
+              borderRadius: '50%',
+              bgcolor: '#3FB266',
+              boxShadow: '0 0 0 4px rgba(63,178,102,0.15)',
+            }}
+          />
+          <Typography
+            sx={{
+              fontSize: Math.max(14, px(22)),
+              fontWeight: 700,
+              lineHeight: 1.2,
+              color: '#005435',
+              letterSpacing: '0.02em',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            C-Lingo AI ready
+          </Typography>
+        </Box>
+
+        {/* AI 形象：用整圆合成图（形象+绿底+描边），不再叠椭圆/旋转切图 */}
+        <Box
+          sx={{
+            position: 'absolute',
+            left: '15%',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: px(485),
+            height: px(485),
           }}
         >
           <Box
             component="img"
-            src="/images/clingo-ai-mascot-peace.png?v=wink"
+            src="/images/ai-practice-partner.png"
             alt="C-Lingo AI"
             sx={{
-              position: 'relative',
-              zIndex: 1,
-              width: 280,
-              height: 280,
-              maxWidth: '100%',
+              width: '100%',
+              height: '100%',
               objectFit: 'contain',
-              filter: 'drop-shadow(0 18px 28px rgba(4,80,59,0.16))',
+              display: 'block',
+              filter: `drop-shadow(0 0 ${px(24)}px rgba(63,178,102,0.25))`,
+              pointerEvents: 'none',
+              userSelect: 'none',
             }}
           />
         </Box>
 
-        <Box sx={{ textAlign: 'left', maxWidth: 430 }}>
+        {/* 文案 + 入口按钮：Figma Group（画布 x 960，整体垂直居中）。
+            用流式排布而非绝对定位——译文换行时只会把后续元素推下去，不会压到分隔线上。 */}
+        <Box
+          sx={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: '44.43%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+          }}
+        >
+          <Typography
+            sx={{
+              fontWeight: 700,
+              fontSize: px(40),
+              lineHeight: `${px(50)}px`,
+              color: '#005435',
+            }}
+          >
+            Speak naturally
+          </Typography>
+          <Typography
+            sx={{
+              fontWeight: 700,
+              fontSize: px(80),
+              lineHeight: `${px(100)}px`,
+              color: '#005435',
+            }}
+          >
+            AI Practice Partner
+          </Typography>
+          <Typography
+            sx={{
+              width: '100%',
+              fontWeight: 400,
+              fontSize: px(40),
+              lineHeight: `${px(50)}px`,
+              color: '#27664B',
+            }}
+          >
+            Embark on every exploration with your exclusive partner
+          </Typography>
           <Box
             sx={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 0.75,
-              mb: 1.5,
-              px: 1.5,
-              py: 0.65,
+              mt: `${px(21)}px`,
+              ml: `${px(3)}px`,
+              width: '91.9%',
+              height: px(4),
+              flexShrink: 0,
               borderRadius: '999px',
-              bgcolor: '#EAF9F2',
-              color: '#087A58',
+              background: 'linear-gradient(135deg, #8AC88D 0%, #3FB266 55%, #005435 100%)',
             }}
-          >
-            <AutoAwesomeIcon sx={{ fontSize: 18, color: '#E6A817' }} />
-            <Typography sx={{ fontSize: '0.95rem', fontWeight: 900, letterSpacing: '0.08em' }}>
-              C-LINGO AI SPEAKING
-            </Typography>
-          </Box>
+          />
           <Typography
-            variant="h1"
             sx={{
-              fontWeight: 900,
-              fontSize: '2.65rem',
-              lineHeight: 1.12,
-              mb: 1.5,
-              color: '#173F35',
-              letterSpacing: '-0.04em',
+              mt: `${px(18)}px`,
+              width: '100%',
+              fontWeight: 400,
+              fontSize: px(24),
+              lineHeight: `${px(30)}px`,
+              color: '#5A806B',
             }}
           >
-            Speaking practice
-            <br />
-            <Box component="span" sx={{ color: '#0DAA78' }}>Speak naturally</Box>
+            Real-time error correction, authentic expressions, speak with confidence
           </Typography>
-          <Typography sx={{ fontSize: '1rem', lineHeight: 1.7, color: '#5E746D', fontWeight: 600, mb: 3 }}>
-            Practice Chinese with C-Lingo AI.
-            <br />
-            Review pronunciation and phrasing after the conversation.
-          </Typography>
+
           <ButtonBase
             onClick={() => setScreen(ScreenState.TOPIC_SELECTION)}
             sx={{
-              minHeight: 54,
-              px: 3.5,
-              borderRadius: '16px',
-              background: 'linear-gradient(135deg, #19BD82 0%, #07966A 100%)',
-              color: 'white',
-              boxShadow: '0 12px 26px rgba(7,150,106,0.24)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 1,
-              fontWeight: 900,
-              fontSize: '1rem',
+              position: 'relative',
+              mt: `${px(65)}px`,
+              width: px(594),
+              height: px(118),
+              flexShrink: 0,
+              borderRadius: '999px',
+              background: 'linear-gradient(103.66deg, #FEDC5E -6.18%, #3FB266 43.73%)',
+              boxShadow: `0 ${px(16)}px ${px(36)}px rgba(63,178,102,0.28)`,
+              transition: 'transform 0.18s ease',
               '&:active': { transform: 'scale(0.98)' },
             }}
           >
-            Start chatting
-            <ArrowForward sx={{ fontSize: 21 }} />
+            <Typography
+              sx={{
+                position: 'absolute',
+                left: px(89),
+                top: px(34),
+                fontWeight: 700,
+                fontSize: px(38),
+                lineHeight: `${px(50)}px`,
+                color: '#FFFFFF',
+              }}
+            >
+              Start Conversation
+            </Typography>
+            <Box
+              sx={{
+                position: 'absolute',
+                left: px(494),
+                top: px(19),
+                width: px(79),
+                height: px(79),
+                borderRadius: '50%',
+                bgcolor: 'rgba(255,255,255,0.24)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ArrowForward sx={{ fontSize: px(38), color: '#FFFFFF' }} />
+            </Box>
           </ButtonBase>
         </Box>
       </Box>
-    </Box>
-  );
+    );
+  };
 
   const TopicSelectionScreen = () => {
-    const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
-    const is960 = screenSize === '960x540';
-    const is1920x1125 = screenSize === '1920x1125';
-    const cardRadius = is1920x1125 ? '32px' : '28px';
-    const scenarioLabels: Record<string, string> = { ordering: 'Coffee shop', dating: 'Asking Out', market: 'At the Market', travel: 'Travel Help', job: 'Job Interview' };
-    const scenarioEmojis: Record<string, string> = { ordering: '☕️', dating: '😚', market: '🍎', travel: '✈️', job: '💼' };
+    /** Figma Ai导师1：1920×1200。高度用剩余空间吃满，避免 2000×1200 按宽缩放后溢出 */
+    const screenSize = import.meta.env.VITE_SCREEN_SIZE || '2000x1200';
+    const p = (n: number) => figmaPx(n, screenSize);
+    const scenarioLabels: Record<string, string> = {
+      ordering: 'Coffee shop',
+      dating: 'Asking Out',
+      market: 'At the Market',
+      travel: 'Travel Help',
+      job: 'Job Interview',
+    };
+    const headerBtn = {
+      bgcolor: '#FFFFFF',
+      border: '1px solid #E0E0DF',
+      color: '#2D3436',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+      '&:active': { transform: 'scale(0.95)' },
+    } as const;
+
     return (
-    <Box sx={{ height: '100%', minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', bgcolor: '#FFF8F0', p: is960 ? 2 : (is1920x1125 ? 4 : 3), position: 'relative' }}>
-      {/* Top-left: circular back button */}
-      <ButtonBase
-        onClick={() => setScreen(ScreenState.HOME)}
+      <Box
         sx={{
-          position: 'absolute',
-          top: is960 ? 16 : (is1920x1125 ? 28 : 24),
-          left: is960 ? 16 : (is1920x1125 ? 28 : 24),
-          zIndex: 200,
-          width: is960 ? 44 : (is1920x1125 ? 56 : 48),
-          height: is960 ? 44 : (is1920x1125 ? 56 : 48),
-          borderRadius: '50%',
-          bgcolor: '#E5E7EB',
-          color: '#374151',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-          '&:active': { transform: 'scale(0.95)' }
+          height: '100%',
+          minHeight: 0,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          bgcolor: '#F8F9F8',
+          fontFamily: FIGMA_FONT,
         }}
       >
-        <BackIcon sx={{ fontSize: is960 ? 22 : (is1920x1125 ? 28 : 26) }} />
-      </ButtonBase>
-      {/* Top-right: circular history/clock button */}
-      <ButtonBase
-        onClick={() => setScreen(ScreenState.HISTORY_LIST)}
-        sx={{
-          position: 'absolute',
-          top: is960 ? 16 : (is1920x1125 ? 28 : 24),
-          right: is960 ? 16 : (is1920x1125 ? 28 : 24),
-          zIndex: 200,
-          width: is960 ? 44 : (is1920x1125 ? 56 : 48),
-          height: is960 ? 44 : (is1920x1125 ? 56 : 48),
-          borderRadius: '50%',
-          bgcolor: '#E5E7EB',
-          color: '#374151',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-          '&:active': { transform: 'scale(0.95)' }
-        }}
-      >
-        <History sx={{ fontSize: is960 ? 22 : (is1920x1125 ? 28 : 26) }} />
-      </ButtonBase>
-      {/* Center title */}
-      <Box sx={{ textAlign: 'center', mb: is960 ? 2 : (is1920x1125 ? 3 : 2.5), pt: is960 ? 0 : (is1920x1125 ? 1 : 0) }}>
-        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.65rem' : (is1920x1125 ? '2.4rem' : '2.15rem'), color: '#1F2937' }}>Choose practice mode</Typography>
-      </Box>
-      {/* Two cards side by side */}
-      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', px: is960 ? 1 : (is1920x1125 ? 2 : 1.5) }}>
-        <Box sx={{ display: 'flex', gap: is960 ? 2 : (is1920x1125 ? 3 : 2.5), maxWidth: is960 ? 700 : (is1920x1125 ? 1100 : 900), width: '100%', height: is960 ? '85%' : '90%', alignItems: 'stretch' }}>
-          {/* Left card: Mode 1 - Free Dialogue (same height as right) */}
-          <Box
+        <Box
+          sx={{
+            height: p(160),
+            flexShrink: 0,
+            bgcolor: '#FFFFFF',
+            borderBottom: '1px solid #E2E2E3',
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            px: `${p(60)}px`,
+          }}
+        >
+          <ButtonBase
+            onClick={() => setScreen(ScreenState.HOME)}
+            aria-label="Back"
+            sx={{
+              ...headerBtn,
+              position: 'absolute',
+              left: p(60),
+              width: p(80),
+              height: p(80),
+              borderRadius: `${p(100)}px`,
+            }}
+          >
+            <BackIcon sx={{ fontSize: p(40), color: '#2D3436' }} />
+          </ButtonBase>
+          <Typography
+            sx={{
+              fontFamily: FIGMA_FONT,
+              fontWeight: 700,
+              fontSize: p(40),
+              lineHeight: 1.6,
+              color: '#2D3436',
+              textAlign: 'center',
+            }}
+          >
+            Practice Mode
+          </Typography>
+          <ButtonBase
+            onClick={() => setScreen(ScreenState.HISTORY_LIST)}
+            aria-label="History"
+            sx={{
+              ...headerBtn,
+              position: 'absolute',
+              right: p(45),
+              width: p(84),
+              height: p(84),
+              borderRadius: `${p(42)}px`,
+            }}
+          >
+            <History sx={{ fontSize: p(46), color: '#2D3436' }} />
+          </ButtonBase>
+        </Box>
+
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'stretch',
+            gap: `${p(40)}px`,
+            px: `${p(60)}px`,
+            pt: `${p(40)}px`,
+            pb: `${p(40)}px`,
+          }}
+        >
+          <ButtonBase
             onClick={() => {
               setSelectedTopic({ id: 'free', title: 'Free Practice', emoji: '🎙️', desc: 'DIY free conversation mode' });
               setUserRole('Li Ming');
@@ -938,71 +1119,172 @@ export default function AIChatPage() {
               setScreen(ScreenState.CONFIG);
             }}
             sx={{
-              flex: is960 ? '0 0 38%' : '0 0 40%',
-              p: is960 ? 2.5 : (is1920x1125 ? 3.5 : 3),
-              bgcolor: 'white',
-              borderRadius: cardRadius,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+              width: p(550),
+              flexShrink: 0,
+              height: '100%',
+              p: 0,
+              bgcolor: '#FFFFFF',
+              border: '1px solid #E0E0DF',
+              borderRadius: `${p(60)}px`,
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: '0.3s',
-              minHeight: 0,
-              '&:hover': { boxShadow: '0 8px 28px rgba(0,0,0,0.1)' },
-              '&:active': { transform: 'scale(0.98)' }
+              alignItems: 'stretch',
+              pt: `${p(60)}px`,
+              px: `${p(70)}px`,
+              pb: `${p(74)}px`,
+              boxSizing: 'border-box',
+              '&:active': { transform: 'scale(0.99)' },
             }}
           >
-            <Typography sx={{ fontSize: is960 ? '1rem' : (is1920x1125 ? '1.25rem' : '1.15rem'), fontWeight: 900, color: '#DC2626', mb: is960 ? 2 : (is1920x1125 ? 2.5 : 2) }}>Mode 1: Free talk</Typography>
-            <Box sx={{ width: is960 ? 72 : (is1920x1125 ? 100 : 88), height: is960 ? 72 : (is1920x1125 ? 100 : 88), borderRadius: is1920x1125 ? '20px' : '16px', bgcolor: '#EA580C', mb: is960 ? 1.5 : (is1920x1125 ? 2 : 1.75), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: is960 ? '2rem' : (is1920x1125 ? '3rem' : '2.5rem') }}>💬</Box>
-            <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.2rem' : (is1920x1125 ? '1.65rem' : '1.45rem'), color: '#1F2937' }}>DIY: Free practice</Typography>
-          </Box>
-          {/* Right card: Mode 2 - Scenario Simulation (taller, 3x2 grid) */}
-          <Box sx={{
-            flex: '1 1 60%',
-            p: is960 ? 2.5 : (is1920x1125 ? 3.5 : 3),
-            bgcolor: 'white',
-            borderRadius: cardRadius,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: 0
-          }}>
-            <Typography sx={{ fontSize: is960 ? '1rem' : (is1920x1125 ? '1.25rem' : '1.15rem'), fontWeight: 900, color: '#0D9F72', mb: is960 ? 1.5 : (is1920x1125 ? 2 : 1.75), textAlign: 'center' }}>Mode 2: Scenario practice</Typography>
-            <Box sx={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gridTemplateRows: 'repeat(2, 1fr)', gap: is960 ? 1 : (is1920x1125 ? 1.5 : 1.25) }}>
-              {TOPICS.map(topic => (
+            <Typography
+              sx={{
+                fontFamily: FIGMA_FONT,
+                fontWeight: 700,
+                fontSize: p(32),
+                lineHeight: 1.6,
+                color: '#FF6B35',
+                textAlign: 'center',
+                mb: `${p(60)}px`,
+                flexShrink: 0,
+              }}
+            >
+              Mode 1: Free Chat
+            </Typography>
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                width: '100%',
+                bgcolor: '#FFF7EC',
+                borderRadius: `${p(40)}px`,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: `${p(70)}px`,
+              }}
+            >
+              <Box
+                sx={{
+                  width: p(172),
+                  height: p(172),
+                  bgcolor: '#FF6B35',
+                  borderRadius: `${p(24)}px`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: p(80),
+                  lineHeight: 1,
+                }}
+              >
+                💬
+              </Box>
+              <Typography
+                sx={{
+                  fontFamily: FIGMA_FONT,
+                  fontWeight: 700,
+                  fontSize: p(40),
+                  lineHeight: `${p(50)}px`,
+                  color: '#2D3436',
+                  textAlign: 'center',
+                }}
+              >
+                Free practice
+              </Typography>
+            </Box>
+          </ButtonBase>
+
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              height: '100%',
+              bgcolor: '#FFFFFF',
+              border: '1px solid #E0E0DF',
+              borderRadius: `${p(60)}px`,
+              display: 'flex',
+              flexDirection: 'column',
+              pt: `${p(60)}px`,
+              px: `${p(130)}px`,
+              pb: `${p(70)}px`,
+              boxSizing: 'border-box',
+            }}
+          >
+            <Typography
+              sx={{
+                fontFamily: FIGMA_FONT,
+                fontWeight: 700,
+                fontSize: p(32),
+                lineHeight: 1.6,
+                color: '#3FB266',
+                textAlign: 'center',
+                mb: `${p(84)}px`,
+                flexShrink: 0,
+              }}
+            >
+              Mode 2: Scenarios
+            </Typography>
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                display: 'grid',
+                gridTemplateColumns: `repeat(3, minmax(0, ${p(280)}px))`,
+                gridTemplateRows: `repeat(2, minmax(0, ${p(280)}px))`,
+                columnGap: `${p(55)}px`,
+                rowGap: `${p(50)}px`,
+                justifyContent: 'center',
+                alignContent: 'center',
+              }}
+            >
+              {TOPICS.map((topic) => (
                 <ButtonBase
                   key={topic.id}
                   onClick={() => handleStartChat(topic)}
                   sx={{
-                    p: is960 ? 1.5 : (is1920x1125 ? 2 : 1.75),
-                    bgcolor: '#FAFAFA',
-                    borderRadius: is1920x1125 ? '16px' : '14px',
-                    border: '1px solid #F0F0F0',
+                    width: '100%',
+                    height: '100%',
+                    bgcolor: '#F3F4F6',
+                    borderRadius: `${p(48)}px`,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: is960 ? 0.5 : (is1920x1125 ? 0.75 : 0.625),
-                    transition: '0.3s',
-                    '&:hover': { bgcolor: '#F5F5F5', borderColor: '#E5E7EB' },
-                    '&:active': { transform: 'scale(0.98)' }
+                    gap: `${p(26)}px`,
+                    '&:active': { transform: 'scale(0.97)' },
                   }}
                 >
-                  <Typography sx={{ fontSize: is960 ? '1.5rem' : (is1920x1125 ? '2.25rem' : '2rem') }}>{scenarioEmojis[topic.id] || topic.emoji}</Typography>
-                  <Typography sx={{ fontWeight: 700, fontSize: is960 ? '0.8rem' : (is1920x1125 ? '1.1rem' : '1rem'), color: '#1F2937', textAlign: 'center' }}>
+                  <Box
+                    sx={{
+                      width: p(80),
+                      height: p(80),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: p(72),
+                      lineHeight: 1,
+                    }}
+                  >
+                    {topic.emoji}
+                  </Box>
+                  <Typography
+                    sx={{
+                      fontFamily: FIGMA_FONT,
+                      fontWeight: 700,
+                      fontSize: p(32),
+                      lineHeight: `${p(40)}px`,
+                      color: '#2D3436',
+                      textAlign: 'center',
+                    }}
+                  >
                     {scenarioLabels[topic.id] || topic.title}
                   </Typography>
                 </ButtonBase>
               ))}
-              {/* Empty slot - bottom-right */}
-              <Box sx={{ p: 1, bgcolor: 'transparent' }} />
             </Box>
           </Box>
         </Box>
       </Box>
-    </Box>
     );
   };
 

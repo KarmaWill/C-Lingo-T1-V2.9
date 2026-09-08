@@ -2,9 +2,10 @@
  * Fun Chinese Lesson Page - 学习流程页面
  * 包含 Warmup -> Learn -> Practice -> Complete 等阶段
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Box, Typography, ButtonBase } from '@mui/material';
+import { APP_FONT_FAMILY } from '../theme/appFont';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -15,6 +16,15 @@ import ClearIcon from '@mui/icons-material/Clear';
 import EditIcon from '@mui/icons-material/Edit';
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import { markLessonCompleted, UNIT_LESSON_COUNT } from '../utils/funChineseUnitProgress';
+import {
+  getInitialPhase,
+  getLessonPeriod,
+  getNextPhaseInFlow,
+  getVocabEndIndex,
+  getVocabStartIndex,
+  isFinalLessonPeriod,
+  markPeriodCompleted,
+} from '../utils/lessonPackageLoader';
 import FeedbackEntryButton from '../components/feedback/FeedbackEntryButton';
 import {
   buildWritingPracticeHref,
@@ -252,20 +262,41 @@ export default function FunChineseLessonPage() {
   const safeLessonId = Number.isFinite(parsedLessonId) ? parsedLessonId : 1;
   const fromCollection = searchParams.get('from') === 'collection';
   const queryWantsCards = searchParams.get('phase') === 'cards';
+  const parsedPeriod = Number.parseInt(searchParams.get('period') || '0', 10);
+  const activePeriod = Number.isFinite(parsedPeriod) && parsedPeriod >= 1 ? parsedPeriod : null;
+  const periodConfig = activePeriod ? getLessonPeriod(1, safeLessonId, activePeriod) : null;
+  const periodFlow = periodConfig?.flow ?? null;
   const queryCardIndex = Number.parseInt(searchParams.get('card') || '0', 10);
+  const knowledgeCardsForPeriod = useMemo(() => {
+    const all = LESSON_DATA.knowledgeCards;
+    const indices = periodFlow?.cardIndices;
+    if (!indices?.length) return all;
+    return indices.map((i) => all[i]).filter(Boolean);
+  }, [periodFlow]);
+  const practiceExercisesForPeriod = useMemo(() => {
+    const all = LESSON_DATA.practice;
+    const indices = periodFlow?.exerciseIndices;
+    if (!indices?.length) return all;
+    return indices.map((i) => all[i]).filter(Boolean);
+  }, [periodFlow]);
+  const vocabEndIndex = getVocabEndIndex(periodFlow, LESSON_DATA.vocabulary.length);
+  const vocabStartIndex = getVocabStartIndex(periodFlow);
   const initialCardIndex = Number.isFinite(queryCardIndex)
-    ? Math.min(Math.max(queryCardIndex, 0), LESSON_DATA.knowledgeCards.length - 1)
+    ? Math.min(Math.max(queryCardIndex, 0), knowledgeCardsForPeriod.length - 1)
     : 0;
   const lessonRestore = readLessonRestoreState(location);
-  const restoredVocabIndex =
-    lessonRestore && Number.isFinite(lessonRestore.vocabIndex)
-      ? Math.min(Math.max(lessonRestore.vocabIndex, 0), LESSON_DATA.vocabulary.length - 1)
-      : 0;
 
-  const [currentPhase, setCurrentPhase] = useState<Phase>(
-    lessonRestore?.phase ?? (queryWantsCards ? 'cards' : 'warmup'),
+  const [currentPhase, setCurrentPhase] = useState<Phase>(() => {
+    if (lessonRestore?.phase) return lessonRestore.phase;
+    if (queryWantsCards) return 'cards';
+    if (periodFlow) return getInitialPhase(periodFlow);
+    return 'warmup';
+  });
+  const [vocabIndex, setVocabIndex] = useState(
+    lessonRestore && Number.isFinite(lessonRestore.vocabIndex)
+      ? Math.min(Math.max(lessonRestore.vocabIndex, vocabStartIndex), vocabEndIndex)
+      : vocabStartIndex,
   );
-  const [vocabIndex, setVocabIndex] = useState(restoredVocabIndex);
   const [cardIndex, setCardIndex] = useState(initialCardIndex);
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -279,10 +310,16 @@ export default function FunChineseLessonPage() {
   useEffect(() => {
     if (currentPhase !== 'complete') return;
     const id = safeLessonId;
-    if (Number.isFinite(id) && id >= 1 && id <= UNIT_LESSON_COUNT) {
-      markLessonCompleted(id);
+    if (!Number.isFinite(id) || id < 1 || id > UNIT_LESSON_COUNT) return;
+    if (activePeriod) {
+      markPeriodCompleted(1, id, activePeriod);
+      if (isFinalLessonPeriod(1, id, activePeriod)) {
+        markLessonCompleted(id);
+      }
+      return;
     }
-  }, [currentPhase, safeLessonId]);
+    markLessonCompleted(id);
+  }, [currentPhase, safeLessonId, activePeriod]);
 
   const orange = '#FF7A45';
   const teal = '#14B8A6';
@@ -316,6 +353,17 @@ export default function FunChineseLessonPage() {
   };
 
   const handleNextPhase = () => {
+    if (periodFlow) {
+      const next = getNextPhaseInFlow(currentPhase, periodFlow);
+      if (next) {
+        if (next === 'cards') setCardIndex(0);
+        if (next === 'practice') setExerciseIndex(0);
+        setCurrentPhase(next);
+      } else {
+        setCurrentPhase('complete');
+      }
+      return;
+    }
     if (currentPhase === 'warmup') {
       setCurrentPhase('learn');
     } else if (currentPhase === 'learn') {
@@ -330,13 +378,13 @@ export default function FunChineseLessonPage() {
   };
 
   const handlePrevVocab = () => {
-    if (vocabIndex > 0) {
+    if (vocabIndex > vocabStartIndex) {
       setVocabIndex(vocabIndex - 1);
     }
   };
 
   const handleNextVocab = () => {
-    if (vocabIndex < LESSON_DATA.vocabulary.length - 1) {
+    if (vocabIndex < vocabEndIndex) {
       setVocabIndex(vocabIndex + 1);
     } else {
       handleNextPhase();
@@ -425,10 +473,10 @@ export default function FunChineseLessonPage() {
               flexShrink: 0,
             }}
           >
-            <Typography sx={{ fontSize: is960 ? '0.96rem' : '1.08rem', color: '#111827', fontWeight: 900, mb: 0.45, fontFamily: '"Google Sans", "Roboto", sans-serif' }}>
+            <Typography sx={{ fontSize: is960 ? '0.96rem' : '1.08rem', color: '#111827', fontWeight: 900, mb: 0.45, fontFamily: APP_FONT_FAMILY }}>
               Learning Goals
             </Typography>
-            <Box component="ul" sx={{ m: 0, pl: is960 ? 2 : 2.4, color: '#6B7280', fontSize: is960 ? '0.82rem' : '0.92rem', lineHeight: 1.55, fontWeight: 500, fontFamily: '"Google Sans", "Roboto", sans-serif' }}>
+            <Box component="ul" sx={{ m: 0, pl: is960 ? 2 : 2.4, color: '#6B7280', fontSize: is960 ? '0.82rem' : '0.92rem', lineHeight: 1.55, fontWeight: 500, fontFamily: APP_FONT_FAMILY }}>
               <li>Greet each other</li>
               <li>Distinguish and pronounce the three final sounds a, o, and e with correct tones</li>
             </Box>
@@ -553,7 +601,7 @@ export default function FunChineseLessonPage() {
               }}
             >
               <ThumbUpOutlinedIcon sx={{ fontSize: is960 ? 20 : 24, color: '#111827', flexShrink: 0 }} />
-              <Typography sx={{ fontSize: is960 ? '0.86rem' : '0.98rem', color: '#111827', fontWeight: 500, lineHeight: 1.55, fontFamily: '"Google Sans", "Roboto", sans-serif' }}>
+              <Typography sx={{ fontSize: is960 ? '0.86rem' : '0.98rem', color: '#111827', fontWeight: 500, lineHeight: 1.55, fontFamily: APP_FONT_FAMILY }}>
                 After today, you'll be able to greet new classmates in Chinese
               </Typography>
             </Box>
@@ -567,7 +615,7 @@ export default function FunChineseLessonPage() {
                 borderRadius: is960 ? '10px' : '14px',
                 fontSize: is960 ? '0.86rem' : '0.98rem',
                 fontWeight: 800,
-                fontFamily: '"Google Sans", "Roboto", sans-serif',
+                fontFamily: APP_FONT_FAMILY,
                 flexShrink: 0,
                 '&:active': { transform: 'scale(0.98)' },
               }}
@@ -613,7 +661,7 @@ export default function FunChineseLessonPage() {
             >
               1
             </Box>
-            <Typography sx={{ fontSize: is960 ? '1.12rem' : '1.32rem', fontWeight: 850, color: '#111827', letterSpacing: '-0.02em', fontFamily: '"Google Sans", "Roboto", sans-serif' }}>
+            <Typography sx={{ fontSize: is960 ? '1.12rem' : '1.32rem', fontWeight: 850, color: '#111827', letterSpacing: '-0.02em', fontFamily: APP_FONT_FAMILY }}>
               Vocabulary Learning
             </Typography>
           </Box>
@@ -706,7 +754,7 @@ export default function FunChineseLessonPage() {
                 sx={{
                   fontSize: is960 ? '2rem' : '2.6rem',
                   fontWeight: 400,
-                  fontFamily: '"OPPO Sans", "Noto Sans", sans-serif',
+                  fontFamily: APP_FONT_FAMILY,
                   color: '#111827',
                   lineHeight: 1,
                   mb: is960 ? 1 : 1.2,
@@ -828,7 +876,7 @@ export default function FunChineseLessonPage() {
               color: '#111827',
               fontSize: is960 ? '0.9rem' : '1.02rem',
               fontWeight: 650,
-              fontFamily: '"Google Sans", "Roboto", sans-serif',
+              fontFamily: APP_FONT_FAMILY,
               opacity: vocabIndex === 0 ? 0.35 : 1,
               pointerEvents: vocabIndex === 0 ? 'none' : 'auto',
             }}
@@ -862,7 +910,7 @@ export default function FunChineseLessonPage() {
               color: '#111827',
               fontSize: is960 ? '0.9rem' : '1.02rem',
               fontWeight: 650,
-              fontFamily: '"Google Sans", "Roboto", sans-serif',
+              fontFamily: APP_FONT_FAMILY,
             }}
           >
             Next
@@ -877,10 +925,14 @@ export default function FunChineseLessonPage() {
   if (currentPhase === 'complete') {
     const currentLessonId = parseInt(lessonId || '1', 10);
     const hasNextLesson = Number.isFinite(currentLessonId) && currentLessonId < UNIT_LESSON_COUNT;
+    const periodOnlyDone =
+      activePeriod !== null &&
+      periodConfig !== null &&
+      !isFinalLessonPeriod(1, safeLessonId, activePeriod);
 
     const handleRestart = () => {
-      setCurrentPhase('warmup');
-      setVocabIndex(0);
+      setCurrentPhase(periodFlow ? getInitialPhase(periodFlow) : 'warmup');
+      setVocabIndex(vocabStartIndex);
       setCardIndex(0);
       setExerciseIndex(0);
       setSelectedAnswer(null);
@@ -891,6 +943,10 @@ export default function FunChineseLessonPage() {
     };
 
     const handleNextLesson = () => {
+      if (periodOnlyDone) {
+        navigate('/library/hub/fun-chinese');
+        return;
+      }
       if (!hasNextLesson) {
         navigate('/library/hub/fun-chinese');
         return;
@@ -913,11 +969,13 @@ export default function FunChineseLessonPage() {
         }}
       >
         <CheckCircleIcon sx={{ fontSize: is960 ? 80 : 100, color: teal, mb: 3 }} />
-        <Typography sx={{ fontSize: is960 ? '1.8rem' : '2.25rem', fontWeight: 900, color: '#1E293B', mb: 2, fontFamily: '"Google Sans", "Roboto", sans-serif' }}>
-          Congratulations!
+        <Typography sx={{ fontSize: is960 ? '1.8rem' : '2.25rem', fontWeight: 900, color: '#1E293B', mb: 2, fontFamily: APP_FONT_FAMILY }}>
+          {periodOnlyDone ? `Period ${activePeriod} Complete!` : 'Congratulations!'}
         </Typography>
-        <Typography sx={{ fontSize: is960 ? '1.05rem' : '1.25rem', color: '#64748B', fontWeight: 600, mb: is960 ? 4 : 5, fontFamily: '"Google Sans", "Roboto", sans-serif' }}>
-          You've learned basic Chinese greetings
+        <Typography sx={{ fontSize: is960 ? '1.05rem' : '1.25rem', color: '#64748B', fontWeight: 600, mb: is960 ? 4 : 5, fontFamily: APP_FONT_FAMILY }}>
+          {periodOnlyDone
+            ? (periodConfig?.titleEn || periodConfig?.title || 'Keep going with the next period')
+            : "You've learned basic Chinese greetings"}
         </Typography>
 
         {/* Statistics Summary */}
@@ -942,7 +1000,7 @@ export default function FunChineseLessonPage() {
             <Typography sx={{ fontSize: is960 ? '1.5rem' : '1.8rem', fontWeight: 900, color: orange, lineHeight: 1 }}>
               {LESSON_DATA.vocabulary.length}
             </Typography>
-            <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', color: '#64748B', fontWeight: 700, mt: 0.5, fontFamily: '"Google Sans", "Roboto", sans-serif' }}>
+            <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', color: '#64748B', fontWeight: 700, mt: 0.5, fontFamily: APP_FONT_FAMILY }}>
               Words Mastered
             </Typography>
           </Box>
@@ -957,7 +1015,7 @@ export default function FunChineseLessonPage() {
             <Typography sx={{ fontSize: is960 ? '1.5rem' : '1.8rem', fontWeight: 900, color: '#3B82F6', lineHeight: 1 }}>
               {LESSON_DATA.knowledgeCards.length}
             </Typography>
-            <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', color: '#64748B', fontWeight: 700, mt: 0.5, fontFamily: '"Google Sans", "Roboto", sans-serif' }}>
+            <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', color: '#64748B', fontWeight: 700, mt: 0.5, fontFamily: APP_FONT_FAMILY }}>
               Key Points
             </Typography>
           </Box>
@@ -972,7 +1030,7 @@ export default function FunChineseLessonPage() {
             <Typography sx={{ fontSize: is960 ? '1.5rem' : '1.8rem', fontWeight: 900, color: teal, lineHeight: 1 }}>
               {LESSON_DATA.practice.length}
             </Typography>
-            <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', color: '#64748B', fontWeight: 700, mt: 0.5, fontFamily: '"Google Sans", "Roboto", sans-serif' }}>
+            <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', color: '#64748B', fontWeight: 700, mt: 0.5, fontFamily: APP_FONT_FAMILY }}>
               Exercises Done
             </Typography>
           </Box>
@@ -989,14 +1047,14 @@ export default function FunChineseLessonPage() {
               borderRadius: is960 ? '18px' : '22px',
               fontSize: is960 ? '1.08rem' : '1.28rem',
               fontWeight: 800,
-              fontFamily: '"Google Sans", "Roboto", sans-serif',
+              fontFamily: APP_FONT_FAMILY,
               boxShadow: `0 12px 28px ${teal}40`,
               '&:hover': {
                 transform: 'scale(1.02)',
               },
             }}
           >
-            {hasNextLesson ? 'Next Lesson' : 'Back to Course'}
+            {periodOnlyDone ? 'Back to Hub' : hasNextLesson ? 'Next Lesson' : 'Back to Course'}
           </ButtonBase>
 
           <Box sx={{ display: 'flex', gap: is960 ? 1.5 : 2 }}>
@@ -1010,7 +1068,7 @@ export default function FunChineseLessonPage() {
                 borderRadius: is960 ? '16px' : '20px',
                 fontSize: is960 ? '0.92rem' : '1.05rem',
                 fontWeight: 800,
-                fontFamily: '"Google Sans", "Roboto", sans-serif',
+                fontFamily: APP_FONT_FAMILY,
                 border: '2px solid #E2E8F0',
                 '&:hover': {
                   borderColor: teal,
@@ -1030,7 +1088,7 @@ export default function FunChineseLessonPage() {
                 borderRadius: is960 ? '16px' : '20px',
                 fontSize: is960 ? '0.92rem' : '1.05rem',
                 fontWeight: 800,
-                fontFamily: '"Google Sans", "Roboto", sans-serif',
+                fontFamily: APP_FONT_FAMILY,
                 border: '2px solid #E2E8F0',
                 '&:hover': {
                   borderColor: '#94A3B8',
@@ -1048,7 +1106,7 @@ export default function FunChineseLessonPage() {
 
   // Cards Phase - Knowledge Cards
   if (currentPhase === 'cards') {
-    const currentCard = LESSON_DATA.knowledgeCards[cardIndex];
+    const currentCard = knowledgeCardsForPeriod[cardIndex];
     const cardTypeTitle =
       currentCard.type === 'dialogue'
         ? 'Dialogue Card'
@@ -1084,7 +1142,7 @@ export default function FunChineseLessonPage() {
     ];
 
     const handleNextCard = () => {
-      if (cardIndex < LESSON_DATA.knowledgeCards.length - 1) {
+      if (cardIndex < knowledgeCardsForPeriod.length - 1) {
         setCardIndex(cardIndex + 1);
       } else {
         handleNextPhase();
@@ -1151,12 +1209,12 @@ export default function FunChineseLessonPage() {
             >
               2
             </Box>
-            <Typography sx={{ fontSize: is960 ? '1.05rem' : '1.28rem', fontWeight: 800, color: '#111827', letterSpacing: '-0.02em', fontFamily: '"Google Sans", "Roboto", sans-serif' }}>
+            <Typography sx={{ fontSize: is960 ? '1.05rem' : '1.28rem', fontWeight: 800, color: '#111827', letterSpacing: '-0.02em', fontFamily: APP_FONT_FAMILY }}>
               Knowledge - {cardTypeTitle}
             </Typography>
           </Box>
           <Typography sx={{ fontSize: is960 ? '0.96rem' : '1.08rem', color: '#4B5563', fontWeight: 800 }}>
-            {cardIndex + 1}/{LESSON_DATA.knowledgeCards.length}
+            {cardIndex + 1}/{knowledgeCardsForPeriod.length}
           </Typography>
         </Box>
 
@@ -1502,7 +1560,7 @@ export default function FunChineseLessonPage() {
           </ButtonBase>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 0.75 : 0.9 }}>
-            {LESSON_DATA.knowledgeCards.map((_, i) => (
+            {knowledgeCardsForPeriod.map((_, i) => (
               <Box
                 key={i}
                 sx={{
@@ -1528,7 +1586,7 @@ export default function FunChineseLessonPage() {
               fontWeight: 650,
             }}
           >
-            {cardIndex === LESSON_DATA.knowledgeCards.length - 1 ? '进入练习' : '下一张'}
+            {cardIndex === knowledgeCardsForPeriod.length - 1 ? '进入练习' : '下一张'}
             <ChevronRightIcon sx={{ fontSize: is960 ? 24 : 28 }} />
           </ButtonBase>
         </Box>
@@ -1538,7 +1596,7 @@ export default function FunChineseLessonPage() {
 
   // Practice Phase
   if (currentPhase === 'practice') {
-    const currentExercise = LESSON_DATA.practice[exerciseIndex];
+    const currentExercise = practiceExercisesForPeriod[exerciseIndex];
     
     // 检查当前题目是否完成
     const isExerciseComplete = 
@@ -1587,7 +1645,7 @@ export default function FunChineseLessonPage() {
     };
 
     const handleNextExercise = () => {
-      if (exerciseIndex < LESSON_DATA.practice.length - 1) {
+      if (exerciseIndex < practiceExercisesForPeriod.length - 1) {
         setExerciseIndex(exerciseIndex + 1);
         setSelectedAnswer(null);
         setIsCorrect(null);
@@ -1640,13 +1698,13 @@ export default function FunChineseLessonPage() {
             >
               3
             </Box>
-            <Typography sx={{ fontSize: is960 ? '1.15rem' : '1.35rem', fontWeight: 800, color: '#1E293B', fontFamily: '"Google Sans", "Roboto", sans-serif' }}>
+            <Typography sx={{ fontSize: is960 ? '1.15rem' : '1.35rem', fontWeight: 800, color: '#1E293B', fontFamily: APP_FONT_FAMILY }}>
               Practice
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography sx={{ fontSize: is960 ? '0.88rem' : '1rem', color: '#94A3B8', fontWeight: 700, fontFamily: '"Google Sans", "Roboto", sans-serif' }}>
-              Progress: {exerciseIndex + 1} / {LESSON_DATA.practice.length}
+            <Typography sx={{ fontSize: is960 ? '0.88rem' : '1rem', color: '#94A3B8', fontWeight: 700, fontFamily: APP_FONT_FAMILY }}>
+              Progress: {exerciseIndex + 1} / {practiceExercisesForPeriod.length}
             </Typography>
             <ButtonBase
               onClick={() => navigate(-1)}
@@ -1872,7 +1930,7 @@ export default function FunChineseLessonPage() {
               color: '#94A3B8',
               fontSize: is960 ? '0.88rem' : '1rem',
               fontWeight: 700,
-              fontFamily: '"Google Sans", "Roboto", sans-serif',
+              fontFamily: APP_FONT_FAMILY,
               opacity: exerciseIndex === 0 ? 0.3 : 1,
               px: is960 ? 2 : 2.5,
               py: is960 ? 1 : 1.25,
@@ -1897,7 +1955,7 @@ export default function FunChineseLessonPage() {
                 borderRadius: is960 ? '16px' : '20px',
                 fontSize: is960 ? '0.95rem' : '1.08rem',
                 fontWeight: 800,
-                fontFamily: '"Google Sans", "Roboto", sans-serif',
+                fontFamily: APP_FONT_FAMILY,
                 boxShadow: `0 8px 20px ${teal}40`,
                 display: 'flex',
                 alignItems: 'center',
@@ -1907,7 +1965,7 @@ export default function FunChineseLessonPage() {
                 },
               }}
             >
-              {exerciseIndex === LESSON_DATA.practice.length - 1 ? 'Complete' : 'Next'}
+              {exerciseIndex === practiceExercisesForPeriod.length - 1 ? 'Complete' : 'Next'}
               <ChevronRightIcon sx={{ fontSize: is960 ? 20 : 22 }} />
             </ButtonBase>
           )}
@@ -1922,7 +1980,7 @@ export default function FunChineseLessonPage() {
                 borderRadius: is960 ? '14px' : '16px',
                 fontSize: is960 ? '0.85rem' : '0.95rem',
                 fontWeight: 700,
-                fontFamily: '"Google Sans", "Roboto", sans-serif',
+                fontFamily: APP_FONT_FAMILY,
                 border: '2px solid #E2E8F0',
               }}
             >

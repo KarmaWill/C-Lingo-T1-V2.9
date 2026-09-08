@@ -1,311 +1,294 @@
-import { Box, Typography } from '@mui/material';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
-import type { ReactNode } from 'react';
+import { Box, Typography } from '@mui/material'
+import type { ReactNode } from 'react'
+import { figmaPx, FIGMA_FONT } from '../../utils/figmaScale'
 
-export function useHomeSideStyles(is960: boolean) {
-  const sideCardSx = {
-    p: is960 ? '1.15rem 1rem 1.15rem 1.25rem' : '1.55rem 1.2rem 1.55rem 1.65rem',
-    borderRadius: is960 ? '28px' : '36px',
-    color: 'white',
-    position: 'relative' as const,
-    overflow: 'hidden',
-    minHeight: 0,
-    height: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    gap: is960 ? 0.75 : 1,
-    cursor: 'pointer',
-    transition: '0.3s',
-    boxSizing: 'border-box' as const,
-    boxShadow: '0 10px 28px rgba(15, 23, 42, 0.12)',
-    '&:active': { transform: 'scale(0.98)' },
-  };
-
-  const sideTrailingSx = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: is960 ? 0.75 : 1,
-    flexShrink: 0,
-    zIndex: 1,
-  };
-
-  const sideArrowSx = {
-    bgcolor: 'rgba(255,255,255,0.22)',
-    width: is960 ? 48 : 56,
-    height: is960 ? 48 : 56,
-    borderRadius: is960 ? '16px' : '20px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backdropFilter: 'blur(10px)',
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28)',
-    flexShrink: 0,
-  };
-
-  const sideNextSx = {
-    color: 'rgba(255,255,255,0.92)',
-    flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-  };
-
-  return { sideCardSx, sideTrailingSx, sideArrowSx, sideNextSx };
-}
-
-export function HomePageShell({
-  is960,
-  pageBg,
-  children,
+/** 稿上 4px 描边直角箭头；不用 MUI rounded，避免光学中心发歪 */
+function FigmaForwardArrow({
+  size,
+  color,
+  stroke,
 }: {
-  is960: boolean;
-  pageBg?: string;
-  children: ReactNode;
+  size: number
+  color: string
+  stroke: number
 }) {
   return (
     <Box
+      component="svg"
+      viewBox="0 0 48 48"
+      aria-hidden
       sx={{
-        p: is960 ? 2 : 3,
-        height: '100%',
-        width: '100%',
+        width: size,
+        height: size,
+        display: 'block',
+        flexShrink: 0,
+      }}
+    >
+      <path
+        d="M6 24h26M24 12l14 12-14 12"
+        fill="none"
+        stroke={color}
+        strokeWidth={stroke}
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+      />
+    </Box>
+  )
+}
+
+/** Figma 主界面1：左 1250 · 右 510 · 缝 40 */
+export function HomePageShell({
+  screenSize,
+  children,
+}: {
+  screenSize: string
+  children: ReactNode
+}) {
+  const p = (n: number) => figmaPx(n, screenSize)
+  return (
+    <Box
+      sx={{
+        flex: 1,
         minHeight: 0,
+        width: '100%',
         overflow: 'hidden',
         boxSizing: 'border-box',
-        bgcolor: pageBg ?? 'transparent',
         display: 'grid',
-        // Tablet shell is fixed landscape — never stack on viewport < lg (that caused the broken "compressed" home).
-        gridTemplateColumns: 'minmax(0, 2.45fr) minmax(0, 1fr)',
+        gridTemplateColumns: `${p(1250)}fr ${p(510)}fr`,
         gridTemplateRows: 'minmax(0, 1fr)',
-        gap: is960 ? 1.25 : 1.5,
+        gap: `${p(40)}px`,
         alignItems: 'stretch',
+        fontFamily: FIGMA_FONT,
       }}
     >
       {children}
     </Box>
-  );
+  )
 }
 
-function TitleBlock({
-  label,
-  lines,
-  subtitle,
-  is960,
+/** Figma 主界面2 右栏：280 + 192 + 192，缝 23 */
+export function HomeSideCardStack({
+  screenSize,
+  children,
 }: {
-  label?: string;
-  lines?: [string, string];
-  subtitle?: string;
-  is960: boolean;
+  screenSize: string
+  children: ReactNode
 }) {
-  return (
-    <>
-      {lines ? (
-        <Typography
-          component="div"
-          sx={{
-            fontWeight: 900,
-            fontSize: is960 ? '0.95rem' : '1.28rem',
-            lineHeight: 1.15,
-            letterSpacing: '-0.01em',
-            minWidth: 0,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <span>{lines[0]}</span>
-          <span>{lines[1]}</span>
-        </Typography>
-      ) : (
-        <Typography
-          sx={{
-            fontWeight: 900,
-            fontSize: is960 ? '0.95rem' : '1.28rem',
-            lineHeight: 1.15,
-            letterSpacing: '-0.01em',
-          }}
-        >
-          {label}
-        </Typography>
-      )}
-      {subtitle ? (
-        <Typography
-          sx={{
-            mt: is960 ? 0.45 : 0.6,
-            fontSize: is960 ? '0.68rem' : '0.78rem',
-            fontWeight: 650,
-            lineHeight: 1.3,
-            color: 'rgba(255,255,255,0.78)',
-          }}
-        >
-          {subtitle}
-        </Typography>
-      ) : null}
-    </>
-  );
-}
-
-export function HomeSideCard({
-  label,
-  lines,
-  subtitle,
-  bgcolor,
-  icon,
-  extra,
-  is960,
-  sideCardSx,
-  sideTrailingSx,
-  sideArrowSx,
-  sideNextSx,
-  onClick,
-  variant = 'default',
-  spotlightVisual,
-  accentColor,
-}: {
-  label?: string;
-  lines?: [string, string];
-  subtitle?: string;
-  bgcolor: string;
-  icon?: ReactNode;
-  extra?: ReactNode;
-  is960: boolean;
-  sideCardSx: object;
-  sideTrailingSx?: object;
-  sideArrowSx: object;
-  sideNextSx?: object;
-  onClick: () => void;
-  /** default = legacy icon+chevron; spotlight = pill CTA + right visual; tool = glass arrow only */
-  variant?: 'default' | 'spotlight' | 'tool';
-  spotlightVisual?: ReactNode;
-  accentColor?: string;
-}) {
-  const defaultStyles = useHomeSideStyles(is960);
-  const accent = accentColor ?? bgcolor;
-
-  if (variant === 'spotlight') {
-    const isGradient = typeof bgcolor === 'string' && bgcolor.includes('gradient');
-    return (
-      <Box
-        onClick={onClick}
-        sx={{
-          ...sideCardSx,
-          ...(isGradient ? { background: bgcolor, bgcolor: 'transparent' } : { bgcolor }),
-          alignItems: 'stretch',
-          // Match tool-card left inset so "AI Tutor" lines up with "Reading"
-          pl: is960 ? '1.25rem' : '1.65rem',
-          pr: 0,
-          py: 0,
-          // Clip to card radius so bottom edge stays seamless with the gradient
-          overflow: 'hidden',
-        }}
-      >
-        <Box
-          sx={{
-            position: 'relative',
-            zIndex: 1,
-            flex: '1 1 0',
-            minWidth: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            py: is960 ? 1.15 : 1.4,
-            // Nudge content slightly down to match tool-card visual weight
-            pt: is960 ? 1.35 : 1.55,
-            pb: is960 ? 1.05 : 1.2,
-          }}
-        >
-          <TitleBlock label={label} lines={lines} is960={is960} />
-          <Box
-            sx={{
-              mt: is960 ? 0.95 : 1.15,
-              ml: is960 ? 0.35 : 0.5,
-              width: is960 ? 42 : 48,
-              height: is960 ? 42 : 48,
-              borderRadius: '999px',
-              bgcolor: '#FFFFFF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 8px 20px rgba(15, 23, 42, 0.16)',
-              flexShrink: 0,
-            }}
-            aria-hidden
-          >
-            <ArrowForwardRoundedIcon sx={{ fontSize: is960 ? 22 : 26, color: accent }} />
-          </Box>
-          {extra}
-        </Box>
-        <Box
-          sx={{
-            position: 'relative',
-            width: is960 ? '52%' : '56%',
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'flex-start',
-            alignSelf: 'stretch',
-            overflow: 'hidden',
-            // Pull mascot further into the card (left) and pin to bottom edge
-            ml: is960 ? -4 : -5.5,
-            mr: is960 ? -0.5 : -0.75,
-            zIndex: 2,
-          }}
-        >
-          {spotlightVisual}
-        </Box>
-      </Box>
-    );
-  }
-
-  if (variant === 'tool') {
-    const toolArrowSx = {
-      ...sideArrowSx,
-      width: is960 ? 52 : 64,
-      height: is960 ? 52 : 64,
-      borderRadius: is960 ? '18px' : '22px',
-      bgcolor: 'rgba(255,255,255,0.24)',
-    };
-    return (
-      <Box onClick={onClick} sx={{ ...sideCardSx, bgcolor }}>
-        <Box sx={{ position: 'relative', zIndex: 1, flex: 1, minWidth: 0, pr: 0.5 }}>
-          <TitleBlock label={label} lines={lines} subtitle={subtitle} is960={is960} />
-        </Box>
-        <Box sx={toolArrowSx} aria-hidden>
-          <ArrowForwardRoundedIcon sx={{ fontSize: is960 ? 26 : 30, color: 'rgba(255,255,255,0.96)' }} />
-        </Box>
-      </Box>
-    );
-  }
-
-  return (
-    <Box onClick={onClick} sx={{ ...sideCardSx, bgcolor }}>
-      <Box sx={{ position: 'relative', zIndex: 1, flex: 1, minWidth: 0 }}>
-        <TitleBlock label={label} lines={lines} subtitle={subtitle} is960={is960} />
-        {extra}
-      </Box>
-      <Box sx={{ ...defaultStyles.sideTrailingSx, ...sideTrailingSx }}>
-        <Box sx={sideArrowSx}>{icon}</Box>
-        <Box sx={{ ...defaultStyles.sideNextSx, ...sideNextSx }} aria-hidden>
-          <ChevronRightIcon sx={{ fontSize: is960 ? 22 : 26 }} />
-        </Box>
-      </Box>
-    </Box>
-  );
-}
-
-export function HomeSideCardStack({ is960, children }: { is960: boolean; children: ReactNode }) {
+  const p = (n: number) => figmaPx(n, screenSize)
   return (
     <Box
       sx={{
         minWidth: 0,
         minHeight: 0,
-        height: { lg: '100%' },
+        height: '100%',
         display: 'grid',
-        gridTemplateRows: 'repeat(3, minmax(0, 1fr))',
-        gap: is960 ? 1.1 : 1.35,
+        gridTemplateRows: `${p(280)}fr ${p(192)}fr ${p(192)}fr`,
+        gap: `${p(23)}px`,
         boxSizing: 'border-box',
         overflow: 'hidden',
       }}
     >
       {children}
     </Box>
-  );
+  )
+}
+
+export function HomeSideCard({
+  screenSize,
+  label,
+  subtitle,
+  bgcolor,
+  onClick,
+  variant = 'tool',
+  spotlightVisual,
+  spotlightArrowColor = '#4F46E5',
+}: {
+  screenSize: string
+  label: string
+  subtitle?: string
+  bgcolor: string
+  onClick: () => void
+  variant?: 'spotlight' | 'tool'
+  spotlightVisual?: ReactNode
+  spotlightArrowColor?: string
+}) {
+  const p = (n: number) => figmaPx(n, screenSize)
+  const isGradient = bgcolor.includes('gradient')
+
+  if (variant === 'spotlight') {
+    return (
+      <Box
+        onClick={onClick}
+        sx={{
+          position: 'relative',
+          height: '100%',
+          minHeight: 0,
+          borderRadius: `${p(50)}px`,
+          overflow: 'hidden',
+          cursor: 'pointer',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          ...(isGradient ? { background: bgcolor } : { bgcolor }),
+          px: `${p(40)}px`,
+          pt: `${p(46)}px`,
+          pb: `${p(32)}px`,
+          boxSizing: 'border-box',
+          '&:active': { transform: 'scale(0.98)' },
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            width: p(403),
+            height: p(118),
+            left: p(-176),
+            top: p(-129),
+            bgcolor: '#A24BFF',
+            filter: 'blur(47px)',
+            mixBlendMode: 'screen',
+            transform: 'rotate(-12deg)',
+            pointerEvents: 'none',
+          },
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            width: p(403),
+            height: p(208),
+            right: p(-40),
+            bottom: p(-80),
+            bgcolor: '#7300FF',
+            opacity: 0.51,
+            filter: 'blur(47px)',
+            mixBlendMode: 'screen',
+            pointerEvents: 'none',
+          },
+        }}
+      >
+        <Typography
+          sx={{
+            position: 'relative',
+            zIndex: 2,
+            color: '#fff',
+            fontWeight: 600,
+            fontSize: p(48),
+            fontFamily: FIGMA_FONT,
+            lineHeight: 1.2,
+          }}
+        >
+          {label}
+        </Typography>
+        <Box
+          sx={{
+            position: 'relative',
+            zIndex: 2,
+            mt: 'auto',
+            width: p(141),
+            height: p(80),
+            borderRadius: `${p(67)}px`,
+            bgcolor: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <FigmaForwardArrow size={p(48)} color={spotlightArrowColor} stroke={p(4)} />
+        </Box>
+        {spotlightVisual ? (
+          <Box
+            sx={{
+              position: 'absolute',
+              right: p(-10),
+              bottom: 0,
+              width: p(220),
+              height: p(200),
+              zIndex: 1,
+              pointerEvents: 'none',
+            }}
+          >
+            {spotlightVisual}
+          </Box>
+        ) : null}
+      </Box>
+    )
+  }
+
+  return (
+    <Box
+      onClick={onClick}
+      sx={{
+        position: 'relative',
+        height: '100%',
+        minHeight: 0,
+        borderRadius: `${p(50)}px`,
+        overflow: 'hidden',
+        cursor: 'pointer',
+        bgcolor,
+        px: `${p(40)}px`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: `${p(16)}px`,
+        boxSizing: 'border-box',
+        '&:active': { transform: 'scale(0.98)' },
+      }}
+    >
+      <Box sx={{ minWidth: 0, flex: 1 }}>
+        <Typography
+          sx={{
+            color: '#fff',
+            fontWeight: 600,
+            fontSize: p(44),
+            fontFamily: FIGMA_FONT,
+            lineHeight: 1.2,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            whiteSpace: 'normal',
+          }}
+        >
+          {label}
+        </Typography>
+        {subtitle ? (
+          <Typography
+            sx={{
+              mt: `${p(8)}px`,
+              color: 'rgba(255,255,255,0.6)',
+              fontWeight: 500,
+              fontSize: p(28),
+              fontFamily: FIGMA_FONT,
+              lineHeight: 1.2,
+            }}
+          >
+            {subtitle}
+          </Typography>
+        ) : null}
+      </Box>
+      <Box
+        sx={{
+          width: p(120),
+          height: p(120),
+          borderRadius: `${p(40)}px`,
+          bgcolor: 'rgba(255,255,255,0.2)',
+          backdropFilter: 'blur(2px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        <FigmaForwardArrow size={p(56)} color="#fff" stroke={p(4)} />
+      </Box>
+    </Box>
+  )
+}
+
+/** @deprecated kept for older imports */
+export function useHomeSideStyles(_is960: boolean) {
+  return {
+    sideCardSx: {},
+    sideTrailingSx: {},
+    sideArrowSx: {},
+    sideNextSx: {},
+  }
 }

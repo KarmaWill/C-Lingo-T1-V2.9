@@ -6,6 +6,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { Box, Typography, ButtonBase, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material';
+import { APP_FONT_FAMILY } from '../theme/appFont';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
@@ -129,7 +130,7 @@ function Flashcard({
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: is960 ? 2 : 3, textAlign: 'center' }}>
             <Typography
               sx={{
-                fontFamily: '"Source Han Sans CN","Noto Sans SC","PingFang SC",sans-serif',
+                fontFamily: APP_FONT_FAMILY,
                 fontWeight: 900,
                 fontSize: is960 ? '2.8rem' : '3.6rem',
                 color: '#111827',

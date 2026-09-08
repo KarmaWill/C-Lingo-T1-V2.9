@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Box, Typography, ButtonBase } from '@mui/material';
+import { APP_FONT_FAMILY } from '../theme/appFont';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -137,7 +138,7 @@ const DEMO_LEVELS: Level[] = [
    ═══════════════════════════════════════════════════════════════════════════════ */
 function HubView({ onNavigate, onBack, completedCount, points, is960 }: { onNavigate: (view: 'level-selection' | 'gallery') => void; onBack: () => void; completedCount: number; points: number; is960: boolean }) {
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#FFF8F0', p: is960 ? 3 : 4, textAlign: 'center', position: 'relative', fontFamily: "'Google Sans', 'Product Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif" }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#FFF8F0', p: is960 ? 3 : 4, textAlign: 'center', position: 'relative', fontFamily: APP_FONT_FAMILY }}>
       {/* Back Button */}
       <Box sx={{ position: 'absolute', top: is960 ? 12 : 16, left: is960 ? 12 : 16 }}>
         <ButtonBase
@@ -276,14 +277,14 @@ function LevelSelectionView({ onBack, onSelectLevel, completedIds, is960 }: { on
         >
           <ChevronLeftIcon sx={{ fontSize: 24 }} />
         </ButtonBase>
-        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.5rem' : '2rem', color: '#073642', fontFamily: "'Google Sans', 'Product Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif" }}>Choose Level</Typography>
+        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.5rem' : '2rem', color: '#073642', fontFamily: APP_FONT_FAMILY }}>Choose Level</Typography>
       </Box>
 
       {/* Level Grid */}
       <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: is960 ? 2 : 3 }}>
         {Object.entries(groupedLevels).map(([theme, levels]) => (
           <Box key={theme} sx={{ mb: 4 }}>
-            <Typography sx={{ fontSize: is960 ? '0.85rem' : '1rem', fontWeight: 800, color: '#2AA198', mb: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Google Sans', 'Product Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif" }}>
+            <Typography sx={{ fontSize: is960 ? '0.85rem' : '1rem', fontWeight: 800, color: '#2AA198', mb: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: APP_FONT_FAMILY }}>
               {theme}
             </Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: is960 ? 1.5 : 2 }}>
@@ -389,7 +390,7 @@ function GalleryView({ onBack, completedIds, onPlayLevel, is960 }: { onBack: () 
           >
             <ChevronLeftIcon sx={{ fontSize: 24 }} />
           </ButtonBase>
-          <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.5rem' : '2rem', color: '#073642', fontFamily: "'Google Sans', 'Product Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif" }}>My Gallery</Typography>
+          <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.5rem' : '2rem', color: '#073642', fontFamily: APP_FONT_FAMILY }}>My Gallery</Typography>
         </Box>
 
         {/* Theme Filter */}
@@ -409,7 +410,7 @@ function GalleryView({ onBack, completedIds, onPlayLevel, is960 }: { onBack: () 
                 bgcolor: filterTheme === theme ? '#2AA198' : 'white',
                 border: filterTheme === theme ? '2px solid #2AA198' : '1px solid rgba(0,0,0,0.06)',
                 '&:active': { transform: 'scale(0.95)' },
-                fontFamily: "'Google Sans', 'Product Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif",
+                fontFamily: APP_FONT_FAMILY,
               }}
             >
               {theme}
@@ -479,7 +480,7 @@ function GalleryView({ onBack, completedIds, onPlayLevel, is960 }: { onBack: () 
                           letterSpacing: '0.04em',
                           border: '1px solid rgba(255,255,255,0.45)',
                           boxShadow: '0 4px 12px rgba(133,153,0,0.3)',
-                          fontFamily: "'Google Sans', 'Product Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif",
+                          fontFamily: APP_FONT_FAMILY,
                         }}
                       >
                         UNLOCKED
@@ -621,10 +622,10 @@ function GameView({ level, onComplete, onBack, is960 }: { level: Level; onComple
         {/* Progress Bar */}
         <Box sx={{ flex: 1 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-            <Typography sx={{ fontSize: is960 ? '0.9rem' : '1rem', fontWeight: 800, color: '#2AA198', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Google Sans', 'Product Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif" }}>
+            <Typography sx={{ fontSize: is960 ? '0.9rem' : '1rem', fontWeight: 800, color: '#2AA198', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: APP_FONT_FAMILY }}>
               Level {level.id}/{DEMO_LEVELS.length}
             </Typography>
-            <Typography sx={{ fontSize: is960 ? '0.9rem' : '1rem', fontWeight: 800, color: '#2AA198', fontFamily: "'Google Sans', 'Product Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif" }}>{Math.round(progress)}%</Typography>
+            <Typography sx={{ fontSize: is960 ? '0.9rem' : '1rem', fontWeight: 800, color: '#2AA198', fontFamily: APP_FONT_FAMILY }}>{Math.round(progress)}%</Typography>
           </Box>
           <Box sx={{ height: 12, bgcolor: 'rgba(45,52,54,0.08)', borderRadius: 99, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.06)' }}>
             <motion.div
@@ -649,7 +650,7 @@ function GameView({ level, onComplete, onBack, is960 }: { level: Level; onComple
             bgcolor: showPinyin ? '#2AA198' : 'white',
             border: showPinyin ? '2px solid #2AA198' : '2px solid transparent',
             '&:active': { transform: 'scale(0.95)' },
-            fontFamily: "'Google Sans', 'Product Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif",
+            fontFamily: APP_FONT_FAMILY,
           }}
         >
           {showPinyin ? 'Pinyin' : 'Text'}

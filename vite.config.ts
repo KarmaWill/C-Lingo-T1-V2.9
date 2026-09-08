@@ -47,12 +47,14 @@ function lanUrlHintPlugin(port: number): Plugin {
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Read screen size from environment variable
-  const screenSize = process.env.VITE_SCREEN_SIZE || '1024x768';
+  const screenSize = process.env.VITE_SCREEN_SIZE || '2000x1200';
   
-  // Default 1024×768 dev server — port 3001 avoids conflict with API on 3000
+  // T1 product canvas is 2000×1200 on port 3001
   let port = 3001;
   if (screenSize === '2000x1200') {
     port = 3001;
+  } else if (screenSize === '1024x768') {
+    port = 3005;
   } else if (screenSize === '960x540') {
     port = 3002;
   } else if (screenSize === '1920x1125') {

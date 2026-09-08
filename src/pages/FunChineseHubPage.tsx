@@ -32,6 +32,11 @@ import {
   type FunChineseCardType,
   type FunChineseSavedCard,
 } from '../utils/funChineseCardCollection';
+import {
+  listLessonPeriods,
+  loadCompletedPeriods,
+} from '../utils/lessonPackageLoader';
+import { APP_FONT_FAMILY } from '../theme/appFont';
 
 interface ToolboxItem {
   id: string;
@@ -46,7 +51,7 @@ interface ToolboxItem {
   dotted?: boolean;
 }
 
-const googleSansFamily = '"Google Sans","Product Sans","Roboto","Arial",sans-serif';
+const googleSansFamily = APP_FONT_FAMILY
 
 function OnAirStatusBadge({ is960, label }: { is960: boolean; label: string }) {
   return (
@@ -276,6 +281,11 @@ export default function FunChineseHubPage() {
   const handleStartLesson = (lessonId: number, status: string) => {
     if (status === 'locked') return;
     navigate(`/library/hub/fun-chinese/lesson/${lessonId}`);
+  };
+
+  const handleStartPeriod = (lessonId: number, period: number, status: string) => {
+    if (status === 'locked') return;
+    navigate(`/library/hub/fun-chinese/lesson/${lessonId}?period=${period}`);
   };
 
   const handleIntensiveClick = () => {
@@ -576,10 +586,17 @@ export default function FunChineseHubPage() {
                 </Box>
               </Box>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 1.2 : 1.45 }}>
-                {lessons.map((lesson) => (
+                {lessons.map((lesson) => {
+                  const lessonPeriods = listLessonPeriods(1, lesson.id);
+                  const completedPeriods = loadCompletedPeriods(1, lesson.id);
+                  const hasPeriods = lessonPeriods.length > 0;
+                  return (
                   <Box
                     key={lesson.id}
-                    onClick={() => handleStartLesson(lesson.id, lesson.status)}
+                    onClick={() => {
+                      if (lesson.status === 'locked' || hasPeriods) return;
+                      handleStartLesson(lesson.id, lesson.status);
+                    }}
                     sx={{
                       p: is960 ? 1.35 : 1.65,
                       borderRadius: is960 ? '20px' : '24px',
@@ -634,6 +651,47 @@ export default function FunChineseHubPage() {
                       <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: '#64748B', fontWeight: 650, lineHeight: 1.35 }}>
                         {lesson.titleEn}
                       </Typography>
+                      {hasPeriods && (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: is960 ? 0.6 : 0.75, mt: is960 ? 0.85 : 1 }}>
+                          {lessonPeriods.map((p) => {
+                            const periodDone = completedPeriods.has(p.period);
+                            return (
+                              <ButtonBase
+                                key={p.period}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStartPeriod(lesson.id, p.period, lesson.status);
+                                }}
+                                disabled={lesson.status === 'locked'}
+                                aria-label={`Start period ${p.period}: ${p.titleEn || p.title}`}
+                                sx={{
+                                  px: is960 ? 1 : 1.15,
+                                  py: is960 ? 0.45 : 0.55,
+                                  borderRadius: '999px',
+                                  border: '1.5px solid',
+                                  borderColor: periodDone ? '#99F6E4' : '#FDBA74',
+                                  bgcolor: periodDone ? '#F0FDFA' : '#FFF7ED',
+                                  minHeight: is960 ? 32 : 36,
+                                  transition: 'transform 0.15s ease',
+                                  '&:hover': lesson.status !== 'locked' ? { transform: 'scale(1.03)' } : {},
+                                }}
+                              >
+                                <Typography
+                                  sx={{
+                                    fontSize: is960 ? '0.68rem' : '0.74rem',
+                                    fontWeight: 800,
+                                    color: periodDone ? teal : '#C2410C',
+                                    fontFamily: googleSansFamily,
+                                    lineHeight: 1.1,
+                                  }}
+                                >
+                                  P{p.period} · {p.titleEn || p.title}
+                                </Typography>
+                              </ButtonBase>
+                            );
+                          })}
+                        </Box>
+                      )}
                     </Box>
                     <Box
                       sx={{
@@ -643,6 +701,7 @@ export default function FunChineseHubPage() {
                         flexShrink: 0,
                       }}
                     >
+                      {!hasPeriods && (
                       <ButtonBase
                         onClick={(e) => {
                           e.stopPropagation();
@@ -701,9 +760,11 @@ export default function FunChineseHubPage() {
                           <LockIcon sx={{ fontSize: is960 ? 18 : 20 }} />
                         )}
                       </ButtonBase>
+                      )}
                     </Box>
                   </Box>
-                ))}
+                  );
+                })}
               </Box>
             </Box>
 
