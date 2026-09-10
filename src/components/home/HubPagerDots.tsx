@@ -36,8 +36,9 @@ export default function HubPagerDots({ screenSize }: { screenSize: string }) {
         alignItems: 'center',
         justifyContent: 'center',
         gap: `${p(26)}px`,
-        minHeight: 56,
-        my: `${p(12)}px`,
+        height: p(48),
+        mt: `${p(16)}px`,
+        mb: 0,
       }}
     >
       {HUB_PAGER_ROUTES.map((route, index) => {
@@ -50,9 +51,9 @@ export default function HubPagerDots({ screenSize }: { screenSize: string }) {
             aria-current={isActive ? 'page' : undefined}
             onClick={() => navigate(route)}
             sx={{
-              width: 56,
-              height: 56,
-              minWidth: 56,
+              width: p(48),
+              height: p(48),
+              minWidth: p(48),
               borderRadius: '50%',
               '&:focus-visible': {
                 outline: '3px solid #00B4A0',

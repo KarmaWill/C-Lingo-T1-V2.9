@@ -65,18 +65,18 @@ export default function HubLangProfile({ screenSize }: { screenSize: string }) {
           height: p(88),
           borderRadius: '50%',
           overflow: 'hidden',
-          bgcolor: '#FFF6E7',
+          bgcolor: '#3EC5FE',
         }}
       >
         <Box
           component="img"
-          src="/images/clingo-mascot-avatar.png"
+          src="/images/clingo-mascot-avatar.png?v=peace"
           alt=""
           sx={{
-            width: '118%',
-            height: '118%',
-            objectFit: 'contain',
-            objectPosition: 'center 58%',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center',
           }}
         />
       </ButtonBase>

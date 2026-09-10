@@ -2,20 +2,23 @@ import { useState, useEffect } from 'react'
 import { Box, Typography } from '@mui/material'
 import { useLocation } from 'react-router-dom'
 import { getChromeThemeFromPath } from '../../data/programTracks'
+import { HUB_SURFACE } from '../home/hubChrome'
 import { APP_FONT_FAMILY } from '../../theme/appFont'
 import { APP_SCREEN_SIZE, figmaPx, figmaScale } from '../../utils/figmaScale'
 
-/** Figma 主界面1 · Group 17：1920×50，时间 24/700，图标槽 36 */
+/** Figma 主界面1 · Group 17（2508×65.31 ÷ 1.30625）：时间 31.35/700，右簇 signal/蓝牙/Wi‑Fi/电量 */
 const FIGMA_STATUS = {
   height: 50,
   timeSize: 24,
   padX: 30,
   iconSlot: 36,
+  signalW: 26,
+  signalH: 21,
   wifiW: 25,
   wifiH: 20,
   batteryW: 34,
   batteryH: 20,
-  iconGap: 8,
+  iconGap: 6,
   timeColor: '#333333',
 } as const
 
@@ -27,6 +30,8 @@ export function getSystemBarMetrics(screenSize: string) {
     timeSize: p(FIGMA_STATUS.timeSize),
     padX: p(FIGMA_STATUS.padX),
     iconSlot: p(FIGMA_STATUS.iconSlot),
+    signalW: p(FIGMA_STATUS.signalW),
+    signalH: p(FIGMA_STATUS.signalH),
     wifiW: p(FIGMA_STATUS.wifiW),
     wifiH: p(FIGMA_STATUS.wifiH),
     batteryW: p(FIGMA_STATUS.batteryW),
@@ -86,6 +91,8 @@ export default function SystemStatusBar({
         timeSize: FIGMA_STATUS.timeSize,
         padX: FIGMA_STATUS.padX,
         iconSlot: FIGMA_STATUS.iconSlot,
+        signalW: FIGMA_STATUS.signalW,
+        signalH: FIGMA_STATUS.signalH,
         wifiW: FIGMA_STATUS.wifiW,
         wifiH: FIGMA_STATUS.wifiH,
         batteryW: FIGMA_STATUS.batteryW,
@@ -112,8 +119,8 @@ export default function SystemStatusBar({
         alignItems: 'center',
         justifyContent: 'space-between',
         px: `${m.padX}px`,
-        // Figma Group 17 背景 opacity 0；画布内随页底，壳层深色主题才铺底
-        bgcolor: isCanvas ? 'transparent' : isDarkChrome ? chrome.statusBarBg : '#FFFFFF',
+        // 浅色 Hub 铺白底，和页内顶栏 HUB_SURFACE 对齐；深色主题仍用课轨 chrome
+        bgcolor: isDarkChrome && !isCanvas ? chrome.statusBarBg : HUB_SURFACE,
         backdropFilter: !isCanvas && isDarkChrome ? 'blur(12px) saturate(160%)' : 'none',
         borderBottom: !isCanvas && isDarkChrome ? chrome.statusBarBorder : 'none',
         zIndex: isInline || isCanvas ? 2 : 1300,
@@ -146,59 +153,36 @@ export default function SystemStatusBar({
           gap: `${m.iconGap}px`,
           height: m.iconSlot,
         }}
-        aria-hidden
+        aria-label="Signal, Bluetooth, Wi-Fi, Battery"
       >
-        <Box
-          sx={{
-            width: m.iconSlot,
-            height: m.iconSlot,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <StatusIcon
-            src="/shell/status-bluetooth.svg"
-            width={m.iconSlot}
-            height={m.iconSlot}
-            alt=""
-            dark={isDarkChrome}
-          />
-        </Box>
-        <Box
-          sx={{
-            width: m.iconSlot,
-            height: m.iconSlot,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <StatusIcon
-            src="/shell/status-wifi.svg"
-            width={m.wifiW}
-            height={m.wifiH}
-            alt=""
-            dark={isDarkChrome}
-          />
-        </Box>
-        <Box
-          sx={{
-            width: m.iconSlot,
-            height: m.iconSlot,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <StatusIcon
-            src="/shell/status-battery.svg"
-            width={m.batteryW}
-            height={m.batteryH}
-            alt=""
-            dark={isDarkChrome}
-          />
-        </Box>
+        {(
+          [
+            { src: '/shell/status-signal.svg', w: m.signalW, h: m.signalH, alt: 'Signal' },
+            { src: '/shell/status-bluetooth.svg', w: m.iconSlot, h: m.iconSlot, alt: 'Bluetooth' },
+            { src: '/shell/status-wifi.svg', w: m.wifiW, h: m.wifiH, alt: 'Wi-Fi' },
+            { src: '/shell/status-battery.svg', w: m.batteryW, h: m.batteryH, alt: 'Battery' },
+          ] as const
+        ).map((icon) => (
+          <Box
+            key={icon.alt}
+            sx={{
+              width: m.iconSlot,
+              height: m.iconSlot,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <StatusIcon
+              src={icon.src}
+              width={icon.w}
+              height={icon.h}
+              alt={icon.alt}
+              dark={isDarkChrome}
+            />
+          </Box>
+        ))}
       </Box>
     </Box>
   )

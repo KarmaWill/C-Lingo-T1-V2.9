@@ -49,8 +49,8 @@ export type StudioMenuSelect = {
 }
 
 /**
- * Figma 主界面2 页内顶栏：AI Class Studio + 徽章 + 课轨 / Level / Unit 下拉
- * 三轨共用同一套壳，课轨身份只在徽章和下拉选项上。
+ * Figma 主界面1 页内顶栏：课轨名 + Level / Unit，语言和头像右对齐。
+ * 浅底铺白条，和系统状态栏 HUB_SURFACE 对齐；C-Lingo 不显示 ONLINE ONLY。
  */
 export default function StudioHomeHeader({
   screenSize,
@@ -65,7 +65,6 @@ export default function StudioHomeHeader({
 }) {
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const [programAnchor, setProgramAnchor] = useState<null | HTMLElement>(null)
   const [titleAnchor, setTitleAnchor] = useState<null | HTMLElement>(null)
   const [levelAnchor, setLevelAnchor] = useState<null | HTMLElement>(null)
   const [unitAnchor, setUnitAnchor] = useState<null | HTMLElement>(null)
@@ -119,7 +118,6 @@ export default function StudioHomeHeader({
   const handleProgramSelect = (nextId: ProgramTrackId) => {
     const track = getProgramTrackById(nextId)
     if (track) navigate(track.route)
-    setProgramAnchor(null)
     setTitleAnchor(null)
   }
 
@@ -195,16 +193,18 @@ export default function StudioHomeHeader({
     </Box>
   )
 
+  const showBadge = trackId !== 'c-lingo'
+
   return (
     <Box
       sx={{
         flexShrink: 0,
         mx: `-${p(HUB_FRAME_PAD_X)}px`,
         mt: `-${p(HUB_FRAME_PAD_TOP)}px`,
-        mb: `${p(30)}px`,
+        mb: `${p(16)}px`,
         px: `${p(HUB_FRAME_PAD_X)}px`,
-        pt: `${p(16)}px`,
-        pb: `${p(12)}px`,
+        pt: `${p(4)}px`,
+        pb: `${p(8)}px`,
         bgcolor: HUB_SURFACE,
       }}
     >
@@ -213,10 +213,10 @@ export default function StudioHomeHeader({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          minHeight: p(90),
+          minHeight: p(88),
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(24)}px`, minWidth: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(20)}px`, minWidth: 0 }}>
           <ButtonBase
             onClick={(e) => setTitleAnchor(e.currentTarget)}
             aria-label="Switch program"
@@ -225,22 +225,22 @@ export default function StudioHomeHeader({
             sx={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: `${p(24)}px`,
+              gap: `${p(16)}px`,
               borderRadius: `${p(12)}px`,
               '&:active': { bgcolor: 'rgba(0,0,0,0.04)' },
             }}
           >
             <Typography
               sx={{
-                fontWeight: 600,
-                fontSize: p(48),
+                fontWeight: 700,
+                fontSize: p(44),
                 color: '#2D3436',
-                lineHeight: `${p(72)}px`,
+                lineHeight: `${p(56)}px`,
                 fontFamily: FIGMA_FONT,
                 whiteSpace: 'nowrap',
               }}
             >
-              {t('program.hubTitle')}
+              {t(`program.tracks.${trackId}`)}
             </Typography>
             <KeyboardArrowDown sx={chevronSx} />
           </ButtonBase>
@@ -263,46 +263,48 @@ export default function StudioHomeHeader({
             ))}
           </Menu>
 
-          <Box
-            sx={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: `${p(10)}px`,
-              height: p(46),
-              px: `${p(20)}px`,
-              borderRadius: '999px',
-              bgcolor: activeTrack.badge.bg,
-              border: `1px solid ${activeTrack.badge.border}`,
-              color: activeTrack.badge.color,
-              boxShadow: 'none',
-              flexShrink: 0,
-            }}
-          >
-            {activeTrack.badge.dot ? (
-              <Box
-                sx={{
-                  width: p(12),
-                  height: p(12),
-                  borderRadius: '50%',
-                  bgcolor: activeTrack.badge.dot,
-                  flexShrink: 0,
-                }}
-              />
-            ) : null}
-            <Typography
+          {showBadge ? (
+            <Box
               sx={{
-                fontSize: p(24),
-                fontWeight: 400,
-                letterSpacing: 0,
-                textTransform: 'uppercase',
-                lineHeight: 1.6,
-                fontFamily: 'inherit',
-                color: 'inherit',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: `${p(10)}px`,
+                height: p(46),
+                px: `${p(20)}px`,
+                borderRadius: '999px',
+                bgcolor: activeTrack.badge.bg,
+                border: `1px solid ${activeTrack.badge.border}`,
+                color: activeTrack.badge.color,
+                boxShadow: 'none',
+                flexShrink: 0,
               }}
             >
-              {t(getProgramBadgeKey(activeTrack.id))}
-            </Typography>
-          </Box>
+              {activeTrack.badge.dot ? (
+                <Box
+                  sx={{
+                    width: p(12),
+                    height: p(12),
+                    borderRadius: '50%',
+                    bgcolor: activeTrack.badge.dot,
+                    flexShrink: 0,
+                  }}
+                />
+              ) : null}
+              <Typography
+                sx={{
+                  fontSize: p(24),
+                  fontWeight: 400,
+                  letterSpacing: 0,
+                  textTransform: 'uppercase',
+                  lineHeight: 1.6,
+                  fontFamily: 'inherit',
+                  color: 'inherit',
+                }}
+              >
+                {t(getProgramBadgeKey(activeTrack.id))}
+              </Typography>
+            </Box>
+          ) : null}
         </Box>
 
         <HubLangProfile screenSize={screenSize} />
@@ -312,41 +314,11 @@ export default function StudioHomeHeader({
         sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: `${p(80)}px`,
-          height: p(60),
+          gap: `${p(48)}px`,
+          height: p(48),
+          mt: `${p(4)}px`,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-          <ButtonBase
-            onClick={(e) => setProgramAnchor(e.currentTarget)}
-            aria-haspopup="true"
-            aria-expanded={Boolean(programAnchor)}
-            aria-label="Program track"
-            sx={selectSx}
-          >
-            <Typography sx={selectTextSx}>{t(`program.tracks.${trackId}`)}</Typography>
-            <KeyboardArrowDown sx={chevronSx} />
-          </ButtonBase>
-          <Menu
-            anchorEl={programAnchor}
-            open={Boolean(programAnchor)}
-            onClose={() => setProgramAnchor(null)}
-            PaperProps={{ sx: menuPaperSx }}
-            MenuListProps={{ sx: menuListSx }}
-          >
-            {PROGRAM_TRACK_IDS.map((id) => (
-              <MenuItem
-                key={id}
-                selected={id === trackId}
-                onClick={() => handleProgramSelect(id)}
-                sx={menuItemSx}
-              >
-                {t(`program.tracks.${id}`)}
-              </MenuItem>
-            ))}
-          </Menu>
-        </Box>
-
         {renderSelect(levelSelect, levelAnchor, setLevelAnchor)}
         {renderSelect(unitSelect, unitAnchor, setUnitAnchor)}
       </Box>
@@ -386,9 +358,11 @@ export function HubTopBar({
 export function StudioHomeFrame({
   screenSize,
   children,
+  canvas = HUB_CANVAS,
 }: {
   screenSize: string
   children: ReactNode
+  canvas?: string
 }) {
   const p = (n: number) => figmaPx(n, screenSize)
   return (
@@ -398,7 +372,7 @@ export function StudioHomeFrame({
         width: '100%',
         overflow: 'hidden',
         boxSizing: 'border-box',
-        bgcolor: HUB_CANVAS,
+        bgcolor: canvas,
         display: 'flex',
         flexDirection: 'column',
         pt: `${p(HUB_FRAME_PAD_TOP)}px`,

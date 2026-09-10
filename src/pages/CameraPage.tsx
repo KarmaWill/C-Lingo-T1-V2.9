@@ -181,31 +181,23 @@ const FingerIcon = () => (
   </svg>
 );
 
-const FingerTapFeatureIcon = () => (
-  <div className="relative w-8 h-8">
-    <svg className="absolute inset-0 w-8 h-8 text-white drop-shadow-lg" viewBox="0 0 32 32" fill="none">
-      <path
-        d="M13.8 25.2 11.2 9.6c-.18-1.1.98-1.93 1.95-1.4l13.3 7.3c1 .55.93 2.02-.12 2.48l-5.08 2.2-2.3 5.04c-.48 1.04-1.98.96-2.48-.07l-1.05-2.16-1.62 2.2Z"
-        fill="url(#fingerTapGradient)"
-        stroke="white"
-        strokeWidth="1.4"
-        strokeLinejoin="round"
-      />
-      <path d="M20.5 20.5 27 27" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-      <circle cx="8" cy="7" r="1.7" fill="white" opacity="0.92" />
-      <path d="M5 15h4M15 4l-2.5 3M3.5 10l3 1.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" opacity="0.9" />
-      <defs>
-        <linearGradient id="fingerTapGradient" x1="10.8" y1="7.9" x2="24.6" y2="25.8" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#FFFFFF" />
-          <stop offset="1" stopColor="#A7F3D0" />
-        </linearGradient>
-      </defs>
-    </svg>
-    <div className="absolute -right-1 -top-1 rounded-md bg-white/90 px-1 text-[8px] font-black tracking-[-0.04em] text-emerald-700 shadow-lg">
-      AR
-    </div>
-    <div className="absolute -bottom-1 left-0 h-1 w-7 rounded-full bg-emerald-200/70 blur-[2px]" />
-  </div>
+/** Group 1410141318 箭头：稿上 52.27 @2508 → 40 @1920 */
+const PointReadArrow = ({ size }: { size: number }) => (
+  <svg
+    viewBox="0 0 48 48"
+    width={size}
+    height={size}
+    aria-hidden
+    fill="none"
+  >
+    <path
+      d="M6 24h26M24 12l14 12-14 12"
+      stroke="#fff"
+      strokeWidth="3.2"
+      strokeLinecap="square"
+      strokeLinejoin="miter"
+    />
+  </svg>
 );
 
 const HistoryIcon = ({ size = 24 }: { size?: number }) => (
@@ -222,11 +214,15 @@ interface VisionCoreProps {
   onScan: (imageData: string) => void;
 }
 
-const FrameResizeIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+const FrameResizeIcon = ({ size = 24 }: { size?: number }) => (
+  <svg width={size} height={size} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
     <path strokeLinecap="round" d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
   </svg>
 );
+
+const VIEWFINDER_ROUND_BTN = camPx(80);
+const VIEWFINDER_ROUND_ICON = camPx(32);
+const VIEWFINDER_ROUND_INSET = camPx(28);
 
 interface FrameRect {
   width: number;
@@ -504,20 +500,26 @@ const VisionCore: React.FC<VisionCoreProps> = ({ isScanning, onScan }) => {
         </div>
       )}
 
-      {/* Focus button — top-right, same level as back button */}
+      {/* Focus button — 与返回同一套 80 圆钮，禁止 % 高宽（会拉扁） */}
       {isReady && (
         <button
           type="button"
           onClick={() => setIsFocusAdjusting((prev) => !prev)}
           title="Adjust focus frame size"
           aria-label="Adjust focus frame size"
-          className={`absolute top-6 right-6 z-50 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
+          className={`absolute z-50 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
             isFocusAdjusting
               ? 'bg-emerald-500/25 border border-emerald-400/50 text-emerald-200 shadow-lg shadow-emerald-500/15'
-              : 'bg-black/40 backdrop-blur-xl border border-white/10 text-white/90 hover:bg-black/60 hover:scale-110'
+              : 'bg-black/40 backdrop-blur-xl border border-white/10 text-white/90 hover:bg-black/60'
           } shadow-2xl`}
+          style={{
+            top: VIEWFINDER_ROUND_INSET,
+            right: VIEWFINDER_ROUND_INSET,
+            width: VIEWFINDER_ROUND_BTN,
+            height: VIEWFINDER_ROUND_BTN,
+          }}
         >
-          <FrameResizeIcon className="w-5 h-5" />
+          <FrameResizeIcon size={VIEWFINDER_ROUND_ICON} />
         </button>
       )}
 
@@ -989,7 +991,7 @@ const TextTranslation: React.FC<TextTranslationProps> = ({ onResult }) => {
             fontFamily: FIGMA_FONT,
           }}
         >
-          {loading ? '…' : '翻译'}
+          {loading ? '…' : 'Translate'}
         </button>
       </div>
     </div>
@@ -1073,62 +1075,152 @@ const FingerTapMode: React.FC<FingerTapModeProps> = ({ onExit }) => {
   ];
   const activeDemo = demoClips.find((clip) => clip.id === demoStep) ?? demoClips[0];
 
-  // Guide Screen
+  // Guide Screen — 铺满取景区，不用 lg/vw（壳 scale 后会缩成半屏）
   if (showGuide) {
     return (
-      <div className="absolute inset-0 z-[60] bg-[#07111f] flex items-center justify-center p-8 overflow-hidden">
+      <div
+        className="absolute inset-0 z-[60] bg-[#07111f] flex items-center justify-center overflow-hidden"
+        style={{ padding: camPx(36), fontFamily: FIGMA_FONT }}
+      >
         <div className="absolute -top-32 -right-20 w-[520px] h-[520px] bg-emerald-400/15 rounded-full blur-[110px]" />
         <div className="absolute -bottom-40 -left-24 w-[480px] h-[480px] bg-cyan-500/10 rounded-full blur-[120px]" />
-        <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-[0.92fr_1.08fr] gap-8 items-center animate-fadeIn">
-          <div className="relative rounded-[2rem] border border-white/10 bg-white/[0.055] p-7 shadow-2xl shadow-black/30 backdrop-blur-2xl">
+        <div
+          className="w-full h-full grid items-center animate-fadeIn min-h-0"
+          style={{
+            gridTemplateColumns: 'minmax(0, 0.92fr) minmax(0, 1.08fr)',
+            gap: camPx(40),
+          }}
+        >
+          <div
+            className="relative h-full min-h-0 border border-white/10 bg-white/[0.055] shadow-2xl shadow-black/30 backdrop-blur-2xl flex flex-col justify-center"
+            style={{
+              borderRadius: camPx(40),
+              padding: camPx(40),
+            }}
+          >
             <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/60 to-transparent" />
-            <div className="space-y-5">
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.9)]" />
+            <div>
+              <div
+                className="inline-flex items-center rounded-full border border-emerald-300/20 bg-emerald-400/10 font-black uppercase text-emerald-300"
+                style={{
+                  gap: camPx(10),
+                  padding: `${camPx(10)}px ${camPx(18)}px`,
+                  fontSize: camPx(16),
+                  letterSpacing: '0.18em',
+                }}
+              >
+                <span className="rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.9)]" style={{ width: camPx(10), height: camPx(10) }} />
                 Hardware Tutorial
               </div>
-              <div>
-                <h1 className="text-4xl lg:text-5xl font-black text-white leading-[0.98] tracking-[-0.04em]">
-                  Fingertap<br />Reading
-                </h1>
-                <p className="mt-4 text-base text-slate-300 leading-relaxed">
-                  Use the 45° mirror to let the camera read the desktop area, then point at words in a book to hear pronunciation and see instant translation.
-                </p>
+              <h1
+                className="font-black text-white"
+                style={{
+                  marginTop: camPx(20),
+                  fontSize: camPx(64),
+                  lineHeight: 1,
+                  letterSpacing: '-0.04em',
+                }}
+              >
+                Fingertap
+                <br />
+                Reading
+              </h1>
+              <p
+                className="text-slate-300"
+                style={{
+                  marginTop: camPx(18),
+                  fontSize: camPx(26),
+                  lineHeight: 1.45,
+                  fontWeight: 500,
+                }}
+              >
+                Use the 45° mirror to let the camera read the desktop area, then point at words in a book to hear pronunciation and see instant translation.
+              </p>
+            </div>
+
+            <div style={{ marginTop: camPx(28), display: 'flex', flexDirection: 'column', gap: camPx(14) }}>
+              <div
+                className="flex items-center border border-white/10 bg-slate-950/45"
+                style={{ gap: camPx(18), borderRadius: camPx(22), padding: camPx(18) }}
+              >
+                <div
+                  className="shrink-0 flex items-center justify-center bg-emerald-400 font-black text-slate-950 shadow-lg shadow-emerald-500/20"
+                  style={{ width: camPx(56), height: camPx(56), borderRadius: camPx(16), fontSize: camPx(26) }}
+                >
+                  1
+                </div>
+                <div>
+                  <p className="font-black text-white" style={{ fontSize: camPx(24), lineHeight: 1.25 }}>Position the mirror</p>
+                  <p className="text-slate-400" style={{ marginTop: camPx(4), fontSize: camPx(18), lineHeight: 1.35 }}>
+                    Place the FingerTap mirror in front of the camera at the marked angle.
+                  </p>
+                </div>
+              </div>
+              <div
+                className="flex items-center border border-white/10 bg-slate-950/45"
+                style={{ gap: camPx(18), borderRadius: camPx(22), padding: camPx(18) }}
+              >
+                <div
+                  className="shrink-0 flex items-center justify-center bg-cyan-300 font-black text-slate-950 shadow-lg shadow-cyan-500/20"
+                  style={{ width: camPx(56), height: camPx(56), borderRadius: camPx(16), fontSize: camPx(26) }}
+                >
+                  2
+                </div>
+                <div>
+                  <p className="font-black text-white" style={{ fontSize: camPx(24), lineHeight: 1.25 }}>Tap to read</p>
+                  <p className="text-slate-400" style={{ marginTop: camPx(4), fontSize: camPx(18), lineHeight: 1.35 }}>
+                    Point at any word on the page to trigger AR reading support.
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="mt-7 space-y-3">
-              <div className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-slate-950/45 p-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-400 text-lg font-black text-slate-950 shadow-lg shadow-emerald-500/20">1</div>
-                <div>
-                  <p className="text-sm font-black text-white">Position the mirror</p>
-                  <p className="mt-0.5 text-xs leading-snug text-slate-400">Place the FingerTap mirror in front of the camera at the marked angle.</p>
-                </div>
-              </div>
-              <div className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-slate-950/45 p-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-300 text-lg font-black text-slate-950 shadow-lg shadow-cyan-500/20">2</div>
-                <div>
-                  <p className="text-sm font-black text-white">Tap to read</p>
-                  <p className="mt-0.5 text-xs leading-snug text-slate-400">Point at any word on the page to trigger AR reading support.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-7 grid grid-cols-[1fr_auto] gap-3">
-              <button onClick={() => setShowGuide(false)} className="rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-950 shadow-2xl shadow-white/10 transition-all hover:scale-[1.02] active:scale-95">
+            <div className="grid grid-cols-[1fr_auto]" style={{ marginTop: camPx(28), gap: camPx(14) }}>
+              <button
+                onClick={() => setShowGuide(false)}
+                className="bg-white font-black text-slate-950 shadow-2xl shadow-white/10 transition-all hover:scale-[1.02] active:scale-95"
+                style={{
+                  borderRadius: camPx(22),
+                  padding: `${camPx(22)}px ${camPx(28)}px`,
+                  fontSize: camPx(24),
+                  minHeight: camPx(72),
+                }}
+              >
                 Start Fingertap Reading
               </button>
-              <button onClick={onExit} className="rounded-2xl border border-white/10 px-4 py-4 text-sm font-black text-slate-400 transition-colors hover:text-white">
+              <button
+                onClick={onExit}
+                className="border border-white/10 font-black text-slate-400 transition-colors hover:text-white"
+                style={{
+                  borderRadius: camPx(22),
+                  padding: `${camPx(22)}px ${camPx(28)}px`,
+                  fontSize: camPx(24),
+                  minHeight: camPx(72),
+                }}
+              >
                 Exit
               </button>
             </div>
           </div>
 
-          <div className="relative">
-            <div className="relative aspect-video overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900 shadow-2xl shadow-emerald-950/30">
+          <div className="relative h-full min-h-0 flex flex-col">
+            <div
+              className="relative flex-1 min-h-0 overflow-hidden border border-white/10 bg-slate-900 shadow-2xl shadow-emerald-950/30"
+              style={{ borderRadius: camPx(40) }}
+            >
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(52,211,153,0.28),transparent_34%),linear-gradient(135deg,#111827_0%,#0f172a_55%,#042f2e_100%)]" />
-              <div className="absolute left-6 top-5 flex items-center gap-2 rounded-full bg-black/35 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200 backdrop-blur-md">
-                <span className="h-2 w-2 rounded-full bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.9)]" />
+              <div
+                className="absolute flex items-center rounded-full bg-black/35 font-black uppercase text-emerald-200 backdrop-blur-md"
+                style={{
+                  left: camPx(24),
+                  top: camPx(20),
+                  gap: camPx(10),
+                  padding: `${camPx(10)}px ${camPx(16)}px`,
+                  fontSize: camPx(16),
+                  letterSpacing: '0.16em',
+                }}
+              >
+                <span className="rounded-full bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.9)]" style={{ width: camPx(10), height: camPx(10) }} />
                 Demo Video · {activeDemo.label}
               </div>
 
@@ -1152,37 +1244,55 @@ const FingerTapMode: React.FC<FingerTapModeProps> = ({ onExit }) => {
                   ? 'border-cyan-300/70 bg-cyan-300/20 scale-110'
                   : 'border-emerald-300/50 bg-emerald-300/15'
               }`} />
-              <div className={`absolute left-[45%] top-[51%] rounded-xl border px-3 py-2 text-xs font-black text-white shadow-xl backdrop-blur transition-all ${
-                demoStep === 'reading'
-                  ? 'border-violet-300/70 bg-violet-950/85 scale-110'
-                  : 'border-emerald-300/50 bg-slate-950/75'
-              }`}>
+              <div
+                className={`absolute left-[45%] top-[51%] rounded-xl border font-black text-white shadow-xl backdrop-blur transition-all ${
+                  demoStep === 'reading'
+                    ? 'border-violet-300/70 bg-violet-950/85 scale-110'
+                    : 'border-emerald-300/50 bg-slate-950/75'
+                }`}
+                style={{ padding: `${camPx(12)}px ${camPx(16)}px`, fontSize: camPx(22) }}
+              >
                 你好 · nǐ hǎo
-                <p className="mt-0.5 text-[10px] font-semibold text-emerald-300">hello</p>
+                <p className="font-semibold text-emerald-300" style={{ marginTop: camPx(4), fontSize: camPx(16) }}>hello</p>
               </div>
 
-              <div className="absolute bottom-5 left-6 right-6 rounded-2xl border border-white/10 bg-black/35 p-4 backdrop-blur-md">
-                <p className="text-sm font-black text-white">{activeDemo.title}</p>
-                <p className="mt-1 text-xs leading-snug text-slate-300">{activeDemo.subtitle}</p>
+              <div
+                className="absolute rounded-2xl border border-white/10 bg-black/35 backdrop-blur-md"
+                style={{ left: camPx(24), right: camPx(24), bottom: camPx(20), padding: camPx(18) }}
+              >
+                <p className="font-black text-white" style={{ fontSize: camPx(24) }}>{activeDemo.title}</p>
+                <p className="leading-snug text-slate-300" style={{ marginTop: camPx(6), fontSize: camPx(18) }}>{activeDemo.subtitle}</p>
               </div>
 
               <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_0%,rgba(255,255,255,0.04)_50%,transparent_100%)] bg-[length:100%_8px] opacity-40" />
-              <button onClick={() => setShowGuide(false)} className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/20 text-white shadow-2xl backdrop-blur-md transition-all hover:scale-110 active:scale-95" aria-label="Play demo and start">
-                <svg className="ml-1 h-7 w-7" viewBox="0 0 24 24" fill="currentColor">
+              <button
+                onClick={() => setShowGuide(false)}
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center rounded-full border border-white/30 bg-white/20 text-white shadow-2xl backdrop-blur-md transition-all hover:scale-110 active:scale-95"
+                style={{ width: camPx(96), height: camPx(96) }}
+                aria-label="Play demo and start"
+              >
+                <svg style={{ marginLeft: camPx(6), width: camPx(40), height: camPx(40) }} viewBox="0 0 24 24" fill="currentColor">
                   <path d="M8 5v14l11-7z" />
                 </svg>
               </button>
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+            <div className="grid grid-cols-3 text-center" style={{ marginTop: camPx(16), gap: camPx(12) }}>
               {demoClips.map((clip) => (
                 <button
                   key={clip.id}
                   onClick={() => setDemoStep(clip.id)}
-                  className={`rounded-2xl border px-3 py-2 text-[10px] font-bold uppercase tracking-[0.08em] transition-all active:scale-95 ${
+                  className={`border font-bold uppercase transition-all active:scale-95 ${
                     demoStep === clip.id
                       ? 'border-emerald-300/55 bg-emerald-300/15 text-white shadow-lg shadow-emerald-950/30'
                       : 'border-white/10 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08] hover:text-white'
                   }`}
+                  style={{
+                    borderRadius: camPx(18),
+                    padding: `${camPx(14)}px ${camPx(12)}px`,
+                    fontSize: camPx(16),
+                    letterSpacing: '0.06em',
+                    minHeight: camPx(56),
+                  }}
                 >
                   {clip.title}
                 </button>
@@ -1232,18 +1342,18 @@ const FingerTapMode: React.FC<FingerTapModeProps> = ({ onExit }) => {
 // Figma 拍摄空态：淡相机图标 + AR Smart Pointer Mode
 const CameraRailEmpty: React.FC = () => (
   <div
-    className="flex flex-col items-center justify-center flex-1 min-h-[40%] py-10 animate-fadeIn"
-    style={{ fontFamily: APP_FONT_FAMILY }}
+    className="flex flex-col items-center justify-center flex-1 min-h-[40%] animate-fadeIn"
+    style={{ fontFamily: FIGMA_FONT, paddingTop: camPx(40), paddingBottom: camPx(40) }}
   >
     <div
-      className="opacity-[0.18] text-white mb-4"
-      style={{ width: 'clamp(64px, 8vw, 100px)', height: 'clamp(64px, 8vw, 100px)' }}
+      className="opacity-[0.18] text-white"
+      style={{ width: camPx(120), height: camPx(120), marginBottom: camPx(20) }}
     >
       <CameraIcon className="w-full h-full" />
     </div>
     <p
-      className="text-white/35 font-medium text-center px-4"
-      style={{ fontSize: 'clamp(14px, 1.6vw, 28px)' }}
+      className="text-white/45 font-medium text-center"
+      style={{ fontSize: camPx(32), lineHeight: `${camPx(44)}px`, paddingLeft: camPx(24), paddingRight: camPx(24) }}
     >
       AR Smart Pointer Mode
     </p>
@@ -1585,60 +1695,140 @@ const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChang
           >
             {historyBtn}
           </div>
-          <div style={{ padding: `${camPx(160)} ${camPx(60)} ${camPx(30)}` }}>
+          <div style={{ padding: `${camPx(160)}px ${camPx(60)}px ${camPx(30)}px` }}>
             <button
               type="button"
               onClick={() => onModeChange('fingertap')}
-              className="w-full relative group overflow-hidden text-left transition-all active:scale-[0.98] hover:brightness-105"
+              className="w-full relative overflow-hidden text-left transition-all active:scale-[0.98]"
               style={{
                 height: camPx(192),
-                borderRadius: camPx(50),
-                background: '#00B4A0',
-                padding: `${camPx(28)} ${camPx(40)}`,
+                borderRadius: camPx(54),
+                padding: `${camPx(22)}px ${camPx(40)}px`,
+                boxSizing: 'border-box',
               }}
             >
-              <div className="relative z-10 flex items-center justify-between gap-3 h-full">
-                <div className="min-w-0 flex-1">
-                  <p className="font-bold uppercase tracking-[0.12em] text-white/90" style={{ fontSize: camPx(20) }}>
+              {/* Group 1410141318：色块水平翻转，文案和图标不翻 */}
+              <div
+                aria-hidden
+                className="absolute inset-0"
+                style={{
+                  borderRadius: 'inherit',
+                  background:
+                    'linear-gradient(148.83deg, #9858FF 7.44%, #33007D 53.27%, #230050 92.56%)',
+                  transform: 'scaleX(-1)',
+                  pointerEvents: 'none',
+                }}
+              />
+              <div
+                aria-hidden
+                className="absolute"
+                style={{
+                  width: camPx(777),
+                  height: camPx(164),
+                  left: camPx(263),
+                  top: camPx(-123),
+                  background: 'rgba(254, 220, 94, 0.85)',
+                  filter: `blur(${camPx(80)}px)`,
+                  borderRadius: camPx(116),
+                  transform: 'scaleX(-1)',
+                  pointerEvents: 'none',
+                }}
+              />
+              <div
+                aria-hidden
+                className="absolute"
+                style={{
+                  width: camPx(828),
+                  height: camPx(174),
+                  left: camPx(-268),
+                  top: camPx(174),
+                  background: 'rgba(149, 92, 218, 0.7)',
+                  filter: `blur(${camPx(78)}px)`,
+                  borderRadius: camPx(116),
+                  transform: 'scaleX(-1)',
+                  pointerEvents: 'none',
+                }}
+              />
+              <div className="relative z-10 flex items-center justify-between h-full">
+                <div className="min-w-0 flex flex-col items-start p-0">
+                  <p
+                    style={{
+                      margin: 0,
+                      width: '100%',
+                      fontFamily: FIGMA_FONT,
+                      fontWeight: 400,
+                      fontSize: camPx(24),
+                      lineHeight: `${camPx(38)}px`,
+                      color: '#FFFFFF',
+                      opacity: 0.6,
+                    }}
+                  >
                     NEW FEATURE
                   </p>
-                  <h3 className="font-bold text-white leading-tight mt-1" style={{ fontSize: camPx(44) }}>
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontFamily: FIGMA_FONT,
+                      fontWeight: 700,
+                      fontSize: camPx(40),
+                      lineHeight: `${camPx(64)}px`,
+                      color: '#FFFFFF',
+                    }}
+                  >
                     AI Point-Read
                   </h3>
-                  <p className="text-white/60 font-medium mt-1" style={{ fontSize: camPx(28) }}>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontFamily: FIGMA_FONT,
+                      fontWeight: 500,
+                      fontSize: camPx(28),
+                      lineHeight: `${camPx(41)}px`,
+                      color: '#FFFFFF',
+                      opacity: 0.6,
+                    }}
+                  >
                     AR Smart Pointer Mode
                   </p>
                 </div>
                 <div
-                  className="shrink-0 flex items-center justify-center bg-white/20 backdrop-blur-sm"
+                  className="shrink-0 flex items-center justify-center"
                   style={{
                     width: camPx(80),
                     height: camPx(80),
-                    borderRadius: camPx(24),
+                    borderRadius: camPx(20),
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    backdropFilter: 'blur(2.6px)',
+                    WebkitBackdropFilter: 'blur(2.6px)',
                   }}
                 >
-                  <FingerTapFeatureIcon />
+                  <PointReadArrow size={camPx(40)} />
                 </div>
               </div>
             </button>
           </div>
-          <div style={{ padding: `0 ${camPx(60)} ${camPx(24)}` }}>{modeTabs}</div>
+          <div style={{ padding: `0 ${camPx(60)}px ${camPx(24)}px` }}>{modeTabs}</div>
         </>
       )}
 
-      {/* Voice / Text 全屏顶栏：返回 · 居中三 Tab · History — Figma 80 / 1128×90 / 80 */}
+      {/* Voice / Text 全屏顶栏：返回 / Tab / History 同一行垂直居中 */}
       {showVoiceTextChrome && (
         <div
-          className="shrink-0 relative flex items-center justify-center"
-          style={{ height: chromeH, paddingLeft: sideInset, paddingRight: sideInset }}
+          className="shrink-0 flex items-center"
+          style={{
+            height: chromeH,
+            paddingLeft: sideInset,
+            paddingRight: sideInset,
+            gap: camPx(24),
+          }}
         >
-          <div className="absolute top-1/2 -translate-y-1/2" style={{ left: sideInset }}>
+          <div className="shrink-0" style={{ width: roundBtn, height: roundBtn }}>
             {onExit ? backBtn(onExit, 'Back to home') : null}
           </div>
-          {modeTabs}
-          <div className="absolute top-1/2 -translate-y-1/2" style={{ right: sideInset }}>
-            {historyBtn}
+          <div className="flex-1 min-w-0 flex items-center justify-center">
+            {modeTabs}
           </div>
+          <div className="shrink-0">{historyBtn}</div>
         </div>
       )}
 
@@ -1682,7 +1872,7 @@ const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChang
         className={`flex-1 min-h-0 flex flex-col ${
           isFullScreen ? '' : 'overflow-y-auto custom-scrollbar'
         }`}
-        style={isFullScreen ? undefined : { padding: `0 ${camPx(60)} ${camPx(48)}` }}
+        style={isFullScreen ? undefined : { padding: `0 ${camPx(60)}px ${camPx(48)}px` }}
       >
         {error && !isFullScreen && (
           <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-red-400 text-sm mb-4 animate-fadeIn flex items-center gap-2">
@@ -1814,16 +2004,16 @@ export default function CameraPage() {
 
               <button
                 onClick={handleExitToHome}
-                className="absolute z-50 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/90 hover:bg-black/60 hover:scale-110 transition-all shadow-2xl"
+                className="absolute z-50 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/90 hover:bg-black/60 transition-all shadow-2xl"
                 style={{
-                  top: 'clamp(16px, 3.3%, 40px)',
-                  left: 'clamp(16px, 3.1%, 60px)',
-                  width: 'clamp(48px, 6.5%, 80px)',
-                  height: 'clamp(48px, 6.5%, 80px)',
+                  top: VIEWFINDER_ROUND_INSET,
+                  left: VIEWFINDER_ROUND_INSET,
+                  width: VIEWFINDER_ROUND_BTN,
+                  height: VIEWFINDER_ROUND_BTN,
                 }}
                 title="Back to home"
               >
-                <BackIcon />
+                <BackIcon size={VIEWFINDER_ROUND_ICON} />
               </button>
 
               {isScanning && (

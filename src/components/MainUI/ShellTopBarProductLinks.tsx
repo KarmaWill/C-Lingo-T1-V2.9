@@ -29,7 +29,7 @@ function ProductLink({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: '2px',
+        gap: '4px',
         borderRadius: '8px',
         p: 0,
         minWidth: 0,
@@ -41,7 +41,7 @@ function ProductLink({
       <Typography
         component="span"
         sx={{
-          fontSize: '9px',
+          fontSize: '12px',
           fontWeight: 600,
           lineHeight: 1.1,
           color: 'rgba(247, 255, 246, 0.88)',
@@ -62,7 +62,8 @@ export default function ShellTopBarProductLinks({ onOpenScanPen }: ShellTopBarPr
       sx={{
         position: 'absolute',
         right: { xs: 10, sm: 16 },
-        top: 10,
+        top: 0,
+        bottom: 0,
         display: 'flex',
         alignItems: 'center',
         gap: { xs: 1, sm: 1.5 },
@@ -72,8 +73,8 @@ export default function ShellTopBarProductLinks({ onOpenScanPen }: ShellTopBarPr
       <ProductLink ariaLabel="C-Lingo ScanPen" label="C-Lingo ScanPen" onClick={onOpenScanPen}>
         <Box
           sx={{
-            width: 32,
-            height: 32,
+            width: 48,
+            height: 48,
             borderRadius: '11px',
             overflow: 'hidden',
             bgcolor: '#000',

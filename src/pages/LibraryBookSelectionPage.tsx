@@ -20,7 +20,7 @@ import MenuBookIcon from '@mui/icons-material/MenuBook';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
-import { figmaPx, FIGMA_FONT } from '../utils/figmaScale';
+import { APP_SCREEN_SIZE, figmaPx, FIGMA_FONT } from '../utils/figmaScale';
 
 interface Book {
   id: string;
@@ -123,7 +123,7 @@ const INITIAL_BOOKS: Book[] = [
     title: 'HSK 1 Standard Course',
     subtitle: 'Textbook',
     author: 'Confucius Institute',
-    coverUrl: buildCourseCover('HSK 1', 'Textbook', '#F97316', '#F59E0B'),
+    coverUrl: '/images/hsk-1-standard-course-cover.jpg',
     progress: 85,
     totalPages: 150,
     currentPage: 128,
@@ -192,13 +192,13 @@ const buildFallbackCover = (title: string) =>
 
 export default function LibraryBookSelectionPage() {
   const navigate = useNavigate();
-  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
+  const screenSize = APP_SCREEN_SIZE;
   const p = (n: number) => figmaPx(n, screenSize);
 
   const [books, setBooks] = useState<Book[]>(INITIAL_BOOKS);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<Category>('All');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [isEditMode, setIsEditMode] = useState(false);
   const [managedBookId, setManagedBookId] = useState<string | null>(null);
   const [selectedBookIds, setSelectedBookIds] = useState<string[]>([]);
@@ -373,8 +373,31 @@ export default function LibraryBookSelectionPage() {
     />
   );
 
-  const renderGridCta = (book: Book) => {
+  const bookCaption = (book: Book) =>
+    book.category === 'Happy Chinese'
+      ? [book.subtitle, "People's Education Press"].filter(Boolean).join(' ')
+      : [book.subtitle, book.author].filter(Boolean).join(' · ');
+
+  const renderGridCta = (book: Book, variant: 'cover' | 'row' = 'cover') => {
     const downloading = book.downloadProgress !== undefined && !book.isDownloaded;
+    const h = variant === 'row' ? 90 : 80;
+    const radius = variant === 'row' ? 82 : 84;
+    const font = variant === 'row' ? 32 : 28;
+    const ctaSx = {
+      width: p(270),
+      height: p(h),
+      borderRadius: `${p(radius)}px`,
+      fontFamily: FIGMA_FONT,
+      fontWeight: 400,
+      fontSize: p(font),
+      touchAction: 'manipulation',
+      WebkitTapHighlightColor: 'transparent',
+      '&:active': { transform: 'scale(0.97)' },
+      '@media (prefers-reduced-motion: reduce)': {
+        '&:active': { transform: 'none' },
+      },
+      '&:focus-visible': { outline: `3px solid ${teal}`, outlineOffset: 3 },
+    } as const;
     if (book.isDownloaded) {
       return (
         <ButtonBase
@@ -382,17 +405,7 @@ export default function LibraryBookSelectionPage() {
             e.stopPropagation();
             navigate(`/library/read/${book.id}`);
           }}
-          sx={{
-            width: p(270),
-            height: p(80),
-            borderRadius: `${p(84)}px`,
-            bgcolor: teal,
-            color: '#FFF',
-            fontFamily: FIGMA_FONT,
-            fontWeight: 400,
-            fontSize: p(28),
-            '&:active': { transform: 'scale(0.97)' },
-          }}
+          sx={{ ...ctaSx, bgcolor: teal, color: '#FFF' }}
         >
           Open
         </ButtonBase>
@@ -405,9 +418,9 @@ export default function LibraryBookSelectionPage() {
           sx={{
             position: 'relative',
             width: p(270),
-            height: p(80),
-            borderRadius: `${p(84)}px`,
-            bgcolor: 'rgba(0,0,0,0.4)',
+            height: p(h),
+            borderRadius: `${p(radius)}px`,
+            bgcolor: 'rgba(0,0,0,0.2)',
             overflow: 'hidden',
             display: 'flex',
             alignItems: 'center',
@@ -431,7 +444,7 @@ export default function LibraryBookSelectionPage() {
               zIndex: 1,
               fontFamily: FIGMA_FONT,
               fontWeight: 400,
-              fontSize: p(28),
+              fontSize: p(font),
               color: '#FFF',
             }}
           >
@@ -447,19 +460,13 @@ export default function LibraryBookSelectionPage() {
           downloadBook(book.id);
         }}
         sx={{
-          width: p(270),
-          height: p(80),
-          borderRadius: `${p(84)}px`,
+          ...ctaSx,
           bgcolor: '#2188FE',
           color: '#FFF',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           gap: `${p(16)}px`,
-          fontFamily: FIGMA_FONT,
-          fontWeight: 400,
-          fontSize: p(28),
-          '&:active': { transform: 'scale(0.97)' },
         }}
       >
         <DownloadIcon sx={{ fontSize: p(26), color: '#FFF' }} />
@@ -510,7 +517,10 @@ export default function LibraryBookSelectionPage() {
             fontFamily: FIGMA_FONT,
             fontWeight: 700,
             fontSize: p(28),
+            touchAction: 'manipulation',
+            WebkitTapHighlightColor: 'transparent',
             '&:active': { transform: 'scale(0.95)' },
+            '&:focus-visible': { outline: `3px solid ${ink}`, outlineOffset: 3 },
           }}
         >
           {isEditMode ? 'Done' : <ChevronLeftIcon sx={{ fontSize: p(40) }} />}
@@ -569,7 +579,10 @@ export default function LibraryBookSelectionPage() {
               fontWeight: 700,
               fontSize: p(32),
               color: ink,
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
               '&:active': { transform: 'scale(0.97)' },
+              '&:focus-visible': { outline: `3px solid ${ink}`, outlineOffset: 3 },
             }}
           >
             <FormatListBulletedIcon sx={{ fontSize: p(38), color: ink }} />
@@ -658,20 +671,17 @@ export default function LibraryBookSelectionPage() {
             </Typography>
             <Box
               sx={{
-                display: 'flex',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
                 gap: `${p(40)}px`,
-                overflowX: 'auto',
-                pb: `${p(8)}px`,
-                '&::-webkit-scrollbar': { display: 'none' },
               }}
             >
-              {continueReadingBooks.map((book) => (
+              {continueReadingBooks.slice(0, 3).map((book) => (
                 <ButtonBase
                   key={book.id}
                   onClick={() => navigate(`/library/read/${book.id}`)}
                   sx={{
-                    flexShrink: 0,
-                    width: p(600),
+                    width: '100%',
                     height: p(300),
                     bgcolor: '#FFFFFF',
                     border: `1px solid ${line}`,
@@ -679,9 +689,13 @@ export default function LibraryBookSelectionPage() {
                     display: 'flex',
                     alignItems: 'stretch',
                     textAlign: 'left',
+                    boxSizing: 'border-box',
                     p: `${p(30)}px`,
                     gap: `${p(30)}px`,
+                    touchAction: 'manipulation',
+                    WebkitTapHighlightColor: 'transparent',
                     '&:active': { transform: 'scale(0.99)' },
+                    '&:focus-visible': { outline: `3px solid ${teal}`, outlineOffset: 3 },
                   }}
                 >
                   <Box
@@ -728,7 +742,7 @@ export default function LibraryBookSelectionPage() {
                           mt: `${p(8)}px`,
                         }}
                       >
-                        {[book.subtitle, book.author].filter(Boolean).join(' · ')}
+                        {bookCaption(book)}
                       </Typography>
                     </Box>
                     <Box>
@@ -1121,7 +1135,7 @@ export default function LibraryBookSelectionPage() {
 
         {/* List */}
         {viewMode === 'list' && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: `${p(24)}px` }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: `${p(30)}px` }}>
             {filteredBooks.map((book) => (
               <Box
                 key={book.id}
@@ -1135,10 +1149,12 @@ export default function LibraryBookSelectionPage() {
                 sx={{
                   position: 'relative',
                   width: '100%',
+                  height: p(254),
                   display: 'flex',
                   alignItems: 'center',
-                  gap: `${p(30)}px`,
-                  p: `${p(30)}px`,
+                  gap: `${p(60)}px`,
+                  px: `${p(60)}px`,
+                  boxSizing: 'border-box',
                   bgcolor: '#FFFFFF',
                   border: `1px solid ${line}`,
                   borderRadius: `${p(40)}px`,
@@ -1151,9 +1167,9 @@ export default function LibraryBookSelectionPage() {
               >
                 <Box
                   sx={{
-                    width: p(172),
-                    height: p(240),
-                    borderRadius: `${p(26)}px`,
+                    width: p(138),
+                    height: p(194),
+                    borderRadius: `${p(20)}px`,
                     overflow: 'hidden',
                     flexShrink: 0,
                     bgcolor: soft,
@@ -1167,66 +1183,43 @@ export default function LibraryBookSelectionPage() {
                       fontFamily: FIGMA_FONT,
                       fontWeight: 700,
                       fontSize: p(32),
+                      lineHeight: `${p(51)}px`,
                       color: ink,
                     }}
                   >
                     {book.title}
                   </Typography>
-                  {book.subtitle && (
-                    <Typography
-                      sx={{
-                        fontFamily: FIGMA_FONT,
-                        fontSize: p(24),
-                        color: mute,
-                        mt: `${p(4)}px`,
-                      }}
-                    >
-                      {book.subtitle}
-                    </Typography>
-                  )}
                   <Typography
                     sx={{
                       fontFamily: FIGMA_FONT,
                       fontSize: p(24),
-                      color: place,
+                      lineHeight: `${p(38)}px`,
+                      color: mute,
                       mt: `${p(8)}px`,
                     }}
                   >
-                    {book.author}
+                    {bookCaption(book)}
                   </Typography>
-                  <Box sx={{ maxWidth: p(400), mt: `${p(24)}px` }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: `${p(10)}px` }}>
-                      <Typography sx={{ fontFamily: FIGMA_FONT, fontSize: p(24), color: mute }}>
-                        {book.currentPage} / {book.totalPages} Pages
-                      </Typography>
-                      <Typography sx={{ fontFamily: FIGMA_FONT, fontSize: p(24), color: teal }}>
-                        {book.progress}%
-                      </Typography>
-                    </Box>
-                    <Box
+                  {book.progress > 0 && (
+                    <Typography
                       sx={{
-                        height: p(8),
-                        bgcolor: 'rgba(0,0,0,0.1)',
-                        borderRadius: `${p(68)}px`,
-                        overflow: 'hidden',
+                        fontFamily: FIGMA_FONT,
+                        fontSize: p(24),
+                        lineHeight: `${p(38)}px`,
+                        color: mute,
+                        mt: `${p(21)}px`,
                       }}
                     >
-                      <Box
-                        sx={{
-                          height: '100%',
-                          width: `${book.progress}%`,
-                          bgcolor: teal,
-                        }}
-                      />
-                    </Box>
-                  </Box>
+                      {book.currentPage} / {book.totalPages} Pages
+                    </Typography>
+                  )}
                 </Box>
                 {!isEditMode && (
                   <Box
                     onClick={(e) => e.stopPropagation()}
                     sx={{ flexShrink: 0 }}
                   >
-                    {renderGridCta(book)}
+                    {renderGridCta(book, 'row')}
                   </Box>
                 )}
                 {isEditMode && (

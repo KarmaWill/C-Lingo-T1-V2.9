@@ -732,6 +732,241 @@ function LevelPickerCard({
   );
 }
 
+function VersionScreen({
+  onSelect,
+  onBack,
+  showBack = true,
+}: {
+  onSelect: (track: PaperSource) => void;
+  onBack: () => void;
+  showBack?: boolean;
+}) {
+  return (
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        background: '#FFF8F0',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      <Box
+        sx={{
+          position: 'absolute',
+          right: '-7%',
+          top: '6%',
+          width: 520,
+          height: 470,
+          borderRadius: '50%',
+          background: 'rgba(255, 181, 217, 0.17)',
+          filter: 'blur(94px)',
+          pointerEvents: 'none',
+        }}
+      />
+      <HubContainBoard width={MOCK_EXAM_BOARD_W} height={MOCK_EXAM_BOARD_H}>
+        <ButtonBase
+          onClick={onBack}
+          aria-label="Back"
+          sx={{
+            position: 'absolute',
+            left: 58,
+            top: 63,
+            width: 80,
+            height: 80,
+            borderRadius: '100px',
+            bgcolor: '#FFFFFF',
+            border: '0.8px solid #E0E0DF',
+            color: '#2D3436',
+            visibility: showBack ? 'visible' : 'hidden',
+            pointerEvents: showBack ? 'auto' : 'none',
+            '&:active': { bgcolor: '#F9FAFB' },
+          }}
+        >
+          <ChevronLeftIcon sx={{ fontSize: 40 }} />
+        </ButtonBase>
+        <Typography
+          sx={{
+            position: 'absolute',
+            left: 167,
+            top: 69,
+            fontWeight: 700,
+            fontSize: 56,
+            lineHeight: '70px',
+            color: '#20212A',
+            fontFamily: FIGMA_FONT,
+          }}
+        >
+          Mock Exam
+        </Typography>
+
+        <Typography
+          sx={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 214,
+            fontWeight: 600,
+            fontSize: 49,
+            lineHeight: '61px',
+            letterSpacing: '-1.3px',
+            textAlign: 'center',
+            color: '#142033',
+            fontFamily: FIGMA_FONT,
+          }}
+        >
+          Choose your HSK version
+        </Typography>
+        <Typography
+          sx={{
+            position: 'absolute',
+            left: 200,
+            right: 200,
+            top: 286,
+            fontWeight: 400,
+            fontSize: 29,
+            lineHeight: '37px',
+            textAlign: 'center',
+            color: '#667085',
+            fontFamily: FIGMA_FONT,
+          }}
+        >
+          Choose a version, then select a level and start your mock exam.
+        </Typography>
+
+        <ButtonBase
+          onClick={() => onSelect('official')}
+          aria-label="Past Papers, HSK 2.0"
+          sx={{
+            position: 'absolute',
+            left: 84,
+            top: 380,
+            width: 853,
+            height: 487,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+            px: '54px',
+            boxSizing: 'border-box',
+            bgcolor: '#FFFFFF',
+            border: '1.3px solid #E6E9EF',
+            boxShadow: '0px 38px 96px rgba(15, 23, 42, 0.1)',
+            borderRadius: '54px',
+            textAlign: 'left',
+            '&:active': { transform: 'scale(0.99)' },
+          }}
+        >
+          <Box
+            sx={{
+              width: 118,
+              height: 118,
+              borderRadius: '40px',
+              bgcolor: '#E8FAF6',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Typography sx={{ fontSize: 42, lineHeight: '56px', color: '#078879', fontFamily: FIGMA_FONT }}>
+              2.0
+            </Typography>
+          </Box>
+          <Typography
+            sx={{
+              mt: '42px',
+              fontWeight: 700,
+              fontSize: 52,
+              lineHeight: '69px',
+              color: '#142033',
+              fontFamily: FIGMA_FONT,
+            }}
+          >
+            Past Papers
+          </Typography>
+          <Typography
+            sx={{
+              mt: '15px',
+              fontWeight: 700,
+              fontSize: 31,
+              lineHeight: '41px',
+              color: '#667085',
+              fontFamily: FIGMA_FONT,
+            }}
+          >
+            Take an HSK 2.0 mock exam.
+          </Typography>
+        </ButtonBase>
+
+        <ButtonBase
+          onClick={() => onSelect('clingo')}
+          aria-label="C-Test, HSK 3.0"
+          sx={{
+            position: 'absolute',
+            left: 983,
+            top: 380,
+            width: 853,
+            height: 487,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+            px: '54px',
+            boxSizing: 'border-box',
+            bgcolor: '#FFFFFF',
+            border: '1.3px solid #E6E9EF',
+            boxShadow: '0px 38px 96px rgba(15, 23, 42, 0.1)',
+            borderRadius: '54px',
+            textAlign: 'left',
+            '&:active': { transform: 'scale(0.99)' },
+          }}
+        >
+          <Box
+            sx={{
+              width: 118,
+              height: 118,
+              borderRadius: '40px',
+              bgcolor: '#F1E8FF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Typography sx={{ fontSize: 42, lineHeight: '56px', color: '#7C3AED', fontFamily: FIGMA_FONT }}>
+              3.0
+            </Typography>
+          </Box>
+          <Typography
+            sx={{
+              mt: '42px',
+              fontWeight: 700,
+              fontSize: 52,
+              lineHeight: '69px',
+              color: '#142033',
+              fontFamily: FIGMA_FONT,
+            }}
+          >
+            C-Test
+          </Typography>
+          <Typography
+            sx={{
+              mt: '15px',
+              fontWeight: 700,
+              fontSize: 31,
+              lineHeight: '41px',
+              color: '#667085',
+              fontFamily: FIGMA_FONT,
+            }}
+          >
+            Choose a level and take an HSK 3.0 mock exam.
+          </Typography>
+        </ButtonBase>
+      </HubContainBoard>
+    </Box>
+  );
+}
+
 function HomeScreen({
   onSelectLevel,
   onBack,
@@ -3572,12 +3807,15 @@ function ReviewScreen({ paper, review, scoringMode, initialItemUid, onBack, is96
    ═══════════════════════════════════════════════════════════════════════════════ */
 export default function HSKPrepTrainingPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isWebsiteEmbed = searchParams.get('mode') === 'website';
   const requestedParentOrigin = searchParams.get('parentOrigin');
   const paperTrackParam = searchParams.get('track');
   const paperTrack: PaperSource | null =
     paperTrackParam === 'clingo' ? 'clingo' : paperTrackParam === 'official' ? 'official' : null;
+  const levelParam = Number(searchParams.get('level'));
+  const requestedLevel: HSKLevel | null =
+    levelParam === 1 || levelParam === 2 ? (levelParam as HSKLevel) : null;
   const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
   const is960 = screenSize === '960x540';
 
@@ -3605,6 +3843,7 @@ export default function HSKPrepTrainingPage() {
   const retakeRequestTokenRef = useRef(0);
   const catalogRequestTokenRef = useRef(0);
   const startRequestTokenRef = useRef(0);
+  const appliedRequestedLevelRef = useRef(false);
 
   const activePaper = selectedPaper;
 
@@ -3828,6 +4067,14 @@ export default function HSKPrepTrainingPage() {
     await loadCatalogPapers(level);
   };
 
+  useEffect(() => {
+    if (appliedRequestedLevelRef.current) return;
+    if (sessionRestoring || sessionRestoreError || !requestedLevel) return;
+    if (currentScreen !== 'home') return;
+    appliedRequestedLevelRef.current = true;
+    void handleSelectLevel(requestedLevel);
+  }, [sessionRestoring, sessionRestoreError, requestedLevel, currentScreen]);
+
   const handleBackToHome = () => {
     catalogRequestTokenRef.current += 1;
     reviewRequestTokenRef.current += 1;
@@ -4026,6 +4273,25 @@ export default function HSKPrepTrainingPage() {
     navigate('/hsk-test');
   };
 
+  const writeTrackParam = (track: PaperSource | null) => {
+    const next = new URLSearchParams(searchParams);
+    if (track) next.set('track', track);
+    else next.delete('track');
+    setSearchParams(next, { replace: true });
+  };
+
+  const handleSelectTrack = (track: PaperSource) => {
+    writeTrackParam(track);
+  };
+
+  const handleBackFromLevels = () => {
+    if (paperTrack) {
+      writeTrackParam(null);
+      return;
+    }
+    handleExitToHub();
+  };
+
   if (sessionRestoring) {
     return (
       <Box sx={{ height: '100%', display: 'grid', placeItems: 'center', bgcolor: '#FFF8F0' }}>
@@ -4056,12 +4322,20 @@ export default function HSKPrepTrainingPage() {
       <Box sx={{ flex: 1, minHeight: 0 }}>
     <AnimatePresence mode="wait">
       {currentScreen === 'home' && (
-        <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -40 }} style={{ height: '100%' }}>
-          <HomeScreen
-            onSelectLevel={handleSelectLevel}
-            onBack={handleExitToHub}
-            showBack={!isWebsiteEmbed}
-          />
+        <motion.div key={paperTrack ? 'levels' : 'version'} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -40 }} style={{ height: '100%' }}>
+          {paperTrack ? (
+            <HomeScreen
+              onSelectLevel={handleSelectLevel}
+              onBack={handleBackFromLevels}
+              showBack={!isWebsiteEmbed}
+            />
+          ) : (
+            <VersionScreen
+              onSelect={handleSelectTrack}
+              onBack={handleExitToHub}
+              showBack={!isWebsiteEmbed}
+            />
+          )}
         </motion.div>
       )}
 

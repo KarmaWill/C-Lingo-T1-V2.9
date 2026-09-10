@@ -1,8 +1,7 @@
 import { Box, Typography, ButtonBase } from '@mui/material'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Lesson, Unit } from '../../types/lesson'
-import HubContainBoard from '../home/HubContainBoard'
-import { FIGMA_FONT } from '../../utils/figmaScale'
+import { APP_SCREEN_SIZE, figmaPx, FIGMA_FONT } from '../../utils/figmaScale'
 import { resolveBackPath } from '../../utils/navigateBack'
 
 const PAGE_BG = '#F8F9F8'
@@ -20,34 +19,36 @@ function lessonMetaLine(cards: number, practices: number) {
   return `${countLabel(cards, 'card', 'cards')} + ${countLabel(practices, 'practice', 'practices')}`
 }
 
-function TargetMark() {
+function TargetMark({ size }: { size: number }) {
+  const ring = Math.round(size * 0.51)
+  const inset = Math.round((size - ring) / 2)
   return (
-    <Box sx={{ position: 'relative', width: 136, height: 136, flexShrink: 0 }}>
-      <Box sx={{ position: 'absolute', inset: 0, borderRadius: '24px', bgcolor: '#FFF3EE' }} />
+    <Box sx={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      <Box sx={{ position: 'absolute', inset: 0, borderRadius: `${Math.round(size * 0.18)}px`, bgcolor: '#FFF3EE' }} />
       <Box
         component="img"
         src={`${IMG}/target-rings.svg`}
         alt=""
-        sx={{ position: 'absolute', left: 33, top: 33, width: 70, height: 70, display: 'block' }}
+        sx={{ position: 'absolute', left: inset, top: inset, width: ring, height: ring, display: 'block' }}
       />
       <Box
         sx={{
           position: 'absolute',
-          left: 62.31,
-          top: 37.24,
-          width: 37.082,
-          height: 37.082,
+          left: size * 0.46,
+          top: size * 0.27,
+          width: size * 0.27,
+          height: size * 0.27,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Box sx={{ width: 38.654, height: 13.788, transform: 'rotate(-45deg)', flexShrink: 0 }}>
+        <Box sx={{ width: size * 0.28, height: size * 0.1, transform: 'rotate(-45deg)', flexShrink: 0 }}>
           <Box
             component="img"
             src={`${IMG}/target-dart.svg`}
             alt=""
-            sx={{ display: 'block', width: 38.654, height: 13.788 }}
+            sx={{ display: 'block', width: '100%', height: '100%' }}
           />
         </Box>
       </Box>
@@ -84,6 +85,8 @@ export default function UnitSelectionStage({
 }: Props) {
   const navigate = useNavigate()
   const location = useLocation()
+  const screenSize = APP_SCREEN_SIZE
+  const p = (n: number) => figmaPx(n, screenSize)
   const firstUnit = lesson.units[0]
   const totalLessons = 3
   const completedLessons = firstUnit
@@ -127,15 +130,11 @@ export default function UnitSelectionStage({
         fontFamily: FIGMA_FONT,
       }}
     >
-      <HubContainBoard width={1920} height={1200}>
-        <Box sx={{ position: 'absolute', inset: 0, bgcolor: PAGE_BG }}>
           <Box
             sx={{
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              width: 1920,
-              height: 160,
+              flexShrink: 0,
+              position: 'relative',
+              height: p(100),
               bgcolor: '#fff',
               borderBottom: '1px solid #E2E2E3',
             }}
@@ -145,47 +144,46 @@ export default function UnitSelectionStage({
               aria-label="Back"
               sx={{
                 position: 'absolute',
-                left: 60,
-                top: 40,
-                width: 80,
-                height: 80,
+                left: p(28),
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: p(56),
+                height: p(56),
                 borderRadius: '100px',
                 bgcolor: '#fff',
                 border: '1px solid #E0E0DF',
-                '&:active': { transform: 'scale(0.96)' },
+                '&:active': { transform: 'translateY(-50%) scale(0.96)' },
               }}
             >
               <Box
                 component="img"
                 src={`${IMG}/back-chevron.svg`}
                 alt=""
-                sx={{ width: 40, height: 40, display: 'block' }}
+                sx={{ width: p(28), height: p(28), display: 'block' }}
               />
             </ButtonBase>
             <Box
               sx={{
                 position: 'absolute',
                 left: '50%',
-                top: 48,
-                transform: 'translateX(-50%)',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '24px',
-                height: 64,
+                gap: `${p(16)}px`,
               }}
             >
               <Box
                 sx={{
-                  height: 46,
-                  px: '16px',
-                  py: '4px',
+                  height: p(36),
+                  px: `${p(12)}px`,
                   borderRadius: '8px',
                   bgcolor: TEAL,
                   color: '#fff',
                   fontWeight: 700,
-                  fontSize: 24,
-                  lineHeight: 1.6,
+                  fontSize: p(18),
+                  lineHeight: 1,
                   display: 'flex',
                   alignItems: 'center',
                   fontFamily: FIGMA_FONT,
@@ -196,8 +194,8 @@ export default function UnitSelectionStage({
               <Typography
                 sx={{
                   fontWeight: 700,
-                  fontSize: 40,
-                  lineHeight: 1.6,
+                  fontSize: p(28),
+                  lineHeight: 1.2,
                   color: TEXT,
                   fontFamily: FIGMA_FONT,
                   whiteSpace: 'nowrap',
@@ -208,277 +206,214 @@ export default function UnitSelectionStage({
             </Box>
           </Box>
 
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1.5fr) minmax(0, 1fr)',
+          gap: `${p(24)}px`,
+          px: `${p(28)}px`,
+          py: `${p(20)}px`,
+        }}
+      >
+        <Box sx={{ minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: `${p(16)}px` }}>
           <Box
             sx={{
-              position: 'absolute',
-              left: 60,
-              top: 200,
-              width: 1060,
-              height: 210,
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: `${p(16)}px`,
+              px: `${p(20)}px`,
+              py: `${p(16)}px`,
               bgcolor: '#fff',
               border: `1px solid ${CARD_BORDER}`,
-              borderRadius: '40px',
+              borderRadius: `${p(28)}px`,
               boxSizing: 'border-box',
             }}
           >
-            <Box sx={{ position: 'absolute', left: 32, top: 32 }}>
-              <TargetMark />
-            </Box>
-            <Box sx={{ position: 'absolute', left: 200, top: 32, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <Typography sx={{ fontWeight: 400, fontSize: 24, lineHeight: 1.6, color: MUTED, fontFamily: FIGMA_FONT }}>
+            <TargetMark size={p(88)} />
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography sx={{ fontWeight: 400, fontSize: p(16), lineHeight: 1.4, color: MUTED, fontFamily: FIGMA_FONT }}>
                 After this unit, I can:
               </Typography>
-              <Typography sx={{ fontWeight: 700, fontSize: 32, lineHeight: 1.6, color: TEXT, fontFamily: FIGMA_FONT }}>
+              <Typography sx={{ fontWeight: 700, fontSize: p(22), lineHeight: 1.35, color: TEXT, fontFamily: FIGMA_FONT }}>
                 Name staple Chinese foods like rice and dumplings.
               </Typography>
-            </Box>
-            <Box
-              sx={{
-                position: 'absolute',
-                left: 200,
-                top: 141,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '20px',
-                height: 45,
-              }}
-            >
-              <Box sx={{ position: 'relative', width: 740, height: 10.75, flexShrink: 0 }}>
-                <Box sx={{ position: 'absolute', left: 0, top: 0.75, width: 740, height: 10, bgcolor: '#E8E8E8', borderRadius: '10px' }} />
-                <Box sx={{ position: 'absolute', left: 0, top: 0, width: 120, height: 10, bgcolor: TEAL, borderRadius: '10px' }} />
+              <Box sx={{ mt: `${p(10)}px`, display: 'flex', alignItems: 'center', gap: `${p(12)}px` }}>
+                <Box sx={{ flex: 1, height: 8, bgcolor: '#E8E8E8', borderRadius: '10px', overflow: 'hidden' }}>
+                  <Box sx={{ width: `${unitProgressPercent}%`, height: '100%', bgcolor: TEAL, borderRadius: '10px' }} />
+                </Box>
+                <Typography sx={{ fontWeight: 700, fontSize: p(18), color: TEAL, fontFamily: FIGMA_FONT, flexShrink: 0 }}>
+                  {unitProgressPercent}%
+                </Typography>
               </Box>
-              <Typography sx={{ fontWeight: 700, fontSize: 28, lineHeight: 1.6, color: TEAL, fontFamily: FIGMA_FONT, width: 60, whiteSpace: 'nowrap' }}>
-                {unitProgressPercent}%
-              </Typography>
             </Box>
           </Box>
 
           <Box
             sx={{
-              position: 'absolute',
-              left: 60,
-              top: 450,
-              width: 1060,
-              height: 710,
+              flex: 1,
+              minHeight: 0,
               bgcolor: '#fff',
               border: `1px solid ${CARD_BORDER}`,
-              borderRadius: '40px',
-              boxSizing: 'border-box',
-            }}
-          />
-          <Typography
-            sx={{
-              position: 'absolute',
-              left: 100,
-              top: 490,
-              fontWeight: 700,
-              fontSize: 32,
-              lineHeight: 1.6,
-              color: TEXT,
-              fontFamily: FIGMA_FONT,
-            }}
-          >
-            Unit 1: Main Foods
-          </Typography>
-          <Box
-            sx={{
-              position: 'absolute',
-              left: 100,
-              top: 565,
-              width: 980,
+              borderRadius: `${p(28)}px`,
+              px: `${p(20)}px`,
+              pt: `${p(16)}px`,
+              pb: `${p(16)}px`,
               display: 'flex',
               flexDirection: 'column',
-              gap: '20px',
+              boxSizing: 'border-box',
             }}
           >
-            {firstUnit &&
-              lessons.map((lessonItem, idx) => {
-                const prevLessonId = idx > 0 ? `${firstUnit.id}-lesson-${idx}` : null
-                const currentLessonId = `${firstUnit.id}-lesson-${idx + 1}`
-                const isPrevDone = idx === 0 || (prevLessonId != null && completedUnitIds.includes(prevLessonId))
-                const isLocked = !isPrevDone
-                const isDone = completedUnitIds.includes(currentLessonId)
-                const isCurrent = idx === completedLessons && !isDone && !isLocked
-                const totalTasks = lessonItem.learnings.length + lessonItem.questions.length
+            <Typography sx={{ fontWeight: 700, fontSize: p(22), lineHeight: 1.4, color: TEXT, fontFamily: FIGMA_FONT, mb: `${p(12)}px` }}>
+              Unit 1: Main Foods
+            </Typography>
+            <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: `${p(10)}px` }}>
+              {firstUnit &&
+                lessons.map((lessonItem, idx) => {
+                  const prevLessonId = idx > 0 ? `${firstUnit.id}-lesson-${idx}` : null
+                  const currentLessonId = `${firstUnit.id}-lesson-${idx + 1}`
+                  const isPrevDone = idx === 0 || (prevLessonId != null && completedUnitIds.includes(prevLessonId))
+                  const isLocked = !isPrevDone
+                  const isDone = completedUnitIds.includes(currentLessonId)
+                  const isCurrent = idx === completedLessons && !isDone && !isLocked
+                  const totalTasks = lessonItem.learnings.length + lessonItem.questions.length
 
-                return (
-                  <ButtonBase
-                    key={lessonItem.id}
-                    disabled={isLocked}
-                    onClick={() =>
-                      onSelectUnit({
-                        ...firstUnit,
-                        id: currentLessonId,
-                        title: lessonItem.title,
-                        questions: lessonItem.questions,
-                        learnings: lessonItem.learnings,
-                      })
-                    }
-                    sx={{
-                      position: 'relative',
-                      width: 980,
-                      height: 144,
-                      borderRadius: '32px',
-                      bgcolor: isCurrent ? '#FFF3EE' : isDone ? '#E8F5E9' : '#F3F4F6',
-                      border: isCurrent ? '1px solid rgba(255,107,53,0.2)' : '1px solid transparent',
-                      display: 'block',
-                      textAlign: 'left',
-                      '&:active': { transform: isLocked ? 'none' : 'scale(0.99)' },
-                    }}
-                  >
-                    <Box
+                  return (
+                    <ButtonBase
+                      key={lessonItem.id}
+                      disabled={isLocked}
+                      onClick={() =>
+                        onSelectUnit({
+                          ...firstUnit,
+                          id: currentLessonId,
+                          title: lessonItem.title,
+                          questions: lessonItem.questions,
+                          learnings: lessonItem.learnings,
+                        })
+                      }
                       sx={{
-                        position: 'absolute',
-                        left: 32,
-                        top: 24,
+                        flex: 1,
+                        minHeight: 0,
+                        width: '100%',
+                        borderRadius: `${p(20)}px`,
+                        bgcolor: isCurrent ? '#FFF3EE' : isDone ? '#E8F5E9' : '#F3F4F6',
+                        border: isCurrent ? '1px solid rgba(255,107,53,0.2)' : '1px solid transparent',
                         display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '16px',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        px: `${p(16)}px`,
+                        textAlign: 'left',
+                        '&:active': { transform: isLocked ? 'none' : 'scale(0.99)' },
                       }}
                     >
-                      <LessonDocIcon tone={isLocked ? 'gray' : 'teal'} />
-                      <Box sx={{ opacity: isLocked ? 0.4 : 1 }}>
-                        <Typography sx={{ fontWeight: 700, fontSize: 32, lineHeight: 1.6, color: TEXT, fontFamily: FIGMA_FONT, whiteSpace: 'nowrap' }}>
-                          {lessonItem.title}
-                        </Typography>
-                        <Typography sx={{ mt: '8px', fontWeight: 400, fontSize: 24, lineHeight: 1.6, color: MUTED, fontFamily: FIGMA_FONT }}>
-                          {lessonMetaLine(lessonItem.learnings.length, lessonItem.questions.length)}
-                        </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(12)}px`, minWidth: 0 }}>
+                        <LessonDocIcon tone={isLocked ? 'gray' : 'teal'} />
+                        <Box sx={{ opacity: isLocked ? 0.4 : 1, minWidth: 0 }}>
+                          <Typography sx={{ fontWeight: 700, fontSize: p(20), lineHeight: 1.3, color: TEXT, fontFamily: FIGMA_FONT }}>
+                            {lessonItem.title}
+                          </Typography>
+                          <Typography sx={{ fontWeight: 400, fontSize: p(15), lineHeight: 1.4, color: MUTED, fontFamily: FIGMA_FONT }}>
+                            {lessonMetaLine(lessonItem.learnings.length, lessonItem.questions.length)}
+                          </Typography>
+                        </Box>
                       </Box>
-                    </Box>
-                    <Typography
-                      sx={{
-                        position: 'absolute',
-                        left: 783,
-                        top: 53,
-                        width: 77,
-                        fontWeight: 400,
-                        fontSize: 24,
-                        lineHeight: 1.6,
-                        color: isLocked ? '#A7B3B8' : MUTED,
-                        fontFamily: FIGMA_FONT,
-                        textAlign: 'right',
-                      }}
-                    >
-                      {totalTasks} tasks
-                    </Typography>
-                    <Box
-                      component="img"
-                      src={isLocked ? `${IMG}/lesson-lock.svg` : `${IMG}/lesson-go.svg`}
-                      alt=""
-                      sx={{ position: 'absolute', left: 888, top: 42, width: 60, height: 60, display: 'block' }}
-                    />
-                  </ButtonBase>
-                )
-              })}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(10)}px`, flexShrink: 0 }}>
+                        <Typography sx={{ fontWeight: 400, fontSize: p(15), color: isLocked ? '#A7B3B8' : MUTED, fontFamily: FIGMA_FONT }}>
+                          {totalTasks} tasks
+                        </Typography>
+                        <Box
+                          component="img"
+                          src={isLocked ? `${IMG}/lesson-lock.svg` : `${IMG}/lesson-go.svg`}
+                          alt=""
+                          sx={{ width: p(40), height: p(40), display: 'block' }}
+                        />
+                      </Box>
+                    </ButtonBase>
+                  )
+                })}
+            </Box>
+            <Box sx={{ flexShrink: 0, display: 'flex', gap: `${p(12)}px`, mt: `${p(12)}px` }}>
+              <ButtonBase
+                onClick={() =>
+                  navigate('/study-report', { state: { lesson, from: `/lesson/${lesson.id}` } })
+                }
+                sx={{
+                  flex: 1,
+                  height: p(48),
+                  borderRadius: '100px',
+                  bgcolor: TEAL,
+                  color: '#fff',
+                  fontWeight: 500,
+                  fontSize: p(18),
+                  fontFamily: FIGMA_FONT,
+                  '&:active': { transform: 'scale(0.99)' },
+                }}
+              >
+                Study Report
+              </ButtonBase>
+              <ButtonBase
+                onClick={() =>
+                  navigate('/mistakes-review', { state: { lesson, from: `/lesson/${lesson.id}` } })
+                }
+                sx={{
+                  flex: 1,
+                  height: p(48),
+                  borderRadius: '100px',
+                  bgcolor: '#FFF3EE',
+                  color: '#FF6B35',
+                  border: '1px solid rgba(255,107,53,0.2)',
+                  fontWeight: 500,
+                  fontSize: p(18),
+                  fontFamily: FIGMA_FONT,
+                  '&:active': { transform: 'scale(0.99)' },
+                }}
+              >
+                Mistakes
+              </ButtonBase>
+            </Box>
           </Box>
-          <Box
-            sx={{
-              position: 'absolute',
-              left: 100,
-              top: 1055,
-              width: 980,
-              height: 80,
-              display: 'flex',
-              gap: '20px',
-            }}
-          >
-            <ButtonBase
-              onClick={() =>
-                navigate('/study-report', { state: { lesson, from: `/lesson/${lesson.id}` } })
-              }
-              sx={{
-                flex: 1,
-                height: 80,
-                borderRadius: '100px',
-                bgcolor: TEAL,
-                color: '#fff',
-                fontWeight: 400,
-                fontSize: 32,
-                lineHeight: '48px',
-                fontFamily: FIGMA_FONT,
-                '&:active': { transform: 'scale(0.99)' },
-              }}
-            >
-              Study Report
-            </ButtonBase>
-            <ButtonBase
-              onClick={() =>
-                navigate('/mistakes-review', { state: { lesson, from: `/lesson/${lesson.id}` } })
-              }
-              sx={{
-                flex: 1,
-                height: 80,
-                borderRadius: '100px',
-                bgcolor: '#FFF3EE',
-                color: '#FF6B35',
-                border: '1px solid rgba(255,107,53,0.2)',
-                fontWeight: 400,
-                fontSize: 32,
-                lineHeight: '48px',
-                fontFamily: FIGMA_FONT,
-                '&:active': { transform: 'scale(0.99)' },
-              }}
-            >
-              Mistakes
-            </ButtonBase>
-          </Box>
+        </Box>
 
+        <Box sx={{ minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: `${p(16)}px` }}>
           <Box
             sx={{
-              position: 'absolute',
-              left: 1160,
-              top: 200,
-              width: 700,
-              height: 460,
+              flex: 1,
+              minHeight: 0,
               bgcolor: '#fff',
               border: `1px solid ${CARD_BORDER}`,
-              borderRadius: '40px',
+              borderRadius: `${p(28)}px`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: `${p(10)}px`,
+              px: `${p(20)}px`,
               boxSizing: 'border-box',
-              overflow: 'hidden',
             }}
           >
-            <Box sx={{ position: 'absolute', left: 290, top: 40, width: 120, height: 120 }}>
+            <Box sx={{ position: 'relative', width: p(72), height: p(72) }}>
               <Box
                 component="img"
                 src={`${IMG}/bonus-circle.svg`}
                 alt=""
-                sx={{ position: 'absolute', inset: 0, width: 120, height: 120, display: 'block' }}
+                sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
               />
-              <Box sx={{ position: 'absolute', left: 30, top: 30, width: 60, height: 60, borderRadius: '188px', overflow: 'hidden' }}>
+              <Box sx={{ position: 'absolute', left: '25%', top: '25%', width: '50%', height: '50%', borderRadius: '50%', overflow: 'hidden' }}>
                 <Box
                   component="img"
                   src={`${IMG}/bonus-coin.png`}
                   alt=""
-                  sx={{
-                    position: 'absolute',
-                    width: 142.94,
-                    height: 173.53,
-                    left: -40.53,
-                    top: -42.41,
-                    display: 'block',
-                    maxWidth: 'none',
-                  }}
+                  sx={{ position: 'absolute', width: '240%', height: '290%', left: '-68%', top: '-70%', display: 'block', maxWidth: 'none' }}
                 />
               </Box>
             </Box>
-            <Box
-              sx={{
-                position: 'absolute',
-                left: 254,
-                top: 180,
-                width: 192,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '4px',
-                textAlign: 'center',
-              }}
-            >
-              <Typography sx={{ fontWeight: 700, fontSize: 32, lineHeight: 1.6, color: TEXT, fontFamily: FIGMA_FONT, width: '100%' }}>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography sx={{ fontWeight: 700, fontSize: p(22), lineHeight: 1.3, color: TEXT, fontFamily: FIGMA_FONT }}>
                 Bonus Class
               </Typography>
-              <Typography sx={{ fontWeight: 400, fontSize: 24, lineHeight: 1.6, color: MUTED, fontFamily: FIGMA_FONT, width: '100%' }}>
+              <Typography sx={{ fontWeight: 400, fontSize: p(15), lineHeight: 1.4, color: MUTED, fontFamily: FIGMA_FONT }}>
                 {cultureUnlocked ? 'Content unlocked' : 'Unlock at 60%'}
               </Typography>
             </Box>
@@ -486,18 +421,14 @@ export default function UnitSelectionStage({
               disabled={!cultureUnlocked}
               onClick={onSelectCulture}
               sx={{
-                position: 'absolute',
-                left: 120,
-                top: 330,
-                width: 460,
-                height: 80,
+                width: '78%',
+                height: p(44),
                 borderRadius: '100px',
                 bgcolor: cultureUnlocked ? TEAL : '#F3F4F6',
                 border: `1px solid ${CARD_BORDER}`,
                 color: cultureUnlocked ? '#fff' : MUTED,
-                fontWeight: 400,
-                fontSize: 32,
-                lineHeight: '48px',
+                fontWeight: 500,
+                fontSize: p(18),
                 fontFamily: FIGMA_FONT,
               }}
             >
@@ -508,16 +439,14 @@ export default function UnitSelectionStage({
           <ButtonBase
             onClick={onSelectUpsell}
             sx={{
-              position: 'absolute',
-              left: 1160,
-              top: 700,
-              width: 700,
-              height: 460,
-              borderRadius: '40px',
+              flex: 1,
+              minHeight: 0,
+              borderRadius: `${p(28)}px`,
               bgcolor: '#2768FD',
               overflow: 'hidden',
               display: 'block',
               textAlign: 'left',
+              position: 'relative',
               '&:active': { transform: 'scale(0.99)' },
             }}
           >
@@ -527,13 +456,12 @@ export default function UnitSelectionStage({
               alt=""
               sx={{
                 position: 'absolute',
-                left: 194.91,
-                top: 49.34,
-                width: 570.67,
-                height: 492.08,
-                opacity: 0.5,
+                right: '-8%',
+                top: '8%',
+                width: '82%',
+                height: '110%',
+                opacity: 0.38,
                 display: 'block',
-                maxWidth: 'none',
                 objectFit: 'cover',
                 pointerEvents: 'none',
               }}
@@ -544,43 +472,43 @@ export default function UnitSelectionStage({
               alt=""
               sx={{
                 position: 'absolute',
-                left: 310.4,
-                top: 219.9,
-                width: 166.1,
-                height: 143,
+                right: '18%',
+                bottom: '18%',
+                width: p(88),
+                height: p(76),
                 display: 'block',
-                maxWidth: 'none',
-                objectFit: 'cover',
+                objectFit: 'contain',
                 pointerEvents: 'none',
               }}
             />
             <Box
               sx={{
                 position: 'absolute',
-                left: 60,
-                top: 50,
+                left: p(20),
+                top: p(18),
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'flex-start',
-                gap: '8px',
+                gap: `${p(8)}px`,
+                zIndex: 1,
               }}
             >
-              <Typography sx={{ fontWeight: 700, fontSize: 40, lineHeight: 1.6, color: '#fff', fontFamily: FIGMA_FONT }}>
+              <Typography sx={{ fontWeight: 700, fontSize: p(26), lineHeight: 1.2, color: '#fff', fontFamily: FIGMA_FONT }}>
                 AI Tutor
               </Typography>
               <Box
                 sx={{
-                  height: 44,
-                  px: '12px',
-                  py: '3px',
-                  borderRadius: '8px',
-                  bgcolor: 'rgba(56,209,243,0.5)',
+                  height: p(32),
+                  px: `${p(12)}px`,
+                  borderRadius: '999px',
+                  bgcolor: 'rgba(255,255,255,0.16)',
+                  border: '1px solid rgba(255,255,255,0.42)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <Typography sx={{ fontWeight: 700, fontSize: 24, lineHeight: 1.6, color: '#fff', fontFamily: FIGMA_FONT, whiteSpace: 'nowrap' }}>
+                <Typography sx={{ fontWeight: 600, fontSize: p(14), lineHeight: 1, color: '#fff', fontFamily: FIGMA_FONT, whiteSpace: 'nowrap' }}>
                   Kehidupan Sehari-hari
                 </Typography>
               </Box>
@@ -589,11 +517,11 @@ export default function UnitSelectionStage({
               component="img"
               src={`${IMG}/tutor-go.svg`}
               alt=""
-              sx={{ position: 'absolute', left: 58, top: 196, width: 80, height: 60, display: 'block' }}
+              sx={{ position: 'absolute', left: p(20), bottom: p(18), width: p(48), height: p(36), display: 'block', zIndex: 1 }}
             />
           </ButtonBase>
         </Box>
-      </HubContainBoard>
+      </Box>
     </Box>
   )
 }

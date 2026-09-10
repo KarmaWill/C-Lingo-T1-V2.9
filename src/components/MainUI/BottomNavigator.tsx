@@ -4,26 +4,25 @@ import { Box, ButtonBase } from '@mui/material'
 import { figmaPx } from '../../utils/figmaScale'
 
 /**
- * Figma Frame 1171277717（画布 1920×1200）
- * 4 Tab 胶囊 870×130 + gap 40 + 外侧 Camera 150×130
+ * Figma Frame 1171277717（2508 画布 ÷ 1.30625 → 1920）
+ * 4 Tab 胶囊 828×115 + gap 40 + 外侧 Camera 115 圆
  */
 const FIGMA = {
-  dockW: 870,
-  dockH: 130,
+  dockW: 828,
+  dockH: 115,
   dockRadius: 108,
-  dockPadX: 120,
+  dockPadX: 93,
   icon: 60,
   iconGap: 130,
-  cameraW: 150,
-  cameraH: 130,
+  cameraW: 115,
+  cameraH: 115,
   cameraRadius: 1002,
   cameraGap: 40,
   bottom: 40,
 } as const
 
 const DOCK_SHADOW = '0px 4px 20px rgba(213, 213, 213, 0.6)'
-const ICON_ACTIVE = 'linear-gradient(150.37deg, #1BE0CA -2.7%, #00B4A0 94.5%)'
-const ICON_IDLE = '#D5D5D5'
+const ICON_ACTIVE = 'linear-gradient(148.83deg, #7BFFF2 7.44%, #3ED8F8 40.08%, #00B1FF 92.56%)'
 const SURFACE = '#FFFFFF'
 
 type NavItem = {
@@ -80,24 +79,45 @@ export function getBottomNavReserve(screenSize: string) {
   return figmaPx(Math.max(FIGMA.dockH, FIGMA.cameraH) + FIGMA.bottom, screenSize)
 }
 
-function NavGlyph({ src, active, size }: { src: string; active: boolean; size: number }) {
+function NavGlyph({ src, active, size, label }: { src: string; active: boolean; size: number; label: string }) {
   return (
-    <Box
-      sx={{
-        width: size,
-        height: size,
-        flexShrink: 0,
-        background: active ? ICON_ACTIVE : ICON_IDLE,
-        WebkitMaskImage: `url(${src})`,
-        WebkitMaskRepeat: 'no-repeat',
-        WebkitMaskPosition: 'center',
-        WebkitMaskSize: 'contain',
-        maskImage: `url(${src})`,
-        maskRepeat: 'no-repeat',
-        maskPosition: 'center',
-        maskSize: 'contain',
-      }}
-    />
+    <Box sx={{ width: size, height: size, position: 'relative', flexShrink: 0 }}>
+      <Box
+        component="img"
+        src={src}
+        alt={label}
+        draggable={false}
+        sx={{
+          width: size,
+          height: size,
+          display: 'block',
+          objectFit: 'contain',
+          // CSS mask + 外壳 scale 容易把 glyph 吃掉；idle 用原图压成稿色 #D5D5D5
+          filter: active
+            ? 'none'
+            : 'brightness(0) saturate(100%) invert(89%) sepia(0%) saturate(0%)',
+          opacity: active ? 0 : 1,
+        }}
+      />
+      {active ? (
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            background: ICON_ACTIVE,
+            WebkitMaskImage: `url("${src}")`,
+            WebkitMaskRepeat: 'no-repeat',
+            WebkitMaskPosition: 'center',
+            WebkitMaskSize: 'contain',
+            maskImage: `url("${src}")`,
+            maskRepeat: 'no-repeat',
+            maskPosition: 'center',
+            maskSize: 'contain',
+          }}
+        />
+      ) : null}
+    </Box>
   )
 }
 
@@ -110,7 +130,6 @@ export default function BottomNavigator() {
   const dockW = figmaPx(FIGMA.dockW, screenSize)
   const dockH = figmaPx(FIGMA.dockH, screenSize)
   const icon = figmaPx(FIGMA.icon, screenSize)
-  const gap = figmaPx(FIGMA.iconGap, screenSize)
   const padX = figmaPx(FIGMA.dockPadX, screenSize)
   const bottom = figmaPx(FIGMA.bottom, screenSize)
   const radius = figmaPx(FIGMA.dockRadius, screenSize)
@@ -162,8 +181,7 @@ export default function BottomNavigator() {
           display: 'flex',
           flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'flex-start',
-          gap: `${gap}px`,
+          justifyContent: 'space-between',
           px: `${padX}px`,
           boxSizing: 'border-box',
           flexShrink: 0,
@@ -189,7 +207,7 @@ export default function BottomNavigator() {
                 '&:active': { transform: 'scale(0.92)' },
               }}
             >
-              <NavGlyph src={item.iconSrc} active={active} size={icon} />
+              <NavGlyph src={item.iconSrc} active={active} size={icon} label={t(item.labelKey)} />
             </ButtonBase>
           )
         })}
@@ -213,7 +231,7 @@ export default function BottomNavigator() {
           '&:active': { transform: 'scale(0.92)' },
         }}
       >
-        <NavGlyph src="/shell/nav/camera.svg" active={isCameraActive} size={icon} />
+        <NavGlyph src="/shell/nav/camera.svg" active={isCameraActive} size={icon} label={t('nav.camera')} />
       </ButtonBase>
     </Box>
   )

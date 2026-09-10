@@ -108,7 +108,11 @@ export const PROGRAM_TRACKS: ProgramTrack[] = [
       dot: '#00B4A0',
     },
     pageBg: 'transparent',
-    chrome: DEFAULT_CHROME,
+    chrome: {
+      ...DEFAULT_CHROME,
+      screenBg: '#F2F8FF',
+      mainBg: '#F2F8FF',
+    },
   },
   {
     id: 'hsk-standard',

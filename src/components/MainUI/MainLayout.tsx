@@ -6,7 +6,7 @@ import TopBanner from './TopBanner'
 import SystemStatusBar, { getSystemBarMetrics } from './SystemStatusBar'
 import ShellSloganHeadline from './ShellSloganHeadline'
 import ShellTopBarProductLinks from './ShellTopBarProductLinks'
-import IpadDeviceShell from './IpadDeviceShell'
+import IpadDeviceShell, { getDeviceShellBezelForSize } from './IpadDeviceShell'
 import { getChromeThemeFromPath } from '../../data/programTracks'
 
 interface MainLayoutProps {
@@ -53,9 +53,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
       )
     : 1
 
+  const shellBezel = getDeviceShellBezelForSize(screenSize)
+  const shellOuterW = screenWidth + shellBezel * 2
+  const shellOuterH = screenHeight + shellBezel * 2
   const fitDeviceScale = Math.min(
-    (viewport.h - (isWebsiteEmbed ? 0 : SHELL_CHROME_RESERVE) - 8) / screenHeight,
-    (viewport.w - 8) / screenWidth,
+    (viewport.h - (isWebsiteEmbed ? 0 : SHELL_CHROME_RESERVE) - 8) / (shellOuterH + 12),
+    (viewport.w - 8) / shellOuterW,
   )
   const deviceScale = Math.max(0.28, Math.min(1, fitDeviceScale))
   
@@ -148,14 +151,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
   // 主四 tab + LingoFlash 等：壳层状态栏。/hsk-prep-training 由页面自己画 Group 17，不在这里铺。
   const showSystemBar =
     ['/', '/AI', '/Home', '/library', '/specialized', '/apps', '/hsk-test', '/hsk-standard', '/business-chinese'].includes(location.pathname) || 
-    isLingoFlashPage || 
     isGrammarPuzzlePage || 
     isSyntaxSnapPage ||
     isHSKSkillDrillPage ||
     isHSKOralReviewPage ||
     isGrammarSnapPage ||
     isLibraryBookSelectionPage ||
-    isFunChineseHubPage ||
     isFunChineseCardCollectionPage ||
     isFunChineseIntensivePage ||
     isFunChineseLessonPage ||
@@ -171,9 +172,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
     location.pathname === '/' ||
     location.pathname === '/hsk-standard' ||
     location.pathname === '/business-chinese'
+  const isHskPrepHub = location.pathname === '/hsk-test'
+  const isExploreHub = location.pathname === '/apps'
 
-  // Figma 主界面2：三轨 Studio 页内自带顶栏，隐藏全局 TopBanner
-  const showTopBanner = !hideChromeNav && !isLibraryHomePage && !isStudioHomePage
+  // Figma 主界面1/2：Studio、HSK Preparation、Explore 页内自带顶栏，隐藏全局 TopBanner
+  const showTopBanner =
+    !hideChromeNav && !isLibraryHomePage && !isStudioHomePage && !isHskPrepHub && !isExploreHub
   const showBottomNav = !hideChromeNav
   
   // Calculate scaled heights based on screen size
@@ -181,8 +185,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const hardwareProtrusion = is960 ? 10 : 12
   const websiteEmbedScale = isWebsiteEmbed
     ? Math.min(
-        (viewport.w - 4) / screenWidth,
-        (viewport.h - 4) / (screenHeight + hardwareProtrusion),
+        (viewport.w - 4) / shellOuterW,
+        (viewport.h - 4) / (shellOuterH + hardwareProtrusion),
       ) * 0.9
     : null
   const effectiveDeviceScale = Math.max(0.28, websiteEmbedScale ?? deviceScale)
@@ -226,7 +230,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
             inset: 'auto',
             mt: 0,
             pt: `${systemBarHeight}px`,
-            height: '100%',
+            // border-box：pt 吃在 height 内。height 必须先扣掉底栏，否则 100% + mb 会压进 dock。
+            height: `calc(100% - ${mainChromeBottom}px)`,
             mb: mainChromeBottom ? `${mainChromeBottom}px` : 0,
           }
         : {
@@ -272,16 +277,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const shellTopBarSx = {
     ...shellBarBaseSx,
     position: 'relative' as const,
-    alignItems: 'flex-start',
-    pt: 1.25,
-    pb: 0,
+    alignItems: 'center',
+    py: 0,
   }
 
   const shellBottomBarSx = {
     ...shellBarBaseSx,
-    alignItems: 'flex-end',
-    pt: 0,
-    pb: 1.25,
+    alignItems: 'center',
+    py: 0,
   }
 
   const shellTopBar = (
@@ -301,11 +304,11 @@ export default function MainLayout({ children }: MainLayoutProps) {
         sx={{
           display: 'block',
           borderRadius: 0,
-          py: '6px',
+          py: 0,
           px: '8px',
           m: 0,
           minWidth: 44,
-          minHeight: 44,
+          minHeight: 0,
           lineHeight: 0,
           cursor: 'pointer',
           flexShrink: 0,
@@ -321,7 +324,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           alt="C-Lingo AIOS"
           draggable={false}
           sx={{
-            height: '32px',
+            height: '56px',
             width: 'auto',
             maxWidth: 'none',
             objectFit: 'contain',
@@ -376,8 +379,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
       {is1920x1125 ? (
         <Box
           sx={{
-            width: DESIGN_1920 * scale1920,
-            height: DESIGN_1125 * scale1920 + hardwareProtrusion * scale1920,
+            width: (DESIGN_1920 + getDeviceShellBezelForSize('1920x1125') * 2) * scale1920,
+            height: (DESIGN_1125 + getDeviceShellBezelForSize('1920x1125') * 2) * scale1920 + hardwareProtrusion * scale1920,
             flexShrink: 0,
             overflow: 'visible',
             display: 'flex',
@@ -411,8 +414,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
       {/* iPad/Tablet Container: non-1920x1125（含 2000x1200 原比例） */}
       <Box
         sx={{
-          width: screenWidth * effectiveDeviceScale,
-          height: screenHeight * effectiveDeviceScale + hardwareProtrusion * effectiveDeviceScale,
+          width: shellOuterW * effectiveDeviceScale,
+          height: (shellOuterH + hardwareProtrusion) * effectiveDeviceScale,
           position: 'relative',
           flexShrink: 0,
           overflow: 'visible',

@@ -2,12 +2,11 @@
  * Fun Chinese Hub - 螺旋式上升学习系统
  * 基于脚手架理论与螺旋式课程设计
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Box, Typography, ButtonBase, Snackbar, Alert } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
 import CloseIcon from '@mui/icons-material/Close';
 import LockIcon from '@mui/icons-material/Lock';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -15,8 +14,9 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ReplayIcon from '@mui/icons-material/Replay';
 import LayersIcon from '@mui/icons-material/Layers';
 import CheckIcon from '@mui/icons-material/Check';
-import FeedbackEntryButton from '../components/feedback/FeedbackEntryButton';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
+import { useFeedback } from '../components/feedback/FeedbackProvider';
+import { APP_SCREEN_SIZE, figmaPx, FIGMA_FONT } from '../utils/figmaScale';
 import { uploadFunChineseOfflineData } from '../utils/funChineseOfflineSync';
 import { buildHubLessons, loadCompletedLessonIds, type HubLessonStatus } from '../utils/funChineseUnitProgress';
 import {
@@ -42,7 +42,7 @@ interface ToolboxItem {
   id: string;
   title: string;
   subtitle?: string;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   iconSrc?: string;
   accent: string;
   gradient: string;
@@ -52,134 +52,52 @@ interface ToolboxItem {
 }
 
 const googleSansFamily = APP_FONT_FAMILY
+const PAGE_BG = '#F8F9F8'
+const TEAL = '#00B4A0'
+const CHECK_TEAL = '#10B7A4'
 
-function OnAirStatusBadge({ is960, label }: { is960: boolean; label: string }) {
-  return (
-    <Box
-      role="status"
-      aria-label={label}
-      sx={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: is960 ? 22 : 26,
-        minWidth: is960 ? 62 : 70,
-        px: is960 ? 1 : 1.15,
-        borderRadius: '999px',
-        flexShrink: 0,
-        bgcolor: '#E53935',
-      }}
-    >
-      <Typography
-        sx={{
-          fontSize: is960 ? '0.58rem' : '0.66rem',
-          fontWeight: 800,
-          letterSpacing: '0.1em',
-          color: '#FFFFFF',
-          textTransform: 'uppercase',
-          fontFamily: googleSansFamily,
-          lineHeight: 1,
-        }}
-      >
-        {label}
-      </Typography>
-    </Box>
-  );
-}
-
-function LessonStatusBadge({
+function LessonStatusTile({
   lesson,
-  is960,
-  orange,
-  teal,
+  size,
 }: {
-  lesson: HubLessonStatus;
-  is960: boolean;
-  orange: string;
-  teal: string;
+  lesson: HubLessonStatus
+  size: number
 }) {
-  const badgeSize = is960 ? 52 : 58;
-  const isCurrent = lesson.status === 'current';
-  const isCompleted = lesson.status === 'completed';
-  const isLocked = lesson.status === 'locked';
-  const accent = isCurrent ? orange : isCompleted ? teal : '#94A3B8';
-
+  const isCompleted = lesson.status === 'completed'
+  const isCurrent = lesson.status === 'current'
   return (
     <Box
       sx={{
-        width: badgeSize,
-        height: badgeSize,
-        borderRadius: is960 ? '18px' : '20px',
+        width: size,
+        height: size,
+        borderRadius: `${Math.round(size * 20 / 78)}px`,
         flexShrink: 0,
-        position: 'relative',
         display: 'flex',
-        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        overflow: 'hidden',
-        bgcolor: isCurrent ? '#FFF7ED' : isCompleted ? '#ECFDF5' : '#F8FAFC',
-        border: '1px solid',
-        borderColor: isCurrent ? '#FDBA74' : isCompleted ? '#99F6E4' : '#E2E8F0',
-        color: accent,
-        boxShadow: isCurrent
-          ? `0 10px 22px ${orange}28`
-          : isCompleted
-            ? '0 8px 18px rgba(20,184,166,0.14)'
-            : 'none',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          inset: 0,
-          borderRadius: 'inherit',
-          background: isCurrent
-            ? 'linear-gradient(135deg, rgba(255,122,69,0.14), rgba(255,255,255,0))'
-            : isCompleted
-              ? 'linear-gradient(135deg, rgba(20,184,166,0.12), rgba(255,255,255,0))'
-              : 'none',
-        },
+        bgcolor: isCompleted || isCurrent ? '#E4FAF5' : '#F3F4F6',
+        border: '1.2px solid',
+        borderColor: isCompleted || isCurrent ? '#A8F1E4' : '#E7ECEB',
+        color: isCompleted || isCurrent ? CHECK_TEAL : '#94A3B8',
       }}
     >
       {isCompleted ? (
-        <CheckIcon sx={{ position: 'relative', fontSize: is960 ? 24 : 26, color: teal }} />
+        <CheckIcon sx={{ fontSize: size * 0.42, color: CHECK_TEAL }} />
+      ) : isCurrent ? (
+        <PlayArrowIcon sx={{ fontSize: size * 0.42, color: TEAL }} />
       ) : (
-        <>
-          <Typography
-            sx={{
-              position: 'relative',
-              fontSize: is960 ? '0.5rem' : '0.54rem',
-              fontWeight: 850,
-              color: isLocked ? '#94A3B8' : accent,
-              letterSpacing: '0.12em',
-              lineHeight: 1,
-            }}
-          >
-            LESSON
-          </Typography>
-          <Typography
-            sx={{
-              position: 'relative',
-              fontSize: is960 ? '1.15rem' : '1.28rem',
-              fontWeight: 950,
-              color: isLocked ? '#64748B' : '#0F172A',
-              lineHeight: 1,
-              letterSpacing: '-0.05em',
-              fontVariantNumeric: 'tabular-nums',
-              mt: 0.28,
-            }}
-          >
-            {String(lesson.id).padStart(2, '0')}
-          </Typography>
-        </>
+        <LockIcon sx={{ fontSize: size * 0.36, color: '#94A3B8' }} />
       )}
     </Box>
-  );
+  )
 }
 export default function FunChineseHubPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
+  const { openFeedback } = useFeedback();
+  const screenSize = APP_SCREEN_SIZE;
   const is960 = screenSize === '960x540';
-  const headerActionSize = is960 ? 44 : 48;
+  const p = (n: number) => figmaPx(n, screenSize);
 
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
@@ -206,9 +124,7 @@ export default function FunChineseHubPage() {
     setSavedCards(loadFunChineseSavedCards());
   }, [activeTool, location.pathname, location.key]);
 
-  const teal = '#14B8A6';
-  const orange = '#FF7A45';
-  const pageBg = '#FDF6E9';
+  const teal = TEAL;
 
   const unitComplete = useMemo(() => lessons.every((l) => l.status === 'completed'), [lessons]);
 
@@ -217,35 +133,36 @@ export default function FunChineseHubPage() {
       id: 'flashcard',
       title: 'Flashcards',
       iconSrc: '/images/flashcards-toolbox-icon.png',
-      accent: '#FF8A4C',
-      gradient: 'linear-gradient(90deg, #FFF0E6 0%, #FFFBF7 52%, #FFFFFF 100%)',
-      iconGlow: '0 10px 28px rgba(255,138,76,0.38)',
+      accent: '#FF6B35',
+      gradient: 'linear-gradient(90deg, #FFF3EE 0%, #FFF7F4 100%)',
+      iconGlow: '0 10px 28px rgba(255,107,53,0.28)',
       badge: '20',
     },
     {
       id: 'saved',
       title: 'Card Collection',
       iconSrc: '/images/card-collection-toolbox-icon.png',
-      accent: '#4F8EF7',
-      gradient: 'linear-gradient(90deg, #EAF2FF 0%, #F5F9FF 52%, #FFFFFF 100%)',
-      iconGlow: '0 10px 28px rgba(79,142,247,0.32)',
+      accent: '#2188FE',
+      gradient: 'linear-gradient(90deg, #F0F6FF 0%, #FBFFFF 100%)',
+      iconGlow: '0 10px 28px rgba(33,136,254,0.28)',
     },
     {
       id: 'unit_test',
       title: 'Unit Test',
+      subtitle: 'Mixed drill',
       iconSrc: '/images/unit-test-toolbox-icon.png',
-      accent: '#2EC4B6',
-      gradient: 'linear-gradient(90deg, #E6FAF7 0%, #F2FDFB 52%, #FFFFFF 100%)',
-      iconGlow: '0 10px 28px rgba(46,196,182,0.32)',
+      accent: TEAL,
+      gradient: 'linear-gradient(90deg, #EAFBF7 0%, #F4FFFC 100%)',
+      iconGlow: '0 10px 28px rgba(0,180,160,0.24)',
     },
     {
       id: 'teacher_guide',
       title: 'Lesson Resources',
-      subtitle: "· Teacher's Guide",
+      subtitle: "Teacher's Guide",
       iconSrc: '/images/lesson-resources-toolbox-icon.png',
-      accent: '#9B7FEA',
-      gradient: 'linear-gradient(90deg, #F3EEFF 0%, #FAF8FF 52%, #FFFFFF 100%)',
-      iconGlow: '0 10px 28px rgba(155,127,234,0.32)',
+      accent: '#6359E8',
+      gradient: 'linear-gradient(90deg, #F3F1FF 0%, #F8F6FF 100%)',
+      iconGlow: '0 10px 28px rgba(99,89,232,0.24)',
       dotted: true,
     },
   ];
@@ -342,7 +259,8 @@ export default function FunChineseHubPage() {
         minHeight: 0,
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: pageBg,
+        bgcolor: PAGE_BG,
+        fontFamily: FIGMA_FONT,
         boxSizing: 'border-box',
         position: 'relative',
       }}
@@ -364,350 +282,313 @@ export default function FunChineseHubPage() {
         </Alert>
       </Snackbar>
 
-      {/* Unit Hero */}
+      {/* Figma 课程学习列表1 · 1920 quiet learning shell */}
       <Box
         sx={{
+          height: p(160),
+          flexShrink: 0,
+          bgcolor: '#FFFFFF',
+          borderBottom: '1px solid rgba(224, 224, 223, 0.75)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: is960 ? 2 : 3,
-          mx: is960 ? 2 : 3,
-          mt: is960 ? 2 : 3,
-          px: is960 ? 2.2 : 3,
-          py: is960 ? 1.25 : 1.55,
-          flexShrink: 0,
-          borderRadius: is960 ? '24px' : '30px',
-          color: '#1E293B',
-          bgcolor: 'white',
-          border: '1px solid rgba(15,23,42,0.06)',
-          boxShadow: '0 10px 24px rgba(15,23,42,0.06)',
-          position: 'relative',
-          overflow: 'hidden',
+          px: `${p(60)}px`,
+          gap: `${p(24)}px`,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 1.25 : 1.5, minWidth: 0, flex: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(32)}px`, minWidth: 0 }}>
           <ButtonBase
             onClick={() => navigate('/Home')}
             aria-label="Back to Library home"
             sx={{
-              minHeight: is960 ? 44 : 52,
-              minWidth: is960 ? 44 : 52,
+              width: p(80),
+              height: p(80),
+              minWidth: p(80),
               borderRadius: '50%',
-              bgcolor: 'rgba(0,0,0,0.04)',
-              border: '1px solid rgba(15,23,42,0.08)',
-              color: '#475569',
+              bgcolor: '#FFFFFF',
+              border: '1px solid #E0E0DF',
+              color: '#2D3436',
               flexShrink: 0,
               '&:active': { transform: 'scale(0.96)' },
             }}
           >
-            <ChevronLeftIcon sx={{ fontSize: is960 ? 26 : 30 }} />
+            <ChevronLeftIcon sx={{ fontSize: p(50), color: '#2D3436' }} />
           </ButtonBase>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: is960 ? 1 : 1.35,
-              minWidth: 0,
-              flexWrap: { xs: 'wrap', sm: 'nowrap' },
-              rowGap: is960 ? 0.65 : 0.75,
-            }}
-          >
-            <Box
-              sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 0.7,
-                px: is960 ? 1.25 : 1.45,
-                py: is960 ? 0.5 : 0.62,
-                borderRadius: '999px',
-                bgcolor: '#FFF7ED',
-                border: '1px solid #FED7AA',
-                flexShrink: 0,
-              }}
-            >
-              <MenuBookIcon sx={{ fontSize: is960 ? 16 : 19, color: '#F59E0B' }} />
-              <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.84rem', fontWeight: 900, color: '#B45309', letterSpacing: '0.12em', whiteSpace: 'nowrap' }}>
-                UNIT 1
-              </Typography>
-            </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(16)}px`, minWidth: 0 }}>
             <Typography
               sx={{
-                fontWeight: 900,
-                fontSize: is960 ? '1.28rem' : '1.55rem',
-                color: '#1E293B',
-                letterSpacing: '-0.03em',
-                lineHeight: 1.1,
+                fontWeight: 700,
+                fontSize: p(40),
+                lineHeight: `${p(64)}px`,
+                color: '#2D3436',
+                fontFamily: FIGMA_FONT,
                 whiteSpace: 'nowrap',
-                flexShrink: 0,
               }}
             >
               我和你
             </Typography>
-            <Box sx={{ width: '1px', height: is960 ? 18 : 22, bgcolor: '#E2E8F0', flexShrink: 0, display: { xs: 'none', sm: 'block' } }} />
+            <Box sx={{ width: '1px', height: p(40), bgcolor: '#EEF1F3', flexShrink: 0 }} />
             <Typography
               sx={{
-                fontSize: is960 ? '0.88rem' : '1.02rem',
-                fontWeight: 700,
-                color: '#94A3B8',
-                lineHeight: 1.2,
+                fontWeight: 600,
+                fontSize: p(34),
+                lineHeight: `${p(54)}px`,
+                color: '#636E72',
+                fontFamily: FIGMA_FONT,
                 whiteSpace: 'nowrap',
-                minWidth: 0,
               }}
             >
               You and I
             </Typography>
           </Box>
         </Box>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: is960 ? 0.75 : 0.9,
-            flexShrink: 0,
-            height: is960 ? 48 : 54,
-            px: is960 ? 0.6 : 0.75,
-            py: 0.5,
-            borderRadius: is960 ? '18px' : '22px',
-            bgcolor: 'rgba(255,255,255,0.72)',
-            border: '1px solid rgba(226,232,240,0.88)',
-            boxShadow: '0 18px 44px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.88)',
-            backdropFilter: 'blur(18px)',
-          }}
-        >
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(32)}px`, flexShrink: 0 }}>
           <Box
             sx={{
-              height: is960 ? 38 : 44,
-              boxSizing: 'border-box',
-              px: is960 ? 1.35 : 1.55,
-              bgcolor: 'linear-gradient(135deg, rgba(20,184,166,0.12), rgba(99,102,241,0.08))',
-              borderRadius: is960 ? '14px' : '16px',
-              border: '1px solid rgba(20,184,166,0.14)',
+              width: p(241),
+              height: p(76),
+              borderRadius: `${p(30)}px`,
+              bgcolor: '#FFFFFF',
+              border: '1px solid rgba(224, 224, 223, 0.82)',
               display: 'flex',
               alignItems: 'center',
-              gap: is960 ? 0.85 : 1,
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.75)',
+              px: `${p(20)}px`,
+              gap: `${p(14)}px`,
             }}
           >
-            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: is960 ? 68 : 78 }}>
-              <Typography sx={{ mb: 0.35, fontWeight: 900, fontSize: is960 ? '0.5rem' : '0.56rem', color: '#0F766E', lineHeight: 1, whiteSpace: 'nowrap', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-                Studied
-              </Typography>
-              <Typography sx={{ fontWeight: 950, fontSize: is960 ? '0.86rem' : '0.98rem', color: '#0F172A', lineHeight: 1, whiteSpace: 'nowrap', letterSpacing: '-0.03em' }}>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography
+                sx={{
+                  fontWeight: 700,
+                  fontSize: p(22),
+                  lineHeight: `${p(32)}px`,
+                  color: '#2D3436',
+                  fontFamily: FIGMA_FONT,
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 24 min
               </Typography>
             </Box>
-            <Box sx={{ width: '1px', alignSelf: 'stretch', bgcolor: '#E2E8F0', my: 0.15 }} />
+            <Box sx={{ width: '1px', height: p(40), bgcolor: '#EEF1F3', flexShrink: 0 }} />
             <ButtonBase
               onClick={handleUploadData}
               disabled={uploading}
               aria-label="Upload learning data"
               sx={{
-                width: is960 ? 34 : 38,
-                height: is960 ? 34 : 38,
-                minWidth: is960 ? 34 : 38,
-                minHeight: is960 ? 34 : 38,
-                borderRadius: is960 ? '12px' : '14px',
-                color: uploading ? '#94A3B8' : '#0F766E',
-                bgcolor: uploading ? '#F1F5F9' : 'rgba(20,184,166,0.13)',
+                width: p(60),
+                height: p(60),
+                minWidth: p(60),
+                borderRadius: `${p(18)}px`,
+                bgcolor: '#EAFBF7',
+                border: '1px solid rgba(0, 180, 160, 0.27)',
+                color: uploading ? '#94A3B8' : TEAL,
                 flexShrink: 0,
-                transition: 'all 180ms ease',
-                '&:hover': { bgcolor: uploading ? '#F1F5F9' : 'rgba(20,184,166,0.18)' },
                 '&:active': { transform: uploading ? 'none' : 'scale(0.94)' },
               }}
             >
-              <CloudUploadOutlinedIcon sx={{ fontSize: is960 ? 18 : 20 }} />
+              <CloudUploadOutlinedIcon sx={{ fontSize: p(32) }} />
             </ButtonBase>
           </Box>
-          <FeedbackEntryButton is960={is960} context={{ screen: 'fun_chinese_hub' }} />
+          <ButtonBase
+            onClick={() => openFeedback({ screen: 'fun_chinese_hub' })}
+            aria-label="Feedback"
+            sx={{
+              width: p(60),
+              height: p(60),
+              minWidth: p(60),
+              borderRadius: `${p(18)}px`,
+              background: 'linear-gradient(161.57deg, #FF7B4B 5.42%, #FD632C 86.67%)',
+              color: '#FFFFFF',
+              flexShrink: 0,
+              boxShadow: '0px 4px 7px rgba(255, 168, 136, 0.5)',
+              '&:active': { transform: 'scale(0.94)' },
+            }}
+          >
+            <Box
+              component="svg"
+              viewBox="0 0 40 40"
+              aria-hidden
+              sx={{ width: p(40), height: p(40), display: 'block' }}
+            >
+              <path
+                d="M8 10h18a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H16l-6 5v-5H8a4 4 0 0 1-4-4V14a4 4 0 0 1 4-4z"
+                fill="none"
+                stroke="#fff"
+                strokeWidth="3"
+              />
+              <rect x="12" y="15" width="11" height="7" rx="1.5" fill="#fff" />
+              <path d="M22 22l6 6" fill="none" stroke="#fff" strokeWidth="3" />
+            </Box>
+          </ButtonBase>
         </Box>
       </Box>
 
-      {/* Main Content */}
       <Box
         sx={{
           flex: 1,
           minHeight: 0,
+          px: `${p(64)}px`,
+          pt: `${p(24)}px`,
+          pb: `${p(20)}px`,
+          display: 'grid',
+          gridTemplateColumns: `minmax(0, ${p(1126)}fr) minmax(0, ${p(635)}fr)`,
+          gap: `${p(32)}px`,
           overflow: 'hidden',
-          p: is960 ? 2 : 3,
         }}
       >
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1.65fr 1fr' },
-            gap: is960 ? 1.8 : 2.4,
-            height: '100%',
-            minHeight: 0,
-          }}
-        >
-          {/* Left: Lesson Progress */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 1.8 : 2.4, minHeight: 0 }}>
-            <Box
-              sx={{
-                flex: 1,
-                minHeight: 0,
-                bgcolor: 'white',
-                borderRadius: is960 ? '24px' : '30px',
-                p: is960 ? 2 : 2.5,
-                boxShadow: '0 10px 30px rgba(15,23,42,0.06)',
-                border: '1px solid rgba(15,23,42,0.06)',
-                overflow: 'visible',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: is960 ? 1.4 : 1.8 }}>
-                <Typography sx={{ fontSize: is960 ? '1.12rem' : '1.35rem', color: '#0F172A', fontWeight: 900, letterSpacing: '-0.03em' }}>
-                  Lessons
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 0.35 : 0.45 }}>
-                  {lessons.map((lesson) => {
-                    const completed = lesson.status === 'completed';
-                    return (
-                      <Box
-                        key={lesson.id}
-                        component="img"
-                        src="/images/lesson-trophy-icon.png"
-                        alt={completed ? `Lesson ${lesson.id} completed` : `Lesson ${lesson.id} not completed`}
-                        sx={{
-                          width: is960 ? 22 : 26,
-                          height: is960 ? 22 : 26,
-                          objectFit: 'contain',
-                          flexShrink: 0,
-                          opacity: completed ? 1 : 0.38,
-                          filter: completed
-                            ? 'drop-shadow(0 1px 2px rgba(245,158,11,0.35))'
-                            : 'grayscale(1) saturate(0)',
-                          transition: 'opacity 0.2s ease, filter 0.2s ease',
-                        }}
-                      />
-                    );
-                  })}
-                </Box>
-              </Box>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 1.2 : 1.45 }}>
+        <Box sx={{ minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: `${p(18)}px` }}>
+          <Box
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              bgcolor: '#FFFFFF',
+              border: '1px solid #E7ECEB',
+              borderRadius: `${p(32)}px`,
+              px: `${p(41)}px`,
+              pt: `${p(28)}px`,
+              pb: `${p(28)}px`,
+              display: 'flex',
+              flexDirection: 'column',
+              boxSizing: 'border-box',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: `${p(24)}px` }}>
+              <Typography
+                sx={{
+                  fontWeight: 700,
+                  fontSize: p(40),
+                  lineHeight: `${p(64)}px`,
+                  letterSpacing: '0.06em',
+                  color: '#2D3436',
+                  fontFamily: FIGMA_FONT,
+                }}
+              >
+                Lessons
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(8)}px` }}>
                 {lessons.map((lesson) => {
-                  const lessonPeriods = listLessonPeriods(1, lesson.id);
-                  const completedPeriods = loadCompletedPeriods(1, lesson.id);
-                  const hasPeriods = lessonPeriods.length > 0;
+                  const completed = lesson.status === 'completed'
                   return (
+                    <Box
+                      key={lesson.id}
+                      component="img"
+                      src="/images/lesson-trophy-icon.png"
+                      alt={completed ? `Lesson ${lesson.id} completed` : `Lesson ${lesson.id} not completed`}
+                      sx={{
+                        width: p(50),
+                        height: p(50),
+                        objectFit: 'contain',
+                        opacity: completed ? 1 : 0.28,
+                        filter: completed ? 'none' : 'grayscale(1)',
+                      }}
+                    />
+                  )
+                })}
+              </Box>
+            </Box>
+
+            <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: `${p(24)}px` }}>
+              {lessons.map((lesson) => {
+                const lessonPeriods = listLessonPeriods(1, lesson.id)
+                const completedPeriods = loadCompletedPeriods(1, lesson.id)
+                const hasPeriods = lessonPeriods.length > 0
+                const isLocked = lesson.status === 'locked'
+                return (
                   <Box
                     key={lesson.id}
                     onClick={() => {
-                      if (lesson.status === 'locked' || hasPeriods) return;
-                      handleStartLesson(lesson.id, lesson.status);
+                      if (isLocked || hasPeriods) return
+                      handleStartLesson(lesson.id, lesson.status)
                     }}
                     sx={{
-                      p: is960 ? 1.35 : 1.65,
-                      borderRadius: is960 ? '20px' : '24px',
-                      border: '1.5px solid',
-                      borderColor:
-                        lesson.status === 'current'
-                          ? '#FDBA74'
-                          : lesson.status === 'completed'
-                            ? '#CCFBF1'
-                            : '#E2E8F0',
-                      background:
-                        lesson.status === 'current'
-                          ? 'linear-gradient(135deg, #FFF7ED 0%, #FFFFFF 72%)'
-                          : lesson.status === 'completed'
-                            ? 'linear-gradient(135deg, #F0FDFA 0%, #FFFFFF 74%)'
-                            : '#F8FAFC',
-                      boxShadow:
-                        lesson.status === 'current'
-                          ? `0 12px 28px ${orange}1F`
-                          : lesson.status === 'completed'
-                            ? '0 8px 20px rgba(20,184,166,0.1)'
-                            : '0 2px 8px rgba(15,23,42,0.03)',
+                      flex: 1,
+                      minHeight: 0,
+                      px: `${p(28)}px`,
+                      borderRadius: `${p(18)}px`,
+                      bgcolor: isLocked ? '#F8FAFC' : '#FAFFFD',
+                      border: '1.35px solid',
+                      borderColor: isLocked ? '#E7ECEB' : '#B7F4E8',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: is960 ? 1.2 : 1.45,
-                      cursor: lesson.status === 'locked' ? 'not-allowed' : 'pointer',
-                      opacity: lesson.status === 'locked' ? 0.62 : 1,
-                      transition: 'transform 0.18s ease, box-shadow 0.18s ease',
-                      '&:hover': lesson.status !== 'locked' ? { transform: 'translateX(3px)', boxShadow: `0 14px 30px ${orange}22` } : {},
+                      gap: `${p(34)}px`,
+                      cursor: isLocked ? 'not-allowed' : 'pointer',
+                      opacity: isLocked ? 0.7 : 1,
+                      boxSizing: 'border-box',
                     }}
                   >
-                    <LessonStatusBadge
-                      lesson={lesson}
-                      is960={is960}
-                      orange={orange}
-                      teal={teal}
-                    />
+                    <LessonStatusTile lesson={lesson} size={p(78)} />
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography
                         sx={{
-                          fontWeight: 900,
-                          fontSize: is960 ? '1rem' : '1.16rem',
-                          color: '#0F172A',
-                          lineHeight: 1.15,
-                          letterSpacing: '-0.02em',
-                          mb: 0.45,
+                          fontWeight: 700,
+                          fontSize: p(32),
+                          lineHeight: `${p(46)}px`,
+                          color: '#2D3436',
+                          fontFamily: FIGMA_FONT,
                         }}
                       >
                         {lesson.title}
                       </Typography>
-                      <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: '#64748B', fontWeight: 650, lineHeight: 1.35 }}>
+                      <Typography
+                        sx={{
+                          fontWeight: 500,
+                          fontSize: p(28),
+                          lineHeight: `${p(35)}px`,
+                          color: '#636E72',
+                          fontFamily: FIGMA_FONT,
+                        }}
+                      >
                         {lesson.titleEn}
                       </Typography>
                       {hasPeriods && (
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: is960 ? 0.6 : 0.75, mt: is960 ? 0.85 : 1 }}>
-                          {lessonPeriods.map((p) => {
-                            const periodDone = completedPeriods.has(p.period);
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: `${p(8)}px`, mt: `${p(8)}px` }}>
+                          {lessonPeriods.map((period) => {
+                            const periodDone = completedPeriods.has(period.period)
                             return (
                               <ButtonBase
-                                key={p.period}
+                                key={period.period}
                                 onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleStartPeriod(lesson.id, p.period, lesson.status);
+                                  e.stopPropagation()
+                                  handleStartPeriod(lesson.id, period.period, lesson.status)
                                 }}
-                                disabled={lesson.status === 'locked'}
-                                aria-label={`Start period ${p.period}: ${p.titleEn || p.title}`}
+                                disabled={isLocked}
+                                aria-label={`Start period ${period.period}: ${period.titleEn || period.title}`}
                                 sx={{
-                                  px: is960 ? 1 : 1.15,
-                                  py: is960 ? 0.45 : 0.55,
+                                  px: `${p(14)}px`,
+                                  height: p(36),
                                   borderRadius: '999px',
-                                  border: '1.5px solid',
-                                  borderColor: periodDone ? '#99F6E4' : '#FDBA74',
-                                  bgcolor: periodDone ? '#F0FDFA' : '#FFF7ED',
-                                  minHeight: is960 ? 32 : 36,
-                                  transition: 'transform 0.15s ease',
-                                  '&:hover': lesson.status !== 'locked' ? { transform: 'scale(1.03)' } : {},
+                                  border: '1px solid',
+                                  borderColor: periodDone ? '#A8F1E4' : '#E7ECEB',
+                                  bgcolor: periodDone ? '#E4FAF5' : '#FFFFFF',
+                                  minHeight: p(36),
                                 }}
                               >
                                 <Typography
                                   sx={{
-                                    fontSize: is960 ? '0.68rem' : '0.74rem',
-                                    fontWeight: 800,
-                                    color: periodDone ? teal : '#C2410C',
-                                    fontFamily: googleSansFamily,
-                                    lineHeight: 1.1,
+                                    fontSize: p(16),
+                                    fontWeight: 700,
+                                    color: periodDone ? TEAL : '#636E72',
+                                    fontFamily: FIGMA_FONT,
+                                    lineHeight: 1,
                                   }}
                                 >
-                                  P{p.period} · {p.titleEn || p.title}
+                                  P{period.period} · {period.titleEn || period.title}
                                 </Typography>
                               </ButtonBase>
-                            );
+                            )
                           })}
                         </Box>
                       )}
                     </Box>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'flex-end',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {!hasPeriods && (
+                    {!hasPeriods && (
                       <ButtonBase
                         onClick={(e) => {
-                          e.stopPropagation();
-                          handleStartLesson(lesson.id, lesson.status);
+                          e.stopPropagation()
+                          handleStartLesson(lesson.id, lesson.status)
                         }}
-                        disabled={lesson.status === 'locked'}
+                        disabled={isLocked}
                         aria-label={
                           lesson.status === 'completed'
                             ? `Review lesson ${lesson.id}`
@@ -716,442 +597,414 @@ export default function FunChineseHubPage() {
                               : `Lesson ${lesson.id} locked`
                         }
                         sx={{
-                          flexShrink: 0,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: is960 ? 38 : 44,
-                          height: is960 ? 38 : 44,
-                          minWidth: is960 ? 38 : 44,
+                          width: p(60),
+                          height: p(60),
+                          minWidth: p(60),
                           borderRadius: '50%',
-                          bgcolor:
-                            lesson.status === 'completed'
-                              ? 'rgba(20,184,166,0.12)'
-                              : lesson.status === 'current'
-                                ? orange
-                                : '#E2E8F0',
-                          color:
-                            lesson.status === 'completed'
-                              ? '#0F766E'
-                              : lesson.status === 'current'
-                                ? 'white'
-                                : '#64748B',
-                          boxShadow:
-                            lesson.status === 'current'
-                              ? `0 8px 18px ${orange}42`
-                              : lesson.status === 'completed'
-                                ? '0 4px 12px rgba(20,184,166,0.16)'
-                                : 'none',
-                          '&:hover': {
-                            bgcolor:
-                              lesson.status === 'completed'
-                                ? 'rgba(20,184,166,0.18)'
-                                : lesson.status === 'current'
-                                  ? '#FF6B3D'
-                                  : '#E2E8F0',
-                          },
+                          bgcolor: isLocked ? '#E7ECEB' : '#E4FAF5',
+                          color: isLocked ? '#94A3B8' : TEAL,
+                          flexShrink: 0,
                         }}
                       >
                         {lesson.status === 'completed' ? (
-                          <ReplayIcon sx={{ fontSize: is960 ? 19 : 21 }} />
+                          <ReplayIcon sx={{ fontSize: p(36) }} />
                         ) : lesson.status === 'current' ? (
-                          <PlayArrowIcon sx={{ fontSize: is960 ? 22 : 24 }} />
+                          <PlayArrowIcon sx={{ fontSize: p(36) }} />
                         ) : (
-                          <LockIcon sx={{ fontSize: is960 ? 18 : 20 }} />
+                          <LockIcon sx={{ fontSize: p(28) }} />
                         )}
                       </ButtonBase>
-                      )}
-                    </Box>
+                    )}
                   </Box>
-                  );
-                })}
-              </Box>
+                )
+              })}
             </Box>
+          </Box>
 
-            {/* AI Podcast banner */}
-            <ButtonBase
-              onClick={handleIntensiveClick}
-              disabled={!unitComplete}
+          <ButtonBase
+            onClick={handleIntensiveClick}
+            disabled={!unitComplete}
+            sx={{
+              width: '100%',
+              flexShrink: 0,
+              aspectRatio: '1126 / 311',
+              borderRadius: `${p(54)}px`,
+              overflow: 'hidden',
+              bgcolor: '#FFFFFF',
+              border: '1px solid #E7ECEB',
+              display: 'block',
+              textAlign: 'left',
+              position: 'relative',
+              cursor: unitComplete ? 'pointer' : 'default',
+            }}
+          >
+            {/* 红签在紫卡下面：白壳缺口托住，紫卡圆角压住签的下沿 */}
+            <Box
               sx={{
-                width: '100%',
-                display: 'block',
-                textAlign: 'left',
-                borderRadius: is960 ? '22px' : '26px',
-                overflow: 'hidden',
-                position: 'relative',
-                minHeight: is960 ? 118 : 131,
-                flexShrink: 0,
-                cursor: unitComplete ? 'pointer' : 'default',
-                bgcolor: '#4A76FD',
-                transition: 'transform 0.18s ease, box-shadow 0.18s ease',
-                boxShadow: '0 8px 28px rgba(74,118,253,0.22)',
-                '&:hover': unitComplete
-                  ? {
-                      transform: 'translateY(-1px)',
-                      boxShadow: '0 12px 32px rgba(74,118,253,0.28)',
-                    }
-                  : {},
-                '&:active': unitComplete ? { transform: 'translateY(0)' } : {},
+                position: 'absolute',
+                left: '3.55%',
+                top: '6.11%',
+                width: '20.6%',
+                height: '26.05%',
+                bgcolor: '#F34D47',
+                borderRadius: `${p(10)}px ${p(10)}px 0 0`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1,
               }}
             >
-              {!unitComplete && (
+              <Typography
+                sx={{
+                  fontWeight: 700,
+                  fontSize: p(22),
+                  lineHeight: 1.2,
+                  color: '#FFFFFF',
+                  fontFamily: FIGMA_FONT,
+                  letterSpacing: '0.06em',
+                }}
+              >
+                {FUN_CHINESE_UNIT1_PODCAST_STATUS}
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                position: 'absolute',
+                left: '3.55%',
+                top: '19.94%',
+                width: '93.0%',
+                height: '74.6%',
+                borderRadius: `${p(32)}px`,
+                overflow: 'hidden',
+                zIndex: 2,
+                background: 'linear-gradient(90deg, #4F7CFF 0%, rgba(108, 99, 255, 0.55) 42%, rgba(95, 115, 255, 0.85) 100%)',
+              }}
+            >
+              <Box
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  filter: 'blur(7.6px)',
+                  transform: 'scale(1.04)',
+                }}
+              >
+                <Typography
+                  sx={{
+                    position: 'absolute',
+                    left: '10%',
+                    top: '16%',
+                    fontWeight: 700,
+                    fontSize: p(40),
+                    lineHeight: 1.2,
+                    color: '#FFFFFF',
+                    fontFamily: FIGMA_FONT,
+                  }}
+                >
+                  {FUN_CHINESE_UNIT1_PODCAST_TITLE}
+                </Typography>
                 <Box
                   sx={{
                     position: 'absolute',
-                    inset: 0,
-                    zIndex: 4,
-                    bgcolor: 'rgba(15, 23, 42, 0.58)',
-                    backdropFilter: 'blur(6px)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 1.25,
-                    px: 3,
-                    textAlign: 'center',
+                    left: '5.9%',
+                    top: '48%',
+                    width: p(13),
+                    height: p(13),
+                    borderRadius: '50%',
+                    bgcolor: '#F34D47',
                   }}
-                >
-                  <LockIcon sx={{ fontSize: 34, color: 'rgba(255,255,255,0.9)' }} />
-                  <Typography
-                    sx={{
-                      fontWeight: 800,
-                      fontSize: is960 ? '0.86rem' : '0.94rem',
-                      color: 'rgba(255,255,255,0.94)',
-                      maxWidth: 300,
-                      fontFamily: googleSansFamily,
-                    }}
-                  >
-                    Complete all 3 to unlock the AI podcast
-                  </Typography>
-                </Box>
-              )}
-
-              <Box
-                sx={{
-                  position: 'relative',
-                  zIndex: 2,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  minHeight: is960 ? 118 : 131,
-                  px: is960 ? 2.4 : 3,
-                  py: is960 ? 2 : 2.4,
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: is960 ? 1 : 1.25 }}>
-                  <Typography
-                    sx={{
-                      fontWeight: 800,
-                      fontSize: is960 ? '1.35rem' : '1.55rem',
-                      lineHeight: 1.1,
-                      letterSpacing: '-0.03em',
-                      color: '#FFFFFF',
-                      fontFamily: googleSansFamily,
-                    }}
-                  >
-                    {FUN_CHINESE_UNIT1_PODCAST_TITLE}
-                  </Typography>
-                  <OnAirStatusBadge is960={is960} label={FUN_CHINESE_UNIT1_PODCAST_STATUS} />
-                </Box>
-
+                />
                 <Box
                   sx={{
-                    position: 'relative',
-                    mt: is960 ? 0.85 : 1,
-                    alignSelf: 'flex-start',
-                    maxWidth: '100%',
+                    position: 'absolute',
+                    left: '10%',
+                    top: '44%',
+                    height: p(48),
+                    px: `${p(16)}px`,
+                    borderRadius: `${p(35)}px`,
                     bgcolor: '#FFFFFF',
-                    borderRadius: is960 ? '14px' : '16px',
-                    px: is960 ? 1.35 : 1.55,
-                    py: is960 ? 0.65 : 0.75,
-                    boxShadow: '0 4px 14px rgba(15,23,42,0.12)',
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      top: is960 ? -5 : -6,
-                      left: is960 ? 18 : 22,
-                      width: is960 ? 10 : 12,
-                      height: is960 ? 10 : 12,
-                      bgcolor: '#FFFFFF',
-                      transform: 'rotate(45deg)',
-                      boxShadow: '-2px -2px 4px rgba(15,23,42,0.04)',
-                    },
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                 >
                   <Typography
                     sx={{
-                      position: 'relative',
-                      zIndex: 1,
-                      fontSize: is960 ? '0.84rem' : '0.94rem',
-                      fontWeight: 700,
-                      color: '#4A76FD',
-                      fontFamily: googleSansFamily,
-                      letterSpacing: '-0.01em',
-                      lineHeight: 1.35,
+                      fontWeight: 600,
+                      fontSize: p(22),
+                      color: '#5F73FF',
+                      fontFamily: FIGMA_FONT,
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     {FUN_CHINESE_UNIT1_PODCAST_TAGLINE}
                   </Typography>
                 </Box>
-
+                <Box
+                  aria-hidden
+                  sx={{
+                    position: 'absolute',
+                    right: '6%',
+                    top: '50%',
+                    width: '28%',
+                    height: '92%',
+                    transform: 'translateY(-50%)',
+                    color: 'rgba(255,255,255,0.88)',
+                  }}
+                >
+                  <Box
+                    component="svg"
+                    viewBox="0 0 160 140"
+                    sx={{ width: '100%', height: '100%', display: 'block' }}
+                  >
+                    <path
+                      d="M28 78c0-36 24-58 52-58s52 22 52 58"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="14"
+                      strokeLinecap="round"
+                    />
+                    <rect x="14" y="70" width="28" height="48" rx="14" fill="currentColor" />
+                    <rect x="118" y="70" width="28" height="48" rx="14" fill="currentColor" />
+                  </Box>
+                </Box>
                 <Box
                   sx={{
                     position: 'absolute',
-                    left: is960 ? 22 : 26,
-                    bottom: is960 ? 14 : 16,
-                    width: is960 ? 18 : 22,
-                    height: is960 ? 18 : 22,
-                    borderLeft: '2px solid rgba(255,255,255,0.55)',
-                    borderBottom: '2px solid rgba(255,255,255,0.55)',
-                    borderBottomLeftRadius: '2px',
-                    pointerEvents: 'none',
+                    right: '4.6%',
+                    bottom: '17%',
+                    width: p(72),
+                    height: p(48),
+                    borderRadius: 999,
+                    bgcolor: '#5F73FF',
                   }}
                 />
               </Box>
-            </ButtonBase>
-          </Box>
-
-          {/* Right: Knowledge Toolbox */}
-          <Box
-            sx={{
-              bgcolor: 'white',
-              borderRadius: is960 ? '24px' : '30px',
-              border: '1px solid rgba(0,0,0,0.05)',
-              p: is960 ? 2.25 : 2.75,
-              boxShadow: '0 8px 28px rgba(15,23,42,0.06)',
-              display: 'flex',
-              flexDirection: 'column',
-              minHeight: 0,
-              height: '100%',
-            }}
-          >
-            <Box sx={{ mb: is960 ? 1.75 : 2.25 }}>
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5 }}>
-                <Box>
-                  <Typography
-                    sx={{
-                      fontSize: is960 ? '1.05rem' : '1.22rem',
-                      fontWeight: 900,
-                      color: '#1E293B',
-                      letterSpacing: '-0.02em',
-                      fontFamily: googleSansFamily,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    C-Toolbox
-                  </Typography>
-                  <Box
-                    sx={{
-                      mt: 0.75,
-                      width: is960 ? 26 : 32,
-                      height: is960 ? 3 : 4,
-                      borderRadius: '999px',
-                      bgcolor: teal,
-                    }}
-                  />
+              <Box
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 3,
+                  background:
+                    'radial-gradient(62% 140% at 52% 136%, rgba(82, 125, 255, 0.42) 0%, rgba(30, 32, 44, 0.58) 100%)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: `${p(12)}px`,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: p(48),
+                    height: p(48),
+                    borderRadius: '50%',
+                    border: '2px solid #FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <LockIcon sx={{ fontSize: p(26), color: '#FFFFFF' }} />
                 </Box>
-                {!unitComplete && (
-                  <Box
-                    sx={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 0.65,
-                      px: is960 ? 1 : 1.15,
-                      py: is960 ? 0.45 : 0.55,
-                      borderRadius: '999px',
-                      bgcolor: '#F1F5F9',
-                      border: '1px solid #E2E8F0',
-                      color: '#64748B',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <LockIcon sx={{ fontSize: is960 ? 13 : 15 }} />
-                    <Typography sx={{ fontSize: is960 ? '0.58rem' : '0.66rem', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                      Finish All 3
-                    </Typography>
-                  </Box>
-                )}
+                <Typography
+                  sx={{
+                    fontWeight: 500,
+                    fontSize: p(24),
+                    lineHeight: `${p(26)}px`,
+                    color: '#FFFFFF',
+                    fontFamily: FIGMA_FONT,
+                  }}
+                >
+                  敬请期待...
+                </Typography>
               </Box>
             </Box>
+          </ButtonBase>
+        </Box>
 
-            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: is960 ? 1.15 : 1.35, minHeight: 0 }}>
-              {tools.map((tool) => {
-                const unlocked = unitComplete;
-                const isFeatured = tool.id === 'teacher_guide';
-                const isCustomIcon = Boolean(tool.iconSrc);
-                const iconSize = isCustomIcon
-                  ? (isFeatured ? (is960 ? 68 : 78) : (is960 ? 58 : 68))
-                  : (isFeatured ? (is960 ? 62 : 72) : (is960 ? 50 : 58));
-                return (
-                  <ButtonBase
-                    key={tool.id}
-                    onClick={() => handleToolClick(tool)}
+        <Box
+          sx={{
+            minWidth: 0,
+            minHeight: 0,
+            bgcolor: '#FFFFFF',
+            border: '1px solid #E7ECEB',
+            borderRadius: `${p(32)}px`,
+            px: `${p(35)}px`,
+            pt: `${p(46)}px`,
+            pb: `${p(28)}px`,
+            display: 'flex',
+            flexDirection: 'column',
+            boxSizing: 'border-box',
+          }}
+        >
+          <Box sx={{ mb: `${p(22)}px` }}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: `${p(12)}px` }}>
+              <Box>
+                <Typography
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: p(32),
+                    lineHeight: `${p(46)}px`,
+                    color: '#2D3436',
+                    fontFamily: FIGMA_FONT,
+                  }}
+                >
+                  C-Toolbox
+                </Typography>
+                <Box sx={{ mt: `${p(6)}px`, width: p(80), height: p(8), borderRadius: `${p(8)}px`, bgcolor: TEAL }} />
+              </Box>
+              {!unitComplete && (
+                <Box
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: `${p(6)}px`,
+                    px: `${p(12)}px`,
+                    height: p(36),
+                    borderRadius: '999px',
+                    bgcolor: '#F3F4F6',
+                    color: '#636E72',
+                  }}
+                >
+                  <LockIcon sx={{ fontSize: p(16) }} />
+                  <Typography sx={{ fontSize: p(14), fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    Finish All 3
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </Box>
+
+          <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: `${p(20)}px` }}>
+            {tools.map((tool) => {
+              const unlocked = unitComplete
+              const isFeatured = tool.id === 'teacher_guide'
+              const cardH = isFeatured ? 234 : 173
+              const icon = isFeatured ? 132 : 141
+              return (
+                <ButtonBase
+                  key={tool.id}
+                  onClick={() => handleToolClick(tool)}
+                  sx={{
+                    flex: `${cardH} 1 0`,
+                    minHeight: 0,
+                    aspectRatio: `573 / ${cardH}`,
+                    px: '4.2%',
+                    borderRadius: isFeatured ? `${p(28)}px` : `${p(24)}px`,
+                    border: '1px solid #EEF1F3',
+                    background: unlocked ? tool.gradient : '#F8FAFC',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4.8%',
+                    textAlign: 'left',
+                    opacity: unlocked ? 1 : 0.72,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    alignSelf: 'stretch',
+                    '&:active': unlocked ? { transform: 'scale(0.99)' } : {},
+                  }}
+                >
+                  <Box
                     sx={{
-                      p: isFeatured ? (is960 ? 1.75 : 2.1) : (is960 ? 1.35 : 1.6),
-                      pl: isFeatured ? (is960 ? 1.5 : 1.75) : (is960 ? 1.25 : 1.45),
-                      pr: isFeatured ? (is960 ? 1.35 : 1.6) : (is960 ? 1.15 : 1.35),
-                      borderRadius: isFeatured ? (is960 ? '20px' : '24px') : (is960 ? '18px' : '22px'),
-                      background: unlocked ? tool.gradient : 'linear-gradient(90deg, #F1F5F9 0%, #F8FAFC 100%)',
+                      width: `${(icon / 573) * 100}%`,
+                      aspectRatio: '1',
+                      flexShrink: 0,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: isCustomIcon
-                        ? (is960 ? 1.65 : 2)
-                        : isFeatured
-                          ? (is960 ? 1.35 : 1.6)
-                          : (is960 ? 1.15 : 1.35),
-                      textAlign: 'left',
-                      transition: 'transform 0.18s ease, box-shadow 0.18s ease',
-                      opacity: unlocked ? 1 : 0.72,
+                      justifyContent: 'center',
                       position: 'relative',
-                      overflow: tool.dotted ? 'hidden' : 'visible',
-                      flex: isFeatured ? 1 : '0 0 auto',
-                      minHeight: isFeatured ? (is960 ? 112 : 132) : (is960 ? 68 : 78),
-                      alignSelf: 'stretch',
-                      '&:hover': unlocked
-                        ? {
-                            transform: 'translateY(-1px)',
-                            boxShadow: '0 10px 24px rgba(15,23,42,0.08)',
-                          }
-                        : {},
-                      '&:active': unlocked ? { transform: 'scale(0.985)' } : {},
-                      ...(tool.dotted && unlocked
-                        ? {
-                            '&::before': {
-                              content: '""',
-                              position: 'absolute',
-                              inset: 0,
-                              backgroundImage: 'radial-gradient(circle, rgba(15,23,42,0.07) 1px, transparent 1px)',
-                              backgroundSize: '10px 10px',
-                              opacity: 0.45,
-                              pointerEvents: 'none',
-                            },
-                          }
-                        : {}),
                     }}
                   >
-                    <Box
-                      sx={{
-                        width: iconSize,
-                        height: iconSize,
-                        borderRadius: tool.iconSrc ? 0 : isFeatured ? (is960 ? '16px' : '18px') : (is960 ? '14px' : '16px'),
-                        bgcolor: tool.iconSrc ? 'transparent' : 'rgba(255,255,255,0.92)',
-                        color: unlocked ? tool.accent : '#94A3B8',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        boxShadow: tool.iconSrc ? 'none' : unlocked ? tool.iconGlow : '0 2px 8px rgba(15,23,42,0.06)',
-                        position: 'relative',
-                        zIndex: 1,
-                        overflow: tool.iconSrc ? 'visible' : 'hidden',
-                        '& .MuiSvgIcon-root': {
-                          fontSize: isFeatured ? (is960 ? 32 : 36) : (is960 ? 26 : 30),
-                        },
-                      }}
-                    >
-                      {tool.iconSrc ? (
-                        <Box
-                          component="img"
-                          src={tool.iconSrc}
-                          alt=""
-                          sx={{
-                            width: isCustomIcon
-                              ? (is960 ? '132%' : '138%')
-                              : isFeatured
-                                ? (is960 ? '112%' : '115%')
-                                : (is960 ? '108%' : '110%'),
-                            height: isCustomIcon
-                              ? (is960 ? '132%' : '138%')
-                              : isFeatured
-                                ? (is960 ? '112%' : '115%')
-                                : (is960 ? '108%' : '110%'),
-                            objectFit: 'contain',
-                            display: 'block',
-                            opacity: unlocked ? 1 : 0.55,
-                            filter: unlocked ? 'none' : 'grayscale(0.35)',
-                          }}
-                        />
-                      ) : (
-                        tool.icon
-                      )}
-                      {tool.badge && (
-                        <Box
-                          aria-label={`${tool.badge} cards to review`}
-                          sx={{
-                            position: 'absolute',
-                            top: is960 ? -10 : -12,
-                            right: is960 ? -18 : -20,
-                            minWidth: is960 ? 42 : 48,
-                            height: is960 ? 26 : 30,
-                            px: is960 ? 0.9 : 1.05,
-                            borderRadius: '999px',
-                            bgcolor: '#F94B4B',
-                            color: 'white',
-                            border: '2.5px solid white',
-                            boxShadow: '0 6px 14px rgba(249,75,75,0.35)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: is960 ? '0.82rem' : '0.92rem',
-                            fontWeight: 900,
-                            lineHeight: 1,
-                            letterSpacing: '-0.03em',
-                            fontFamily: googleSansFamily,
-                          }}
-                        >
-                          {tool.badge}
-                        </Box>
-                      )}
-                    </Box>
-
-                    <Box sx={{ flex: 1, minWidth: 0, zIndex: 1, pl: isCustomIcon ? (is960 ? 0.35 : 0.5) : 0 }}>
-                      <Typography
+                    {tool.iconSrc ? (
+                      <Box
+                        component="img"
+                        src={tool.iconSrc}
+                        alt=""
                         sx={{
-                          fontWeight: 800,
-                          fontSize: isFeatured ? (is960 ? '1.05rem' : '1.2rem') : (is960 ? '0.92rem' : '1.05rem'),
-                          color: unlocked ? tool.accent : '#94A3B8',
-                          lineHeight: 1.2,
-                          fontFamily: googleSansFamily,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                          opacity: unlocked ? 1 : 0.55,
+                          filter: unlocked ? 'none' : 'grayscale(0.35)',
+                        }}
+                      />
+                    ) : (
+                      tool.icon
+                    )}
+                    {tool.badge && (
+                      <Box
+                        aria-label={`${tool.badge} cards to review`}
+                        sx={{
+                          position: 'absolute',
+                          top: p(8),
+                          right: p(-4),
+                          minWidth: p(67),
+                          height: p(37),
+                          px: `${p(6)}px`,
+                          borderRadius: `${p(18)}px`,
+                          bgcolor: '#FF9484',
+                          color: '#FFFFFF',
+                          border: '2px solid #FFFFFF',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: p(25),
+                          fontWeight: 700,
+                          fontFamily: FIGMA_FONT,
+                          lineHeight: 1,
                         }}
                       >
-                        {tool.title}
+                        {tool.badge}
+                      </Box>
+                    )}
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: p(32),
+                        lineHeight: `${p(46)}px`,
+                        color: unlocked ? tool.accent : '#94A3B8',
+                        fontFamily: FIGMA_FONT,
+                      }}
+                    >
+                      {tool.title}
+                    </Typography>
+                    {tool.subtitle && (
+                      <Typography
+                        sx={{
+                          mt: `${p(5)}px`,
+                          fontWeight: 500,
+                          fontSize: p(22),
+                          lineHeight: `${p(24)}px`,
+                          color: unlocked ? '#8A94A6' : '#CBD5E1',
+                          fontFamily: FIGMA_FONT,
+                        }}
+                      >
+                        {tool.subtitle}
                       </Typography>
-                      {tool.subtitle && (
-                        <Typography
-                          sx={{
-                            fontSize: isFeatured ? (is960 ? '0.82rem' : '0.9rem') : (is960 ? '0.72rem' : '0.78rem'),
-                            color: unlocked ? '#94A3B8' : '#CBD5E1',
-                            fontWeight: 600,
-                            mt: isFeatured ? 0.45 : 0.25,
-                            fontFamily: googleSansFamily,
-                          }}
-                        >
-                          {tool.subtitle}
-                        </Typography>
-                      )}
-                    </Box>
-
+                    )}
+                  </Box>
+                  {!isFeatured && tool.id !== 'unit_test' && (
                     <Box
                       sx={{
-                        width: isFeatured ? (is960 ? 34 : 38) : (is960 ? 28 : 32),
-                        height: isFeatured ? (is960 ? 34 : 38) : (is960 ? 28 : 32),
+                        width: p(55),
+                        height: p(55),
                         borderRadius: '50%',
                         bgcolor: unlocked ? tool.accent : '#CBD5E1',
-                        color: 'white',
+                        color: '#FFFFFF',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0,
-                        boxShadow: unlocked ? `0 6px 16px ${tool.accent}40` : 'none',
-                        zIndex: 1,
                       }}
                     >
-                      <ChevronRightIcon sx={{ fontSize: isFeatured ? (is960 ? 20 : 22) : (is960 ? 18 : 20) }} />
+                      <ChevronRightIcon sx={{ fontSize: p(28) }} />
                     </Box>
-                  </ButtonBase>
-                );
-              })}
-            </Box>
+                  )}
+                </ButtonBase>
+              )
+            })}
           </Box>
         </Box>
       </Box>

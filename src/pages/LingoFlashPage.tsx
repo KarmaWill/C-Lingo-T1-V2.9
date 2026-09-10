@@ -34,24 +34,41 @@ import FlightIcon from '@mui/icons-material/Flight';
 import TuneIcon from '@mui/icons-material/Tune';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import FeedbackEntryButton from '../components/feedback/FeedbackEntryButton';
+import { useFeedback } from '../components/feedback/FeedbackProvider';
 import { getFunChineseFlashWordsForHub } from '../utils/funChineseUnitVocab';
 import { resolveBackPath } from '../utils/navigateBack';
 import { LINGOFLASH_SAVED_IDS_KEY } from '../utils/favoritesHub';
 import { LINGO_FLASH_DECK, type LingoFlashWord } from '../data/lingoFlashDeck';
+import { APP_SCREEN_SIZE, figmaPx, FIGMA_FONT } from '../utils/figmaScale';
 
 type Word = LingoFlashWord;
 const DECK: Word[] = LINGO_FLASH_DECK;
+const FLASH_BLUE = '#2188FE'
+
+function splitHanPinyin(word: string, phonetic: string) {
+  const hans = [...word].filter((ch) => /[\u4e00-\u9fff]/.test(ch))
+  const pys = !phonetic || phonetic === '—' ? [] : phonetic.trim().split(/\s+/)
+  if (hans.length === 0) return [{ han: word, py: phonetic === '—' ? '' : phonetic }]
+  return hans.map((han, i) => ({ han, py: pys[i] || '' }))
+}
+
+function speakWord(text: string) {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return
+  window.speechSynthesis.cancel()
+  const utter = new SpeechSynthesisUtterance(text)
+  utter.lang = 'zh-CN'
+  window.speechSynthesis.speak(utter)
+}
 
 function Flashcard({
   word,
   onAssess,
-  is960,
+  screenSize,
   onFlipChange,
 }: {
   word: Word;
   onAssess: (a: 'know' | 'uncertain' | 'unknown') => void;
-  is960: boolean;
+  screenSize: string;
   onFlipChange?: (flipped: boolean) => void;
 }) {
   const [isFlipped, setIsFlipped] = useState(false);
@@ -80,11 +97,26 @@ function Flashcard({
     }
   };
 
-  const cardW = is960 ? 300 : 360;
-  const cardAspect = '3 / 4';
+  const p = (n: number) => figmaPx(n, screenSize)
+  const glyphs = splitHanPinyin(word.word, word.phonetic)
+  const cardRadius = `${p(60)}px`
+  const glyphScale = glyphs.length <= 2 ? 1 : Math.min(1, 2 / glyphs.length)
+  const glyphW = Math.round(250 * glyphScale)
+  const glyphH = Math.round(300 * glyphScale)
+  const hanSize = Math.round(180 * glyphScale)
+  const pySize = Math.round(72 * glyphScale)
 
   return (
-    <Box sx={{ position: 'relative', width: cardW, aspectRatio: cardAspect, perspective: '1200px' }}>
+    <Box
+      sx={{
+        position: 'relative',
+        height: `min(100%, ${p(819)}px)`,
+        aspectRatio: '783 / 819',
+        maxWidth: `min(100%, ${p(783)}px)`,
+        width: 'auto',
+        perspective: '1200px',
+      }}
+    >
       {/* Drag layer: 2D translate/tilt only — keep separate from rotateY to avoid mirror glitches */}
       <motion.div
         drag={isFlipped}
@@ -119,45 +151,127 @@ function Flashcard({
             position: 'absolute', inset: 0,
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
-            bgcolor: 'white',
-            borderRadius: is960 ? '24px' : '32px',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.12)',
-            border: '1px solid rgba(0,0,0,0.06)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            p: is960 ? 3 : 4,
+            bgcolor: '#FFFFFF',
+            borderRadius: cardRadius,
+            boxShadow: '0px 16px 16px -8px rgba(12, 12, 13, 0.1), 0px 4px 4px -4px rgba(12, 12, 13, 0.05)',
+            border: '0.8px solid #2188FE',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
           }}
         >
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: is960 ? 2 : 3, textAlign: 'center' }}>
-            <Typography
-              sx={{
-                fontFamily: APP_FONT_FAMILY,
-                fontWeight: 900,
-                fontSize: is960 ? '2.8rem' : '3.6rem',
-                color: '#111827',
-                lineHeight: 1.1,
-              }}
-            >
-              {word.word}
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: '#6B7280' }}>
-              <Typography sx={{ fontSize: is960 ? '1rem' : '1.15rem', fontFamily: 'monospace', fontWeight: 600 }}>
-                {word.phonetic}
-              </Typography>
-              <ButtonBase sx={{ p: 1, bgcolor: '#EFF6FF', borderRadius: '50%', color: '#3B82F6', '&:active': { bgcolor: '#DBEAFE' } }}>
-                <VolumeUpIcon sx={{ fontSize: 20 }} />
-              </ButtonBase>
+          <Box
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              pt: `${p(glyphs.length <= 2 ? 140 : 80)}px`,
+              px: `${p(40)}px`,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+              {glyphs.map((g) => (
+                <Box
+                  key={`${g.han}-${g.py}`}
+                  sx={{
+                    width: p(glyphW),
+                    height: p(glyphH),
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {g.py ? (
+                    <Typography
+                      sx={{
+                        position: 'absolute',
+                        top: `-${p(Math.round(72 * glyphScale))}px`,
+                        left: 0,
+                        right: 0,
+                        textAlign: 'center',
+                        fontSize: p(pySize),
+                        lineHeight: 1.2,
+                        color: '#2D3436',
+                        fontFamily: FIGMA_FONT,
+                        fontWeight: 400,
+                      }}
+                    >
+                      {g.py}
+                    </Typography>
+                  ) : null}
+                  <Typography
+                    sx={{
+                      fontSize: p(hanSize),
+                      lineHeight: 1,
+                      color: '#2D3436',
+                      fontFamily: '"FZNewKai GB18030L2", "Kaiti SC", "STKaiti", "KaiTi", serif',
+                      fontWeight: 400,
+                    }}
+                  >
+                    {g.han}
+                  </Typography>
+                </Box>
+              ))}
             </Box>
             <Typography
-              component={motion.p}
-              animate={{ opacity: [0.4, 1, 0.4] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              sx={{ fontSize: is960 ? '0.75rem' : '0.85rem', color: '#9CA3AF', fontWeight: 500 }}
+              sx={{
+                mt: `${p(16)}px`,
+                fontSize: p(28),
+                lineHeight: `${p(41)}px`,
+                color: '#A7B3B8',
+                fontFamily: FIGMA_FONT,
+                fontWeight: 400,
+              }}
             >
               点击卡片查看释义
             </Typography>
           </Box>
+          <Box
+            sx={{
+              height: p(132),
+              flexShrink: 0,
+              bgcolor: 'rgba(33, 136, 254, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative',
+              zIndex: 2,
+            }}
+          >
+            <ButtonBase
+              onClick={(e) => {
+                e.stopPropagation()
+                speakWord(word.word)
+              }}
+              aria-label="Play pronunciation"
+              sx={{
+                width: p(80),
+                height: p(80),
+                borderRadius: '50%',
+                color: FLASH_BLUE,
+              }}
+            >
+              <VolumeUpIcon sx={{ fontSize: p(48) }} />
+            </ButtonBase>
+          </Box>
 
-          <ButtonBase onClick={() => setFlipped(true)} sx={{ position: 'absolute', inset: 0, borderRadius: 'inherit' }} aria-label="Flip card" />
+          <ButtonBase
+            onClick={() => setFlipped(true)}
+            aria-label="Flip card"
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: p(132),
+              zIndex: 1,
+              borderRadius: `${cardRadius} ${cardRadius} 0 0`,
+            }}
+          />
         </Box>
 
         {/* ── Back ── */}
@@ -167,12 +281,12 @@ function Flashcard({
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
             transform: 'rotateY(180deg)',
-            bgcolor: 'white',
-            borderRadius: is960 ? '24px' : '32px',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.12)',
-            border: '1px solid rgba(0,0,0,0.06)',
-            display: 'flex', flexDirection: 'column',
-            p: is960 ? 2.5 : 3.5,
+            bgcolor: '#FFFFFF',
+            borderRadius: cardRadius,
+            boxShadow: '0px 16px 16px -8px rgba(12, 12, 13, 0.1), 0px 4px 4px -4px rgba(12, 12, 13, 0.05)',
+            border: '0.8px solid #2188FE',
+            display: 'flex',
+            flexDirection: 'column',
             overflow: 'hidden',
           }}
         >
@@ -194,23 +308,25 @@ function Flashcard({
           </motion.div>
 
           {/* Header */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: is960 ? 1.5 : 2, flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', px: `${p(48)}px`, pt: `${p(48)}px`, mb: `${p(20)}px`, flexShrink: 0 }}>
             <Box>
-              <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.35rem' : '1.6rem', color: '#111827' }}>{word.word}</Typography>
-              <Typography sx={{ color: '#6B7280', fontSize: is960 ? '0.75rem' : '0.85rem', fontFamily: 'monospace' }}>{word.phonetic}</Typography>
+              <Typography sx={{ fontWeight: 400, fontSize: p(48), lineHeight: 1.2, color: '#2D3436', fontFamily: FIGMA_FONT }}>{word.word}</Typography>
+              {word.phonetic && word.phonetic !== '—' ? (
+                <Typography sx={{ color: '#A7B3B8', fontSize: p(24), fontFamily: FIGMA_FONT, mt: `${p(4)}px` }}>{word.phonetic}</Typography>
+              ) : null}
             </Box>
           </Box>
 
           {/* Sections */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 1.25 : 1.75, flex: 1, minHeight: 0, overflowY: 'auto' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: `${p(20)}px`, flex: 1, minHeight: 0, overflowY: 'auto', px: `${p(48)}px` }}>
             {/* 释义 */}
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.75 }}>
                 <InfoOutlinedIcon sx={{ fontSize: 16, color: '#3B82F6' }} />
                 <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#3B82F6', letterSpacing: '0.1em', textTransform: 'uppercase' }}>释义</Typography>
               </Box>
-              <Typography sx={{ fontWeight: 700, fontSize: is960 ? '0.88rem' : '1rem', color: '#1F2937' }}>{word.translation}</Typography>
-              <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.8rem', color: '#6B7280', fontStyle: 'italic', mt: 0.35 }}>{word.definition}</Typography>
+              <Typography sx={{ fontWeight: 700, fontSize: p(28), color: '#2D3436', fontFamily: FIGMA_FONT }}>{word.translation}</Typography>
+              <Typography sx={{ fontSize: p(22), color: '#636E72', fontFamily: FIGMA_FONT, mt: `${p(6)}px` }}>{word.definition}</Typography>
             </Box>
 
             {/* 例句 */}
@@ -219,9 +335,9 @@ function Flashcard({
                 <VolumeUpIcon sx={{ fontSize: 16, color: '#10B981' }} />
                 <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#10B981', letterSpacing: '0.1em', textTransform: 'uppercase' }}>例句</Typography>
               </Box>
-              <Box sx={{ bgcolor: '#F9FAFB', borderRadius: '14px', p: is960 ? 1.25 : 1.5 }}>
-                <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: '#374151', lineHeight: 1.6 }}>{word.exampleEn}</Typography>
-                <Typography sx={{ fontSize: is960 ? '0.68rem' : '0.78rem', color: '#9CA3AF', mt: 0.5 }}>{word.exampleCn}</Typography>
+              <Box sx={{ bgcolor: '#F8F9F8', borderRadius: `${p(20)}px`, p: `${p(20)}px` }}>
+                <Typography sx={{ fontSize: p(24), color: '#2D3436', fontFamily: FIGMA_FONT, lineHeight: 1.6 }}>{word.exampleEn}</Typography>
+                <Typography sx={{ fontSize: p(22), color: '#A7B3B8', fontFamily: FIGMA_FONT, mt: `${p(8)}px` }}>{word.exampleCn}</Typography>
               </Box>
             </Box>
 
@@ -232,20 +348,20 @@ function Flashcard({
                   <LightbulbOutlinedIcon sx={{ fontSize: 16, color: '#F59E0B' }} />
                   <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#F59E0B', letterSpacing: '0.1em', textTransform: 'uppercase' }}>助记</Typography>
                 </Box>
-                <Box sx={{ bgcolor: '#FFFBEB', borderRadius: '14px', p: is960 ? 1.25 : 1.5, border: '1px solid rgba(245,158,11,0.18)' }}>
-                  <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.8rem', color: '#78350F' }}>{word.memoryAid}</Typography>
+                <Box sx={{ bgcolor: '#FFFBEB', borderRadius: `${p(20)}px`, p: `${p(20)}px`, border: '1px solid rgba(245,158,11,0.18)' }}>
+                  <Typography sx={{ fontSize: p(22), color: '#78350F', fontFamily: FIGMA_FONT }}>{word.memoryAid}</Typography>
                 </Box>
               </Box>
             )}
           </Box>
 
           {/* Swipe hint */}
-          <Box sx={{ mt: 1.25, textAlign: 'center', flexShrink: 0 }}>
+          <Box sx={{ mt: `${p(16)}px`, mb: `${p(24)}px`, textAlign: 'center', flexShrink: 0 }}>
             <Typography
               component={motion.p}
               animate={{ opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 2.5, repeat: Infinity }}
-              sx={{ fontSize: '0.68rem', color: '#9CA3AF', fontWeight: 500 }}
+              sx={{ fontSize: p(22), color: '#A7B3B8', fontFamily: FIGMA_FONT, fontWeight: 400 }}
             >
               ← 左滑不认识 · 上滑模糊 · 右滑认识 →
             </Typography>
@@ -341,12 +457,16 @@ function SessionComplete({
 function LearningSession({
   words,
   is960,
+  screenSize,
   onExitToDashboard,
 }: {
   words: Word[];
   is960: boolean;
+  screenSize: string;
   onExitToDashboard: () => void;
 }) {
+  const { openFeedback } = useFeedback();
+  const p = (n: number) => figmaPx(n, screenSize)
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [direction, setDirection] = useState(0);
@@ -354,6 +474,7 @@ function LearningSession({
   const [stats, setStats] = useState({ total: words.length, known: 0, uncertain: 0, unknown: 0 });
 
   const progress = ((idx + 1) / words.length) * 100;
+  const lessonTitle = `Lesson1 ${words[0]?.word ?? ''}`;
 
   const handleAssess = useCallback((a: 'know' | 'uncertain' | 'unknown') => {
     setStats(p => ({
@@ -378,50 +499,124 @@ function LearningSession({
   if (complete) return <SessionComplete stats={stats} onReturn={onExitToDashboard} is960={is960} />;
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#F8F9FA', overflow: 'hidden' }}>
-      {/* Header */}
-      <Box sx={{ flexShrink: 0, px: is960 ? 2 : 3, py: is960 ? 1.25 : 1.75, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'white', borderBottom: '1px solid #F1F3F5' }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#FFFFFF', overflow: 'hidden' }}>
+      <Box
+        sx={{
+          flexShrink: 0,
+          height: p(160),
+          px: `${p(60)}px`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: `${p(100)}px`,
+          bgcolor: '#FFFFFF',
+          borderBottom: '1px solid #E2E2E3',
+          boxSizing: 'border-box',
+        }}
+      >
         <ButtonBase
           onClick={onExitToDashboard}
-          sx={{ p: 1, borderRadius: '50%', color: '#6B7280', '&:hover': { bgcolor: '#F3F4F6' }, minWidth: 44, minHeight: 44 }}
+          aria-label="Back"
+          sx={{
+            width: p(80),
+            height: p(80),
+            minWidth: p(80),
+            borderRadius: '50%',
+            bgcolor: '#FFFFFF',
+            border: '1px solid #E0E0DF',
+            color: '#2D3436',
+            flexShrink: 0,
+            '&:active': { transform: 'scale(0.96)' },
+          }}
         >
-          <CloseIcon sx={{ fontSize: 24 }} />
+          <ChevronLeftIcon sx={{ fontSize: p(50), color: '#2D3436' }} />
         </ButtonBase>
 
-        <Box sx={{ flex: 1, mx: is960 ? 2 : 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 0.75 }}>
+        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: `${p(16)}px` }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography
               sx={{
-                fontSize: is960 ? '0.95rem' : '1.125rem',
-                fontWeight: 800,
-                color: '#64748B',
-                letterSpacing: '0.04em',
+                fontSize: p(32),
+                lineHeight: `${p(51)}px`,
+                fontWeight: 400,
+                color: '#2D3436',
+                fontFamily: FIGMA_FONT,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
             >
-              {idx + 1} / {words.length}
+              {lessonTitle}
             </Typography>
-            <Typography sx={{ fontSize: is960 ? '0.95rem' : '1.125rem', fontWeight: 800, color: '#2563EB' }}>
-              {Math.round(progress)}%
+            <Typography
+              sx={{
+                fontSize: p(32),
+                lineHeight: `${p(51)}px`,
+                fontWeight: 400,
+                color: '#2D3436',
+                fontFamily: FIGMA_FONT,
+                flexShrink: 0,
+              }}
+            >
+              {idx + 1}/{words.length}
             </Typography>
           </Box>
-          <Box sx={{ height: 6, bgcolor: '#F1F3F5', borderRadius: 99, overflow: 'hidden' }}>
-            <motion.div style={{ height: '100%', background: '#3B82F6', borderRadius: 99 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.4 }} />
+          <Box sx={{ height: p(10), bgcolor: '#E8E8E8', borderRadius: `${p(20)}px`, overflow: 'hidden' }}>
+            <motion.div
+              style={{ height: '100%', background: FLASH_BLUE, borderRadius: 20 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.4 }}
+            />
           </Box>
         </Box>
 
-        <FeedbackEntryButton is960={is960} context={{ screen: 'flashcard_session', lessonId: words[idx]?.id }} />
+        <ButtonBase
+          onClick={() => openFeedback({ screen: 'flashcard_session', lessonId: words[idx]?.id })}
+          aria-label="Feedback"
+          sx={{
+            width: p(60),
+            height: p(60),
+            minWidth: p(60),
+            borderRadius: `${p(18)}px`,
+            background: 'linear-gradient(161.57deg, #FF7B4B 5.42%, #FD632C 86.67%)',
+            color: '#FFFFFF',
+            flexShrink: 0,
+            boxShadow: '0px 4px 7px rgba(255, 168, 136, 0.5)',
+            '&:active': { transform: 'scale(0.94)' },
+          }}
+        >
+          <Box
+            component="svg"
+            viewBox="0 0 40 40"
+            aria-hidden
+            sx={{ width: p(40), height: p(40), display: 'block' }}
+          >
+            <path
+              d="M8 10h18a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H16l-6 5v-5H8a4 4 0 0 1-4-4V14a4 4 0 0 1 4-4z"
+              fill="none"
+              stroke="#fff"
+              strokeWidth="3"
+            />
+            <rect x="12" y="15" width="11" height="7" rx="1.5" fill="#fff" />
+            <path d="M22 22l6 6" fill="none" stroke="#fff" strokeWidth="3" />
+          </Box>
+        </ButtonBase>
       </Box>
 
-      {/* Card area */}
-      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflowY: 'auto', overflowX: 'hidden', px: 2, py: is960 ? 1.5 : 2 }}>
-        {/* Background preview cards */}
-        {idx + 1 < words.length && (
-          <Box sx={{ position: 'absolute', opacity: 0.18, transform: 'translateX(52px) scale(0.9)', zIndex: 0, width: is960 ? 300 : 360, aspectRatio: '3 / 4', bgcolor: 'white', borderRadius: is960 ? '24px' : '32px', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }} />
-        )}
-        {idx > 0 && (
-          <Box sx={{ position: 'absolute', opacity: 0.18, transform: 'translateX(-52px) scale(0.9)', zIndex: 0, width: is960 ? 300 : 360, aspectRatio: '3 / 4', bgcolor: 'white', borderRadius: is960 ? '24px' : '32px', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }} />
-        )}
-
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+          px: `${p(60)}px`,
+          pt: `${p(40)}px`,
+        }}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={idx}
@@ -429,58 +624,101 @@ function LearningSession({
             animate={{ x: 0, opacity: 1, scale: 1 }}
             exit={{ x: direction > 0 ? -260 : 0, opacity: 0, scale: 0.92 }}
             transition={{ type: 'spring', damping: 22, stiffness: 130 }}
-            style={{ zIndex: 1 }}
+            style={{ zIndex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <Flashcard
               word={words[idx]}
               onAssess={handleAssess}
               onFlipChange={setFlipped}
-              is960={is960}
+              screenSize={screenSize}
             />
           </motion.div>
         </AnimatePresence>
       </Box>
 
-      {/* Footer: fixed height so flip doesn't reflow the centered card */}
       <Box
         sx={{
           flexShrink: 0,
-          height: is960 ? 72 : 84,
-          bgcolor: 'white',
-          borderTop: '1px solid #F1F3F5',
+          height: p(141),
+          bgcolor: '#FFFFFF',
+          borderTop: '1px solid #E0E0DF',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          px: is960 ? 2 : 3,
+          px: `${p(60)}px`,
           boxSizing: 'border-box',
         }}
       >
-        {!flipped ? (
-          <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: '#9CA3AF', fontWeight: 500, textAlign: 'center' }}>
-            点击卡片翻转，查看详细释义与例句
-          </Typography>
-        ) : (
-          <Box sx={{ width: '100%', display: 'flex', gap: is960 ? 1.25 : 2, justifyContent: 'center' }}>
+        {flipped ? (
+          <Box sx={{ width: '100%', display: 'flex', gap: `${p(24)}px`, justifyContent: 'center' }}>
             <ButtonBase
               onClick={() => handleAssess('unknown')}
-              sx={{ flex: 1, maxWidth: is960 ? 140 : 180, py: is960 ? 1.2 : 1.5, borderRadius: '16px', bgcolor: '#FEF2F2', color: '#DC2626', fontWeight: 800, fontSize: is960 ? '0.8rem' : '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75, border: '1.5px solid #FECACA', '&:active': { bgcolor: '#FEE2E2' } }}
+              sx={{
+                flex: 1,
+                maxWidth: p(280),
+                height: p(72),
+                borderRadius: `${p(24)}px`,
+                bgcolor: '#FEF2F2',
+                color: '#DC2626',
+                fontWeight: 700,
+                fontSize: p(24),
+                fontFamily: FIGMA_FONT,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: `${p(8)}px`,
+                border: '1.5px solid #FECACA',
+                '&:active': { bgcolor: '#FEE2E2' },
+              }}
             >
-              <CloseIcon sx={{ fontSize: 18 }} /> 不认识
+              <CloseIcon sx={{ fontSize: p(28) }} /> 不认识
             </ButtonBase>
             <ButtonBase
               onClick={() => handleAssess('uncertain')}
-              sx={{ flex: 1, maxWidth: is960 ? 140 : 180, py: is960 ? 1.2 : 1.5, borderRadius: '16px', bgcolor: '#FFFBEB', color: '#D97706', fontWeight: 800, fontSize: is960 ? '0.8rem' : '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75, border: '1.5px solid #FDE68A', '&:active': { bgcolor: '#FEF3C7' } }}
+              sx={{
+                flex: 1,
+                maxWidth: p(280),
+                height: p(72),
+                borderRadius: `${p(24)}px`,
+                bgcolor: '#FFFBEB',
+                color: '#D97706',
+                fontWeight: 700,
+                fontSize: p(24),
+                fontFamily: FIGMA_FONT,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: `${p(8)}px`,
+                border: '1.5px solid #FDE68A',
+                '&:active': { bgcolor: '#FEF3C7' },
+              }}
             >
-              <HelpOutlineIcon sx={{ fontSize: 18 }} /> 模糊
+              <HelpOutlineIcon sx={{ fontSize: p(28) }} /> 模糊
             </ButtonBase>
             <ButtonBase
               onClick={() => handleAssess('know')}
-              sx={{ flex: 1, maxWidth: is960 ? 140 : 180, py: is960 ? 1.2 : 1.5, borderRadius: '16px', bgcolor: '#F0FDF4', color: '#16A34A', fontWeight: 800, fontSize: is960 ? '0.8rem' : '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75, border: '1.5px solid #BBF7D0', '&:active': { bgcolor: '#DCFCE7' } }}
+              sx={{
+                flex: 1,
+                maxWidth: p(280),
+                height: p(72),
+                borderRadius: `${p(24)}px`,
+                bgcolor: '#F0FDF4',
+                color: '#16A34A',
+                fontWeight: 700,
+                fontSize: p(24),
+                fontFamily: FIGMA_FONT,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: `${p(8)}px`,
+                border: '1.5px solid #BBF7D0',
+                '&:active': { bgcolor: '#DCFCE7' },
+              }}
             >
-              <CheckIcon sx={{ fontSize: 18 }} /> 认识
+              <CheckIcon sx={{ fontSize: p(28) }} /> 认识
             </ButtonBase>
           </Box>
-        )}
+        ) : null}
       </Box>
     </Box>
   );
@@ -1605,7 +1843,7 @@ export default function LingoFlashPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
+  const screenSize = APP_SCREEN_SIZE;
   const is960 = screenSize === '960x540';
 
   const [view, setView] = useState<'dashboard' | 'learning' | 'review'>('dashboard');
@@ -1688,6 +1926,7 @@ export default function LingoFlashPage() {
           <LearningSession
             words={learningWords}
             is960={is960}
+            screenSize={screenSize}
             onExitToDashboard={handleExitFromSession}
           />
         )}

@@ -87,6 +87,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { resolveBackPath } from '../utils/navigateBack';
 import { figmaPx, FIGMA_FONT } from '../utils/figmaScale';
+import { AI_TUTOR_SURFACE } from '../components/home/hubChrome';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store/store';
 import { addHistory, deleteHistory, ChatHistoryItem } from '../store/slices/chatHistorySlice';
@@ -967,7 +968,7 @@ export default function AIChatPage() {
               height: px(118),
               flexShrink: 0,
               borderRadius: '999px',
-              background: 'linear-gradient(103.66deg, #FEDC5E -6.18%, #3FB266 43.73%)',
+              background: AI_TUTOR_SURFACE,
               boxShadow: `0 ${px(16)}px ${px(36)}px rgba(63,178,102,0.28)`,
               transition: 'transform 0.18s ease',
               '&:active': { transform: 'scale(0.98)' },

@@ -9,7 +9,6 @@ import {
   HomeSideCardStack,
 } from '../components/home/HomeSideCard'
 import StudioHomeHeader, { StudioHomeFrame } from '../components/home/StudioHomeHeader'
-import HubPagerDots from '../components/home/HubPagerDots'
 import { APP_SCREEN_SIZE } from '../utils/figmaScale'
 
 const HSK_LEVELS = ['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6']
@@ -100,7 +99,6 @@ export default function HSKStandardHomePage() {
           />
         </HomeSideCardStack>
       </HomePageShell>
-      <HubPagerDots screenSize={screenSize} />
     </StudioHomeFrame>
   )
 }

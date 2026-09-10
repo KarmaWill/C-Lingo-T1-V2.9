@@ -21,7 +21,8 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import StyleIcon from '@mui/icons-material/Style';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
-import AndroidIcon from '@mui/icons-material/Android';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import HeadphonesIcon from '@mui/icons-material/Headphones';
 import type { SvgIconComponent } from '@mui/icons-material';
 import { getInstalledExtraApps, removeInstalledExtraApp, MAX_EXTRA_APPS, type CatalogApp } from '../data/appsCatalog';
 import { getPendingAppUpdatesCount } from '../data/appUpdatesCatalog';
@@ -43,8 +44,26 @@ import {
   toggleBuiltinUtility,
   type BuiltinUtilityId,
 } from '../data/utilityBarConfig';
+import {
+  EXPLORE_BUILTIN_APPS,
+  loadExploreBuiltinIds,
+  removeExploreBuiltin,
+  type ExploreBuiltinId,
+} from '../data/exploreAppsConfig';
 import { useLongPress } from '../utils/useLongPress';
 import type { ReactNode } from 'react';
+import HubLangProfile from '../components/home/HubLangProfile';
+import HubContainBoard from '../components/home/HubContainBoard';
+import { StudioHomeFrame } from '../components/home/StudioHomeHeader';
+import {
+  EXPLORE_MAIN1,
+  HUB_CANVAS_CLINGO,
+  HUB_FRAME_PAD_TOP,
+  HUB_FRAME_PAD_X,
+  HUB_SURFACE,
+  HUB_SURFACE_SHADOW,
+} from '../components/home/hubChrome';
+import { APP_SCREEN_SIZE, figmaPx, FIGMA_FONT } from '../utils/figmaScale';
 
 const POMODORO_SECONDS = 25 * 60;
 
@@ -165,95 +184,65 @@ function UtilityToolButton({
   );
 }
 
+const EXPLORE_APP_ICONS: Record<ExploreBuiltinId, SvgIconComponent> = {
+  tutor: SmartToyIcon,
+  pinyin: HeadphonesIcon,
+  flashcards: StyleIcon,
+  favorites: BookmarkIcon,
+  writing: EditNoteIcon,
+};
+
 function ExtraAppTile({
   app,
-  is960,
-  tileRadius,
-  tilePadX,
-  tilePadY,
-  tileIconBox,
-  tileIconSize,
-  tileLabelSize,
+  screenSize,
   isDeleteMode,
   onEnterEditMode,
   onRemove,
   onLaunch,
 }: {
   app: CatalogApp;
-  is960: boolean;
-  tileRadius: string;
-  tilePadX: number;
-  tilePadY: number;
-  tileIconBox: number;
-  tileIconSize: number;
-  tileLabelSize: string;
+  screenSize: string;
   isDeleteMode: boolean;
   onEnterEditMode: () => void;
   onRemove: () => void;
   onLaunch: () => void;
 }) {
-  const longPress = useLongPress(onEnterEditMode);
-
   return (
-    <Box sx={{ position: 'relative', minHeight: 0, height: '100%' }}>
-      <ButtonBase
-        {...longPress}
-        onClick={() => {
-          if (longPress.consumeLongPress()) return;
-          if (isDeleteMode) return;
-          onLaunch();
-        }}
+    <ExploreAppIcon
+      screenSize={screenSize}
+      label={app.label}
+      bg={app.bg}
+      showDelete={isDeleteMode}
+      onEnterEditMode={onEnterEditMode}
+      onRemove={onRemove}
+      onClick={onLaunch}
+    />
+  );
+}
+
+function SettingsChevron({ size }: { size: number }) {
+  return (
+    <Box
+      aria-hidden
+      sx={{
+        width: size,
+        height: size,
+        flexShrink: 0,
+        position: 'relative',
+      }}
+    >
+      <Box
         sx={{
-          width: '100%',
-          borderRadius: tileRadius,
-          px: tilePadX,
-          py: tilePadY,
-          bgcolor: app.bg,
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          gap: is960 ? 0.85 : 1,
-          minHeight: 0,
-          height: '100%',
-          transition: 'transform 0.15s',
-          ...(isDeleteMode ? { transform: 'scale(0.97)', boxShadow: '0 0 0 2px rgba(239,68,68,0.5)' } : {}),
-          '&:active': { transform: 'scale(0.97)' },
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          width: size * 0.38,
+          height: size * 0.38,
+          borderRight: '3px solid #A7B3B8',
+          borderBottom: '3px solid #A7B3B8',
+          transform: 'translate(-70%, -50%) rotate(-45deg)',
         }}
-      >
-        <Box sx={{ width: tileIconBox, height: tileIconBox, borderRadius: is960 ? '10px' : '12px', bgcolor: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 900, fontSize: tileIconSize * 0.7 }}>
-          {app.label.charAt(0)}
-        </Box>
-        <Typography sx={{ fontWeight: 850, fontSize: tileLabelSize, textAlign: 'left', lineHeight: 1.25 }}>
-          {app.label}
-        </Typography>
-      </ButtonBase>
-      {isDeleteMode && (
-        <ButtonBase
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
-          }}
-          aria-label={`Remove ${app.label}`}
-          sx={{
-            position: 'absolute',
-            top: 6,
-            right: 6,
-            width: 28,
-            height: 28,
-            minWidth: 28,
-            minHeight: 28,
-            borderRadius: '50%',
-            bgcolor: '#EF4444',
-            color: 'white',
-            zIndex: 2,
-            boxShadow: '0 4px 12px rgba(239,68,68,0.45)',
-            '&:active': { transform: 'scale(0.92)' },
-          }}
-        >
-          <CloseIcon sx={{ fontSize: 16 }} />
-        </ButtonBase>
-      )}
+      />
     </Box>
   );
 }
@@ -262,15 +251,15 @@ function SettingsNavRow({
   label,
   onClick,
   badgeCount,
-  is960,
+  screenSize,
 }: {
   label: string;
   onClick: () => void;
   badgeCount?: number;
-  is960: boolean;
+  screenSize: string;
 }) {
+  const p = (n: number) => figmaPx(n, screenSize);
   const showBadge = typeof badgeCount === 'number' && badgeCount > 0;
-  const rowInsetX = is960 ? 1.35 : 1.65;
 
   return (
     <ButtonBase
@@ -278,145 +267,227 @@ function SettingsNavRow({
       sx={{
         display: 'flex',
         width: '100%',
+        flex: 1,
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 1,
-        minHeight: is960 ? 50 : 54,
-        py: is960 ? 0.85 : 1,
-        pl: rowInsetX,
-        pr: rowInsetX,
-        borderBottom: '1px solid',
-        borderColor: 'rgba(0,0,0,0.06)',
-        flexShrink: 0,
+        gap: `${p(10)}px`,
+        minHeight: 0,
+        py: `${p(10)}px`,
+        borderBottom: '2px solid #E0E0DF',
         borderRadius: 0,
         textAlign: 'left',
         '&:last-child': { borderBottom: 'none' },
-        '&:active': { bgcolor: 'rgba(0,180,160,0.06)' },
+        '&:active': { bgcolor: 'rgba(99,110,114,0.06)' },
       }}
     >
-      <Typography sx={{ fontSize: is960 ? '0.82rem' : '0.98rem', color: '#374151', fontWeight: 700 }}>
+      <Typography
+        sx={{
+          fontSize: p(22),
+          lineHeight: `${p(28)}px`,
+          color: '#636E72',
+          fontWeight: 700,
+          fontFamily: FIGMA_FONT,
+        }}
+      >
         {label}
       </Typography>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 0.65 : 0.75, flexShrink: 0 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(8)}px`, flexShrink: 0 }}>
         {showBadge && (
           <Box
             aria-label={`${badgeCount} updates available`}
             sx={{
-              minWidth: is960 ? 28 : 32,
-              height: is960 ? 24 : 28,
-              px: is960 ? 0.65 : 0.75,
+              minWidth: p(22),
+              height: p(22),
+              px: `${p(6)}px`,
               borderRadius: '999px',
               bgcolor: '#F94B4B',
               color: 'white',
-              border: '2px solid #FFFFFF',
-              boxShadow: '0 4px 12px rgba(239,68,68,0.28)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: is960 ? '0.72rem' : '0.82rem',
-              fontWeight: 900,
+              fontSize: p(13),
+              fontWeight: 700,
               lineHeight: 1,
+              fontFamily: FIGMA_FONT,
             }}
           >
             {badgeCount}
           </Box>
         )}
-        <Typography sx={{ fontSize: is960 ? '0.85rem' : '1rem', color: '#9CA3AF', fontWeight: 600 }} aria-hidden>
-          ›
-        </Typography>
+        <SettingsChevron size={p(28)} />
       </Box>
     </ButtonBase>
   );
 }
 
-/** Six user-pinnable system app slots (cols 2–3, rows 2–4). */
-const DYNAMIC_APP_SLOTS = [
-  { col: 2, row: 2 },
-  { col: 3, row: 2 },
-  { col: 2, row: 3 },
-  { col: 3, row: 3 },
-  { col: 2, row: 4 },
-  { col: 3, row: 4 },
-] as const;
-
-function AppGridTile({
-  label,
-  path,
-  bg,
-  icon: Icon,
-  gridColumn,
-  gridRow,
-  is960,
-  tileRadius,
-  tilePadX,
-  tilePadY,
-  tileIconBox,
-  tileIconSize,
-  tileLabelSize,
-  onNavigate,
-}: {
-  label: string;
-  path: string;
-  bg: string;
-  icon: SvgIconComponent;
-  gridColumn?: number;
-  gridRow?: number;
-  is960: boolean;
-  tileRadius: string;
-  tilePadX: number;
-  tilePadY: number;
-  tileIconBox: number;
-  tileIconSize: number;
-  tileLabelSize: string;
-  onNavigate: (path: string) => void;
-}) {
+function ExploreHeader({ screenSize }: { screenSize: string }) {
+  const p = (n: number) => figmaPx(n, screenSize);
   return (
-    <ButtonBase
-      onClick={() => onNavigate(path)}
+    <Box
       sx={{
-        gridColumn,
-        gridRow,
-        borderRadius: tileRadius,
-        px: tilePadX,
-        py: tilePadY,
-        bgcolor: bg,
-        color: 'white',
+        flexShrink: 0,
+        mx: `-${p(HUB_FRAME_PAD_X)}px`,
+        mt: `-${p(HUB_FRAME_PAD_TOP)}px`,
+        mb: `${p(20)}px`,
+        px: `${p(HUB_FRAME_PAD_X)}px`,
+        pt: `${p(16)}px`,
+        pb: `${p(16)}px`,
+        bgcolor: HUB_SURFACE,
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'flex-start',
-        gap: is960 ? 0.85 : 1,
-        minHeight: 0,
-        height: '100%',
-        transition: 'transform 0.15s',
-        '&:active': { transform: 'scale(0.97)' },
+        justifyContent: 'space-between',
+        minHeight: p(90),
+        gap: `${p(24)}px`,
       }}
     >
-      <Box
-        sx={{
-          width: tileIconBox,
-          height: tileIconBox,
-          borderRadius: is960 ? '10px' : '12px',
-          bgcolor: 'rgba(255,255,255,0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <Icon sx={{ fontSize: tileIconSize }} />
-      </Box>
       <Typography
+        component="h1"
         sx={{
-          fontWeight: 850,
-          fontSize: tileLabelSize,
-          textAlign: 'left',
-          lineHeight: 1.25,
-          wordBreak: 'break-word',
+          fontWeight: 700,
+          fontSize: p(48),
+          lineHeight: `${p(70)}px`,
+          color: '#2D3436',
+          fontFamily: FIGMA_FONT,
+          whiteSpace: 'nowrap',
         }}
       >
-        {label}
+        Explore
       </Typography>
-    </ButtonBase>
+      <HubLangProfile screenSize={screenSize} />
+    </Box>
+  );
+}
+
+function ExploreAppIcon({
+  screenSize,
+  label,
+  bg,
+  icon: Icon,
+  onClick,
+  addSlot,
+  showDelete = false,
+  onEnterEditMode,
+  onRemove,
+}: {
+  screenSize: string;
+  label?: string;
+  bg?: string;
+  icon?: SvgIconComponent;
+  onClick: () => void;
+  addSlot?: boolean;
+  showDelete?: boolean;
+  onEnterEditMode?: () => void;
+  onRemove?: () => void;
+}) {
+  const p = (n: number) => figmaPx(n, screenSize);
+  const longPress = useLongPress(() => {
+    onEnterEditMode?.();
+  });
+  const badge = p(32);
+
+  return (
+    <Box sx={{ position: 'relative', width: '100%', minWidth: 0, overflow: 'visible' }}>
+      <ButtonBase
+        {...(onEnterEditMode ? longPress : {})}
+        onContextMenu={(e) => {
+          if (!onEnterEditMode) return;
+          e.preventDefault();
+          onEnterEditMode();
+        }}
+        onClick={() => {
+          if (onEnterEditMode && longPress.consumeLongPress()) return;
+          if (showDelete) return;
+          onClick();
+        }}
+        aria-label={label || 'Add more apps'}
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          width: '100%',
+          minWidth: 0,
+          bgcolor: 'transparent',
+          WebkitTapHighlightColor: 'transparent',
+          '&:active': { transform: showDelete ? 'none' : 'scale(0.96)' },
+        }}
+      >
+        <Box
+          sx={{
+            width: '100%',
+            aspectRatio: '1 / 1',
+            maxWidth: p(EXPLORE_MAIN1.icon),
+            borderRadius: `${p(EXPLORE_MAIN1.iconRadius)}px`,
+            bgcolor: addSlot ? '#FFFFFF' : bg,
+            border: '2px solid #E0E0DF',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            boxSizing: 'border-box',
+            opacity: showDelete ? 0.88 : 1,
+            transform: showDelete ? 'scale(0.96)' : 'none',
+          }}
+        >
+          {addSlot ? (
+            <Box
+              sx={{
+                width: '28%',
+                height: '28%',
+                position: 'relative',
+              }}
+            >
+              <Box sx={{ position: 'absolute', left: 0, right: 0, top: '46%', height: '12%', bgcolor: '#A7B3B8', borderRadius: 49 }} />
+              <Box sx={{ position: 'absolute', top: 0, bottom: 0, left: '46%', width: '12%', bgcolor: '#A7B3B8', borderRadius: 49 }} />
+            </Box>
+          ) : (
+            Icon && <Icon sx={{ fontSize: '50%', color: '#FFFFFF', width: '52%', height: '52%' }} />
+          )}
+        </Box>
+        <Typography
+          aria-hidden={!label}
+          sx={{
+            mt: `${p(4)}px`,
+            fontSize: p(18),
+            lineHeight: 1.2,
+            fontWeight: 700,
+            color: '#000000',
+            fontFamily: FIGMA_FONT,
+            textAlign: 'center',
+            width: '100%',
+            visibility: label ? 'visible' : 'hidden',
+          }}
+        >
+          {label || 'Add'}
+        </Typography>
+      </ButtonBase>
+      {showDelete && onRemove && (
+        <ButtonBase
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+          aria-label={`Remove ${label}`}
+          sx={{
+            position: 'absolute',
+            top: -p(6),
+            right: `calc((100% - min(100%, ${p(EXPLORE_MAIN1.icon)}px)) / 2 - ${p(8)}px)`,
+            width: badge,
+            height: badge,
+            minWidth: badge,
+            minHeight: badge,
+            borderRadius: '50%',
+            bgcolor: '#EF4444',
+            color: 'white',
+            zIndex: 3,
+            boxShadow: '0 2px 8px rgba(239,68,68,0.45)',
+            '&:active': { transform: 'scale(0.92)' },
+          }}
+        >
+          <CloseIcon sx={{ fontSize: p(18) }} />
+        </ButtonBase>
+      )}
+    </Box>
   );
 }
 
@@ -435,16 +506,17 @@ export default function AppsPage() {
   const [utilityToolIds, setUtilityToolIds] = useState(() => loadInstalledUtilityToolIds());
   const [builtinUtilityIds, setBuiltinUtilityIds] = useState(() => loadBuiltinUtilityIds());
   const [extraApps, setExtraApps] = useState(() => getInstalledExtraApps());
+  const [exploreBuiltinIds, setExploreBuiltinIds] = useState(() => loadExploreBuiltinIds());
   const [utilityEditMode, setUtilityEditMode] = useState(false);
   const [appEditMode, setAppEditMode] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const pendingUpdates = getPendingAppUpdatesCount();
 
-  // Read screen size from environment variable
-  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768'
+  const screenSize = APP_SCREEN_SIZE
   const is960 = screenSize === '960x540'
   const is1920x1125 = screenSize === '1920x1125'
+  const p = (n: number) => figmaPx(n, screenSize)
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -561,128 +633,122 @@ export default function AppsPage() {
   const dateInfo = formatDate(currentTime);
   const timeString = currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 
-  const cardRadius = is960 ? '18px' : is1920x1125 ? '28px' : '24px';
-  const barRadius = is960 ? '12px' : '14px';
-  const tileRadius = is960 ? '16px' : '20px';
-  const tileLabelSize = is960 ? '0.82rem' : '0.96rem';
-  const tileIconBox = is960 ? 34 : 40;
-  const tileIconSize = is960 ? 20 : 24;
-  const tilePadX = is960 ? 1.15 : 1.4;
-  const tilePadY = is960 ? 1.05 : 1.25;
-
   const utilityIconSx = {
-    width: 44,
-    height: 44,
-    borderRadius: barRadius,
-    bgcolor: '#E2E8F0',
+    width: p(78),
+    height: p(78),
+    borderRadius: `${p(24)}px`,
+    bgcolor: '#EBEBEB',
     color: '#334155',
-    '&:active': { bgcolor: '#CBD5E1' },
+    '&:active': { bgcolor: '#E0E0DF' },
     transition: 'background 0.15s',
   } as const;
 
   const utilityAddSx = {
-    width: 44,
-    height: 44,
-    borderRadius: barRadius,
-    border: '1px dashed #CBD5E1',
+    width: p(78),
+    height: p(78),
+    borderRadius: `${p(24)}px`,
+    border: '3px dashed #D9E1EA',
     bgcolor: '#FFFFFF',
-    color: '#94A3B8',
-    '&:active': { bgcolor: '#F1F5F9' },
+    color: '#91A4BE',
+    '&:active': { bgcolor: '#F8F8F8' },
     transition: 'background 0.15s',
   } as const;
 
   return (
     <>
-    <Box
-      sx={{
-        height: '100%',
-        minHeight: 0,
-        overflow: 'hidden',
-        boxSizing: 'border-box',
-        bgcolor: is1920x1125 ? '#FBF9F6' : '#FFF8F0',
-        p: is960 ? 2 : (is1920x1125 ? 4 : 3),
-        display: 'grid',
-        gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 2.45fr) minmax(0, 1fr)' },
-        gridTemplateRows: { xs: 'auto auto', md: 'minmax(0, 1fr)' },
-        gap: is960 ? 1.25 : 1.5,
-        alignItems: 'stretch',
-      }}
-    >
+    <StudioHomeFrame screenSize={screenSize} canvas={HUB_CANVAS_CLINGO}>
+      <ExploreHeader screenSize={screenSize} />
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflow: 'hidden',
+          display: 'grid',
+          gridTemplateColumns: `${p(EXPLORE_MAIN1.left)}fr ${p(EXPLORE_MAIN1.right)}fr`,
+          gap: `${p(EXPLORE_MAIN1.gap)}px`,
+          alignItems: 'stretch',
+        }}
+      >
               <Box
                 sx={{
                   minWidth: 0,
-                  minHeight: { xs: 360, md: 0 },
-                  height: { md: '100%' },
-                  bgcolor: 'white',
-                  borderRadius: cardRadius,
-                  p: is960 ? 1.35 : (is1920x1125 ? 2.25 : 1.85),
-                  boxShadow: '0 12px 28px rgba(15,23,42,0.08)',
-                  border: '1px solid rgba(0,0,0,0.04)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: is960 ? 0.9 : 1.1,
+                  minHeight: 0,
+                  height: '100%',
+                  bgcolor: HUB_SURFACE,
+                  borderRadius: `${p(EXPLORE_MAIN1.cardRadius)}px`,
+                  p: `${p(28)}px`,
+                  boxShadow: HUB_SURFACE_SHADOW,
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(0, 0.72fr) minmax(0, 1fr)',
+                  gap: `${p(24)}px`,
                   overflow: 'hidden',
                 }}
               >
-                {/* Utility bar — light gray strip, time left / Alarm & Calendar right */}
                 <Box
                   sx={{
-                    bgcolor: '#EEF2F4',
-                    borderRadius: barRadius,
-                    px: is960 ? 1.25 : 1.75,
-                    py: is960 ? 1 : 1.25,
-                    display: 'flex',
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    alignItems: { sm: 'center' },
-                    justifyContent: 'space-between',
-                    gap: is960 ? 1 : 1.25,
                     minWidth: 0,
+                    minHeight: 0,
+                    bgcolor: '#F8F8F8',
+                    borderRadius: `${p(EXPLORE_MAIN1.clockRadius)}px`,
+                    px: `${p(28)}px`,
+                    pt: `${p(22)}px`,
+                    pb: `${p(22)}px`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 0.85 : 1.15, flexWrap: 'wrap', minWidth: 0, flex: 1 }}>
-                      <Typography
-                        sx={{
-                          fontSize: is960 ? '1.35rem' : (is1920x1125 ? '1.75rem' : '1.55rem'),
-                          fontWeight: 900,
-                          color: '#111827',
-                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                          lineHeight: 1.1,
-                          letterSpacing: '-0.02em',
-                          flexShrink: 0,
-                        }}
-                      >
-                        {timeString}
-                      </Typography>
-                      <Box
-                        sx={{
-                          px: is960 ? 1 : 1.25,
-                          py: is960 ? 0.4 : 0.5,
-                          borderRadius: barRadius,
-                          bgcolor: '#E2E8F0',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          flexShrink: 0,
-                        }}
-                      >
-                        <Typography
-                          sx={{
-                            fontSize: is960 ? '0.68rem' : '0.78rem',
-                            fontWeight: 800,
-                            color: '#334155',
-                            lineHeight: 1.2,
-                            letterSpacing: '0.01em',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {dateInfo.month} {dateInfo.day} · {dateInfo.weekday}
-                        </Typography>
-                      </Box>
-                  </Box>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: is960 ? 0.65 : 0.85, flexShrink: 0, justifyContent: { xs: 'flex-start', sm: 'flex-end' }, alignItems: 'center' }}>
+                  <Typography
+                    sx={{
+                      fontSize: p(100),
+                      fontWeight: 700,
+                      color: '#263244',
+                      fontFamily: FIGMA_FONT,
+                      lineHeight: 1,
+                      letterSpacing: '-0.03em',
+                      flexShrink: 0,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {timeString}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      mt: `${p(10)}px`,
+                      fontSize: p(36),
+                      fontWeight: 700,
+                      color: '#263244',
+                      fontFamily: FIGMA_FONT,
+                      lineHeight: `${p(46)}px`,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {dateInfo.month} {dateInfo.day} · {dateInfo.weekday}
+                  </Typography>
+                  <Box
+                    sx={{
+                      mt: `${p(28)}px`,
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: `${p(14)}px`,
+                      alignItems: 'center',
+                      minHeight: 0,
+                      overflow: 'auto',
+                    }}
+                  >
                     {utilityEditMode && (
                       <ButtonBase
                         onClick={() => setUtilityEditMode(false)}
-                        sx={{ minHeight: 32, px: 1.25, borderRadius: '10px', bgcolor: '#111827', color: 'white', fontWeight: 800, fontSize: '0.72rem' }}
+                        sx={{
+                          minHeight: p(36),
+                          px: `${p(14)}px`,
+                          borderRadius: `${p(12)}px`,
+                          bgcolor: '#111827',
+                          color: 'white',
+                          fontWeight: 700,
+                          fontSize: p(14),
+                          fontFamily: FIGMA_FONT,
+                        }}
                       >
                         Done
                       </ButtonBase>
@@ -697,7 +763,7 @@ export default function AppsPage() {
                         onRemove={() => handleRemoveBuiltinUtility('alarm')}
                         onClick={() => handleUtilityTool('alarm')}
                       >
-                        <AccessAlarmOutlinedIcon sx={{ fontSize: is960 ? 22 : 24 }} />
+                        <AccessAlarmOutlinedIcon sx={{ fontSize: p(32) }} />
                       </UtilityBarIconButton>
                     )}
                     {builtinUtilityIds.includes('calendar') && (
@@ -710,7 +776,7 @@ export default function AppsPage() {
                         onRemove={() => handleRemoveBuiltinUtility('calendar')}
                         onClick={() => handleUtilityTool('calendar')}
                       >
-                        <CalendarMonthOutlinedIcon sx={{ fontSize: is960 ? 22 : 24 }} />
+                        <CalendarMonthOutlinedIcon sx={{ fontSize: p(32) }} />
                       </UtilityBarIconButton>
                     )}
                     {builtinUtilityIds.includes('daycountdown') && (
@@ -723,7 +789,7 @@ export default function AppsPage() {
                         onRemove={() => handleRemoveBuiltinUtility('daycountdown')}
                         onClick={() => handleUtilityTool('daycountdown')}
                       >
-                        <TodayOutlinedIcon sx={{ fontSize: is960 ? 22 : 24 }} />
+                        <TodayOutlinedIcon sx={{ fontSize: p(32) }} />
                       </UtilityBarIconButton>
                     )}
                     {builtinUtilityIds.includes('pomodoro') && (
@@ -736,7 +802,7 @@ export default function AppsPage() {
                         onRemove={() => handleRemoveBuiltinUtility('pomodoro')}
                         onClick={() => handleUtilityTool('pomodoro')}
                       >
-                        <HourglassEmptyOutlinedIcon sx={{ fontSize: is960 ? 22 : 24 }} />
+                        <HourglassEmptyOutlinedIcon sx={{ fontSize: p(32) }} />
                       </UtilityBarIconButton>
                     )}
                     {installedUtilityTools.map((tool) => (
@@ -760,194 +826,83 @@ export default function AppsPage() {
                       aria-label="Add system tools"
                       sx={utilityAddSx}
                     >
-                      <AddIcon sx={{ fontSize: is960 ? 22 : 24 }} />
+                      <AddIcon sx={{ fontSize: p(36) }} />
                     </ButtonBase>
                     )}
                   </Box>
                 </Box>
 
-                {/* App grid — fills remaining panel height */}
                 <Box
                   sx={{
-                    flex: 1,
-                    minHeight: is960 ? 280 : 320,
+                    minWidth: 0,
+                    minHeight: 0,
                     display: 'grid',
                     gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                    gridTemplateRows: 'repeat(4, minmax(0, 1fr))',
-                    gap: is960 ? 0.9 : 1.1,
-                    alignItems: 'stretch',
+                    alignContent: 'start',
+                    gap: `${p(16)}px ${p(18)}px`,
+                    overflow: 'auto',
+                    pt: `${p(16)}px`,
                   }}
                 >
-                  <ButtonBase
-                    onClick={() => navigate('/pinyin-chart', { state: { from: '/apps' } })}
-                    sx={{
-                      gridColumn: '1 / 2',
-                      gridRow: '1 / 3',
-                      borderRadius: tileRadius,
-                      p: is960 ? 1.35 : 1.65,
-                      bgcolor: '#FF6B35',
-                      color: 'white',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'flex-start',
-                      justifyContent: 'space-between',
-                      minHeight: 0,
-                      height: '100%',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      transition: 'transform 0.15s',
-                      '&:active': { transform: 'scale(0.97)' },
-                    }}
-                  >
-                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.12rem' : '1.32rem', lineHeight: 1.18, textAlign: 'left', zIndex: 1 }}>
-                      Pinyin<br />Chart
-                    </Typography>
-                    <TranslateIcon
-                      sx={{
-                        position: 'absolute',
-                        right: is960 ? 10 : 14,
-                        bottom: is960 ? 6 : 10,
-                        fontSize: is960 ? 92 : 118,
-                        color: 'rgba(255,255,255,0.82)',
-                        transform: 'rotate(-8deg)',
-                      }}
-                    />
-                  </ButtonBase>
-                  <AppGridTile
-                    label="FlashCards"
-                    path="/lingo-flash"
-                    bg="#2563EB"
-                    icon={StyleIcon}
-                    gridColumn={2}
-                    gridRow={1}
-                    is960={is960}
-                    tileRadius={tileRadius}
-                    tilePadX={tilePadX}
-                    tilePadY={tilePadY}
-                    tileIconBox={tileIconBox}
-                    tileIconSize={tileIconSize}
-                    tileLabelSize={tileLabelSize}
-                    onNavigate={(path) => navigate(path, { state: { from: '/apps' } })}
-                  />
-                  <AppGridTile
-                    label="Favorites"
-                    path="/favorites"
-                    bg="#F59E0B"
-                    icon={BookmarkIcon}
-                    gridColumn={3}
-                    gridRow={1}
-                    is960={is960}
-                    tileRadius={tileRadius}
-                    tilePadX={tilePadX}
-                    tilePadY={tilePadY}
-                    tileIconBox={tileIconBox}
-                    tileIconSize={tileIconSize}
-                    tileLabelSize={tileLabelSize}
-                    onNavigate={(path) => navigate(path, { state: { from: '/apps' } })}
-                  />
-
-                  <ButtonBase
-                    onClick={() => navigate('/character-writing', { state: { from: '/apps' } })}
-                    sx={{
-                      gridColumn: '1 / 2',
-                      gridRow: '3 / 5',
-                      borderRadius: tileRadius,
-                      p: is960 ? 1.35 : 1.65,
-                      bgcolor: '#FFC72C',
-                      color: 'white',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'flex-start',
-                      justifyContent: 'space-between',
-                      minHeight: 0,
-                      height: '100%',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      transition: 'transform 0.15s',
-                      '&:active': { transform: 'scale(0.97)' },
-                    }}
-                  >
-                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.12rem' : '1.32rem', lineHeight: 1.18, textAlign: 'left', zIndex: 1 }}>
-                      Character<br />Writing
-                    </Typography>
-                    <EditNoteIcon
-                      sx={{
-                        position: 'absolute',
-                        right: is960 ? 10 : 14,
-                        bottom: is960 ? 6 : 10,
-                        fontSize: is960 ? 92 : 118,
-                        color: 'rgba(255,255,255,0.82)',
-                        transform: 'rotate(-10deg)',
-                      }}
-                    />
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        right: is960 ? 34 : 42,
-                        top: is960 ? 28 : 34,
-                        color: 'rgba(255,255,255,0.88)',
-                        fontSize: is960 ? '1.35rem' : '1.6rem',
-                        fontWeight: 900,
-                      }}
-                    >
-                      ✦
-                    </Box>
-                  </ButtonBase>
-
-                  {extraApps.map((app, index) => (
-                    <Box
-                      key={app.id}
-                      sx={{
-                        gridColumn: DYNAMIC_APP_SLOTS[index].col,
-                        gridRow: DYNAMIC_APP_SLOTS[index].row,
-                        minHeight: 0,
-                        height: '100%',
-                      }}
-                    >
-                      <ExtraAppTile
-                        app={app}
-                        is960={is960}
-                        tileRadius={tileRadius}
-                        tilePadX={tilePadX}
-                        tilePadY={tilePadY}
-                        tileIconBox={tileIconBox}
-                        tileIconSize={tileIconSize}
-                        tileLabelSize={tileLabelSize}
-                        isDeleteMode={appEditMode}
+                  {exploreBuiltinIds.map((id) => {
+                    const app = EXPLORE_BUILTIN_APPS.find((item) => item.id === id);
+                    if (!app) return null;
+                    const Icon = EXPLORE_APP_ICONS[app.id];
+                    return (
+                      <ExploreAppIcon
+                        key={app.id}
+                        screenSize={screenSize}
+                        label={app.label}
+                        bg={app.bg}
+                        icon={Icon}
+                        showDelete={appEditMode}
                         onEnterEditMode={() => setAppEditMode(true)}
-                        onRemove={() => handleRemoveExtraApp(app.id)}
-                        onLaunch={() => {
-                          setToastMessage(`${app.label} is installed on this device.`);
-                          setShowToast(true);
-                        }}
+                        onRemove={() => setExploreBuiltinIds(removeExploreBuiltin(app.id))}
+                        onClick={() => navigate(app.path, { state: { from: '/apps' } })}
                       />
-                    </Box>
+                    );
+                  })}
+                  {extraApps.map((app) => (
+                    <ExtraAppTile
+                      key={app.id}
+                      app={app}
+                      screenSize={screenSize}
+                      isDeleteMode={appEditMode}
+                      onEnterEditMode={() => setAppEditMode(true)}
+                      onRemove={() => handleRemoveExtraApp(app.id)}
+                      onLaunch={() => {
+                        setToastMessage(`${app.label} is installed on this device.`);
+                        setShowToast(true);
+                      }}
+                    />
                   ))}
-
                   {extraApps.length < MAX_EXTRA_APPS && (
-                    <ButtonBase
-                      key="add-app-slot"
+                    <ExploreAppIcon
+                      screenSize={screenSize}
+                      addSlot
+                      onEnterEditMode={() => setAppEditMode(true)}
                       onClick={() => {
                         setAppEditMode(false);
                         navigate('/apps-catalog', { state: { from: '/apps' } });
                       }}
+                    />
+                  )}
+                  {appEditMode && (
+                    <ButtonBase
+                      onClick={() => setAppEditMode(false)}
                       sx={{
-                        gridColumn: DYNAMIC_APP_SLOTS[extraApps.length].col,
-                        gridRow: DYNAMIC_APP_SLOTS[extraApps.length].row,
-                        minHeight: 0,
-                        height: '100%',
-                        borderRadius: tileRadius,
-                        border: '1px solid #E5E7EB',
-                        bgcolor: '#FFFFFF',
-                        color: '#94A3B8',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        '&:active': { bgcolor: '#F1F5F9' },
+                        alignSelf: 'flex-start',
+                        minHeight: p(36),
+                        px: `${p(14)}px`,
+                        borderRadius: `${p(12)}px`,
+                        bgcolor: '#111827',
+                        color: 'white',
+                        fontWeight: 700,
+                        fontSize: p(14),
+                        fontFamily: FIGMA_FONT,
                       }}
-                      aria-label="Add more apps"
                     >
-                      <AddIcon sx={{ fontSize: is960 ? 36 : 42 }} />
+                      Done
                     </ButtonBase>
                   )}
                 </Box>
@@ -955,192 +910,237 @@ export default function AppsPage() {
               <Box
                 sx={{
                   minWidth: 0,
-                  minHeight: { xs: 320, md: 0 },
-                  height: { md: '100%' },
-                  bgcolor: 'white',
-                  borderRadius: is960 ? '20px' : (is1920x1125 ? '28px' : '24px'),
-                  p: is960 ? 1.35 : (is1920x1125 ? 2.5 : 2),
-                  boxShadow: '0 12px 28px rgba(15,23,42,0.08)',
+                  minHeight: 0,
+                  height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: is960 ? 1 : 1.25,
-                  overflow: 'hidden',
                 }}
               >
-                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1rem' : (is1920x1125 ? '1.35rem' : '1.15rem'), color: '#1F2937', flexShrink: 0, mb: is960 ? 0.15 : 0.25 }}>
-                  System settings
-                </Typography>
-                <Box
-                  sx={{
-                    flexShrink: 0,
-                    borderRadius: is960 ? '12px' : '14px',
-                    overflow: 'hidden',
-                    border: '1px solid rgba(0,0,0,0.05)',
-                    bgcolor: '#FAFBFC',
-                  }}
-                >
-                  <SettingsNavRow label="Language Packs" onClick={handleLanguagePackUpdate} is960={is960} />
-                  <SettingsNavRow label="Content Management" onClick={handleContentManagement} is960={is960} />
-                  <SettingsNavRow
-                    label="APK Upgrade"
-                    onClick={handleOpenNskStore}
-                    badgeCount={pendingUpdates}
-                    is960={is960}
-                  />
-                  <SettingsNavRow
-                    label="Parental Controls"
-                    onClick={() => navigate('/parental-controls', { state: { from: '/apps' } })}
-                    is960={is960}
-                  />
-                </Box>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 1,
-                    minHeight: is960 ? 62 : 68,
-                    py: is960 ? 1 : 1.15,
-                    pl: is960 ? 1.35 : 1.65,
-                    pr: is960 ? 1.15 : 1.35,
-                    flexShrink: 0,
-                    borderRadius: is960 ? '12px' : '14px',
-                    border: '1px solid',
-                    borderColor: blueLightFilter ? 'rgba(251, 191, 36, 0.45)' : 'rgba(0,0,0,0.06)',
-                    transition: 'background 0.25s ease, box-shadow 0.25s ease',
-                    ...(blueLightFilter
-                      ? {
-                          background:
-                            'linear-gradient(105deg, rgba(255,251,235,0.98) 0%, rgba(254,243,199,0.95) 45%, rgba(255,247,237,0.98) 100%)',
-                          boxShadow: '0 2px 12px rgba(245, 158, 11, 0.12)',
-                        }
-                      : { bgcolor: '#FAFBFC' }),
-                  }}
-                >
-                  <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Typography sx={{ fontSize: is960 ? '0.82rem' : '0.98rem', color: '#374151', fontWeight: 700 }}>
-                      Eye Protection
-                    </Typography>
-                    <Typography
-                      sx={{
-                        fontSize: is960 ? '0.72rem' : '0.82rem',
-                        color: blueLightFilter ? '#B45309' : '#9CA3AF',
-                        fontWeight: blueLightFilter ? 600 : 500,
-                        mt: 0.35,
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      {blueLightFilter ? 'Warm tint · eye care' : 'Warm tint · 20-20-20'}
-                    </Typography>
-                  </Box>
-                  <ButtonBase
-                    onClick={() => setBlueLightFilter((on) => !on)}
-                    aria-label={blueLightFilter ? 'Eye protection on, tap to turn off' : 'Eye protection off, tap to turn on'}
+                <HubContainBoard width={EXPLORE_MAIN1.settingsW} height={EXPLORE_MAIN1.settingsH}>
+                  <Box
                     sx={{
-                      flexShrink: 0,
-                      minWidth: is960 ? 48 : 54,
-                      minHeight: is960 ? 32 : 36,
-                      px: is960 ? 1.15 : 1.35,
-                      borderRadius: '8px',
-                      whiteSpace: 'nowrap',
-                      fontSize: is960 ? '0.68rem' : '0.75rem',
-                      fontWeight: 900,
-                      letterSpacing: '0.08em',
-                      lineHeight: 1,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'background 0.2s ease, color 0.2s ease, border-color 0.2s ease',
-                      ...(blueLightFilter
-                        ? {
-                            color: '#B45309',
-                            bgcolor: 'rgba(255, 255, 255, 0.92)',
-                            border: '1px solid rgba(251, 191, 36, 0.85)',
-                            boxShadow: '0 1px 4px rgba(245, 158, 11, 0.25)',
-                          }
-                        : {
-                            color: '#64748B',
-                            bgcolor: '#EEF2F7',
-                            border: '1px solid rgba(0,0,0,0.08)',
-                          }),
-                      '&:active': { transform: 'scale(0.96)' },
-                    }}
-                  >
-                    {blueLightFilter ? 'ON' : 'OFF'}
-                  </ButtonBase>
-                </Box>
-
-                <Box
-                  sx={{
-                    flexShrink: 0,
-                    mt: 'auto',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: is960 ? 1 : 1.25,
-                    minHeight: is960 ? 64 : 72,
-                    p: is960 ? 1.1 : 1.35,
-                    borderRadius: is960 ? '12px' : '14px',
-                    bgcolor: '#FAFBFC',
-                    border: '1px solid rgba(0,0,0,0.06)',
-                  }}
-                >
-                  <ButtonBase
-                    onClick={() => navigate('/android/home', { state: { from: '/apps' } })}
-                    sx={{
-                      flex: 1,
-                      minWidth: 0,
+                      width: EXPLORE_MAIN1.settingsW,
+                      height: EXPLORE_MAIN1.settingsH,
+                      bgcolor: HUB_SURFACE,
+                      borderRadius: `${EXPLORE_MAIN1.settingsRadius}px`,
+                      boxShadow: '0px 4px 20px rgba(213, 213, 213, 0.6)',
+                      px: '32px',
+                      pt: '36px',
+                      pb: '28px',
                       display: 'flex',
-                      alignItems: 'center',
-                      gap: is960 ? 1.1 : 1.25,
-                      borderRadius: is960 ? '10px' : '12px',
-                      textAlign: 'left',
-                      py: is960 ? 0.25 : 0.35,
-                      pl: is960 ? 0.35 : 0.5,
-                      '&:active': { bgcolor: 'rgba(0,0,0,0.04)' },
+                      flexDirection: 'column',
+                      overflow: 'hidden',
+                      boxSizing: 'border-box',
+                      fontFamily: FIGMA_FONT,
                     }}
                   >
                     <Box
                       sx={{
-                        width: is960 ? 46 : 52,
-                        height: is960 ? 46 : 52,
-                        borderRadius: is960 ? '13px' : '14px',
-                        bgcolor: '#111827',
+                        flexShrink: 0,
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        boxShadow: '0 4px 12px rgba(17,24,39,0.18)',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                        mb: '20px',
                       }}
                     >
-                      <AndroidIcon sx={{ fontSize: is960 ? 26 : 28, color: '#3DDC84' }} />
-                    </Box>
-                    <Box sx={{ minWidth: 0, display: 'flex', alignItems: 'center' }}>
-                      <Typography sx={{ fontSize: is960 ? '0.82rem' : '0.98rem', color: '#374151', fontWeight: 700, lineHeight: 1.25 }}>
-                        Android Platform
+                      <Typography
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: 36,
+                          lineHeight: '46px',
+                          color: '#2D3436',
+                          fontFamily: FIGMA_FONT,
+                        }}
+                      >
+                        System settings
                       </Typography>
+                      <ButtonBase
+                        onClick={handleContentManagement}
+                        aria-label="Content Management"
+                        sx={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: '50%',
+                          border: '2px solid #E0E0DF',
+                          color: '#C5C9CE',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <AddIcon sx={{ fontSize: 26 }} />
+                      </ButtonBase>
                     </Box>
-                  </ButtonBase>
-                  <ButtonBase
-                    onClick={() => navigate('/android/settings', { state: { from: '/apps' } })}
-                    sx={{
-                      width: is960 ? 44 : 46,
-                      height: is960 ? 44 : 46,
-                      minWidth: is960 ? 44 : 46,
-                      minHeight: is960 ? 44 : 46,
-                      borderRadius: '50%',
-                      bgcolor: '#EEF2F7',
-                      color: '#475569',
-                      flexShrink: 0,
-                      '&:active': { bgcolor: '#E2E8F0', transform: 'scale(0.96)' },
-                    }}
-                    aria-label="Android settings"
-                  >
-                    <SettingsOutlinedIcon sx={{ fontSize: is960 ? 22 : 24 }} />
-                  </ButtonBase>
-                </Box>
+                    <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                      <ButtonBase
+                        onClick={handleLanguagePackUpdate}
+                        sx={{
+                          display: 'flex',
+                          width: '100%',
+                          flex: 1,
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          minHeight: 0,
+                          py: '16px',
+                          borderBottom: '2px solid #E0E0DF',
+                          borderRadius: 0,
+                          textAlign: 'left',
+                          '&:active': { bgcolor: 'rgba(99,110,114,0.06)' },
+                        }}
+                      >
+                        <Typography sx={{ fontSize: 28, lineHeight: '36px', color: '#636E72', fontWeight: 700, fontFamily: FIGMA_FONT }}>
+                          Language Packs
+                        </Typography>
+                        <SettingsChevron size={28} />
+                      </ButtonBase>
+                      <Box
+                        sx={{
+                          flex: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '16px',
+                          minHeight: 0,
+                          py: '16px',
+                          borderBottom: '2px solid #E0E0DF',
+                        }}
+                      >
+                        <Box sx={{ minWidth: 0, flex: 1 }}>
+                          <Typography sx={{ fontSize: 28, lineHeight: '36px', color: '#636E72', fontWeight: 700, fontFamily: FIGMA_FONT }}>
+                            Eye Protection
+                          </Typography>
+                          <Typography sx={{ fontSize: 20, lineHeight: '28px', color: '#A7B3B8', fontWeight: 400, fontFamily: FIGMA_FONT }}>
+                            Warm tint - 20-20-20 reminder
+                          </Typography>
+                        </Box>
+                        <ButtonBase
+                          onClick={() => setBlueLightFilter((on) => !on)}
+                          aria-label={blueLightFilter ? 'Eye protection on, tap to turn off' : 'Eye protection off, tap to turn on'}
+                          sx={{
+                            flexShrink: 0,
+                            width: 64,
+                            height: 32,
+                            borderRadius: 999,
+                            bgcolor: blueLightFilter ? '#00B4A0' : '#E0E0DF',
+                            position: 'relative',
+                            overflow: 'visible',
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: '50%',
+                              ...(blueLightFilter ? { right: -4 } : { left: -4 }),
+                              transform: 'translateY(-50%)',
+                              width: 36,
+                              height: 36,
+                              borderRadius: '50%',
+                              bgcolor: '#FFFFFF',
+                              boxShadow: '0px 1px 2px rgba(0,0,0,0.3), 0px 2px 6px 2px rgba(0,0,0,0.15)',
+                            }}
+                          />
+                        </ButtonBase>
+                      </Box>
+                      <Box
+                        sx={{
+                          flex: 1.15,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'center',
+                          gap: '14px',
+                          py: '18px',
+                        }}
+                      >
+                        <Box>
+                          <Typography sx={{ fontSize: 28, lineHeight: '36px', color: '#636E72', fontWeight: 700, fontFamily: FIGMA_FONT }}>
+                            App Updates
+                          </Typography>
+                          <Typography sx={{ fontSize: 20, lineHeight: '28px', color: '#A7B3B8', fontWeight: 400, fontFamily: FIGMA_FONT }}>
+                            {pendingUpdates > 0 ? `${pendingUpdates} update${pendingUpdates === 1 ? '' : 's'} available` : 'No current updates'}
+                          </Typography>
+                        </Box>
+                        <ButtonBase
+                          onClick={handleOpenNskStore}
+                          sx={{
+                            width: '100%',
+                            height: 56,
+                            borderRadius: 999,
+                            bgcolor: '#F3F4F6',
+                            color: '#2D3436',
+                            fontWeight: 700,
+                            fontSize: 20,
+                            fontFamily: FIGMA_FONT,
+                            letterSpacing: '0.04em',
+                            '&:active': { bgcolor: '#E8EAED' },
+                          }}
+                        >
+                          CHECK FOR UPDATES
+                        </ButtonBase>
+                      </Box>
+                    </Box>
+                    <ButtonBase
+                      onClick={() => navigate('/android/settings', { state: { from: '/apps' } })}
+                      sx={{
+                        flexShrink: 0,
+                        mt: '20px',
+                        width: '100%',
+                        height: EXPLORE_MAIN1.goBar,
+                        px: '16px',
+                        borderRadius: `${EXPLORE_MAIN1.goBarRadius}px`,
+                        bgcolor: '#2D3436',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '16px',
+                        overflow: 'hidden',
+                        '&:active': { opacity: 0.92 },
+                      }}
+                    >
+                      <Box
+                        component="img"
+                        src="/images/android-12-icon.png"
+                        alt=""
+                        aria-hidden
+                        sx={{
+                          width: EXPLORE_MAIN1.goThumb,
+                          height: EXPLORE_MAIN1.goThumb,
+                          borderRadius: `${EXPLORE_MAIN1.goThumbRadius}px`,
+                          flexShrink: 0,
+                          objectFit: 'cover',
+                          display: 'block',
+                        }}
+                      />
+                      <Box
+                        sx={{
+                          flex: 1,
+                          minWidth: 0,
+                          height: EXPLORE_MAIN1.goPill,
+                          borderRadius: 999,
+                          bgcolor: 'rgba(255,255,255,0.1)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: EXPLORE_MAIN1.goFont,
+                            lineHeight: 1.2,
+                            color: '#FFFFFF',
+                            fontFamily: FIGMA_FONT,
+                            textAlign: 'center',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Go to Settings
+                        </Typography>
+                      </Box>
+                    </ButtonBase>
+                  </Box>
+                </HubContainBoard>
               </Box>
-    </Box>
+      </Box>
+    </StudioHomeFrame>
+
 
       {/* Clock Modal */}
       {showClock && (
@@ -1370,97 +1370,250 @@ export default function AppsPage() {
         </Box>
       )}
 
-      {/* Utility Tools Catalog Modal — constrained to tablet screen */}
+      {/* Utility Tools Catalog — tablet sheet, same chrome as Explore */}
       {showUtilityToolsCatalog && createPortal(
         <Box
           sx={{
             position: 'absolute',
             inset: 0,
-            bgcolor: 'rgba(0,0,0,0.55)',
+            bgcolor: 'rgba(45, 52, 54, 0.45)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 15000,
-            px: is960 ? 1.5 : 2.5,
-            py: is960 ? 1.5 : 2,
+            px: `${p(40)}px`,
+            py: `${p(28)}px`,
             boxSizing: 'border-box',
           }}
           onClick={() => setShowUtilityToolsCatalog(false)}
         >
           <Box
             sx={{
-              bgcolor: 'white',
-              borderRadius: is960 ? '22px' : '26px',
-              p: is960 ? 2 : 2.5,
+              bgcolor: HUB_SURFACE,
+              borderRadius: `${p(EXPLORE_MAIN1.cardRadius)}px`,
+              p: `${p(32)}px`,
               width: '100%',
-              maxWidth: is960 ? 440 : 480,
+              maxWidth: p(1280),
               maxHeight: '100%',
               minHeight: 0,
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: '0 24px 80px rgba(0,0,0,0.35)',
+              boxShadow: HUB_SURFACE_SHADOW,
               boxSizing: 'border-box',
+              fontFamily: FIGMA_FONT,
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.05rem' : '1.2rem', color: '#111827', mb: 0.5, flexShrink: 0 }}>
+            <Typography
+              sx={{
+                fontWeight: 700,
+                fontSize: p(37),
+                lineHeight: `${p(50)}px`,
+                color: '#2D3436',
+                fontFamily: FIGMA_FONT,
+                flexShrink: 0,
+              }}
+            >
               Add System Tools
             </Typography>
-            <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: '#9CA3AF', mb: 1.5, flexShrink: 0 }}>
-              Pin up to {MAX_UTILITY_TOOLS} custom tools · {utilityToolIds.length}/{MAX_UTILITY_TOOLS} used · long-press toolbar to remove
+            <Typography
+              sx={{
+                fontSize: p(21),
+                lineHeight: `${p(34)}px`,
+                color: '#A7B3B8',
+                fontFamily: FIGMA_FONT,
+                mb: `${p(20)}px`,
+                flexShrink: 0,
+              }}
+            >
+              Pin up to {MAX_UTILITY_TOOLS} tools · {utilityToolIds.length}/{MAX_UTILITY_TOOLS} used · long-press to remove
             </Typography>
-            <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: 'flex', flexDirection: 'column', gap: 1, pr: 0.25 }}>
-              <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: '#6B7280', letterSpacing: '0.04em', px: 0.5 }}>BUILT-IN TOOLS</Typography>
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: `${p(14)}px ${p(20)}px`,
+                alignContent: 'start',
+              }}
+            >
+              <Typography
+                sx={{
+                  gridColumn: '1 / -1',
+                  fontSize: p(18),
+                  fontWeight: 700,
+                  color: '#636E72',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  fontFamily: FIGMA_FONT,
+                }}
+              >
+                Built-in tools
+              </Typography>
               {BUILTIN_UTILITY_ITEMS.map((item) => {
                 const installed = builtinUtilityIds.includes(item.id);
                 const Icon = BUILTIN_ICONS[item.id];
                 return (
-                  <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.25, p: 1.25, borderRadius: '16px', border: '1px solid #F1F3F5' }}>
-                    <Box sx={{ width: 44, height: 44, borderRadius: '12px', bgcolor: `${item.color}18`, color: item.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Icon sx={{ fontSize: 22 }} />
+                  <Box
+                    key={item.id}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: `${p(16)}px`,
+                      p: `${p(16)}px`,
+                      borderRadius: `${p(24)}px`,
+                      border: '2px solid #E0E0DF',
+                      bgcolor: '#FFFFFF',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: p(64),
+                        height: p(64),
+                        borderRadius: `${p(18)}px`,
+                        bgcolor: '#F3F4F6',
+                        color: item.color,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Icon sx={{ fontSize: p(30) }} />
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography sx={{ fontWeight: 800, fontSize: '0.92rem', color: '#111827' }}>{item.label}</Typography>
-                      <Typography sx={{ fontSize: '0.76rem', color: '#9CA3AF' }}>{item.description}</Typography>
+                      <Typography sx={{ fontWeight: 700, fontSize: p(24), color: '#2D3436', fontFamily: FIGMA_FONT, lineHeight: 1.25 }}>
+                        {item.label}
+                      </Typography>
+                      <Typography sx={{ fontSize: p(18), color: '#A7B3B8', fontFamily: FIGMA_FONT, lineHeight: 1.4 }}>
+                        {item.description}
+                      </Typography>
                     </Box>
                     <ButtonBase
                       onClick={() => handleToggleBuiltinUtility(item.id)}
-                      sx={{ minWidth: 44, minHeight: 44, px: 1.25, borderRadius: '12px', bgcolor: installed ? '#ECFDF5' : '#EFF6FF', color: installed ? '#059669' : '#2563EB', fontWeight: 800, fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: 0.5 }}
+                      sx={{
+                        minWidth: p(96),
+                        minHeight: p(48),
+                        px: `${p(16)}px`,
+                        borderRadius: 999,
+                        bgcolor: installed ? '#E8F8F5' : '#F3F4F6',
+                        color: installed ? '#00B4A0' : '#2D3436',
+                        fontWeight: 700,
+                        fontSize: p(18),
+                        fontFamily: FIGMA_FONT,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: `${p(6)}px`,
+                      }}
                     >
-                      {installed ? <CheckCircleIcon sx={{ fontSize: 18 }} /> : <AddCircleOutlineIcon sx={{ fontSize: 18 }} />}
+                      {installed ? <CheckCircleIcon sx={{ fontSize: p(20) }} /> : <AddCircleOutlineIcon sx={{ fontSize: p(20) }} />}
                       {installed ? 'Added' : 'Add'}
                     </ButtonBase>
                   </Box>
                 );
               })}
-              <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: '#6B7280', letterSpacing: '0.04em', px: 0.5, mt: 0.5 }}>GOOGLE TOOLS</Typography>
+              <Typography
+                sx={{
+                  gridColumn: '1 / -1',
+                  mt: `${p(8)}px`,
+                  fontSize: p(18),
+                  fontWeight: 700,
+                  color: '#636E72',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  fontFamily: FIGMA_FONT,
+                }}
+              >
+                Extra tools
+              </Typography>
               {GOOGLE_SYSTEM_TOOLS.map((tool) => {
                 const installed = utilityToolIds.includes(tool.id);
                 const atLimit = !installed && utilityToolIds.length >= MAX_UTILITY_TOOLS;
                 const Icon = UTILITY_TOOL_ICONS[tool.id] ?? SettingsOutlinedIcon;
                 return (
-                  <Box key={tool.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.25, p: 1.25, borderRadius: '16px', border: '1px solid #F1F3F5', opacity: atLimit ? 0.55 : 1 }}>
-                    <Box sx={{ width: 44, height: 44, borderRadius: '12px', bgcolor: `${tool.color}18`, color: tool.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Icon sx={{ fontSize: 22 }} />
+                  <Box
+                    key={tool.id}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: `${p(16)}px`,
+                      p: `${p(16)}px`,
+                      borderRadius: `${p(24)}px`,
+                      border: '2px solid #E0E0DF',
+                      bgcolor: '#FFFFFF',
+                      opacity: atLimit ? 0.45 : 1,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: p(64),
+                        height: p(64),
+                        borderRadius: `${p(18)}px`,
+                        bgcolor: '#F3F4F6',
+                        color: tool.color,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Icon sx={{ fontSize: p(30) }} />
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography sx={{ fontWeight: 800, fontSize: '0.92rem', color: '#111827' }}>{tool.label}</Typography>
-                      <Typography sx={{ fontSize: '0.76rem', color: '#9CA3AF' }}>{tool.description}</Typography>
+                      <Typography sx={{ fontWeight: 700, fontSize: p(24), color: '#2D3436', fontFamily: FIGMA_FONT, lineHeight: 1.25 }}>
+                        {tool.label}
+                      </Typography>
+                      <Typography sx={{ fontSize: p(18), color: '#A7B3B8', fontFamily: FIGMA_FONT, lineHeight: 1.4 }}>
+                        {tool.description}
+                      </Typography>
                     </Box>
                     <ButtonBase
                       onClick={() => handleToggleUtilityTool(tool.id)}
                       disabled={atLimit}
-                      sx={{ minWidth: 44, minHeight: 44, px: 1.25, borderRadius: '12px', bgcolor: installed ? '#ECFDF5' : '#EFF6FF', color: installed ? '#059669' : '#2563EB', fontWeight: 800, fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: 0.5 }}
+                      sx={{
+                        minWidth: p(96),
+                        minHeight: p(48),
+                        px: `${p(16)}px`,
+                        borderRadius: 999,
+                        bgcolor: installed ? '#E8F8F5' : '#F3F4F6',
+                        color: installed ? '#00B4A0' : '#2D3436',
+                        fontWeight: 700,
+                        fontSize: p(18),
+                        fontFamily: FIGMA_FONT,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: `${p(6)}px`,
+                      }}
                     >
-                      {installed ? <CheckCircleIcon sx={{ fontSize: 18 }} /> : <AddCircleOutlineIcon sx={{ fontSize: 18 }} />}
+                      {installed ? <CheckCircleIcon sx={{ fontSize: p(20) }} /> : <AddCircleOutlineIcon sx={{ fontSize: p(20) }} />}
                       {installed ? 'Added' : 'Add'}
                     </ButtonBase>
                   </Box>
                 );
               })}
             </Box>
-            <ButtonBase onClick={() => setShowUtilityToolsCatalog(false)} sx={{ mt: 1.5, width: '100%', py: 1.5, borderRadius: '14px', bgcolor: '#00B4A0', color: 'white', fontWeight: 900, flexShrink: 0 }}>
+            <ButtonBase
+              onClick={() => setShowUtilityToolsCatalog(false)}
+              sx={{
+                mt: `${p(20)}px`,
+                width: '100%',
+                height: p(65),
+                borderRadius: 999,
+                bgcolor: '#2D3436',
+                color: '#FFFFFF',
+                fontWeight: 700,
+                fontSize: p(24),
+                fontFamily: FIGMA_FONT,
+                flexShrink: 0,
+                '&:active': { opacity: 0.92 },
+              }}
+            >
               Done
             </ButtonBase>
           </Box>

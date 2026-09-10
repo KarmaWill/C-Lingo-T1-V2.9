@@ -8,7 +8,7 @@ import {
   HomeSideCardStack,
 } from '../components/home/HomeSideCard'
 import StudioHomeHeader, { StudioHomeFrame } from '../components/home/StudioHomeHeader'
-import HubPagerDots from '../components/home/HubPagerDots'
+import { AI_TUTOR_GLOW, HUB_CANVAS_CLINGO, STUDIO_MAIN1 } from '../components/home/hubChrome'
 import { APP_SCREEN_SIZE } from '../utils/figmaScale'
 
 const LEVELS = ['Level 1', 'Level 2', 'Level 3']
@@ -47,8 +47,8 @@ const UNITS_BY_LEVEL: Record<string, string[]> = {
 }
 
 /**
- * Figma 真源：设计稿 1.0 · 主界面2 (2959:21)
- * 三轨共用 Studio 壳；C-Lingo 右卡 AI Tutor / Flashcards / Sentence Snap
+ * Figma 真源：主界面1 Frame 1410141884（2508 → 1920）
+ * 三轨共用 Studio 壳；C-Lingo 右卡 AI Tutor / Pinyin Chart
  */
 export default function HomePage() {
   const navigate = useNavigate()
@@ -57,7 +57,7 @@ export default function HomePage() {
   const screenSize = APP_SCREEN_SIZE
 
   return (
-    <StudioHomeFrame screenSize={screenSize}>
+    <StudioHomeFrame screenSize={screenSize} canvas={HUB_CANVAS_CLINGO}>
       <StudioHomeHeader
         screenSize={screenSize}
         trackId="c-lingo"
@@ -78,7 +78,12 @@ export default function HomePage() {
         }}
       />
 
-      <HomePageShell screenSize={screenSize}>
+      <HomePageShell
+        screenSize={screenSize}
+        hero={STUDIO_MAIN1.hero}
+        rail={STUDIO_MAIN1.rail}
+        gap={STUDIO_MAIN1.gap}
+      >
         <HomeLessonHero
           screenSize={screenSize}
           from="/AI"
@@ -88,45 +93,65 @@ export default function HomePage() {
           patternCount={3}
         />
 
-        <HomeSideCardStack screenSize={screenSize}>
+        <HomeSideCardStack screenSize={screenSize} pair>
           <HomeSideCard
             variant="spotlight"
+            pair
             screenSize={screenSize}
             label="AI Tutor"
-            bgcolor="linear-gradient(107.33deg, #A052FF -7.16%, #4F46E5 53.05%, #3528FF 100%)"
+            bgcolor={STUDIO_MAIN1.tutor}
+            glow={AI_TUTOR_GLOW}
             onClick={() => navigate('/ai-chat', { state: { from: '/AI' } })}
             spotlightVisual={
               <Box
                 component="img"
                 src="/images/clingo-ai-mascot-tutor.png?v=star-eyes"
-                alt=""
+                alt="AI Tutor"
+                draggable={false}
+                width={228}
+                height={228}
                 sx={{
                   width: '100%',
                   height: '100%',
                   objectFit: 'contain',
-                  objectPosition: 'bottom center',
+                  objectPosition: 'center bottom',
                   display: 'block',
+                  pointerEvents: 'auto',
+                  userSelect: 'none',
                 }}
               />
             }
           />
           <HomeSideCard
             variant="tool"
+            pair
             screenSize={screenSize}
-            label="Flashcards"
-            bgcolor="#00B4A0"
-            onClick={() => navigate('/lingo-flash', { state: { from: '/AI' } })}
-          />
-          <HomeSideCard
-            variant="tool"
-            screenSize={screenSize}
-            label="Sentence Snap"
-            bgcolor="#FF6B35"
-            onClick={() => navigate('/syntax-snap', { state: { from: '/AI' } })}
+            label="Pinyin Chart"
+            bgcolor={STUDIO_MAIN1.pinyin}
+            glow="rgba(44, 219, 200, 0.55)"
+            onClick={() => navigate('/pinyin-chart', { state: { from: '/AI' } })}
+            spotlightVisual={
+              <Box
+                component="img"
+                src="/images/pinyin-chart-tile.png"
+                alt="Pinyin Chart"
+                draggable={false}
+                width={228}
+                height={228}
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  objectPosition: 'center bottom',
+                  display: 'block',
+                  pointerEvents: 'auto',
+                  userSelect: 'none',
+                }}
+              />
+            }
           />
         </HomeSideCardStack>
       </HomePageShell>
-      <HubPagerDots screenSize={screenSize} />
     </StudioHomeFrame>
   )
 }

@@ -9,7 +9,6 @@ import {
   HomeSideCardStack,
 } from '../components/home/HomeSideCard'
 import StudioHomeHeader, { StudioHomeFrame } from '../components/home/StudioHomeHeader'
-import HubPagerDots from '../components/home/HubPagerDots'
 import { APP_SCREEN_SIZE } from '../utils/figmaScale'
 import { BUSINESS_TOPIC_KEYS } from '../data/businessTopics'
 
@@ -111,7 +110,6 @@ export default function BusinessChineseHomePage() {
           />
         </HomeSideCardStack>
       </HomePageShell>
-      <HubPagerDots screenSize={screenSize} />
     </StudioHomeFrame>
   )
 }

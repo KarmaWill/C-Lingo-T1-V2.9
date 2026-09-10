@@ -5,25 +5,27 @@ import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { APP_SCREEN_SIZE, figmaPx, FIGMA_FONT } from '../utils/figmaScale'
 import { StudioHomeFrame, HubTopBar } from '../components/home/StudioHomeHeader'
-import HubPagerDots from '../components/home/HubPagerDots'
 import HubLangProfile from '../components/home/HubLangProfile'
 import HubContainBoard from '../components/home/HubContainBoard'
+import { HUB_CANVAS_CLINGO } from '../components/home/hubChrome'
 
 /**
  * Figma 真源：设计稿 · 主界面1 (2725:331)
- * 底栏 Home Tab · 四圆点第 1 页 · Chinese Textbooks
+ * 底栏 Home Tab · Chinese Textbooks
  * 主区坐标对齐 Honor LearnHome `home-board` / `home-book`（1920 画布）。
  */
 
 const BOARD_W = 1800
-const BOARD_H = 770
+const BOARD_H = 774
 
 const UNITS = [
   {
     label: 'Unit 1 You and I',
     lessonNo: 'Lesson 1',
     titleZh: '他是谁',
-    objectives: ['Ask about someone’s name', 'Talk about hometown and phone number'],
+    objectives: [
+      'Ask about someone’s name. Talk about someone’s hometown and his/her telephone number.',
+    ],
   },
   {
     label: 'Unit 2 My Family',
@@ -50,15 +52,15 @@ export default function LibraryPage() {
   const goNext = () => setUnitIndex((i) => (i === UNITS.length - 1 ? 0 : i + 1))
 
   return (
-    <StudioHomeFrame screenSize={screenSize}>
+    <StudioHomeFrame screenSize={screenSize} canvas={HUB_CANVAS_CLINGO}>
       <HubTopBar screenSize={screenSize}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(24)}px`, minWidth: 0 }}>
           <Typography
             sx={{
-              fontWeight: 600,
-              fontSize: p(48),
+              fontWeight: 700,
+              fontSize: p(47),
               color: '#2D3436',
-              lineHeight: `${p(72)}px`,
+              lineHeight: `${p(60)}px`,
               fontFamily: FIGMA_FONT,
               whiteSpace: 'nowrap',
             }}
@@ -70,21 +72,21 @@ export default function LibraryPage() {
               display: 'inline-flex',
               alignItems: 'center',
               gap: `${p(10)}px`,
-              height: p(46),
+              height: p(47),
               px: `${p(20)}px`,
-              borderRadius: '101px',
-              bgcolor: 'rgba(79, 70, 229, 0.06)',
-              border: '1px solid #4F46E5',
+              borderRadius: '999px',
+              bgcolor: 'rgba(0, 180, 160, 0.1)',
+              border: '1px solid #00B4A0',
               flexShrink: 0,
             }}
           >
-            <Box sx={{ width: p(12), height: p(12), borderRadius: '50%', bgcolor: '#4F46E5' }} />
+            <Box sx={{ width: p(12), height: p(12), borderRadius: '50%', bgcolor: '#00B4A0' }} />
             <Typography
               sx={{
                 fontSize: p(24),
                 fontWeight: 400,
                 lineHeight: 1.6,
-                color: '#4F46E5',
+                color: '#00B4A0',
                 fontFamily: FIGMA_FONT,
               }}
             >
@@ -100,10 +102,10 @@ export default function LibraryPage() {
           sx={{
             position: 'absolute',
             left: 0,
-            top: 6,
-            width: 1270,
-            height: 544,
-            borderRadius: '50px',
+            top: 0,
+            width: 1239,
+            height: 530,
+            borderRadius: '54px',
             overflow: 'hidden',
             bgcolor: '#2D3436',
           }}
@@ -114,21 +116,20 @@ export default function LibraryPage() {
             alt=""
             sx={{
               position: 'absolute',
-              inset: 0,
+              left: 0,
+              top: '-8%',
               width: '100%',
-              height: '100%',
+              height: '111%',
               objectFit: 'cover',
-              objectPosition: '50% 38%',
+              objectPosition: '46% 32%',
             }}
           />
           <Box
             sx={{
               position: 'absolute',
               inset: 0,
-              background: [
-                'linear-gradient(90deg, rgba(15,23,42,0.56) 0%, rgba(15,23,42,0.24) 48%, rgba(15,23,42,0.38) 100%)',
-                'linear-gradient(180deg, rgba(15,23,42,0.12) 0%, rgba(15,23,42,0.42) 100%)',
-              ].join(', '),
+              background: 'linear-gradient(270deg, rgba(0, 0, 0, 0) 34.25%, rgba(0, 0, 0, 0.9) 100%)',
+              opacity: 0.8,
             }}
           />
 
@@ -142,9 +143,12 @@ export default function LibraryPage() {
               alignItems: 'center',
               height: 110,
               width: 400,
-              px: '16px',
-              borderRadius: '30px',
-              bgcolor: 'rgba(255,255,255,0.8)',
+              px: '14px',
+              gap: '24px',
+              borderRadius: '31px',
+              bgcolor: 'rgba(255,255,255,0.74)',
+              border: '1px solid #FFFFFF',
+              boxSizing: 'border-box',
             }}
           >
             <ButtonBase
@@ -160,15 +164,15 @@ export default function LibraryPage() {
               />
             </ButtonBase>
             <Box sx={{ flex: 1, minWidth: 0, textAlign: 'center', fontFamily: FIGMA_FONT }}>
-              <Typography sx={{ fontSize: 24, fontWeight: 400, color: '#636E72', lineHeight: '32px' }}>
+              <Typography sx={{ fontSize: 28, fontWeight: 400, color: '#636E72', lineHeight: '34px' }}>
                 Current Unit
               </Typography>
               <Typography
                 sx={{
-                  fontSize: 26,
-                  fontWeight: 500,
+                  fontSize: 28,
+                  fontWeight: 700,
                   color: '#2D3436',
-                  lineHeight: 1.15,
+                  lineHeight: '34px',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
@@ -191,45 +195,42 @@ export default function LibraryPage() {
             </ButtonBase>
           </Box>
 
-          <Typography
-            component="h2"
-            sx={{
-              position: 'absolute',
-              top: 264,
-              left: 72,
-              zIndex: 2,
-              m: 0,
-              maxWidth: 720,
-              color: '#fff',
-              fontSize: 32,
-              fontWeight: 500,
-              lineHeight: 1.2,
-              fontFamily: FIGMA_FONT,
-            }}
-          >
-            {unit.lessonNo}: {unit.titleZh}
-          </Typography>
           <Box
-            component="ul"
             sx={{
               position: 'absolute',
-              top: 330,
-              left: 72,
+              left: 46,
+              top: 315,
               zIndex: 2,
-              m: 0,
               width: 430,
-              pl: '36px',
-              color: '#fff',
-              fontSize: 24,
-              lineHeight: 1.35,
               fontFamily: FIGMA_FONT,
             }}
           >
-            {unit.objectives.map((line) => (
-              <Box component="li" key={line} sx={{ mb: '4px' }}>
-                {line}
-              </Box>
-            ))}
+            <Typography
+              component="h2"
+              sx={{
+                m: 0,
+                color: '#fff',
+                fontSize: 32,
+                fontWeight: 700,
+                lineHeight: '47px',
+                fontFamily: '"Source Han Sans CN", "Noto Sans SC", sans-serif',
+              }}
+            >
+              {unit.lessonNo}:{unit.titleZh}
+            </Typography>
+            <Typography
+              sx={{
+                mt: '12px',
+                color: '#fff',
+                fontSize: 24,
+                fontWeight: 400,
+                lineHeight: '30px',
+                textAlign: 'justify',
+                fontFamily: FIGMA_FONT,
+              }}
+            >
+              {unit.objectives.join(' ')}
+            </Typography>
           </Box>
 
           <ButtonBase
@@ -237,44 +238,37 @@ export default function LibraryPage() {
             aria-label="Starting Learning"
             sx={{
               position: 'absolute',
-              top: 358,
-              left: 936,
+              top: 385,
+              left: 960,
               zIndex: 3,
+              boxSizing: 'border-box',
               display: 'inline-flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              width: 388,
+              justifyContent: 'center',
+              gap: '10px',
+              width: 231,
               height: 100,
               pl: '40px',
-              pr: '14px',
+              pr: '12px',
               borderRadius: '71px',
               color: '#fff',
-              bgcolor: 'rgba(15, 23, 42, 0.62)',
-              border: '1px solid rgba(255,255,255,0.32)',
-              backdropFilter: 'blur(22px) saturate(160%)',
-              WebkitBackdropFilter: 'blur(22px) saturate(160%)',
-              boxShadow: '0 18px 40px rgba(15,23,42,0.36), inset 0 1px 0 rgba(255,255,255,0.28)',
+              bgcolor: 'rgba(100, 100, 100, 0.4)',
+              border: '2px solid #00B1FF',
               fontFamily: FIGMA_FONT,
-              transform: 'translateX(-50%)',
-              '&:active': { transform: 'translateX(-50%) scale(0.97)' },
+              '&:active': { transform: 'scale(0.97)' },
               '&:focus-visible': {
-                outline: '3px solid #2DD4BF',
+                outline: '3px solid #00B1FF',
                 outlineOffset: 4,
-              },
-              '@media (prefers-reduced-transparency: reduce)': {
-                bgcolor: '#1F2937',
-                backdropFilter: 'none',
-                WebkitBackdropFilter: 'none',
               },
             }}
           >
             <Box
               component="span"
               sx={{
-                fontSize: 36,
+                fontSize: 37,
                 fontWeight: 700,
-                letterSpacing: '0.02em',
                 lineHeight: 1,
+                fontFamily: '"Source Han Sans CN", "Noto Sans SC", sans-serif',
               }}
             >
               Start
@@ -282,17 +276,18 @@ export default function LibraryPage() {
             <Box
               aria-hidden
               sx={{
-                width: 72,
-                height: 72,
+                width: 80,
+                height: 80,
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'linear-gradient(145deg, #2DD4BF 0%, #14B8A6 48%, #0D9488 100%)',
-                boxShadow: '0 8px 20px rgba(20,184,166,0.42)',
+                background:
+                  'linear-gradient(148.83deg, rgba(123, 255, 242, 0.9) 7.44%, rgba(62, 216, 248, 0.9) 40.08%, rgba(0, 177, 255, 0.9) 92.56%)',
+                backdropFilter: 'blur(2px)',
               }}
             >
-              <ArrowForwardIcon sx={{ fontSize: 36, color: '#fff' }} />
+              <ArrowForwardIcon sx={{ fontSize: 28, color: '#fff' }} />
             </Box>
           </ButtonBase>
         </Box>
@@ -301,24 +296,49 @@ export default function LibraryPage() {
           sx={{
             position: 'absolute',
             top: 0,
-            left: 1310,
-            width: 490,
-            height: 770,
-            p: '20px',
+            left: 1289,
+            width: 511,
+            height: 758,
             boxSizing: 'border-box',
             bgcolor: '#fff',
-            borderRadius: '60px',
-            boxShadow: '0px 4px 20px rgba(213,213,213,0.6)',
+            borderRadius: '54px',
+            boxShadow: '0px 5px 26px rgba(213, 213, 213, 0.6)',
             fontFamily: FIGMA_FONT,
           }}
         >
+          {/* Mask group 2508→1920：右错开书页 + 封面 */}
+          {(
+            [
+              { left: 57, bgcolor: '#00B4C0' },
+              { left: 46, bgcolor: '#D7D7D7' },
+              { left: 37, bgcolor: '#E6E6E6' },
+              { left: 28, bgcolor: '#F4F4F4' },
+              { left: 18, bgcolor: '#FFFFFF' },
+            ] as const
+          ).map((page) => (
+            <Box
+              key={page.left}
+              aria-hidden
+              sx={{
+                position: 'absolute',
+                left: page.left,
+                top: 23,
+                width: 433,
+                height: 603,
+                bgcolor: page.bgcolor,
+                borderRadius: '38px',
+              }}
+            />
+          ))}
           <Box
             sx={{
-              position: 'relative',
-              width: 450,
-              height: 626,
+              position: 'absolute',
+              left: 9,
+              top: 23,
+              width: 433,
+              height: 603,
+              borderRadius: '38px',
               overflow: 'hidden',
-              borderRadius: '40px',
             }}
           >
             <Box
@@ -327,36 +347,41 @@ export default function LibraryPage() {
               alt="Happy Chinese Volume 1"
               sx={{
                 display: 'block',
-                width: 450,
-                height: 626,
+                width: 433,
+                height: 603,
                 objectFit: 'cover',
-                borderRadius: '40px',
+                borderRadius: '38px',
               }}
             />
             <Box
               sx={{
                 position: 'absolute',
+                left: 0,
                 right: 0,
                 bottom: 0,
-                left: 0,
-                height: 146,
-                background: 'linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.6))',
+                height: 143,
+                background: 'linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.6) 100%)',
+                borderRadius: '0 0 38px 38px',
               }}
             />
             <Box
               sx={{
                 position: 'absolute',
-                top: 286,
+                top: 259,
                 left: 0,
-                width: 168,
-                py: '12px',
-                pl: '16px',
-                pr: '12px',
-                borderRadius: '0 16px 16px 0',
-                bgcolor: 'rgba(0,0,0,0.4)',
+                width: 205,
+                height: 97,
+                borderRadius: '0 54px 54px 0',
+                bgcolor: 'rgba(0, 0, 0, 0.4)',
                 color: '#fff',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                pl: '13px',
+                boxSizing: 'border-box',
                 fontSize: 24,
-                lineHeight: 1.35,
+                fontWeight: 400,
+                lineHeight: 1.6,
                 fontFamily: FIGMA_FONT,
               }}
             >
@@ -368,46 +393,47 @@ export default function LibraryPage() {
             <Typography
               sx={{
                 position: 'absolute',
-                bottom: 76,
+                top: 549,
                 left: 0,
                 width: '100%',
                 m: 0,
                 color: '#fff',
                 fontSize: 28,
                 fontWeight: 400,
+                lineHeight: 1.6,
                 textAlign: 'center',
                 fontFamily: FIGMA_FONT,
               }}
             >
-              59/198 Pages
+              59/198
             </Typography>
-            <Box
-              sx={{
-                position: 'absolute',
-                bottom: 52,
-                left: 36,
-                width: 378,
-                height: 6,
-                borderRadius: '68px',
-                bgcolor: 'rgba(255,255,255,0.28)',
-              }}
-            >
-              <Box sx={{ width: 115, height: 6, borderRadius: '68px', bgcolor: '#00B4A0' }} />
-            </Box>
           </Box>
+          <Box
+            aria-hidden
+            sx={{
+              position: 'absolute',
+              top: 625,
+              left: 58,
+              width: 129,
+              height: 5,
+              borderRadius: '54px',
+              bgcolor: '#00B4A0',
+            }}
+          />
           <ButtonBase
             onClick={() => navigate('/library/select-books')}
             sx={{
               position: 'absolute',
-              top: 668,
+              top: 660,
               left: '50%',
+              width: 470,
               height: 80,
-              px: '40px',
-              borderRadius: '100px',
-              bgcolor: '#00B4A0',
+              borderRadius: '54px',
+              bgcolor: '#00B4C0',
               color: '#fff',
-              fontSize: 32,
-              fontWeight: 500,
+              fontSize: 37,
+              fontWeight: 600,
+              lineHeight: '46px',
               fontFamily: FIGMA_FONT,
               whiteSpace: 'nowrap',
               transform: 'translateX(-50%)',
@@ -428,17 +454,15 @@ export default function LibraryPage() {
           onClick={() => navigate('/library/hub/fun-chinese')}
         />
         <TextbookToolCard
-          left={656}
-          bgcolor="#00B4A0"
+          left={638}
+          bgcolor="#26D0A0"
           iconSrc="/images/hub/culture.svg"
-          iconSize={55}
+          iconSize={42}
           label="Culture"
-          subtitle="Explore Traditions"
+          subtitle="Explore traditions"
           onClick={() => navigate('/library/hub/culture')}
         />
       </HubContainBoard>
-
-      <HubPagerDots screenSize={screenSize} />
     </StudioHomeFrame>
   )
 }
@@ -465,11 +489,11 @@ function TextbookToolCard({
       onClick={onClick}
       sx={{
         position: 'absolute',
-        top: 580,
+        top: 568,
         left,
-        width: 614,
-        height: 190,
-        borderRadius: '50px',
+        width: 599,
+        height: 206,
+        borderRadius: '54px',
         bgcolor,
         px: '40px',
         display: 'flex',
@@ -478,11 +502,12 @@ function TextbookToolCard({
         gap: '16px',
         fontFamily: FIGMA_FONT,
         textAlign: 'left',
+        filter: 'drop-shadow(0px 4px 20px rgba(213, 213, 213, 0.6))',
         '&:active': { transform: 'scale(0.98)' },
       }}
     >
       <Box sx={{ minWidth: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Box
             component="img"
             src={iconSrc}
@@ -492,9 +517,9 @@ function TextbookToolCard({
           <Typography
             sx={{
               color: '#fff',
-              fontWeight: 600,
-              fontSize: 44,
-              lineHeight: '66px',
+              fontWeight: 700,
+              fontSize: 43,
+              lineHeight: '54px',
               fontFamily: FIGMA_FONT,
               whiteSpace: 'nowrap',
             }}
@@ -507,7 +532,7 @@ function TextbookToolCard({
             color: 'rgba(255,255,255,0.6)',
             fontWeight: 500,
             fontSize: 28,
-            lineHeight: '42px',
+            lineHeight: '34px',
             fontFamily: FIGMA_FONT,
           }}
         >
@@ -516,9 +541,9 @@ function TextbookToolCard({
       </Box>
       <Box
         sx={{
-          width: 120,
-          height: 120,
-          borderRadius: '40px',
+          width: 92,
+          height: 92,
+          borderRadius: '31px',
           bgcolor: 'rgba(255,255,255,0.2)',
           backdropFilter: 'blur(2px)',
           display: 'flex',
@@ -527,7 +552,7 @@ function TextbookToolCard({
           flexShrink: 0,
         }}
       >
-        <ArrowForwardRoundedIcon sx={{ fontSize: 40, color: '#fff' }} />
+        <ArrowForwardRoundedIcon sx={{ fontSize: 32, color: '#fff' }} />
       </Box>
     </ButtonBase>
   )
