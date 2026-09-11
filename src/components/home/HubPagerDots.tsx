@@ -1,6 +1,12 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Box, ButtonBase } from '@mui/material'
 import { figmaPx } from '../../utils/figmaScale'
+import {
+  HUB_FRAME_PAD_BOTTOM,
+  HUB_MAIN1_TO_1920,
+  HUB_PAGER_BAND,
+  HUB_PAGER_MAIN1,
+} from './hubChrome'
 
 /** Figma Frame 86：四圆点对应四个主 Tab */
 export const HUB_PAGER_ROUTES = ['/Home', '/AI', '/hsk-test', '/apps'] as const
@@ -20,30 +26,44 @@ export function hubPagerIndex(pathname: string): number {
   return -1
 }
 
-export default function HubPagerDots({ screenSize }: { screenSize: string }) {
+export default function HubPagerDots({
+  screenSize,
+  onDark = false,
+}: {
+  screenSize: string
+  onDark?: boolean
+}) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const p = (n: number) => figmaPx(n, screenSize)
+  const p1 = (n2508: number) => figmaPx(n2508 * HUB_MAIN1_TO_1920, screenSize)
   const active = hubPagerIndex(pathname)
 
   if (active < 0) return null
+
+  const padBottom = p(HUB_FRAME_PAD_BOTTOM)
+  const band = p(HUB_PAGER_BAND)
+  const hit = p(40)
 
   return (
     <Box
       sx={{
         flexShrink: 0,
+        alignSelf: 'center',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: `${p(26)}px`,
-        height: p(48),
-        mt: `${p(16)}px`,
-        mb: 0,
+        gap: `${p1(HUB_PAGER_MAIN1.gap)}px`,
+        width: 'fit-content',
+        height: band,
+        mt: 0,
+        mb: `-${padBottom}px`,
       }}
     >
       {HUB_PAGER_ROUTES.map((route, index) => {
         const isActive = index === active
-        const size = isActive ? p(24) : p(18)
+        const size = isActive ? p1(HUB_PAGER_MAIN1.active) : p1(HUB_PAGER_MAIN1.inactive)
+        const bleed = Math.max(0, (hit - size) / 2)
         return (
           <ButtonBase
             key={route}
@@ -51,10 +71,17 @@ export default function HubPagerDots({ screenSize }: { screenSize: string }) {
             aria-current={isActive ? 'page' : undefined}
             onClick={() => navigate(route)}
             sx={{
-              width: p(48),
-              height: p(48),
-              minWidth: p(48),
+              position: 'relative',
+              width: size,
+              height: size,
+              minWidth: size,
               borderRadius: '50%',
+              // 热区外扩，flex gap 仍是圆点边距（稿上 26）
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                inset: `-${bleed}px`,
+              },
               '&:focus-visible': {
                 outline: '3px solid #00B4A0',
                 outlineOffset: 2,
@@ -67,8 +94,12 @@ export default function HubPagerDots({ screenSize }: { screenSize: string }) {
                 width: size,
                 height: size,
                 borderRadius: '50%',
-                bgcolor: '#A5AEAC',
-                opacity: isActive ? 1 : 0.45,
+                bgcolor: onDark
+                  ? isActive
+                    ? '#F4FBF8'
+                    : 'rgba(244, 251, 248, 0.28)'
+                  : HUB_PAGER_MAIN1.color,
+                opacity: onDark ? 1 : isActive ? 1 : 0.4,
               }}
             />
           </ButtonBase>

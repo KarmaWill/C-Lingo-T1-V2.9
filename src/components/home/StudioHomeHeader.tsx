@@ -4,8 +4,10 @@ import { useTranslation } from 'react-i18next'
 import { Box, Typography, ButtonBase, Menu, MenuItem } from '@mui/material'
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
 import { figmaPx, FIGMA_FONT } from '../../utils/figmaScale'
+import { BHS_FONT } from '../../theme/appFont'
 import HubLangProfile from './HubLangProfile'
 import {
+  BHS,
   HUB_CANVAS,
   HUB_FRAME_PAD_BOTTOM,
   HUB_FRAME_PAD_TOP,
@@ -57,11 +59,13 @@ export default function StudioHomeHeader({
   trackId,
   levelSelect,
   unitSelect,
+  tone = 'default',
 }: {
   screenSize: string
   trackId: ProgramTrackId
   levelSelect: StudioMenuSelect
   unitSelect: StudioMenuSelect
+  tone?: 'default' | 'burnside'
 }) {
   const navigate = useNavigate()
   const { t } = useTranslation()
@@ -121,6 +125,9 @@ export default function StudioHomeHeader({
     setTitleAnchor(null)
   }
 
+  const isBurnside = tone === 'burnside'
+  const titleFont = isBurnside ? BHS_FONT : FIGMA_FONT
+
   const selectSx = {
     display: 'inline-flex',
     alignItems: 'center',
@@ -130,9 +137,9 @@ export default function StudioHomeHeader({
     px: 0,
     borderRadius: `${p(10)}px`,
     fontFamily: FIGMA_FONT,
-    '&:active': { bgcolor: 'rgba(0,0,0,0.04)' },
+    '&:active': { bgcolor: isBurnside ? 'rgba(244,251,248,0.08)' : 'rgba(0,0,0,0.04)' },
     '&:focus-visible': {
-      outline: `3px solid #00B4A0`,
+      outline: `3px solid ${isBurnside ? BHS.gold : '#00B4A0'}`,
       outlineOffset: 4,
     },
   } as const
@@ -141,15 +148,15 @@ export default function StudioHomeHeader({
     fontWeight: 700,
     fontSize: p(32),
     lineHeight: `${p(48)}px`,
-    color: '#777777',
+    color: isBurnside ? BHS.mute : '#777777',
     fontFamily: FIGMA_FONT,
     whiteSpace: 'nowrap' as const,
   }
 
   const chevronSx = {
     fontSize: p(25),
-    color: '#9F9F9F',
-    opacity: 0.7,
+    color: isBurnside ? BHS.mute : '#9F9F9F',
+    opacity: isBurnside ? 0.85 : 0.7,
     flexShrink: 0,
   }
 
@@ -205,7 +212,7 @@ export default function StudioHomeHeader({
         px: `${p(HUB_FRAME_PAD_X)}px`,
         pt: `${p(4)}px`,
         pb: `${p(8)}px`,
-        bgcolor: HUB_SURFACE,
+        bgcolor: isBurnside ? 'transparent' : HUB_SURFACE,
       }}
     >
       <Box
@@ -227,16 +234,33 @@ export default function StudioHomeHeader({
               alignItems: 'center',
               gap: `${p(16)}px`,
               borderRadius: `${p(12)}px`,
-              '&:active': { bgcolor: 'rgba(0,0,0,0.04)' },
+              '&:active': { bgcolor: isBurnside ? 'rgba(244,251,248,0.08)' : 'rgba(0,0,0,0.04)' },
             }}
           >
+            {isBurnside ? (
+              <Box
+                component="img"
+                src="/images/burnside/mark.png"
+                alt=""
+                width={48}
+                height={44}
+                sx={{
+                  width: p(48),
+                  height: p(44),
+                  objectFit: 'contain',
+                  display: 'block',
+                  flexShrink: 0,
+                }}
+              />
+            ) : null}
             <Typography
               sx={{
                 fontWeight: 700,
-                fontSize: p(44),
-                color: '#2D3436',
-                lineHeight: `${p(56)}px`,
-                fontFamily: FIGMA_FONT,
+                fontSize: p(trackId === 'hsk-standard' ? 36 : 44),
+                color: isBurnside ? BHS.ink : '#2D3436',
+                lineHeight: `${p(trackId === 'hsk-standard' ? 46 : 56)}px`,
+                fontFamily: titleFont,
+                letterSpacing: isBurnside ? '-0.03em' : 0,
                 whiteSpace: 'nowrap',
               }}
             >
@@ -263,7 +287,7 @@ export default function StudioHomeHeader({
             ))}
           </Menu>
 
-          {showBadge ? (
+          {showBadge && !isBurnside ? (
             <Box
               sx={{
                 display: 'inline-flex',
@@ -307,7 +331,7 @@ export default function StudioHomeHeader({
           ) : null}
         </Box>
 
-        <HubLangProfile screenSize={screenSize} />
+        <HubLangProfile screenSize={screenSize} onDark={isBurnside} />
       </Box>
 
       <Box

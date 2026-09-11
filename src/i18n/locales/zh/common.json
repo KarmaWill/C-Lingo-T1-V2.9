@@ -9,12 +9,13 @@
     "hubTitle": "AI 课堂",
     "tracks": {
       "c-lingo": "C-Lingo 中文",
-      "hsk-standard": "HSK 标准课程",
+      "hsk-standard": "Burnside 高中",
       "business-chinese": "商务中文"
     },
     "badge": {
       "onlineOnly": "仅在线",
       "officialExam": "官方考试",
+      "schoolEdition": "定制版",
       "premium": "高级版"
     }
   },
@@ -42,6 +43,8 @@
     "moduleMastery": "模块掌握度",
     "startSession": "开始学习",
     "about": "简介",
+    "businessDialogue": "商务中文模拟对话",
+    "businessDialogueHint": "场景练习",
     "scenarioDialogue1": "场景",
     "scenarioDialogue2": "对话",
     "documentTools1": "文档",
@@ -58,11 +61,14 @@
     }
   },
   "hsk": {
-    "eyebrow": "HSK 标准课程",
-    "heroTitle": "HSK 1 | 主题 1：问候与自我介绍",
+    "eyebrow": "Burnside 中文课",
+    "heroTitle": "主题 1 | 活动 1：问候与自我介绍",
     "words": "词汇",
     "patterns": "句型",
-    "topicMastery": "HSK 主题掌握度",
+    "topicMastery": "主题掌握度",
+    "topicN": "主题 {{n}}",
+    "activityN": "活动 {{n}}",
+    "seminar": "研讨课",
     "speakingPro1": "AI 口语",
     "speakingPro2": "专业版",
     "writingTraining1": "写作",

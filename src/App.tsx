@@ -10,6 +10,7 @@ import HSKStandardHomePage from './pages/HSKStandardHomePage'
 import HSKStandardSpeakingProPage from './pages/hsk-standard/HSKStandardSpeakingProPage'
 import HSKStandardWritingTrainingPage from './pages/hsk-standard/HSKStandardWritingTrainingPage'
 import HSKStandardStudyWorkChinaPage from './pages/hsk-standard/HSKStandardStudyWorkChinaPage'
+import HSKStandardSeminarPage from './pages/hsk-standard/HSKStandardSeminarPage'
 import BusinessChineseHomePage from './pages/BusinessChineseHomePage'
 import BusinessScenarioDialoguePage from './pages/business-chinese/BusinessScenarioDialoguePage'
 import BusinessDocumentToolsPage from './pages/business-chinese/BusinessDocumentToolsPage'
@@ -146,6 +147,7 @@ function ThemedApp() {
               <Route path="/hsk-standard/speaking-pro" element={<HSKStandardSpeakingProPage />} />
               <Route path="/hsk-standard/writing-training" element={<HSKStandardWritingTrainingPage />} />
               <Route path="/hsk-standard/study-work-china" element={<HSKStandardStudyWorkChinaPage />} />
+              <Route path="/hsk-standard/seminar" element={<HSKStandardSeminarPage />} />
               <Route path="/business-chinese" element={<BusinessChineseHomePage />} />
               <Route path="/business-chinese/scenario-dialogue" element={<BusinessScenarioDialoguePage />} />
               <Route path="/business-chinese/document-tools" element={<BusinessDocumentToolsPage />} />

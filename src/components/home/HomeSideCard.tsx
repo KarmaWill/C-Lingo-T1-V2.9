@@ -72,15 +72,17 @@ export function HomePageShell({
   )
 }
 
-/** triple：280+192+192；pair：主界面1 两张等高，缝 38 */
+/** triple：280+192+192；pair：主界面1 两张等高，缝 38；fill：一卡吃满右栏 */
 export function HomeSideCardStack({
   screenSize,
   children,
   pair = false,
+  fill = false,
 }: {
   screenSize: string
   children: ReactNode
   pair?: boolean
+  fill?: boolean
 }) {
   const p = (n: number) => figmaPx(n, screenSize)
   return (
@@ -90,8 +92,8 @@ export function HomeSideCardStack({
         minHeight: 0,
         height: '100%',
         display: 'grid',
-        gridTemplateRows: pair ? '1fr 1fr' : `${p(280)}fr ${p(192)}fr ${p(192)}fr`,
-        gap: `${p(pair ? 38 : 23)}px`,
+        gridTemplateRows: fill ? 'minmax(0, 1fr)' : pair ? '1fr 1fr' : `${p(280)}fr ${p(192)}fr ${p(192)}fr`,
+        gap: fill ? 0 : `${p(pair ? 38 : 23)}px`,
         boxSizing: 'border-box',
         overflow: 'hidden',
       }}
@@ -111,6 +113,7 @@ export function HomeSideCard({
   spotlightVisual,
   leadingIcon,
   pair = false,
+  fill = false,
   glow,
 }: {
   screenSize: string
@@ -124,18 +127,22 @@ export function HomeSideCard({
   leadingIcon?: ReactNode
   /** 主界面1 右栏：标题顶左、箭头底左 */
   pair?: boolean
+  /** 商务中文右栏：一卡铺满 */
+  fill?: boolean
   glow?: string
 }) {
   const p = (n: number) => figmaPx(n, screenSize)
   const isGradient = bgcolor.includes('gradient')
-  const arrow = p(pair ? 76 : 99)
+  const compact = pair && !fill
+  const railCard = pair || fill
+  const arrow = p(fill ? 88 : compact ? 76 : 99)
 
   const arrowBox = (
     <Box
       sx={{
         width: arrow,
         height: arrow,
-        borderRadius: `${p(pair ? 25 : 33)}px`,
+        borderRadius: `${p(fill ? 28 : compact ? 25 : 33)}px`,
         bgcolor: 'rgba(255,255,255,0.2)',
         backdropFilter: 'blur(2px)',
         display: 'flex',
@@ -144,7 +151,11 @@ export function HomeSideCard({
         flexShrink: 0,
       }}
     >
-      <FigmaForwardArrow size={p(pair ? 37 : 48)} color="#fff" stroke={p(pair ? 2.5 : 3.3)} />
+      <FigmaForwardArrow
+        size={p(fill ? 42 : compact ? 37 : 48)}
+        color="#fff"
+        stroke={p(fill ? 2.8 : compact ? 2.5 : 3.3)}
+      />
     </Box>
   )
 
@@ -181,9 +192,9 @@ export function HomeSideCard({
           alignItems: 'flex-start',
           justifyContent: 'space-between',
           ...(isGradient ? { background: bgcolor } : { bgcolor }),
-          px: `${p(pair ? 34 : 40)}px`,
-          pt: `${p(pair ? 31 : 40)}px`,
-          pb: `${p(pair ? 31 : 36)}px`,
+          px: `${p(fill ? 40 : compact ? 34 : 40)}px`,
+          pt: `${p(fill ? 40 : compact ? 31 : 40)}px`,
+          pb: `${p(fill ? 36 : compact ? 31 : 36)}px`,
           boxSizing: 'border-box',
           textAlign: 'left',
           isolation: 'isolate',
@@ -197,7 +208,7 @@ export function HomeSideCard({
             transition: 'none',
             '&:active': { transform: 'none' },
           },
-          ...(pair
+          ...(railCard
             ? {}
             : {
                 '&::before': {
@@ -229,25 +240,39 @@ export function HomeSideCard({
               }),
         }}
       >
-        {pair ? pairGlow : null}
-        <Typography
-          sx={{
-            position: 'relative',
-            zIndex: 2,
-            color: '#fff',
-            fontWeight: 700,
-            fontSize: p(pair ? 43 : 56),
-            lineHeight: `${p(pair ? 63 : 81)}px`,
-            fontFamily: FIGMA_FONT,
-          }}
-        >
-          {label}
-        </Typography>
+        {railCard ? pairGlow : null}
+        <Box sx={{ position: 'relative', zIndex: 2, minWidth: 0, maxWidth: fill ? '92%' : undefined }}>
+          <Typography
+            sx={{
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: p(fill ? 48 : compact ? 43 : 56),
+              lineHeight: `${p(fill ? 62 : compact ? 63 : 81)}px`,
+              fontFamily: FIGMA_FONT,
+            }}
+          >
+            {label}
+          </Typography>
+          {fill && subtitle ? (
+            <Typography
+              sx={{
+                mt: `${p(10)}px`,
+                color: '#FFF8E7',
+                fontWeight: 600,
+                fontSize: p(30),
+                lineHeight: `${p(38)}px`,
+                fontFamily: FIGMA_FONT,
+              }}
+            >
+              {subtitle}
+            </Typography>
+          ) : null}
+        </Box>
         <Box
           sx={{
             position: 'relative',
             zIndex: 2,
-            alignSelf: pair ? 'flex-start' : 'flex-end',
+            alignSelf: railCard ? 'flex-start' : 'flex-end',
             mt: 'auto',
           }}
         >
@@ -256,7 +281,7 @@ export function HomeSideCard({
         {spotlightVisual ? (
           <Box
             onClick={
-              pair
+              railCard
                 ? (event) => {
                     event.stopPropagation()
                     onClick()
@@ -265,13 +290,13 @@ export function HomeSideCard({
             }
             sx={{
               position: 'absolute',
-              right: pair ? p(10) : p(-6),
+              right: fill ? '-4%' : compact ? p(10) : p(-6),
               bottom: 0,
-              width: p(pair ? 228 : 240),
-              height: p(pair ? 228 : 260),
-              zIndex: pair ? 3 : 1,
-              pointerEvents: pair ? 'auto' : 'none',
-              cursor: pair ? 'pointer' : 'inherit',
+              width: fill ? '82%' : p(compact ? 228 : 240),
+              height: fill ? '64%' : p(compact ? 228 : 260),
+              zIndex: fill ? 1 : railCard ? 3 : 1,
+              pointerEvents: railCard ? 'auto' : 'none',
+              cursor: railCard ? 'pointer' : 'inherit',
               transform: 'none',
               transformOrigin: 'bottom right',
             }}

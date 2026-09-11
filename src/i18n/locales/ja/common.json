@@ -9,12 +9,13 @@
     "hubTitle": "AI Class Studio",
     "tracks": {
       "c-lingo": "C-Lingo Chinese",
-      "hsk-standard": "HSK Standard",
+      "hsk-standard": "Burnside High School",
       "business-chinese": "ビジネス中国語"
     },
     "badge": {
       "onlineOnly": "オンライン専用",
       "officialExam": "公式試験",
+      "schoolEdition": "スクール版",
       "premium": "プレミアム"
     }
   },
@@ -42,6 +43,8 @@
     "moduleMastery": "モジュール習熟度",
     "startSession": "セッション開始",
     "about": "概要",
+    "businessDialogue": "ビジネス対話",
+    "businessDialogueHint": "商务中文模拟对话",
     "scenarioDialogue1": "シナリオ",
     "scenarioDialogue2": "会話",
     "documentTools1": "ドキュメント",
@@ -58,11 +61,14 @@
     }
   },
   "hsk": {
-    "eyebrow": "HSK STANDARD コース",
-    "heroTitle": "HSK 1 | トピック1：挨拶と自己紹介",
+    "eyebrow": "BURNSIDE CHINESE",
+    "heroTitle": "トピック 1 | 活動 1：挨拶と自己紹介",
     "words": "語彙",
     "patterns": "パターン",
-    "topicMastery": "HSKトピック習熟度",
+    "topicMastery": "トピック習熟度",
+    "topicN": "トピック {{n}}",
+    "activityN": "活動 {{n}}",
+    "seminar": "セミナー",
     "speakingPro1": "AIスピーキング",
     "speakingPro2": "Pro",
     "writingTraining1": "ライティング",

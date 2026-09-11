@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Box, Typography, ButtonBase } from '@mui/material'
-import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { APP_SCREEN_SIZE, figmaPx, FIGMA_FONT } from '../utils/figmaScale'
 import { StudioHomeFrame, HubTopBar } from '../components/home/StudioHomeHeader'
 import HubLangProfile from '../components/home/HubLangProfile'
 import HubContainBoard from '../components/home/HubContainBoard'
+import HubPagerDots from '../components/home/HubPagerDots'
 import { HUB_CANVAS_CLINGO } from '../components/home/hubChrome'
 
 /**
@@ -17,6 +17,17 @@ import { HUB_CANVAS_CLINGO } from '../components/home/hubChrome'
 
 const BOARD_W = 1800
 const BOARD_H = 774
+
+/** 参考书立面 710×1024；封面 PNG 683×951 */
+const BOOK_CARD_W = 511
+const BOOK_CARD_H = Math.round((BOOK_CARD_W * 1024) / 710)
+const COVER_RATIO = 683 / 951
+const COVER_H = 586
+const COVER_W = Math.round(COVER_H * COVER_RATIO)
+const COVER_TOP = 22
+const COVER_LEFT = 26
+const PAGE_STEP = 9
+const TOOL_ICON = 48
 
 const UNITS = [
   {
@@ -296,9 +307,9 @@ export default function LibraryPage() {
           sx={{
             position: 'absolute',
             top: 0,
-            left: 1289,
-            width: 511,
-            height: 758,
+            left: BOARD_W - BOOK_CARD_W,
+            width: BOOK_CARD_W,
+            height: BOOK_CARD_H,
             boxSizing: 'border-box',
             bgcolor: '#fff',
             borderRadius: '54px',
@@ -306,25 +317,23 @@ export default function LibraryPage() {
             fontFamily: FIGMA_FONT,
           }}
         >
-          {/* Mask group 2508→1920：右错开书页 + 封面 */}
           {(
             [
-              { left: 57, bgcolor: '#00B4C0' },
-              { left: 46, bgcolor: '#D7D7D7' },
-              { left: 37, bgcolor: '#E6E6E6' },
-              { left: 28, bgcolor: '#F4F4F4' },
-              { left: 18, bgcolor: '#FFFFFF' },
+              { step: 4, bgcolor: '#00B4C0' },
+              { step: 3, bgcolor: '#D7D7D7' },
+              { step: 2, bgcolor: '#E6E6E6' },
+              { step: 1, bgcolor: '#F4F4F4' },
             ] as const
           ).map((page) => (
             <Box
-              key={page.left}
+              key={page.step}
               aria-hidden
               sx={{
                 position: 'absolute',
-                left: page.left,
-                top: 23,
-                width: 433,
-                height: 603,
+                left: COVER_LEFT + page.step * PAGE_STEP,
+                top: COVER_TOP,
+                width: COVER_W,
+                height: COVER_H,
                 bgcolor: page.bgcolor,
                 borderRadius: '38px',
               }}
@@ -333,10 +342,10 @@ export default function LibraryPage() {
           <Box
             sx={{
               position: 'absolute',
-              left: 9,
-              top: 23,
-              width: 433,
-              height: 603,
+              left: COVER_LEFT,
+              top: COVER_TOP,
+              width: COVER_W,
+              height: COVER_H,
               borderRadius: '38px',
               overflow: 'hidden',
             }}
@@ -347,10 +356,11 @@ export default function LibraryPage() {
               alt="Happy Chinese Volume 1"
               sx={{
                 display: 'block',
-                width: 433,
-                height: 603,
-                objectFit: 'cover',
-                borderRadius: '38px',
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                objectPosition: 'center top',
+                bgcolor: '#E8F4FC',
               }}
             />
             <Box
@@ -359,7 +369,7 @@ export default function LibraryPage() {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                height: 143,
+                height: 139,
                 background: 'linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.6) 100%)',
                 borderRadius: '0 0 38px 38px',
               }}
@@ -367,10 +377,10 @@ export default function LibraryPage() {
             <Box
               sx={{
                 position: 'absolute',
-                top: 259,
+                top: 252,
                 left: 0,
-                width: 205,
-                height: 97,
+                width: 199,
+                height: 94,
                 borderRadius: '0 54px 54px 0',
                 bgcolor: 'rgba(0, 0, 0, 0.4)',
                 color: '#fff',
@@ -393,7 +403,7 @@ export default function LibraryPage() {
             <Typography
               sx={{
                 position: 'absolute',
-                top: 549,
+                top: 533,
                 left: 0,
                 width: '100%',
                 m: 0,
@@ -412,9 +422,9 @@ export default function LibraryPage() {
             aria-hidden
             sx={{
               position: 'absolute',
-              top: 625,
-              left: 58,
-              width: 129,
+              top: 616,
+              left: COVER_LEFT + 40,
+              width: 125,
               height: 5,
               borderRadius: '54px',
               bgcolor: '#00B4A0',
@@ -424,14 +434,14 @@ export default function LibraryPage() {
             onClick={() => navigate('/library/select-books')}
             sx={{
               position: 'absolute',
-              top: 660,
+              top: 641,
               left: '50%',
-              width: 470,
-              height: 80,
+              width: 457,
+              height: 78,
               borderRadius: '54px',
               bgcolor: '#00B4C0',
               color: '#fff',
-              fontSize: 37,
+              fontSize: 36,
               fontWeight: 600,
               lineHeight: '46px',
               fontFamily: FIGMA_FONT,
@@ -446,9 +456,8 @@ export default function LibraryPage() {
 
         <TextbookToolCard
           left={0}
-          bgcolor="#FF6B35"
-          iconSrc="/images/hub/fun-chinese.svg"
-          iconSize={48}
+          bgcolor="#00B4A0"
+          iconSrc="/images/hub/fun-chinese.svg?v=cards4"
           label="Fun Chinese"
           subtitle="Games & Activities"
           onClick={() => navigate('/library/hub/fun-chinese')}
@@ -457,12 +466,12 @@ export default function LibraryPage() {
           left={638}
           bgcolor="#26D0A0"
           iconSrc="/images/hub/culture.svg"
-          iconSize={42}
           label="Culture"
           subtitle="Explore traditions"
           onClick={() => navigate('/library/hub/culture')}
         />
       </HubContainBoard>
+      <HubPagerDots screenSize={screenSize} />
     </StudioHomeFrame>
   )
 }
@@ -471,7 +480,7 @@ function TextbookToolCard({
   left,
   bgcolor,
   iconSrc,
-  iconSize,
+  iconSize = TOOL_ICON,
   label,
   subtitle,
   onClick,
@@ -479,7 +488,7 @@ function TextbookToolCard({
   left: number
   bgcolor: string
   iconSrc: string
-  iconSize: number
+  iconSize?: number
   label: string
   subtitle: string
   onClick: () => void
@@ -506,14 +515,14 @@ function TextbookToolCard({
         '&:active': { transform: 'scale(0.98)' },
       }}
     >
-      <Box sx={{ minWidth: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Box
-            component="img"
-            src={iconSrc}
-            alt=""
-            sx={{ width: iconSize, height: iconSize, flexShrink: 0 }}
-          />
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+        <Box
+          component="img"
+          src={iconSrc}
+          alt=""
+          sx={{ width: iconSize, height: iconSize, flexShrink: 0 }}
+        />
+        <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '11px' }}>
           <Typography
             sx={{
               color: '#fff',
@@ -526,18 +535,19 @@ function TextbookToolCard({
           >
             {label}
           </Typography>
+          <Typography
+            sx={{
+              color: 'rgba(255,255,255,0.6)',
+              fontWeight: 500,
+              fontSize: 28,
+              lineHeight: '34px',
+              fontFamily: FIGMA_FONT,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {subtitle}
+          </Typography>
         </Box>
-        <Typography
-          sx={{
-            color: 'rgba(255,255,255,0.6)',
-            fontWeight: 500,
-            fontSize: 28,
-            lineHeight: '34px',
-            fontFamily: FIGMA_FONT,
-          }}
-        >
-          {subtitle}
-        </Typography>
       </Box>
       <Box
         sx={{
@@ -552,7 +562,12 @@ function TextbookToolCard({
           flexShrink: 0,
         }}
       >
-        <ArrowForwardRoundedIcon sx={{ fontSize: 32, color: '#fff' }} />
+        <Box
+          component="img"
+          src="/images/hub/card-arrow.svg"
+          alt=""
+          sx={{ width: 27, height: 26, transform: 'scaleX(-1)', display: 'block' }}
+        />
       </Box>
     </ButtonBase>
   )

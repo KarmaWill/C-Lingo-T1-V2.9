@@ -18,7 +18,7 @@ const FIGMA = {
   cameraH: 115,
   cameraRadius: 1002,
   cameraGap: 40,
-  bottom: 40,
+  bottom: 56,
 } as const
 
 const DOCK_SHADOW = '0px 4px 20px rgba(213, 213, 213, 0.6)'
@@ -155,84 +155,101 @@ export default function BottomNavigator() {
       id="bottom-nav-container"
       sx={{
         position: 'absolute',
+        left: 0,
+        right: 0,
         bottom,
-        left: '50%',
-        transform: `translateX(-50%) ${isFullScreen ? 'translateY(150px)' : 'translateY(0)'}`,
-        opacity: isFullScreen ? 0 : 1,
-        transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-        zIndex: 1100,
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 0,
-        gap: `${cameraGap}px`,
-        width: dockW + cameraGap + cameraW,
         height: dockH,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1100,
+        // 不要用 left:50% + translateX：外壳 scale 会把中心算歪，相机看起来贴右沿
+        transform: isFullScreen ? 'translateY(150px)' : 'none',
+        opacity: isFullScreen ? 0 : 1,
+        transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
         pointerEvents: isFullScreen ? 'none' : 'auto',
       }}
     >
       <Box
         sx={{
-          width: dockW,
-          height: dockH,
-          borderRadius: `${radius}px`,
-          backgroundColor: SURFACE,
-          boxShadow: DOCK_SHADOW,
           display: 'flex',
           flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          px: `${padX}px`,
-          boxSizing: 'border-box',
-          flexShrink: 0,
+          height: dockH,
         }}
       >
-        {dockItems.map((item) => {
-          const active = item.match(location.pathname)
-          return (
-            <ButtonBase
-              key={item.value}
-              onClick={() => navigate(item.value)}
-              aria-label={t(item.labelKey)}
-              aria-current={active ? 'page' : undefined}
-              sx={{
-                width: icon,
-                height: dockH,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                borderRadius: `${Math.round(icon * 0.28)}px`,
-                transition: 'transform 0.15s ease',
-                '&:active': { transform: 'scale(0.92)' },
-              }}
-            >
-              <NavGlyph src={item.iconSrc} active={active} size={icon} label={t(item.labelKey)} />
-            </ButtonBase>
-          )
-        })}
-      </Box>
+        <Box
+          aria-hidden
+          sx={{
+            width: cameraW + cameraGap,
+            flexShrink: 0,
+            visibility: 'hidden',
+          }}
+        />
+        <Box
+          sx={{
+            width: dockW,
+            height: dockH,
+            borderRadius: `${radius}px`,
+            backgroundColor: SURFACE,
+            boxShadow: DOCK_SHADOW,
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: `${padX}px`,
+            boxSizing: 'border-box',
+            flexShrink: 0,
+          }}
+        >
+          {dockItems.map((item) => {
+            const active = item.match(location.pathname)
+            return (
+              <ButtonBase
+                key={item.value}
+                onClick={() => navigate(item.value)}
+                aria-label={t(item.labelKey)}
+                aria-current={active ? 'page' : undefined}
+                sx={{
+                  width: icon,
+                  height: dockH,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  borderRadius: `${Math.round(icon * 0.28)}px`,
+                  transition: 'transform 0.15s ease',
+                  '&:active': { transform: 'scale(0.92)' },
+                }}
+              >
+                <NavGlyph src={item.iconSrc} active={active} size={icon} label={t(item.labelKey)} />
+              </ButtonBase>
+            )
+          })}
+        </Box>
 
-      <ButtonBase
-        onClick={goCamera}
-        aria-label={t('nav.camera')}
-        aria-current={isCameraActive ? 'page' : undefined}
-        sx={{
-          width: cameraW,
-          height: cameraH,
-          borderRadius: `${cameraRadius}px`,
-          backgroundColor: SURFACE,
-          boxShadow: DOCK_SHADOW,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          transition: 'transform 0.15s ease',
-          '&:active': { transform: 'scale(0.92)' },
-        }}
-      >
-        <NavGlyph src="/shell/nav/camera.svg" active={isCameraActive} size={icon} label={t('nav.camera')} />
-      </ButtonBase>
+        <ButtonBase
+          onClick={goCamera}
+          aria-label={t('nav.camera')}
+          aria-current={isCameraActive ? 'page' : undefined}
+          sx={{
+            width: cameraW,
+            height: cameraH,
+            ml: `${cameraGap}px`,
+            borderRadius: `${cameraRadius}px`,
+            backgroundColor: SURFACE,
+            boxShadow: DOCK_SHADOW,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            transition: 'transform 0.15s ease',
+            '&:active': { transform: 'scale(0.92)' },
+          }}
+        >
+          <NavGlyph src="/shell/nav/camera.svg" active={isCameraActive} size={icon} label={t('nav.camera')} />
+        </ButtonBase>
+      </Box>
     </Box>
   )
 }

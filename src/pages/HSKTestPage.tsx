@@ -4,6 +4,7 @@ import { Box, Typography, ButtonBase } from '@mui/material'
 import HubLangProfile from '../components/home/HubLangProfile'
 import HubContainBoard from '../components/home/HubContainBoard'
 import { StudioHomeFrame } from '../components/home/StudioHomeHeader'
+import HubPagerDots from '../components/home/HubPagerDots'
 import {
   HUB_CANVAS_CLINGO,
   HUB_FRAME_PAD_X,
@@ -760,6 +761,7 @@ export default function HSKTestPage() {
           }}
         </HubContainBoard>
       </Box>
+      <HubPagerDots screenSize={screenSize} />
     </StudioHomeFrame>
   )
 }

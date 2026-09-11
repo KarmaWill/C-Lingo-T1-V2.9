@@ -26,19 +26,15 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import BorderColorOutlinedIcon from '@mui/icons-material/BorderColorOutlined';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
-import QuizOutlinedIcon from '@mui/icons-material/QuizOutlined';
-import WorkspacePremiumOutlinedIcon from '@mui/icons-material/WorkspacePremiumOutlined';
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
-import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import FeedbackEntryButton from '../components/feedback/FeedbackEntryButton';
-import HubContainBoard from '../components/home/HubContainBoard';
-import SystemStatusBar from '../components/MainUI/SystemStatusBar';
-import { FIGMA_FONT } from '../utils/figmaScale';
+import { useFeedback } from '../components/feedback/FeedbackProvider';
+import { HskPrepBackButton, HSK_PREP_BACK } from '../components/hsk/HskPrepBackButton';
+import { APP_SCREEN_SIZE, FIGMA_FONT, figmaPx } from '../utils/figmaScale';
 import {
   type PaperSource,
   type HSKLevel,
@@ -381,10 +377,6 @@ const LEVEL_PICKER_ITEMS: LevelPickerItem[] = [
 
 const PHASE_ONE_LEVELS = new Set<HSKLevel>([1, 2]);
 
-/** Figma Mock Exam 1920×1200。Group 17 与页脚为隐藏层，选级页不画 */
-const MOCK_EXAM_BOARD_W = 1920;
-const MOCK_EXAM_BOARD_H = 1200;
-
 function buildPaperFromCatalog(item: PaperCatalogItem): ExamPaper {
   return {
     id: item.id,
@@ -447,25 +439,34 @@ const SECTION_ICONS: Record<ExamSectionKind, typeof HeadphonesIcon> = {
   writing: EditNoteIcon,
 };
 
-function PaperStatPill({ label, value }: { label: string; value: string | number }) {
+function PaperStatPill({
+  label,
+  value,
+  screenSize,
+}: {
+  label: string;
+  value: string | number;
+  screenSize: string;
+}) {
+  const p = (n: number) => figmaPx(n, screenSize);
   return (
     <Box
       sx={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '12px',
-        height: 50,
-        px: '18px',
+        gap: `${p(12)}px`,
+        height: p(50),
+        px: `${p(18)}px`,
         bgcolor: '#FFFFFF',
         border: '1px solid #E2E3E3',
-        borderRadius: '21px',
+        borderRadius: `${p(21)}px`,
         boxSizing: 'border-box',
       }}
     >
-      <Typography sx={{ fontSize: 20, fontWeight: 700, lineHeight: '25px', color: '#98A2B3', fontFamily: FIGMA_FONT }}>
+      <Typography sx={{ fontSize: p(20), fontWeight: 700, lineHeight: 1.25, color: '#667085', fontFamily: FIGMA_FONT }}>
         {label}
       </Typography>
-      <Typography sx={{ fontSize: 24, fontWeight: 700, lineHeight: '30px', color: '#344054', fontFamily: FIGMA_FONT, fontVariantNumeric: 'tabular-nums' }}>
+      <Typography sx={{ fontSize: p(24), fontWeight: 700, lineHeight: 1.25, color: '#344054', fontFamily: FIGMA_FONT, fontVariantNumeric: 'tabular-nums' }}>
         {value}
       </Typography>
     </Box>
@@ -479,39 +480,32 @@ function levelBadgeLabel(id: LevelPickerId): string {
   return id === 'hsk7-9' ? '7-9' : String(id);
 }
 
-const LEVEL_CARD_LAYOUT: Record<LevelPickerId, { x: number; y: number }> = {
-  1: { x: 65, y: 185 },
-  2: { x: 988, y: 185 },
-  3: { x: 65, y: 417 },
-  4: { x: 988, y: 438 },
-  5: { x: 65, y: 673 },
-  6: { x: 988, y: 693 },
-  'hsk7-9': { x: 69, y: 922 },
-};
-
 function DifficultyMeter({
   level,
   filled,
   empty,
+  screenSize,
 }: {
   level: number;
   filled: string;
   empty: string;
+  screenSize: string;
 }) {
+  const p = (n: number) => figmaPx(n, screenSize);
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(12)}px` }}>
       <Typography
         sx={{
-          fontSize: 16,
+          fontSize: p(16),
           fontWeight: 700,
-          color: '#B0ACB4',
-          lineHeight: '20px',
+          color: '#8A8690',
+          lineHeight: 1.2,
           fontFamily: FIGMA_FONT,
         }}
       >
         DIFFICULTY
       </Typography>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(6)}px` }}>
         {Array.from({ length: 5 }, (_, index) => {
           const fill = Math.max(0, Math.min(1, level - index));
           const background =
@@ -524,9 +518,9 @@ function DifficultyMeter({
             <Box
               key={index}
               sx={{
-                width: 24,
-                height: 11,
-                borderRadius: '5px',
+                width: p(24),
+                height: p(11),
+                borderRadius: `${p(5)}px`,
                 background,
               }}
             />
@@ -540,101 +534,100 @@ function DifficultyMeter({
 function LevelPickerCard({
   item,
   onSelect,
+  screenSize,
 }: {
   item: LevelPickerItem;
   onSelect: (level: HSKLevel) => void;
+  screenSize: string;
 }) {
   const locked = !item.enabled;
-  const pos = LEVEL_CARD_LAYOUT[item.id];
+  const p = (n: number) => figmaPx(n, screenSize);
 
   const cardBody = (
-    <>
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'stretch',
+        height: '100%',
+        minHeight: 0,
+        width: '100%',
+      }}
+    >
       <Box
         sx={{
-          position: 'absolute',
-          left: 13,
-          top: 10,
-          width: 190,
-          height: 224,
-          borderRadius: '28px 10px 10px 28px',
+          width: '24%',
+          minWidth: p(100),
+          maxWidth: p(176),
+          m: `${p(10)}px`,
+          borderRadius: `${p(22)}px ${p(10)}px ${p(10)}px ${p(22)}px`,
           background: item.badgeGradient,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
+          flexShrink: 0,
           overflow: 'hidden',
+          position: 'relative',
         }}
       >
-        <Box
-          sx={{
-            position: 'absolute',
-            right: 0,
-            top: 0,
-            width: 28,
-            height: '100%',
-            background: item.badgeGradient,
-            filter: 'brightness(0.92)',
-          }}
-        />
-        <Box
-          sx={{
-            position: 'absolute',
-            right: -8,
-            bottom: 16,
-            width: 72,
-            height: 88,
-            borderRadius: '40px',
-            bgcolor: 'rgba(255,255,255,0.11)',
-          }}
-        />
         <Typography
           sx={{
             fontWeight: 700,
-            fontSize: 66,
-            lineHeight: '83px',
+            fontSize: item.id === 'hsk7-9' ? p(36) : p(48),
+            lineHeight: 1.1,
             color: '#FFFFFF',
             fontFamily: FIGMA_FONT,
             position: 'relative',
             zIndex: 1,
+            flexShrink: 0,
           }}
         >
           {levelBadgeLabel(item.id)}
         </Typography>
         <Typography
           sx={{
-            fontSize: 20,
+            fontSize: p(16),
             fontWeight: 700,
-            lineHeight: '25px',
             letterSpacing: '0.05em',
             color: item.levelTint,
             fontFamily: FIGMA_FONT,
             position: 'relative',
             zIndex: 1,
-            mt: '-6px',
+            mt: `${p(4)}px`,
           }}
         >
           LEVEL
         </Typography>
       </Box>
 
-      <Box sx={{ position: 'absolute', left: 239, top: 34, right: 188 }}>
+      <Box
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          py: `${p(16)}px`,
+          pr: `${p(12)}px`,
+        }}
+      >
         <Typography
           sx={{
             fontWeight: 700,
-            fontSize: 36,
-            lineHeight: '45px',
+            fontSize: p(28),
+            lineHeight: 1.2,
             color: '#24242D',
             fontFamily: FIGMA_FONT,
           }}
         >
           {item.title}
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', mt: '8px', minWidth: 0 }}>
-          <MenuBookIcon sx={{ fontSize: 24, color: locked ? '#A5B0BA' : '#A5B0BA', flexShrink: 0 }} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(8)}px`, mt: `${p(6)}px`, minWidth: 0 }}>
+          <MenuBookIcon sx={{ fontSize: p(20), color: '#A5B0BA', flexShrink: 0 }} />
           <Typography
             sx={{
-              fontSize: 28,
-              lineHeight: '35px',
+              fontSize: p(20),
+              lineHeight: 1.25,
               color: locked ? '#77747F' : '#62606B',
               fontWeight: locked ? 400 : 700,
               fontFamily: FIGMA_FONT,
@@ -647,68 +640,60 @@ function LevelPickerCard({
             {item.desc}
           </Typography>
         </Box>
-        <Box sx={{ mt: '28px' }}>
-          <DifficultyMeter level={item.difficulty} filled={item.barFilled} empty={item.barEmpty} />
+        <Box sx={{ mt: `${p(12)}px` }}>
+          <DifficultyMeter
+            level={item.difficulty}
+            filled={item.barFilled}
+            empty={item.barEmpty}
+            screenSize={screenSize}
+          />
         </Box>
       </Box>
 
-      {locked ? (
-        <Box
+      <Box
+        sx={{
+          alignSelf: 'center',
+          flexShrink: 0,
+          mr: `${p(20)}px`,
+          width: p(120),
+          height: p(52),
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: `${p(6)}px`,
+          bgcolor: locked ? '#F3F4F6' : item.enterColor,
+          borderRadius: `${p(16)}px`,
+        }}
+      >
+        <Typography
           sx={{
-            position: 'absolute',
-            right: 40,
-            top: 93,
-            width: 128,
-            height: 58,
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            bgcolor: '#F3F4F6',
-            borderRadius: '16px',
+            fontSize: p(18),
+            fontWeight: 700,
+            color: locked ? '#77747F' : '#FFFFFF',
+            fontFamily: FIGMA_FONT,
           }}
         >
-          <Typography sx={{ fontSize: 20, fontWeight: 700, lineHeight: '25px', color: '#77747F', fontFamily: FIGMA_FONT }}>
-            Locked
-          </Typography>
-          <LockIcon sx={{ fontSize: 16, color: '#77747F' }} />
-        </Box>
-      ) : (
-        <Box
-          sx={{
-            position: 'absolute',
-            right: 40,
-            top: 93,
-            width: 128,
-            height: 58,
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            bgcolor: item.enterColor,
-            borderRadius: '16px',
-          }}
-        >
-          <Typography sx={{ fontSize: 20, fontWeight: 700, lineHeight: '25px', color: '#FFFFFF', fontFamily: FIGMA_FONT }}>
-            Enter
-          </Typography>
-          <ChevronRightIcon sx={{ fontSize: 18, color: '#FFFFFF' }} />
-        </Box>
-      )}
-    </>
+          {locked ? 'Locked' : 'Enter'}
+        </Typography>
+        {locked ? (
+          <LockIcon sx={{ fontSize: p(16), color: '#77747F' }} />
+        ) : (
+          <ChevronRightIcon sx={{ fontSize: p(18), color: '#FFFFFF' }} />
+        )}
+      </Box>
+    </Box>
   );
 
   const cardSx = {
-    position: 'absolute' as const,
-    left: pos.x,
-    top: pos.y,
-    width: 859,
-    height: 245,
-    borderRadius: '28px',
+    height: '100%',
+    minHeight: 0,
+    width: '100%',
+    borderRadius: `${p(24)}px`,
     bgcolor: 'rgba(255,255,255,0.94)',
     overflow: 'hidden' as const,
     opacity: locked ? 0.62 : 1,
     textAlign: 'left' as const,
+    boxShadow: '0px 8px 24px rgba(36, 36, 45, 0.06)',
   };
 
   if (locked) {
@@ -724,10 +709,185 @@ function LevelPickerCard({
       onClick={() => onSelect(item.id as HSKLevel)}
       sx={{
         ...cardSx,
+        display: 'block',
         '&:active': { transform: 'scale(0.99)' },
+        '@media (prefers-reduced-motion: reduce)': {
+          '&:active': { transform: 'none' },
+        },
+        '&:focus-visible': {
+          outline: `3px solid ${item.enterColor}`,
+          outlineOffset: 3,
+        },
       }}
     >
       {cardBody}
+    </ButtonBase>
+  );
+}
+
+function MockExamPageChrome({
+  title,
+  onBack,
+  showBack,
+  screenSize,
+  children,
+}: {
+  title: string;
+  onBack: () => void;
+  showBack: boolean;
+  screenSize: string;
+  children: ReactNode;
+}) {
+  const p = (n: number) => figmaPx(n, screenSize);
+  return (
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        background: '#FFF8F0',
+        overflow: 'hidden',
+        minHeight: 0,
+      }}
+    >
+      <Box
+        sx={{
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          gap: `${p(20)}px`,
+          pl: `${HSK_PREP_BACK.left}px`,
+          pr: `${p(40)}px`,
+          pt: `${HSK_PREP_BACK.top}px`,
+          pb: `${p(8)}px`,
+        }}
+      >
+        <HskPrepBackButton
+          onClick={onBack}
+          sx={{
+            visibility: showBack ? 'visible' : 'hidden',
+            pointerEvents: showBack ? 'auto' : 'none',
+          }}
+        />
+        <Typography
+          sx={{
+            fontWeight: 700,
+            fontSize: p(40),
+            lineHeight: 1.2,
+            color: '#20212A',
+            fontFamily: FIGMA_FONT,
+          }}
+        >
+          {title}
+        </Typography>
+      </Box>
+      <Box sx={{ flex: 1, minHeight: 0, px: `${p(40)}px`, pb: `${p(28)}px` }}>{children}</Box>
+    </Box>
+  );
+}
+
+/** Figma 选版本页画板 2508 宽，映射到当前 VITE_SCREEN_SIZE */
+const VERSION_ARTBOARD_W = 2508;
+
+function versionPx(n: number, screenSize: string): number {
+  const width = Number(String(screenSize).split('x')[0]) || 2000;
+  return Math.round((n * width) / VERSION_ARTBOARD_W);
+}
+
+function VersionTrackCard({
+  badge,
+  badgeBg,
+  badgeColor,
+  title,
+  description,
+  ariaLabel,
+  onSelect,
+  screenSize,
+}: {
+  badge: string;
+  badgeBg: string;
+  badgeColor: string;
+  title: string;
+  description: string;
+  ariaLabel: string;
+  onSelect: () => void;
+  screenSize: string;
+}) {
+  const v = (n: number) => versionPx(n, screenSize);
+  return (
+    <ButtonBase
+      onClick={onSelect}
+      aria-label={ariaLabel}
+      sx={{
+        height: '100%',
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        boxSizing: 'border-box',
+        px: `${v(70)}px`,
+        py: `${v(56)}px`,
+        bgcolor: '#FFFFFF',
+        border: '1.5px solid #E6E9EF',
+        boxShadow: `0px ${v(50)}px ${v(125)}px rgba(15, 23, 42, 0.1)`,
+        borderRadius: `${v(70)}px`,
+        textAlign: 'left',
+        '&:active': { transform: 'scale(0.99)' },
+        '&:focus-visible': {
+          outline: `3px solid ${badgeColor}`,
+          outlineOffset: 3,
+        },
+      }}
+    >
+      <Box
+        sx={{
+          width: v(155),
+          height: v(155),
+          borderRadius: `${v(52)}px`,
+          bgcolor: badgeBg,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: v(55),
+            lineHeight: 1,
+            fontWeight: 400,
+            color: badgeColor,
+            fontFamily: FIGMA_FONT,
+          }}
+        >
+          {badge}
+        </Typography>
+      </Box>
+      <Typography
+        sx={{
+          mt: `${v(55)}px`,
+          fontWeight: 700,
+          fontSize: v(67),
+          lineHeight: 1.2,
+          color: '#142033',
+          fontFamily: FIGMA_FONT,
+        }}
+      >
+        {title}
+      </Typography>
+      <Typography
+        sx={{
+          mt: `${v(20)}px`,
+          fontWeight: 700,
+          fontSize: v(40),
+          lineHeight: 1.35,
+          color: '#667085',
+          fontFamily: FIGMA_FONT,
+        }}
+      >
+        {description}
+      </Typography>
     </ButtonBase>
   );
 }
@@ -736,11 +896,14 @@ function VersionScreen({
   onSelect,
   onBack,
   showBack = true,
+  screenSize,
 }: {
   onSelect: (track: PaperSource) => void;
   onBack: () => void;
   showBack?: boolean;
+  screenSize: string;
 }) {
+  const v = (n: number) => versionPx(n, screenSize);
   return (
     <Box
       sx={{
@@ -749,220 +912,141 @@ function VersionScreen({
         flexDirection: 'column',
         background: '#FFF8F0',
         overflow: 'hidden',
+        minHeight: 0,
         position: 'relative',
       }}
     >
       <Box
         sx={{
           position: 'absolute',
+          left: '82.45%',
           right: '-7%',
-          top: '6%',
-          width: 520,
-          height: 470,
-          borderRadius: '50%',
-          background: 'rgba(255, 181, 217, 0.17)',
-          filter: 'blur(94px)',
+          top: '5.83%',
+          bottom: '55%',
+          bgcolor: 'rgba(255, 181, 217, 0.17)',
+          filter: `blur(${v(123)}px)`,
           pointerEvents: 'none',
         }}
       />
-      <HubContainBoard width={MOCK_EXAM_BOARD_W} height={MOCK_EXAM_BOARD_H}>
-        <ButtonBase
+
+      <Box
+        sx={{
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          gap: `${v(28)}px`,
+          pl: `${HSK_PREP_BACK.left}px`,
+          pr: `${v(83)}px`,
+          pt: `${HSK_PREP_BACK.top}px`,
+          pb: `${v(8)}px`,
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <HskPrepBackButton
           onClick={onBack}
-          aria-label="Back"
           sx={{
-            position: 'absolute',
-            left: 58,
-            top: 63,
-            width: 80,
-            height: 80,
-            borderRadius: '100px',
-            bgcolor: '#FFFFFF',
-            border: '0.8px solid #E0E0DF',
-            color: '#2D3436',
             visibility: showBack ? 'visible' : 'hidden',
             pointerEvents: showBack ? 'auto' : 'none',
-            '&:active': { bgcolor: '#F9FAFB' },
           }}
-        >
-          <ChevronLeftIcon sx={{ fontSize: 40 }} />
-        </ButtonBase>
+        />
         <Typography
           sx={{
-            position: 'absolute',
-            left: 167,
-            top: 69,
             fontWeight: 700,
-            fontSize: 56,
-            lineHeight: '70px',
+            fontSize: v(75),
+            lineHeight: `${v(94)}px`,
             color: '#20212A',
             fontFamily: FIGMA_FONT,
           }}
         >
           Mock Exam
         </Typography>
+      </Box>
 
-        <Typography
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          px: `${v(110)}px`,
+          pb: `${v(80)}px`,
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <Box
           sx={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: 214,
-            fontWeight: 600,
-            fontSize: 49,
-            lineHeight: '61px',
-            letterSpacing: '-1.3px',
-            textAlign: 'center',
-            color: '#142033',
-            fontFamily: FIGMA_FONT,
-          }}
-        >
-          Choose your HSK version
-        </Typography>
-        <Typography
-          sx={{
-            position: 'absolute',
-            left: 200,
-            right: 200,
-            top: 286,
-            fontWeight: 400,
-            fontSize: 29,
-            lineHeight: '37px',
-            textAlign: 'center',
-            color: '#667085',
-            fontFamily: FIGMA_FONT,
-          }}
-        >
-          Choose a version, then select a level and start your mock exam.
-        </Typography>
-
-        <ButtonBase
-          onClick={() => onSelect('official')}
-          aria-label="Past Papers, HSK 2.0"
-          sx={{
-            position: 'absolute',
-            left: 84,
-            top: 380,
-            width: 853,
-            height: 487,
+            width: '100%',
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'flex-start',
-            justifyContent: 'center',
-            px: '54px',
-            boxSizing: 'border-box',
-            bgcolor: '#FFFFFF',
-            border: '1.3px solid #E6E9EF',
-            boxShadow: '0px 38px 96px rgba(15, 23, 42, 0.1)',
-            borderRadius: '54px',
-            textAlign: 'left',
-            '&:active': { transform: 'scale(0.99)' },
+            alignItems: 'center',
+            mb: `${v(70)}px`,
+            flexShrink: 0,
           }}
         >
-          <Box
-            sx={{
-              width: 118,
-              height: 118,
-              borderRadius: '40px',
-              bgcolor: '#E8FAF6',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Typography sx={{ fontSize: 42, lineHeight: '56px', color: '#078879', fontFamily: FIGMA_FONT }}>
-              2.0
-            </Typography>
-          </Box>
           <Typography
             sx={{
-              mt: '42px',
-              fontWeight: 700,
-              fontSize: 52,
-              lineHeight: '69px',
+              fontWeight: 600,
+              fontSize: v(64),
+              lineHeight: `${v(80)}px`,
+              letterSpacing: '-0.027em',
+              textAlign: 'center',
               color: '#142033',
               fontFamily: FIGMA_FONT,
             }}
           >
-            Past Papers
+            Choose your HSK version
           </Typography>
           <Typography
             sx={{
-              mt: '15px',
-              fontWeight: 700,
-              fontSize: 31,
-              lineHeight: '41px',
+              mt: `${v(22)}px`,
+              fontWeight: 400,
+              fontSize: v(38),
+              lineHeight: `${v(48)}px`,
+              textAlign: 'center',
               color: '#667085',
               fontFamily: FIGMA_FONT,
+              maxWidth: v(1074),
             }}
           >
-            Take an HSK 2.0 mock exam.
+            Choose a version, then select a level and start your mock exam.
           </Typography>
-        </ButtonBase>
+        </Box>
 
-        <ButtonBase
-          onClick={() => onSelect('clingo')}
-          aria-label="C-Test, HSK 3.0"
+        <Box
           sx={{
-            position: 'absolute',
-            left: 983,
-            top: 380,
-            width: 853,
-            height: 487,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-start',
-            justifyContent: 'center',
-            px: '54px',
-            boxSizing: 'border-box',
-            bgcolor: '#FFFFFF',
-            border: '1.3px solid #E6E9EF',
-            boxShadow: '0px 38px 96px rgba(15, 23, 42, 0.1)',
-            borderRadius: '54px',
-            textAlign: 'left',
-            '&:active': { transform: 'scale(0.99)' },
+            flex: '1 1 auto',
+            minHeight: 0,
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: `${v(60)}px`,
+            maxHeight: v(636),
           }}
         >
-          <Box
-            sx={{
-              width: 118,
-              height: 118,
-              borderRadius: '40px',
-              bgcolor: '#F1E8FF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Typography sx={{ fontSize: 42, lineHeight: '56px', color: '#7C3AED', fontFamily: FIGMA_FONT }}>
-              3.0
-            </Typography>
-          </Box>
-          <Typography
-            sx={{
-              mt: '42px',
-              fontWeight: 700,
-              fontSize: 52,
-              lineHeight: '69px',
-              color: '#142033',
-              fontFamily: FIGMA_FONT,
-            }}
-          >
-            C-Test
-          </Typography>
-          <Typography
-            sx={{
-              mt: '15px',
-              fontWeight: 700,
-              fontSize: 31,
-              lineHeight: '41px',
-              color: '#667085',
-              fontFamily: FIGMA_FONT,
-            }}
-          >
-            Choose a level and take an HSK 3.0 mock exam.
-          </Typography>
-        </ButtonBase>
-      </HubContainBoard>
+          <VersionTrackCard
+            badge="2.0"
+            badgeBg="#E8FAF6"
+            badgeColor="#078879"
+            title="Past Papers"
+            description="Take an HSK 2.0 mock exam."
+            ariaLabel="Past Papers, HSK 2.0"
+            onSelect={() => onSelect('official')}
+            screenSize={screenSize}
+          />
+          <VersionTrackCard
+            badge="3.0"
+            badgeBg="#F1E8FF"
+            badgeColor="#7C3AED"
+            title="C-Test"
+            description="Choose a level and take an HSK 3.0 mock exam."
+            ariaLabel="C-Test, HSK 3.0"
+            onSelect={() => onSelect('clingo')}
+            screenSize={screenSize}
+          />
+        </Box>
+      </Box>
     </Box>
   );
 }
@@ -971,102 +1055,35 @@ function HomeScreen({
   onSelectLevel,
   onBack,
   showBack = true,
+  screenSize,
 }: {
   onSelectLevel: (level: HSKLevel) => void;
   onBack: () => void;
   showBack?: boolean;
+  screenSize: string;
 }) {
+  const p = (n: number) => figmaPx(n, screenSize);
   return (
-    <Box
-      sx={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        background: '#FFF8F0',
-        overflow: 'hidden',
-        position: 'relative',
-      }}
-    >
+    <MockExamPageChrome title="Mock Exam" onBack={onBack} showBack={showBack} screenSize={screenSize}>
       <Box
         sx={{
-          position: 'absolute',
-          right: '-7%',
-          top: '6%',
-          width: 520,
-          height: 470,
-          borderRadius: '50%',
-          background: 'rgba(255, 181, 217, 0.17)',
-          filter: 'blur(94px)',
-          pointerEvents: 'none',
+          height: '100%',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gridTemplateRows: 'repeat(4, minmax(0, 1fr))',
+          gap: `${p(16)}px`,
         }}
-      />
-      <HubContainBoard width={MOCK_EXAM_BOARD_W} height={MOCK_EXAM_BOARD_H}>
-        <ButtonBase
-          onClick={onBack}
-          aria-label="Back"
-          sx={{
-            position: 'absolute',
-            left: 58,
-            top: 63,
-            width: 80,
-            height: 80,
-            borderRadius: '100px',
-            bgcolor: '#FFFFFF',
-            border: '0.8px solid #E0E0DF',
-            color: '#2D3436',
-            visibility: showBack ? 'visible' : 'hidden',
-            pointerEvents: showBack ? 'auto' : 'none',
-            '&:active': { bgcolor: '#F9FAFB' },
-          }}
-        >
-          <ChevronLeftIcon sx={{ fontSize: 40 }} />
-        </ButtonBase>
-        <Typography
-          sx={{
-            position: 'absolute',
-            left: 167,
-            top: 69,
-            fontWeight: 700,
-            fontSize: 56,
-            lineHeight: '70px',
-            color: '#20212A',
-            fontFamily: FIGMA_FONT,
-          }}
-        >
-          Mock Exam
-        </Typography>
-        <Box
-          sx={{
-            position: 'absolute',
-            left: 507,
-            top: 75,
-            width: 228,
-            height: 56,
-            borderRadius: '27px',
-            background: 'linear-gradient(92.36deg, #F7910B 0.3%, #FBAE5B 46.18%, #FCC09A 99.7%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Typography
-            sx={{
-              fontSize: 24,
-              fontWeight: 700,
-              lineHeight: '30px',
-              color: '#FFFFFF',
-              fontFamily: FIGMA_FONT,
-            }}
-          >
-            CHOOSE LEVEL
-          </Typography>
-        </Box>
-
+      >
         {LEVEL_PICKER_ITEMS.map((item) => (
-          <LevelPickerCard key={String(item.id)} item={item} onSelect={onSelectLevel} />
+          <LevelPickerCard
+            key={String(item.id)}
+            item={item}
+            onSelect={onSelectLevel}
+            screenSize={screenSize}
+          />
         ))}
-      </HubContainBoard>
-    </Box>
+      </Box>
+    </MockExamPageChrome>
   );
 }
 
@@ -1077,11 +1094,14 @@ function PaperCard({
   paper,
   attempt,
   onSelect,
+  screenSize,
 }: {
   paper: PaperCatalogItem;
   attempt?: PaperAttemptRecord;
   onSelect: (paper: PaperCatalogItem) => void;
+  screenSize: string;
 }) {
+  const p = (n: number) => figmaPx(n, screenSize);
   const official = paper.source === 'official';
   const savedScore = attempt?.score;
   const hasScore = savedScore !== undefined;
@@ -1093,8 +1113,8 @@ function PaperCard({
     <ButtonBase
       onClick={() => onSelect(paper)}
       sx={{
-        width: 315,
-        height: 296,
+        width: p(300),
+        height: p(280),
         display: 'block',
         p: 0,
         flexShrink: 0,
@@ -1102,13 +1122,17 @@ function PaperCard({
         overflow: 'visible',
         textAlign: 'left',
         '&:active': { transform: 'scale(0.99)' },
+        '&:focus-visible': {
+          outline: `3px solid ${official ? '#E9292D' : '#00A99D'}`,
+          outlineOffset: 3,
+        },
       }}
     >
       <Box
         sx={{
           position: 'absolute',
           inset: 0,
-          borderRadius: '28px',
+          borderRadius: `${p(28)}px`,
           background: official
             ? 'linear-gradient(180deg, #FFB4B4 0%, #E58C8C 72.12%)'
             : 'linear-gradient(180deg, #4AE6B6 0%, #7ECCB3 87.02%)',
@@ -1119,9 +1143,9 @@ function PaperCard({
           position: 'absolute',
           left: '36.5%',
           right: '36.5%',
-          top: 12,
-          height: 9,
-          borderRadius: '13px',
+          top: p(12),
+          height: p(9),
+          borderRadius: `${p(13)}px`,
           bgcolor: '#FFFFFF',
         }}
       />
@@ -1130,21 +1154,21 @@ function PaperCard({
           position: 'absolute',
           left: 0,
           right: 0,
-          top: 36,
+          top: p(36),
           bottom: 0,
           bgcolor: '#FFFDFB',
           border: official ? '1px solid #FFB4B4' : '1px solid #00B4A0',
-          borderRadius: '28px',
+          borderRadius: `${p(28)}px`,
         }}
       />
       <Box
         sx={{
           position: 'absolute',
-          left: 27,
-          top: 28,
-          width: 88,
-          height: 104,
-          borderRadius: '8px',
+          left: p(27),
+          top: p(28),
+          width: p(88),
+          height: p(104),
+          borderRadius: `${p(8)}px`,
           bgcolor: scoreBadgeBg,
           display: 'flex',
           flexDirection: 'column',
@@ -1153,22 +1177,22 @@ function PaperCard({
           zIndex: 2,
         }}
       >
-        <Typography sx={{ fontSize: 15, fontWeight: 600, lineHeight: '19px', color: '#FFFFFF', fontFamily: FIGMA_FONT }}>
+        <Typography sx={{ fontSize: p(15), fontWeight: 600, lineHeight: 1.25, color: '#FFFFFF', fontFamily: FIGMA_FONT }}>
           SCORE
         </Typography>
-        <Typography sx={{ fontSize: 27, fontWeight: 700, lineHeight: '33px', color: '#FFFFFF', fontFamily: FIGMA_FONT, fontVariantNumeric: 'tabular-nums' }}>
+        <Typography sx={{ fontSize: p(27), fontWeight: 700, lineHeight: 1.2, color: '#FFFFFF', fontFamily: FIGMA_FONT, fontVariantNumeric: 'tabular-nums' }}>
           {hasScore ? savedScore : '--'}
         </Typography>
       </Box>
       <Typography
         sx={{
           position: 'absolute',
-          left: 18,
-          right: 15,
-          top: 157,
-          fontSize: 36,
+          left: p(18),
+          right: p(15),
+          top: p(148),
+          fontSize: p(32),
           fontWeight: 700,
-          lineHeight: '45px',
+          lineHeight: 1.2,
           textAlign: 'center',
           color: official ? '#E9292D' : '#00A99D',
           fontFamily: FIGMA_FONT,
@@ -1180,24 +1204,53 @@ function PaperCard({
       <Box
         sx={{
           position: 'absolute',
-          left: 21,
-          right: 21,
-          bottom: 15,
-          height: 43,
+          left: p(21),
+          right: p(21),
+          bottom: p(15),
+          height: p(43),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           bgcolor: official ? 'rgba(255, 180, 180, 0.22)' : 'rgba(170, 255, 228, 0.22)',
           border: official ? '1px solid #FFB4B4' : '1px solid #70D4CA',
-          borderRadius: '28px',
+          borderRadius: `${p(28)}px`,
           zIndex: 2,
         }}
       >
-        <Typography sx={{ fontSize: 20, fontWeight: 700, lineHeight: '25px', color: '#2D3436', fontFamily: FIGMA_FONT }}>
+        <Typography sx={{ fontSize: p(20), fontWeight: 700, lineHeight: 1.25, color: '#2D3436', fontFamily: FIGMA_FONT }}>
           {dateLabel}
         </Typography>
       </Box>
     </ButtonBase>
+  );
+}
+
+function PaperSectionLabel({
+  label,
+  color,
+  screenSize,
+}: {
+  label: string;
+  color: string;
+  screenSize: string;
+}) {
+  const p = (n: number) => figmaPx(n, screenSize);
+  return (
+    <Box
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        px: `${p(18)}px`,
+        height: p(44),
+        bgcolor: color,
+        borderRadius: `${p(16)}px`,
+        mb: `${p(16)}px`,
+      }}
+    >
+      <Typography sx={{ fontSize: p(22), fontWeight: 700, lineHeight: 1.2, color: '#FFFFFF', fontFamily: FIGMA_FONT }}>
+        {label}
+      </Typography>
+    </Box>
   );
 }
 
@@ -1210,6 +1263,7 @@ function PaperSelectionScreen({
   onBack,
   onRetry,
   paperTrack,
+  screenSize,
 }: {
   level: HSKLevel;
   papers: PaperCatalogItem[];
@@ -1218,9 +1272,10 @@ function PaperSelectionScreen({
   onSelectPaper: (paper: PaperCatalogItem) => void;
   onBack: () => void;
   onRetry: () => void;
-  is960?: boolean;
   paperTrack?: PaperSource | null;
+  screenSize: string;
 }) {
+  const p = (n: number) => figmaPx(n, screenSize);
   const visiblePapers = useMemo(
     () => (paperTrack ? papers.filter((paper) => paper.source === paperTrack) : papers),
     [paperTrack, papers],
@@ -1231,67 +1286,61 @@ function PaperSelectionScreen({
   const showOfficial = officialPapers.length > 0;
   const showPractice = practicePapers.length > 0;
 
+  const renderCards = (items: PaperCatalogItem[]) => (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: `${p(28)}px` }}>
+      {items.map((paper) => (
+        <PaperCard
+          key={paper.id}
+          paper={paper}
+          attempt={paper.bestScore === undefined
+            ? undefined
+            : { score: paper.bestScore, completedAt: paper.bestScoreAt || new Date().toISOString() }}
+          onSelect={onSelectPaper}
+          screenSize={screenSize}
+        />
+      ))}
+    </Box>
+  );
+
   return (
-    <Box
-      sx={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        background: '#FFFCF7',
-        overflow: 'hidden',
-        position: 'relative',
-      }}
+    <MockExamPageChrome
+      title={`HSK ${level} Practice Papers`}
+      onBack={onBack}
+      showBack
+      screenSize={screenSize}
     >
-      <Box sx={{ position: 'absolute', right: -80, top: -180, width: 1026, height: 1026, borderRadius: '50%', bgcolor: 'rgba(255, 222, 222, 0.19)', filter: 'blur(91px)', pointerEvents: 'none' }} />
-      <Box sx={{ position: 'absolute', left: -170, bottom: -80, width: 1026, height: 1026, borderRadius: '50%', bgcolor: 'rgba(252, 230, 238, 0.41)', filter: 'blur(91px)', pointerEvents: 'none' }} />
-      <HubContainBoard width={MOCK_EXAM_BOARD_W} height={MOCK_EXAM_BOARD_H}>
-        <ButtonBase
-          onClick={onBack}
-          aria-label="Back"
-          sx={{
-            position: 'absolute',
-            left: 60,
-            top: 78,
-            width: 78,
-            height: 80,
-            borderRadius: '100px',
-            bgcolor: '#FFFFFF',
-            border: '1px solid #E0E0DF',
-            color: '#2D3436',
-            '&:active': { bgcolor: '#F9FAFB' },
-          }}
-        >
-          <ChevronLeftIcon sx={{ fontSize: 40 }} />
-        </ButtonBase>
-        <Typography
-          sx={{
-            position: 'absolute',
-            left: 157,
-            top: 82,
-            fontWeight: 700,
-            fontSize: 56,
-            lineHeight: '70px',
-            color: '#182230',
-            fontFamily: FIGMA_FONT,
-          }}
-        >
-          HSK {level} Practice Papers
-        </Typography>
-        <Box sx={{ position: 'absolute', left: 157, top: 157, display: 'flex', gap: '16px' }}>
-          <PaperStatPill label="DURATION" value={summaryPaper ? `${summaryPaper.duration} min` : '--'} />
-          <PaperStatPill label="QUESTIONS" value={summaryPaper?.questionCount ?? '--'} />
-          <PaperStatPill label="FULL SCORE" value={summaryPaper?.maxScore ?? '--'} />
+      <Box
+        sx={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+        }}
+      >
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: `${p(12)}px`, flexShrink: 0, mb: `${p(16)}px` }}>
+          <PaperStatPill label="DURATION" value={summaryPaper ? `${summaryPaper.duration} min` : '--'} screenSize={screenSize} />
+          <PaperStatPill label="QUESTIONS" value={summaryPaper?.questionCount ?? '--'} screenSize={screenSize} />
+          <PaperStatPill label="FULL SCORE" value={summaryPaper?.maxScore ?? '--'} screenSize={screenSize} />
         </Box>
 
         {(loading || error || visiblePapers.length === 0) && (
-          <Box sx={{ position: 'absolute', left: 157, top: 220, display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <Typography sx={{ color: error ? '#B91C1C' : '#64748B', fontWeight: 700, fontFamily: FIGMA_FONT }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(16)}px`, flexShrink: 0, mb: `${p(16)}px` }}>
+            <Typography sx={{ color: error ? '#B91C1C' : '#667085', fontWeight: 700, fontFamily: FIGMA_FONT, fontSize: p(22) }}>
               {loading ? 'Loading published papers…' : error || 'No published papers for this level.'}
             </Typography>
             {error && !loading && (
               <ButtonBase
                 onClick={onRetry}
-                sx={{ minHeight: 44, px: 2, borderRadius: '999px', bgcolor: '#FFFFFF', border: '1px solid #CBD5E1', color: '#334155', fontWeight: 800 }}
+                sx={{
+                  minHeight: p(44),
+                  px: `${p(18)}px`,
+                  borderRadius: '999px',
+                  bgcolor: '#FFFFFF',
+                  border: '1px solid #CBD5E1',
+                  color: '#334155',
+                  fontWeight: 800,
+                  fontFamily: FIGMA_FONT,
+                }}
               >
                 Retry
               </ButtonBase>
@@ -1299,175 +1348,146 @@ function PaperSelectionScreen({
           </Box>
         )}
 
-        {showOfficial && (
-          <>
-            <Box
-              sx={{
-                position: 'absolute',
-                left: 61,
-                top: 243,
-                px: '18px',
-                height: 57,
-                display: 'inline-flex',
-                alignItems: 'center',
-                bgcolor: '#EF2D32',
-                borderRadius: '18px',
-              }}
-            >
-              <Typography sx={{ fontSize: 24, fontWeight: 700, lineHeight: '29px', color: '#FFFFFF', fontFamily: FIGMA_FONT }}>
-                Official
-              </Typography>
+        <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+          {showOfficial && (
+            <Box sx={{ mb: showPractice ? `${p(28)}px` : 0 }}>
+              <PaperSectionLabel label="Official" color="#EF2D32" screenSize={screenSize} />
+              {renderCards(officialPapers)}
             </Box>
-            <Box sx={{ position: 'absolute', left: 61, top: 345, display: 'flex', flexWrap: 'wrap', gap: '55px', width: 1719 }}>
-              {officialPapers.map((paper) => (
-                <PaperCard
-                  key={paper.id}
-                  paper={paper}
-                  attempt={paper.bestScore === undefined
-                    ? undefined
-                    : { score: paper.bestScore, completedAt: paper.bestScoreAt || new Date().toISOString() }}
-                  onSelect={onSelectPaper}
-                />
-              ))}
+          )}
+          {showOfficial && showPractice && (
+            <Box sx={{ borderTop: '2px dashed #D1DBE6', mb: `${p(24)}px` }} />
+          )}
+          {showPractice && (
+            <Box>
+              <PaperSectionLabel label="Practice" color="#00A99D" screenSize={screenSize} />
+              {renderCards(practicePapers)}
             </Box>
-          </>
-        )}
-
-        {showOfficial && showPractice && (
-          <Box
-            sx={{
-              position: 'absolute',
-              left: 62,
-              right: 97,
-              top: 672,
-              borderTop: '3px dashed #D1DBE6',
-            }}
-          />
-        )}
-
-        {showPractice && (
-          <>
-            <Box
-              sx={{
-                position: 'absolute',
-                left: 60,
-                top: showOfficial ? 713 : 243,
-                px: '18px',
-                height: 57,
-                display: 'inline-flex',
-                alignItems: 'center',
-                bgcolor: '#00A99D',
-                borderRadius: '18px',
-              }}
-            >
-              <Typography sx={{ fontSize: 23, fontWeight: 700, lineHeight: '28px', color: '#FFFFFF', fontFamily: FIGMA_FONT }}>
-                Practice
-              </Typography>
-            </Box>
-            <Box
-              sx={{
-                position: 'absolute',
-                left: 61,
-                top: showOfficial ? 815 : 345,
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '55px',
-                width: 1795,
-              }}
-            >
-              {practicePapers.map((paper) => (
-                <PaperCard
-                  key={paper.id}
-                  paper={paper}
-                  attempt={paper.bestScore === undefined
-                    ? undefined
-                    : { score: paper.bestScore, completedAt: paper.bestScoreAt || new Date().toISOString() }}
-                  onSelect={onSelectPaper}
-                />
-              ))}
-            </Box>
-          </>
-        )}
-      </HubContainBoard>
-    </Box>
+          )}
+        </Box>
+      </Box>
+    </MockExamPageChrome>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    ExamIntroScreen — 考试介绍（开始前）
    ═══════════════════════════════════════════════════════════════════════════════ */
-function ExamIntroScreen({
-  paper,
-  onStart,
-  onBack,
-  starting,
-  is960,
+function ExamIntroStat({
+  kind,
+  value,
+  label,
 }: {
-  paper: ExamPaper;
-  onStart: () => void;
-  onBack: () => void;
-  starting: boolean;
-  is960: boolean;
+  kind: 'time' | 'questions' | 'score';
+  value: string | number;
+  label: string;
 }) {
-  const [rulesAccepted, setRulesAccepted] = useState(false);
-  const { t, i18n } = useTranslation();
-  const sectionLines = paper.sectionLines;
-  const listenLabel = paper.listeningPlays === 1 ? t('hskExamIntro.listenOnce') : t('hskExamIntro.listenTwice');
-  const theme = PAPER_CARD_THEMES[paper.source];
-  const isOfficial = paper.source === 'official';
-  const accent = theme.volumeColor;
-  const questionTypesAccent = '#A855F7';
-  const examTypeLabel = isOfficial
-    ? t('hskExamIntro.mockTest', { level: paper.level })
-    : t('hskExamIntro.practiceTest', { level: paper.level });
-  const startGradient = isOfficial
-    ? 'linear-gradient(90deg, #F43F5E 0%, #FB7185 48%, #FB923C 100%)'
-    : 'linear-gradient(90deg, #14B8A6 0%, #06B6D4 48%, #0891B2 100%)';
+  const iconBg = kind === 'time' ? '#FFF0F5' : kind === 'questions' ? '#EEF5FF' : '#FFF6DB';
+  const icon = kind === 'time'
+    ? (
+      <Box component="svg" viewBox="0 0 48 48" sx={{ width: 40, height: 40, display: 'block' }}>
+        <circle cx="24" cy="24" r="16" fill="none" stroke="#F15B85" strokeWidth="5" />
+        <path d="M24 16v9l7 4" fill="none" stroke="#F15B85" strokeWidth="5" strokeLinecap="round" />
+      </Box>
+    )
+    : kind === 'questions'
+      ? (
+        <Box component="svg" viewBox="0 0 48 48" sx={{ width: 40, height: 40, display: 'block' }}>
+          <rect x="10" y="12" width="6" height="24" rx="1.5" fill="#668BFF" />
+          <path d="M22 16h16M22 24h16M22 32h12" fill="none" stroke="#668BFF" strokeWidth="3.6" strokeLinecap="round" />
+        </Box>
+      )
+      : (
+        <Box component="svg" viewBox="0 0 48 48" sx={{ width: 40, height: 40, display: 'block' }}>
+          <path d="M16 18h16v8c0 6-3.4 10-8 12-4.6-2-8-6-8-12V18Z" fill="none" stroke="#F3B93F" strokeWidth="3.6" />
+          <path d="M18 38h12l-2 4h-8l-2-4Z" fill="#F3B93F" />
+        </Box>
+      );
 
-  const card = {
-    bgcolor: '#FFFFFF',
-    borderRadius: is960 ? '20px' : '24px',
-    border: '1px solid rgba(15,23,42,0.05)',
-    boxShadow: '0 10px 32px rgba(15,23,42,0.07)',
-    p: is960 ? 2 : 2.5,
-  } as const;
-
-  const sectionTitle = (text: string, barColor = accent) => (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: is960 ? 1.25 : 1.75 }}>
-      <Box sx={{ width: 5, height: is960 ? 18 : 22, borderRadius: '999px', bgcolor: barColor }} />
-      <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.05rem' : '1.25rem', color: '#111827' }}>
-        {text}
-      </Typography>
-    </Box>
-  );
-
-  const statItem = (icon: ReactNode, value: string | number, label: string, tint: string, tintBg: string) => (
-    <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: is960 ? 1.2 : 1.6, px: is960 ? 1 : 1.75, py: 0.75 }}>
+  return (
+    <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: '22px', minWidth: 0 }}>
       <Box
         sx={{
-          width: is960 ? 44 : 56,
-          height: is960 ? 44 : 56,
-          borderRadius: is960 ? '12px' : '16px',
-          bgcolor: tintBg,
+          width: 71,
+          height: 71,
+          borderRadius: '18px',
+          bgcolor: iconBg,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
-          color: tint,
         }}
       >
         {icon}
       </Box>
       <Box sx={{ minWidth: 0 }}>
-        <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.55rem' : '2rem', color: '#111827', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+        <Typography
+          sx={{
+            fontFamily: FIGMA_FONT,
+            fontWeight: 700,
+            fontSize: 50,
+            lineHeight: '57px',
+            color: '#172033',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
           {value}
         </Typography>
-        <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.95rem', color: '#4B5563', fontWeight: 700, lineHeight: 1.35, mt: 0.45 }}>
+        <Typography
+          sx={{
+            fontFamily: FIGMA_FONT,
+            fontWeight: 400,
+            fontSize: 28,
+            lineHeight: '35px',
+            color: '#687289',
+            mt: '4px',
+          }}
+        >
           {label}
         </Typography>
       </Box>
     </Box>
   );
+}
+
+function ExamIntroScreen({
+  paper,
+  onStart,
+  onBack,
+  starting,
+}: {
+  paper: ExamPaper;
+  onStart: () => void;
+  onBack: () => void;
+  starting: boolean;
+}) {
+  const [rulesAccepted, setRulesAccepted] = useState(false);
+  const { t, i18n } = useTranslation();
+  const sectionLines = paper.sectionLines;
+  const listenLabel = paper.listeningPlays === 1 ? t('hskExamIntro.listenOnce') : t('hskExamIntro.listenTwice');
+  const isOfficial = paper.source === 'official';
+  const examTypeLabel = isOfficial
+    ? t('hskExamIntro.mockTest', { level: paper.level })
+    : t('hskExamIntro.practiceTest', { level: paper.level });
+  const startGradient = isOfficial
+    ? 'linear-gradient(90deg, #F55BC8 0%, #F27A8D 52%, #FF9B68 100%)'
+    : 'linear-gradient(90deg, #14B8A6 0%, #06B6D4 48%, #0891B2 100%)';
+  const badgeBg = isOfficial ? '#DF171C' : '#00A99D';
+  const introBg = 'linear-gradient(135deg, #F7FAFF 0%, #FFF6EE 48%, #F7F4FF 100%)';
+  const rules = [
+    t('hskExamIntro.rule1'),
+    <>
+      {t('hskExamIntro.rule2Prefix')}{' '}
+      <Box component="span" sx={{ color: '#E94E77', fontWeight: 700 }}>{listenLabel}</Box>
+      {t('hskExamIntro.rule2Suffix')}
+    </>,
+    <>
+      {t('hskExamIntro.rule3Prefix')}{' '}
+      <Box component="span" sx={{ color: '#E94E77', fontWeight: 700 }}>{t('hskExamIntro.autoSubmit')}</Box>
+      {t('hskExamIntro.rule3Suffix')}
+    </>,
+    t('hskExamIntro.rule4'),
+  ];
 
   return (
     <Box
@@ -1476,207 +1496,309 @@ function ExamIntroScreen({
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        background: 'linear-gradient(180deg, #FFF0F5 0%, #FFF5EE 28%, #FFF8F0 100%)',
+        background: introBg,
+        position: 'relative',
+        minHeight: 0,
       }}
     >
-      {/* Header */}
-      <Box sx={{ flexShrink: 0, px: is960 ? 2 : 3, py: is960 ? 1.5 : 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <ButtonBase
-          onClick={onBack}
-          disabled={starting}
-          sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: 'white', border: '1px solid #E5E7EB', color: '#586E75', flexShrink: 0, boxShadow: '0 2px 8px rgba(15,23,42,0.06)', '&:active': { bgcolor: '#F3F4F6' } }}
+      <Box
+        aria-hidden
+        sx={{
+          position: 'absolute',
+          width: 520,
+          height: 420,
+          left: -40,
+          top: 180,
+          bgcolor: 'rgba(255, 181, 217, 0.27)',
+          filter: 'blur(94px)',
+          pointerEvents: 'none',
+        }}
+      />
+      <Box
+        aria-hidden
+        sx={{
+          position: 'absolute',
+          width: 420,
+          height: 420,
+          right: 40,
+          top: 380,
+          bgcolor: 'rgba(185, 201, 255, 0.33)',
+          filter: 'blur(94px)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      <Box
+        sx={{
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '21px',
+          pl: `${HSK_PREP_BACK.left}px`,
+          pr: '60px',
+          pt: `${HSK_PREP_BACK.top}px`,
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <HskPrepBackButton onClick={onBack} disabled={starting} />
+        <Typography
+          sx={{
+            fontFamily: FIGMA_FONT,
+            fontWeight: 700,
+            fontSize: 56,
+            lineHeight: '70px',
+            color: '#172033',
+            whiteSpace: 'nowrap',
+          }}
         >
-          <ChevronLeftIcon sx={{ fontSize: 24 }} />
-        </ButtonBase>
-        <Box sx={{ minWidth: 0, flex: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 1 : 1.25, flexWrap: 'wrap' }}>
-            <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.4rem' : '1.85rem', color: '#111827', lineHeight: 1.1, letterSpacing: '-0.02em' }}>
-              {t('hskExamIntro.volume', { volume: paper.volume })}
-            </Typography>
-            <Box
-              sx={{
-                px: is960 ? 1.15 : 1.4,
-                py: is960 ? 0.45 : 0.55,
-                borderRadius: '999px',
-                background: theme.headerBg,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 0.55,
-              }}
-            >
-              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.92)', flexShrink: 0 }} />
-              <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.74rem' : '0.9rem', color: '#FFFFFF', letterSpacing: '0.01em', lineHeight: 1.2 }}>
-                {examTypeLabel}
-              </Typography>
-            </Box>
-          </Box>
+          {t('hskExamIntro.volume', { volume: paper.volume })}
+        </Typography>
+        <Box
+          sx={{
+            height: 49,
+            px: '22px',
+            bgcolor: badgeBg,
+            borderRadius: '12px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '10px',
+            flexShrink: 0,
+          }}
+        >
+          <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#FFFFFF', flexShrink: 0 }} />
+          <Typography
+            sx={{
+              fontFamily: FIGMA_FONT,
+              fontWeight: 700,
+              fontSize: 24,
+              lineHeight: '30px',
+              color: '#FFFFFF',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {examTypeLabel}
+          </Typography>
         </Box>
       </Box>
 
-      {/* Body */}
-      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', px: is960 ? 2.5 : 3.5, pt: is960 ? 0.5 : 1, pb: is960 ? 1 : 1.5 }}>
-        {/* Stat bar */}
-        <Box sx={{ ...card, display: 'flex', alignItems: 'stretch', p: is960 ? 1.75 : 2.5, mb: is960 ? 1.5 : 2 }}>
-          {statItem(<AccessTimeIcon sx={{ fontSize: is960 ? 24 : 30 }} />, paper.duration, t('hskExamIntro.durationMin'), accent, isOfficial ? '#FEF2F2' : '#F0FDFA')}
-          <Box sx={{ width: '1px', bgcolor: '#EEF0F3', my: 0.5 }} />
-          {statItem(<QuizOutlinedIcon sx={{ fontSize: is960 ? 24 : 30 }} />, paper.questionCount, t('hskExamIntro.totalQuestions'), '#2563EB', '#EFF6FF')}
-          <Box sx={{ width: '1px', bgcolor: '#EEF0F3', my: 0.5 }} />
-          {statItem(<WorkspacePremiumOutlinedIcon sx={{ fontSize: is960 ? 24 : 30 }} />, paper.maxScore, t('hskExamIntro.fullScore'), '#CA8A04', '#FEF9C3')}
+      <Box
+        sx={{
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          px: '152px',
+          pt: '48px',
+          pb: '28px',
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <ExamIntroStat kind="time" value={paper.duration} label={t('hskExamIntro.durationMin')} />
+        <ExamIntroStat kind="questions" value={paper.questionCount} label={t('hskExamIntro.totalQuestions')} />
+        <ExamIntroStat kind="score" value={paper.maxScore} label={t('hskExamIntro.fullScore')} />
+      </Box>
+
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          display: 'grid',
+          gridTemplateColumns: '1.06fr 1fr',
+          gap: '46px',
+          px: '152px',
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <Box
+          sx={{
+            minHeight: 0,
+            bgcolor: 'rgba(255,255,255,0.66)',
+            border: '2px solid rgba(255,255,255,0.82)',
+            borderRadius: '36px',
+            px: '42px',
+            pt: '36px',
+            pb: '28px',
+            overflow: 'auto',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '18px', mb: '28px' }}>
+            <Box
+              sx={{
+                width: 10,
+                height: 50,
+                borderRadius: '8px',
+                background: isOfficial
+                  ? 'linear-gradient(90deg, #F55BC8 0%, #F27A8D 52%, #FF9B68 100%)'
+                  : 'linear-gradient(90deg, #14B8A6 0%, #06B6D4 100%)',
+                flexShrink: 0,
+              }}
+            />
+            <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 700, fontSize: 34, lineHeight: '39px', color: '#172033' }}>
+              {t('hskExamIntro.examRules')}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+            {rules.map((rule, idx) => (
+              <Box key={idx} sx={{ display: 'flex', gap: '18px', alignItems: 'flex-start' }}>
+                <Box
+                  sx={{
+                    width: 54,
+                    height: 54,
+                    borderRadius: '14px',
+                    bgcolor: isOfficial ? '#FFF0F4' : '#E8FAF6',
+                    color: isOfficial ? '#E94E77' : '#078879',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    fontFamily: FIGMA_FONT,
+                    fontWeight: 700,
+                    fontSize: 24,
+                    lineHeight: '28px',
+                  }}
+                >
+                  {idx + 1}
+                </Box>
+                <Typography
+                  sx={{
+                    fontFamily: FIGMA_FONT,
+                    fontWeight: 400,
+                    fontSize: 28,
+                    lineHeight: '35px',
+                    color: '#172033',
+                    pt: '8px',
+                  }}
+                >
+                  {rule}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
         </Box>
 
-        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: is960 ? 1.5 : 2 }}>
-          <Box sx={{ ...card, flex: 1.3, minWidth: 0, p: is960 ? 2 : 3 }}>
-            {sectionTitle(t('hskExamIntro.examRules'))}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 1.1 : 1.5 }}>
-              {[
-                t('hskExamIntro.rule1'),
-                <>
-                  {t('hskExamIntro.rule2Prefix')}{' '}
-                  <Box component="span" sx={{ color: '#DC2626', fontWeight: 800 }}>{listenLabel}</Box>
-                  {t('hskExamIntro.rule2Suffix')}
-                </>,
-                <>
-                  {t('hskExamIntro.rule3Prefix')}{' '}
-                  <Box component="span" sx={{ color: '#DC2626', fontWeight: 800 }}>{t('hskExamIntro.autoSubmit')}</Box>
-                  {t('hskExamIntro.rule3Suffix')}
-                </>,
-                t('hskExamIntro.rule4'),
-              ].map((rule, idx) => (
-                <Box key={idx} sx={{ display: 'flex', gap: is960 ? 1.1 : 1.35, alignItems: 'flex-start' }}>
+        <Box
+          sx={{
+            minHeight: 0,
+            bgcolor: 'rgba(255,255,255,0.66)',
+            border: '2px solid rgba(255,255,255,0.82)',
+            borderRadius: '36px',
+            px: '42px',
+            pt: '36px',
+            pb: '28px',
+            overflow: 'auto',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '18px', mb: '28px' }}>
+            <Box
+              sx={{
+                width: 10,
+                height: 50,
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, #6395FF 0%, #8F73FF 100%)',
+                flexShrink: 0,
+              }}
+            />
+            <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 700, fontSize: 34, lineHeight: '39px', color: '#172033' }}>
+              {t('hskExamIntro.questionTypes')}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+            {sectionLines.map((line) => (
+              <Box
+                key={line.kind}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  minHeight: 110,
+                  px: '28px',
+                  bgcolor: 'rgba(217, 222, 248, 0.2)',
+                  border: '2px solid rgba(255,255,255,0.82)',
+                  borderRadius: '24px',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 700, fontSize: 32, lineHeight: '40px', color: '#172033' }}>
+                    {bilingualSectionLabel(line.kind, t, i18n.language)}
+                  </Typography>
+                  <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 400, fontSize: 24, lineHeight: '30px', color: '#687289', mt: '4px' }}>
+                    {t('hskExamIntro.questions', { count: line.questionCount })}
+                  </Typography>
+                </Box>
+                {line.durationMinutes != null && line.durationMinutes > 0 && (
                   <Box
                     sx={{
-                      width: is960 ? 26 : 32,
-                      height: is960 ? 26 : 32,
-                      borderRadius: '50%',
-                      bgcolor: isOfficial ? '#FEF2F2' : '#F0FDFA',
-                      color: accent,
+                      minWidth: 132,
+                      height: 46,
+                      px: '16px',
+                      borderRadius: '14px',
+                      bgcolor: 'rgba(255,255,255,0.72)',
+                      border: '2px solid rgba(255,255,255,0.82)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
-                      mt: 0.1,
-                      fontWeight: 900,
-                      fontSize: is960 ? '0.72rem' : '0.86rem',
                     }}
                   >
-                    {idx + 1}
+                    <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 700, fontSize: 24, lineHeight: '30px', color: '#687289', whiteSpace: 'nowrap' }}>
+                      {t('hskExamIntro.minutesApprox', { count: line.durationMinutes })}
+                    </Typography>
                   </Box>
-                  <Typography sx={{ fontSize: is960 ? '0.92rem' : '1.08rem', color: '#374151', fontWeight: 600, lineHeight: 1.5 }}>
-                    {rule}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-          </Box>
-
-          <Box sx={{ ...card, flex: 1, minWidth: 0, p: is960 ? 2 : 3 }}>
-            {sectionTitle(t('hskExamIntro.questionTypes'), questionTypesAccent)}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 1 : 1.25 }}>
-              {sectionLines.map((line) => {
-                const Icon = SECTION_ICONS[line.kind];
-                return (
-                  <Box
-                    key={line.kind}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1.35,
-                      px: is960 ? 1.35 : 1.75,
-                      py: is960 ? 1.15 : 1.4,
-                      borderRadius: is960 ? '14px' : '18px',
-                      bgcolor: '#F5F3FF',
-                      border: '1px solid #EDE9FE',
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        width: is960 ? 38 : 48,
-                        height: is960 ? 38 : 48,
-                        borderRadius: '12px',
-                        bgcolor: 'white',
-                        border: '1px solid #DDD6FE',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: questionTypesAccent,
-                        flexShrink: 0,
-                      }}
-                    >
-                      <Icon sx={{ fontSize: is960 ? 20 : 26 }} />
-                    </Box>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography sx={{ fontSize: is960 ? '0.92rem' : '1.08rem', color: '#111827', fontWeight: 800, lineHeight: 1.25 }}>
-                        {bilingualSectionLabel(line.kind, t, i18n.language)}
-                      </Typography>
-                      <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: '#6B7280', fontWeight: 600, lineHeight: 1.35, mt: 0.2 }}>
-                        {t('hskExamIntro.questions', { count: line.questionCount })}
-                      </Typography>
-                    </Box>
-                    {line.durationMinutes != null && line.durationMinutes > 0 && (
-                      <Typography
-                        sx={{
-                          fontSize: is960 ? '0.82rem' : '0.95rem',
-                          color: '#374151',
-                          fontWeight: 800,
-                          flexShrink: 0,
-                          fontVariantNumeric: 'tabular-nums',
-                        }}
-                      >
-                        {t('hskExamIntro.minutesApprox', { count: line.durationMinutes })}
-                      </Typography>
-                    )}
-                  </Box>
-                );
-              })}
-            </Box>
+                )}
+              </Box>
+            ))}
           </Box>
         </Box>
       </Box>
 
-      {/* Sticky confirm bar */}
       <Box
         sx={{
           flexShrink: 0,
-          px: is960 ? 2.5 : 3.5,
-          pb: is960 ? 2 : 2.5,
-          pt: is960 ? 1.25 : 1.5,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: is960 ? 1.25 : 2,
+          gap: '24px',
+          px: '152px',
+          pt: '28px',
+          pb: '36px',
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         <ButtonBase
           onClick={() => setRulesAccepted((v) => !v)}
           disabled={starting}
+          aria-pressed={rulesAccepted}
           sx={{
+            minHeight: 72,
             display: 'flex',
             alignItems: 'center',
-            gap: 0.75,
-            py: 0.5,
-            borderRadius: '10px',
-            flex: '1 1 auto',
-            minWidth: 0,
-            justifyContent: 'flex-start',
-            '&:active': { opacity: 0.85 },
+            gap: '16px',
           }}
         >
-          {rulesAccepted ? (
-            <CheckBoxIcon sx={{ fontSize: is960 ? 22 : 26, color: accent, flexShrink: 0 }} />
-          ) : (
-            <CheckBoxOutlineBlankIcon sx={{ fontSize: is960 ? 22 : 26, color: '#9CA3AF', flexShrink: 0 }} />
-          )}
-          <Typography
-            component="span"
+          <Box
             sx={{
-              fontSize: is960 ? '0.8rem' : '0.92rem',
-              color: '#374151',
-              fontWeight: 700,
-              textAlign: 'left',
-              lineHeight: 1.3,
-              whiteSpace: 'nowrap',
+              width: 36,
+              height: 36,
+              borderRadius: '8px',
+              bgcolor: rulesAccepted ? badgeBg : 'rgba(255,255,255,0.55)',
+              border: rulesAccepted ? `2px solid ${badgeBg}` : '2px solid #AAB6C9',
+              boxSizing: 'border-box',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
             }}
           >
+            {rulesAccepted && (
+              <Box component="svg" viewBox="0 0 16 16" sx={{ width: 16, height: 16, display: 'block' }}>
+                <path d="M3 8.2 6.4 12 13 4" fill="none" stroke="#fff" strokeWidth="2.2" />
+              </Box>
+            )}
+          </Box>
+          <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 700, fontSize: 24, lineHeight: '30px', color: '#172033', textAlign: 'left' }}>
             {t('hskExamIntro.rulesAccepted')}
           </Typography>
         </ButtonBase>
@@ -1684,41 +1806,39 @@ function ExamIntroScreen({
         <ButtonBase
           onClick={onStart}
           disabled={!rulesAccepted || starting}
+          aria-label="Start exam"
           sx={{
-            flex: '0 0 auto',
-            width: is960 ? 168 : 196,
-            minHeight: is960 ? 48 : 54,
-            px: 2,
-            borderRadius: '999px',
-            background: rulesAccepted && !starting ? startGradient : '#E5E7EB',
-            color: rulesAccepted && !starting ? '#FFFFFF' : '#9CA3AF',
-            fontWeight: 900,
-            fontSize: is960 ? '0.92rem' : '1.02rem',
-            letterSpacing: '0.01em',
-            boxShadow: rulesAccepted && !starting ? '0 10px 24px rgba(244,63,94,0.32)' : 'none',
-            transition: 'all 0.2s',
+            minWidth: 376,
+            height: 94,
+            px: '28px',
+            borderRadius: '28px',
+            background: rulesAccepted && !starting ? startGradient : '#D5D9E2',
+            color: '#FFFFFF',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 0.85,
+            gap: '16px',
             '&:active': rulesAccepted ? { transform: 'scale(0.98)' } : {},
+            '&.Mui-disabled': { color: 'rgba(255,255,255,0.72)' },
           }}
         >
-          {starting ? t('hskExamIntro.starting') : t('hskExamIntro.startExam')}
+          <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 700, fontSize: 40, lineHeight: '50px' }}>
+            {starting ? t('hskExamIntro.starting') : t('hskExamIntro.startExam')}
+          </Typography>
           {!starting && (
             <Box
               sx={{
-                width: is960 ? 24 : 28,
-                height: is960 ? 24 : 28,
+                width: 50,
+                height: 50,
                 borderRadius: '50%',
-                bgcolor: 'rgba(255,255,255,0.22)',
+                bgcolor: 'rgba(255,255,255,0.24)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
               }}
             >
-              <ArrowForwardIcon sx={{ fontSize: is960 ? 14 : 16 }} />
+              <ArrowForwardIcon sx={{ fontSize: 22 }} />
             </Box>
           )}
         </ButtonBase>
@@ -1835,6 +1955,8 @@ function buildSidebarSlots(indices: number[], questions: Question[]): SidebarSlo
 }
 
 function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPaper; onFinish: (answers: Record<string, string>) => Promise<boolean>; onExit: () => void; error: string | null; is960: boolean }) {
+  const { openFeedback } = useFeedback();
+  const p = (n: number) => figmaPx(n, APP_SCREEN_SIZE);
   const GRACE_PERIOD_SECONDS = 60;
   const attemptStorageKey = `hsk-attempt-${paper.attemptId || paper.id}`;
   const storedAttempt = useMemo(() => {
@@ -1917,6 +2039,19 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
     });
     return groups;
   }, [paper.questions]);
+
+  const sidebarSections = useMemo(() => {
+    const order: ExamSectionKind[] = [];
+    const bySection = new Map<ExamSectionKind, typeof sidebarGroups>();
+    sidebarGroups.forEach((group) => {
+      if (!bySection.has(group.section)) {
+        bySection.set(group.section, []);
+        order.push(group.section);
+      }
+      bySection.get(group.section)?.push(group);
+    });
+    return order.map((section) => ({ section, parts: bySection.get(section) || [] }));
+  }, [sidebarGroups]);
 
   useEffect(() => {
     if (isExpired) return;
@@ -2101,48 +2236,72 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
   const examTeal = '#5BBFAF';
   const examTealDark = '#49A995';
   const isLastGroup = currentNavGroupIndex >= examNavGroups.length - 1;
-  const groupRangeLabel = isGroupedQuestion
-    ? `Questions ${groupQuestions.map(questionLabel).join(' · ')}`
-    : currentQuestion.isExample ? 'Example' : `Question ${currentQuestion.number}`;
+  const questionHeading = isGroupedQuestion
+    ? `${questionLabel(groupQuestions[0])}–${questionLabel(groupQuestions[groupQuestions.length - 1])}`
+    : currentQuestion.isExample ? 'Example' : String(currentQuestion.number);
   const unansweredCount = paper.questions.filter((question) => !question.isExample && !answers[question.id]).length;
+  const speakerButtonSx = {
+    width: p(120),
+    height: p(80),
+    borderRadius: `${p(50)}px`,
+    background: 'linear-gradient(122.84deg, #FF6B35 9.46%, #FF926A 67.15%, #FFB99F 90.54%)',
+    color: '#FFFFFF',
+    '&:active': { transform: 'scale(0.96)', filter: 'brightness(0.96)' },
+    '&.Mui-disabled': { opacity: 0.45 },
+  };
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#F5F6F8', overflow: 'hidden' }}>
-      {/* Header — back | centered title + timer | submit */}
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#F6F7F9', overflow: 'hidden' }}>
       <Box
         sx={{
+          position: 'relative',
           flexShrink: 0,
-          px: is960 ? 2 : 3,
-          py: is960 ? 1.25 : 1.5,
-          display: 'grid',
-          gridTemplateColumns: '44px 1fr auto',
-          alignItems: 'center',
-          gap: 1.5,
+          height: p(160),
           bgcolor: '#FFFFFF',
-          borderBottom: '1px solid #ECEEF2',
+          borderBottom: '1px solid #E5E7EB',
+          boxSizing: 'border-box',
         }}
       >
-        <ButtonBase
-          onClick={() => {
-            if (!submitting) onExit();
-          }}
-          disabled={submitting}
-          sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: '#F3F4F6', color: '#64748B', '&:active': { bgcolor: '#E5E7EB' } }}
-        >
-          <ChevronLeftIcon sx={{ fontSize: 24 }} />
-        </ButtonBase>
+        <Box sx={{ position: 'absolute', left: p(47), top: '50%', transform: 'translateY(-50%)' }}>
+          <HskPrepBackButton
+            onClick={() => {
+              if (!submitting) onExit();
+            }}
+            disabled={submitting}
+            sx={{ width: p(80), height: p(80), '& .MuiSvgIcon-root': { fontSize: p(40) } }}
+          />
+        </Box>
 
-        <Box sx={{ textAlign: 'center', minWidth: 0 }}>
-          <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.05rem' : '1.22rem', color: '#111827', lineHeight: 1.2 }}>
+        <Box
+          sx={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            textAlign: 'center',
+            pointerEvents: 'none',
+          }}
+        >
+          <Typography
+            sx={{
+              fontFamily: FIGMA_FONT,
+              fontWeight: 700,
+              fontSize: p(40),
+              lineHeight: `${p(58)}px`,
+              color: '#292E2E',
+            }}
+          >
             {examTitle}
           </Typography>
-          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, mt: 0.35 }}>
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: `${p(8)}px`, pointerEvents: 'auto' }}>
             <Typography
               sx={{
-                fontSize: is960 ? '0.78rem' : '0.88rem',
-                color: isCriticalTime && !timeHidden ? '#DC2626' : '#64748B',
-                fontWeight: isCriticalTime && !timeHidden ? 800 : 600,
-                lineHeight: 1.2,
+                fontFamily: FIGMA_FONT,
+                fontSize: p(24),
+                lineHeight: `${p(24)}px`,
+                color: isCriticalTime && !timeHidden ? '#DC2626' : '#6E6E73',
+                fontWeight: isCriticalTime && !timeHidden ? 700 : 400,
               }}
             >
               {isExpired
@@ -2153,42 +2312,72 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
               onClick={handleToggleTimeVisibility}
               aria-label={timeHidden ? 'Show time remaining' : 'Hide time remaining'}
               sx={{
-                width: 36,
-                height: 36,
-                borderRadius: '8px',
-                color: '#374151',
-                flexShrink: 0,
+                width: p(44),
+                height: p(44),
+                borderRadius: `${p(12)}px`,
+                color: '#6E6E73',
                 '&:active': { bgcolor: '#F3F4F6' },
               }}
             >
               {timeHidden ? (
-                <VisibilityOffIcon sx={{ fontSize: is960 ? 18 : 20 }} />
+                <VisibilityOffIcon sx={{ fontSize: p(22) }} />
               ) : (
-                <VisibilityIcon sx={{ fontSize: is960 ? 18 : 20 }} />
+                <VisibilityIcon sx={{ fontSize: p(22) }} />
               )}
             </ButtonBase>
           </Box>
         </Box>
 
-        <ButtonBase
-          onClick={handleSubmit}
-          disabled={isExpired || submitting}
+        <Box
           sx={{
-            px: is960 ? 2 : 2.5,
-            py: is960 ? 0.85 : 1,
-            minHeight: 44,
-            bgcolor: examTeal,
-            color: '#FFFFFF',
-            borderRadius: '999px',
-            fontWeight: 800,
-            fontSize: is960 ? '0.88rem' : '0.98rem',
-            boxShadow: '0 4px 12px rgba(91,191,175,0.35)',
-            '&:active': { transform: 'scale(0.97)', bgcolor: examTealDark },
-            '&.Mui-disabled': { bgcolor: '#E5E7EB', color: '#9CA3AF', boxShadow: 'none' },
+            position: 'absolute',
+            right: p(59),
+            top: '50%',
+            transform: 'translateY(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: `${p(37)}px`,
           }}
         >
-          {submitting ? 'Submitting...' : 'Submit'}
-        </ButtonBase>
+          <ButtonBase
+            onClick={() => openFeedback({ screen: 'hsk_exam', force: true })}
+            aria-label="Feedback"
+            sx={{
+              width: p(80),
+              height: p(80),
+              borderRadius: `${p(18)}px`,
+              bgcolor: '#FFFFFF',
+              border: '1px solid #E0E0DF',
+              color: '#636E72',
+              '&:active': { bgcolor: '#F9FAFB' },
+            }}
+          >
+            <Box component="svg" viewBox="0 0 37 40" sx={{ width: p(37), height: p(40), display: 'block' }}>
+              <rect x="1.5" y="3" width="32" height="34" rx="7" fill="none" stroke="#636E72" strokeWidth="5" />
+              <rect x="8" y="16" width="12" height="4" rx="2" fill="#636E72" />
+              <rect x="8" y="23" width="16" height="4" rx="2" fill="#636E72" />
+              <rect x="20" y="0" width="22" height="5" rx="2.5" fill="#636E72" transform="rotate(-53.47 22 2)" />
+            </Box>
+          </ButtonBase>
+          <ButtonBase
+            onClick={handleSubmit}
+            disabled={isExpired || submitting}
+            sx={{
+              width: p(186),
+              height: p(90),
+              bgcolor: '#F3F4F6',
+              color: '#636E72',
+              borderRadius: `${p(50)}px`,
+              fontFamily: FIGMA_FONT,
+              fontWeight: 600,
+              fontSize: p(32),
+              '&:active': { bgcolor: '#E8EAED' },
+              '&.Mui-disabled': { bgcolor: '#F3F4F6', color: '#C5C9CE' },
+            }}
+          >
+            {submitting ? 'Submitting...' : 'Submit'}
+          </ButtonBase>
+        </Box>
       </Box>
 
       {error && (
@@ -2408,12 +2597,11 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
         {/* Sidebar — progress grid (collapsible) */}
         <Box
           sx={{
-            width: progressOpen ? (is960 ? 220 : 260) : 0,
+            width: progressOpen ? p(420) : 0,
             flexShrink: 0,
             overflow: 'hidden',
-            transition: 'width 0.22s ease',
             bgcolor: '#FFFFFF',
-            borderRight: progressOpen ? '1px solid #ECEEF2' : 'none',
+            borderRight: progressOpen ? '1px solid #E6EBF0' : 'none',
             display: 'flex',
             flexDirection: 'column',
             minHeight: 0,
@@ -2421,173 +2609,201 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
         >
           <Box
             sx={{
-              width: is960 ? 220 : 260,
+              width: p(420),
               flex: 1,
               minHeight: 0,
               display: 'flex',
               flexDirection: 'column',
+              px: `${p(36)}px`,
+              pt: `${p(28)}px`,
+              pb: `${p(24)}px`,
+              boxSizing: 'border-box',
             }}
           >
-            <Box sx={{ px: is960 ? 1.5 : 2, pt: is960 ? 1.5 : 2, pb: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography sx={{ fontSize: is960 ? '0.88rem' : '0.98rem', fontWeight: 800, color: '#374151' }}>
-                Progress
-              </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: `${p(20)}px` }}>
               <ButtonBase
                 onClick={() => setProgressOpen(false)}
                 aria-label="Hide progress panel"
                 sx={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: '10px',
-                  color: '#64748B',
-                  '&:active': { bgcolor: '#F1F5F9' },
+                  width: p(80),
+                  height: p(80),
+                  borderRadius: `${p(16)}px`,
+                  bgcolor: '#FFFFFF',
+                  border: '1px solid #E0E0DF',
+                  color: '#636E72',
+                  '&:active': { bgcolor: '#F9FAFB' },
                 }}
               >
-                <ViewListIcon sx={{ fontSize: is960 ? 20 : 22 }} />
+                <ViewListIcon sx={{ fontSize: p(46) }} />
               </ButtonBase>
             </Box>
 
-            <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', px: is960 ? 1.5 : 2, pb: 2 }}>
-            {sidebarGroups.map((group) => {
-              const Icon = SECTION_ICONS[group.section];
-              const isActivePart = group.key === currentPartKey;
-              return (
-                <Box key={group.key} sx={{ mb: is960 ? 1.5 : 1.75 }}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.6,
-                      mb: 0.85,
-                      px: isActivePart ? 0.75 : 0,
-                      py: isActivePart ? 0.45 : 0,
-                      borderRadius: '8px',
-                      bgcolor: isActivePart ? '#EFF6FF' : 'transparent',
-                    }}
-                  >
-                    <Icon sx={{ fontSize: is960 ? 15 : 16, color: isActivePart ? '#2563EB' : '#94A3B8' }} />
-                    <Typography
-                      sx={{
-                        fontSize: is960 ? '0.78rem' : '0.86rem',
-                        fontWeight: isActivePart ? 800 : 700,
-                        color: isActivePart ? '#1D4ED8' : '#64748B',
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      {group.title}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: is960 ? 0.55 : 0.65 }}>
-                    {buildSidebarSlots(group.indices, paper.questions).map((slot) => {
-                      const isCurrent = slot.indices.includes(currentQuestionIndex);
-                      const scoredIndices = slot.indices.filter((idx) => !paper.questions[idx].isExample);
-                      const hasAnswer = scoredIndices.length === 0 || scoredIndices.every((idx) => !!answers[paper.questions[idx].id]);
-                      const partiallyAnswered = !hasAnswer && scoredIndices.some((idx) => !!answers[paper.questions[idx].id]);
-                      return (
-                        <ButtonBase
-                          key={slot.label}
-                          onClick={() => {
-                            setActiveSubIndex(0);
-                            setCurrentQuestionIndex(slot.indices[0]);
-                          }}
+            <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+              {sidebarSections.map(({ section, parts }) => {
+                const Icon = SECTION_ICONS[section];
+                const sectionActive = parts.some((part) => part.key === currentPartKey);
+                return (
+                  <Box key={section} sx={{ mb: `${p(28)}px` }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(16)}px`, mb: `${p(18)}px` }}>
+                      <Box
+                        sx={{
+                          width: p(10),
+                          height: p(50),
+                          borderRadius: `${p(5)}px`,
+                          background: sectionActive
+                            ? 'linear-gradient(180deg, #00B8A6 0%, #19DAC7 100%)'
+                            : '#D1DBE6',
+                          flexShrink: 0,
+                        }}
+                      />
+                      <Icon sx={{ fontSize: p(28), color: sectionActive ? '#00B4A0' : '#A5B0BA' }} />
+                      <Typography
+                        sx={{
+                          fontFamily: FIGMA_FONT,
+                          fontWeight: 700,
+                          fontSize: p(30),
+                          lineHeight: `${p(43)}px`,
+                          color: sectionActive ? '#00B8A6' : '#636E72',
+                        }}
+                      >
+                        {SECTION_ZH[section]}
+                      </Typography>
+                    </Box>
+                    {parts.map((group) => (
+                      <Box key={group.key} sx={{ mb: `${p(18)}px` }}>
+                        <Typography
                           sx={{
-                            gridColumn: slot.kind === 'range' ? '1 / -1' : undefined,
-                            aspectRatio: slot.kind === 'single' ? '1' : undefined,
-                            minHeight: slot.kind === 'range' ? (is960 ? 40 : 44) : undefined,
-                            borderRadius: is960 ? '10px' : '12px',
-                            bgcolor: isCurrent ? '#3B82F6' : hasAnswer ? '#DBEAFE' : partiallyAnswered ? '#EFF6FF' : '#F1F5F9',
-                            color: isCurrent ? '#FFFFFF' : hasAnswer ? '#2563EB' : partiallyAnswered ? '#3B82F6' : '#94A3B8',
-                            fontWeight: 800,
-                            fontSize: is960 ? '0.72rem' : '0.8rem',
-                            border: isCurrent ? 'none' : '1px solid #E2E8F0',
-                            '&:active': { transform: 'scale(0.98)' },
+                            fontFamily: FIGMA_FONT,
+                            fontWeight: 600,
+                            fontSize: p(24),
+                            lineHeight: `${p(29)}px`,
+                            color: '#A5B0BA',
+                            mb: `${p(14)}px`,
                           }}
                         >
-                          {slot.label}
-                        </ButtonBase>
-                      );
-                    })}
+                          {`Part ${group.title.match(/\d+/)?.[0] ?? group.section}`}
+                        </Typography>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: `${p(12)}px` }}>
+                          {buildSidebarSlots(group.indices, paper.questions).map((slot) => {
+                            const isCurrent = slot.indices.includes(currentQuestionIndex);
+                            const scoredIndices = slot.indices.filter((idx) => !paper.questions[idx].isExample);
+                            const hasAnswer = scoredIndices.length === 0 || scoredIndices.every((idx) => !!answers[paper.questions[idx].id]);
+                            const partiallyAnswered = !hasAnswer && scoredIndices.some((idx) => !!answers[paper.questions[idx].id]);
+                            return (
+                              <ButtonBase
+                                key={slot.label}
+                                onClick={() => {
+                                  setActiveSubIndex(0);
+                                  setCurrentQuestionIndex(slot.indices[0]);
+                                }}
+                                sx={{
+                                  gridColumn: slot.kind === 'range' ? '1 / -1' : undefined,
+                                  width: slot.kind === 'range' ? '100%' : p(71),
+                                  height: slot.kind === 'range' ? p(70) : p(69),
+                                  borderRadius: slot.kind === 'range' ? `${p(35)}px` : `${p(15)}px`,
+                                  background: isCurrent
+                                    ? 'linear-gradient(140.83deg, #1CCFBD 62.39%, #37E7D4 94.83%)'
+                                    : hasAnswer
+                                      ? '#D8F6F1'
+                                      : partiallyAnswered
+                                        ? '#EEF8F6'
+                                        : '#F5F7FA',
+                                  color: isCurrent ? '#FFFFFF' : hasAnswer || partiallyAnswered ? '#0F766E' : '#99ABBF',
+                                  border: isCurrent ? 'none' : '1px solid #D1DBE6',
+                                  fontFamily: FIGMA_FONT,
+                                  fontWeight: 400,
+                                  fontSize: p(32),
+                                  '&:active': { transform: 'scale(0.98)' },
+                                }}
+                              >
+                                {slot.label}
+                              </ButtonBase>
+                            );
+                          })}
+                        </Box>
+                      </Box>
+                    ))}
                   </Box>
-                </Box>
-              );
-            })}
+                );
+              })}
             </Box>
           </Box>
         </Box>
 
         {/* Main question area — expands when sidebar collapsed */}
-        <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#FAFBFC' }}>
-          <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', px: is960 ? 2.5 : 3.5, pt: is960 ? 2 : 2.5, pb: 2, width: '100%' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: is960 ? 1 : 1.25 }}>
+        <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#FAFAFA' }}>
+          <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', px: `${p(56)}px`, pt: `${p(32)}px`, pb: `${p(24)}px`, width: '100%', boxSizing: 'border-box' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(16)}px`, mb: `${p(28)}px` }}>
               {!progressOpen && (
                 <ButtonBase
                   onClick={() => setProgressOpen(true)}
                   aria-label="Show progress panel"
                   sx={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: '10px',
+                    width: p(80),
+                    height: p(80),
+                    borderRadius: `${p(16)}px`,
                     bgcolor: '#FFFFFF',
-                    border: '1px solid #E2E8F0',
-                    color: '#64748B',
+                    border: '1px solid #E0E0DF',
+                    color: '#636E72',
                     flexShrink: 0,
-                    boxShadow: '0 2px 6px rgba(15,23,42,0.04)',
-                    '&:active': { bgcolor: '#F8FAFC' },
+                    '&:active': { bgcolor: '#F9FAFB' },
                   }}
                 >
-                  <ViewListIcon sx={{ fontSize: is960 ? 20 : 22 }} />
+                  <ViewListIcon sx={{ fontSize: p(46) }} />
                 </ButtonBase>
               )}
-              <Typography sx={{ fontSize: is960 ? '1.05rem' : '1.18rem', fontWeight: 800, color: '#111827' }}>
-                {groupRangeLabel}
-              </Typography>
-              {isGroupedQuestion && isListening && (
-                <ButtonBase
-                  onClick={playCurrentAudio}
-                  disabled={isAnsweringClosed}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(12)}px`, minWidth: 0 }}>
+                <Typography
                   sx={{
-                    width: is960 ? 40 : 44,
-                    height: is960 ? 40 : 44,
-                    borderRadius: is960 ? '12px' : '14px',
-                    bgcolor: '#FB923C',
-                    color: '#FFFFFF',
+                    fontFamily: FIGMA_FONT,
+                    fontWeight: 700,
+                    fontSize: p(28),
+                    lineHeight: `${p(38)}px`,
+                    color: '#1D1D1F',
                     flexShrink: 0,
-                    boxShadow: '0 4px 12px rgba(251,146,60,0.35)',
-                    '&:active': { transform: 'scale(0.95)', bgcolor: '#F97316' },
                   }}
                 >
-                  <VolumeUpIcon sx={{ fontSize: is960 ? 22 : 24 }} />
-                </ButtonBase>
-              )}
-            </Box>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: is960 ? 1.25 : 1.5 }}>
-              <Box
-                sx={{
-                  px: is960 ? 0.85 : 1,
-                  py: is960 ? 0.35 : 0.45,
-                  borderRadius: '8px',
-                  bgcolor: '#FFF7ED',
-                  border: '1px solid #FDBA74',
-                }}
-              >
-                <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', fontWeight: 900, color: '#EA580C', lineHeight: 1.2, letterSpacing: '0.04em' }}>
-                  {currentQuestion.templateCode}
+                  {questionHeading}
                 </Typography>
+                {isImageOptions && currentQuestion.question ? (
+                  <>
+                    <Box sx={{ width: p(7), height: p(7), borderRadius: '50%', bgcolor: '#636E72', flexShrink: 0 }} />
+                    <Typography
+                      sx={{
+                        fontFamily: FIGMA_FONT,
+                        fontWeight: 700,
+                        fontSize: p(28),
+                        lineHeight: `${p(38)}px`,
+                        color: '#1D1D1F',
+                      }}
+                    >
+                      {currentQuestion.question}
+                    </Typography>
+                  </>
+                ) : null}
+                {currentQuestion.isExample && (
+                  <Box sx={{ px: `${p(12)}px`, py: `${p(4)}px`, borderRadius: `${p(8)}px`, bgcolor: '#E0F2FE', border: '1px solid #7DD3FC' }}>
+                    <Typography sx={{ fontFamily: FIGMA_FONT, fontSize: p(18), fontWeight: 700, color: '#0369A1', lineHeight: 1.2 }}>
+                      Example · not scored
+                    </Typography>
+                  </Box>
+                )}
               </Box>
-              <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', fontWeight: 600, color: '#64748B', lineHeight: 1.3 }}>
-                {currentQuestion.templateLabel}
-              </Typography>
-              {currentQuestion.isExample && (
-                <Box sx={{ px: 1, py: 0.35, borderRadius: '8px', bgcolor: '#E0F2FE', border: '1px solid #7DD3FC' }}>
-                  <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.8rem', fontWeight: 800, color: '#0369A1', lineHeight: 1.2 }}>
-                    Example · not scored
-                  </Typography>
-                </Box>
-              )}
             </Box>
 
             {isImageMatchGroup ? (
+              <Box>
+                {isListening && (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mb: `${p(40)}px` }}>
+                    <ButtonBase
+                      onClick={playCurrentAudio}
+                      disabled={isAnsweringClosed}
+                      sx={speakerButtonSx}
+                    >
+                      <VolumeUpIcon sx={{ fontSize: p(44) }} />
+                    </ButtonBase>
+                  </Box>
+                )}
               <Box sx={{ display: 'flex', gap: is960 ? 2 : 2.5, alignItems: 'flex-start', flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
                 <Box
                   sx={{
@@ -2730,6 +2946,7 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
                   })}
                 </Box>
               </Box>
+              </Box>
             ) : isTextCompositeGroup ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 2 : 2.5, maxWidth: 900 }}>
                 {groupQuestions[0]?.sharedPrompt && (
@@ -2743,17 +2960,9 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
                     <ButtonBase
                       onClick={playCurrentAudio}
                       disabled={isAnsweringClosed}
-                      sx={{
-                        width: is960 ? 64 : 72,
-                        height: is960 ? 64 : 72,
-                        borderRadius: is960 ? '18px' : '20px',
-                        bgcolor: '#FB923C',
-                        color: '#FFFFFF',
-                        boxShadow: '0 8px 20px rgba(251,146,60,0.38)',
-                        '&:active': { transform: 'scale(0.95)', bgcolor: '#F97316' },
-                      }}
+                      sx={speakerButtonSx}
                     >
-                      <VolumeUpIcon sx={{ fontSize: is960 ? 32 : 36 }} />
+                      <VolumeUpIcon sx={{ fontSize: p(44) }} />
                     </ButtonBase>
                   </Box>
                 )}
@@ -2863,7 +3072,7 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
               </Box>
             ) : (
               <>
-                {currentQuestion.question ? (
+                {currentQuestion.question && !isImageOptions ? (
                   <Typography
                     sx={{
                       fontSize: is960 ? '1.15rem' : '1.35rem',
@@ -2879,21 +3088,13 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
                 ) : null}
 
                 {isListening && (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', mb: is960 ? 2.5 : 3 }}>
-                      <ButtonBase
-                        onClick={playCurrentAudio}
-                        disabled={isAnsweringClosed}
-                      sx={{
-                        width: is960 ? 64 : 72,
-                        height: is960 ? 64 : 72,
-                        borderRadius: is960 ? '18px' : '20px',
-                        bgcolor: '#FB923C',
-                        color: '#FFFFFF',
-                        boxShadow: '0 8px 20px rgba(251,146,60,0.38)',
-                        '&:active': { transform: 'scale(0.95)', bgcolor: '#F97316' },
-                      }}
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mb: `${p(40)}px` }}>
+                    <ButtonBase
+                      onClick={playCurrentAudio}
+                      disabled={isAnsweringClosed}
+                      sx={speakerButtonSx}
                     >
-                      <VolumeUpIcon sx={{ fontSize: is960 ? 32 : 36 }} />
+                      <VolumeUpIcon sx={{ fontSize: p(44) }} />
                     </ButtonBase>
                   </Box>
                 )}
@@ -2913,9 +3114,12 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
                 <Box
                   sx={{
                     display: 'grid',
-                    gridTemplateColumns: `repeat(${optionColumns}, minmax(0, 1fr))`,
-                    gap: is960 ? 1.25 : 1.75,
-                    maxWidth: isImageOptions ? 640 : isPinyinTextOptions ? 560 : optionColumns >= 4 ? '100%' : 720,
+                    gridTemplateColumns: isImageOptions
+                      ? `repeat(${currentQuestion.options.length}, ${p(360)}px)`
+                      : `repeat(${optionColumns}, minmax(0, 1fr))`,
+                    gap: isImageOptions ? `${p(64)}px` : (is960 ? 1.25 : 1.75),
+                    justifyContent: isImageOptions ? 'center' : 'stretch',
+                    maxWidth: isImageOptions ? 'none' : isPinyinTextOptions ? 560 : optionColumns >= 4 ? '100%' : 720,
                     mx: isImageOptions || isPinyinTextOptions ? 'auto' : 0,
                   }}
                 >
@@ -2931,14 +3135,22 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
                         disabled={isAnsweringClosed || currentQuestion.isExample}
                         sx={{
                           position: 'relative',
-                          aspectRatio: isPinyinTextOptions ? '1.15 / 1' : '1',
-                          minHeight: is960
-                            ? (isImageOptions ? 140 : isPinyinTextOptions ? 132 : 120)
-                            : (isImageOptions ? 168 : isPinyinTextOptions ? 156 : 148),
+                          width: isImageOptions ? p(360) : '100%',
+                          height: isImageOptions ? p(360) : undefined,
+                          aspectRatio: isImageOptions ? undefined : isPinyinTextOptions ? '1.15 / 1' : '1',
+                          minHeight: isImageOptions
+                            ? undefined
+                            : is960
+                              ? (isPinyinTextOptions ? 132 : 120)
+                              : (isPinyinTextOptions ? 156 : 148),
                           bgcolor: '#FFFFFF',
-                          border: isSelected ? `3px solid ${examTeal}` : '2px solid #E5E7EB',
-                          borderRadius: is960 ? '16px' : '20px',
-                          boxShadow: isSelected ? '0 8px 24px rgba(91,191,175,0.18)' : '0 2px 8px rgba(15,23,42,0.04)',
+                          border: isImageOptions
+                            ? (isSelected ? '1.5px solid transparent' : '1.5px solid #DDE4EA')
+                            : isSelected ? `3px solid ${examTeal}` : '2px solid #E5E7EB',
+                          borderRadius: isImageOptions ? `${p(48)}px` : (is960 ? '16px' : '20px'),
+                          boxShadow: isSelected
+                            ? (isImageOptions ? '0px 0px 24px #BBD8D5' : '0 8px 24px rgba(91,191,175,0.18)')
+                            : 'none',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -2952,20 +3164,25 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
                           <Box
                             sx={{
                               position: 'absolute',
-                              top: is960 ? 10 : 12,
-                              left: is960 ? 10 : 12,
-                              width: is960 ? 28 : 32,
-                              height: is960 ? 28 : 32,
-                              borderRadius: '8px',
-                              bgcolor: isImageOptions ? '#F1F5F9' : isSelected ? examTeal : '#F1F5F9',
-                              color: isImageOptions ? '#64748B' : isSelected ? '#FFFFFF' : '#64748B',
+                              top: isImageOptions ? p(28) : (is960 ? 10 : 12),
+                              left: isImageOptions ? p(31) : (is960 ? 10 : 12),
+                              width: isImageOptions ? p(60) : (is960 ? 28 : 32),
+                              height: isImageOptions ? p(60) : (is960 ? 28 : 32),
+                              borderRadius: isImageOptions ? `${p(36)}px` : '8px',
+                              background: isSelected
+                                ? (isImageOptions
+                                  ? 'linear-gradient(143.15deg, #25CCA8 31.97%, #61E2D4 94.64%)'
+                                  : examTeal)
+                                : '#F3F4F6',
+                              color: isSelected ? '#FFFFFF' : '#2D3436',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              fontWeight: 900,
-                              fontSize: is960 ? '0.82rem' : '0.92rem',
+                              fontFamily: FIGMA_FONT,
+                              fontWeight: 600,
+                              fontSize: isImageOptions ? p(32) : (is960 ? '0.82rem' : '0.92rem'),
                               zIndex: 1,
-                              border: isImageOptions ? '1px solid #E2E8F0' : 'none',
+                              border: isSelected ? 'none' : '1px solid #E0E0DF',
                             }}
                           >
                             {letter}
@@ -2973,17 +3190,27 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
                         )}
                         {isImageOptions && imageSrc ? (
                           <Box
-                            component="img"
-                            src={imageSrc}
-                            alt={`Option ${letter}`}
                             sx={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'contain',
-                              p: is960 ? 2 : 2.5,
-                              boxSizing: 'border-box',
+                              width: p(279),
+                              height: p(236),
+                              borderRadius: `${p(26)}px`,
+                              overflow: 'hidden',
+                              bgcolor: '#FFFFFF',
+                              mt: `${p(36)}px`,
                             }}
-                          />
+                          >
+                            <Box
+                              component="img"
+                              src={imageSrc}
+                              alt={`Option ${letter}`}
+                              sx={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'contain',
+                                display: 'block',
+                              }}
+                            />
+                          </Box>
                         ) : isPinyinTextOptions && pinyinLabel ? (
                           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: is960 ? 0.75 : 1, px: 1 }}>
                             <Typography
@@ -3033,30 +3260,37 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
             sx={{
               flexShrink: 0,
               width: '100%',
-              px: is960 ? 2.5 : 3.5,
-              py: is960 ? 1.5 : 2,
+              height: p(180),
+              px: `${p(56)}px`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderTop: '1px solid #ECEEF2',
+              borderTop: '1px solid #E8ECEF',
               bgcolor: '#FFFFFF',
+              boxSizing: 'border-box',
             }}
           >
             <ButtonBase
               onClick={handlePrevious}
               disabled={currentNavGroupIndex <= 0}
               sx={{
-                px: is960 ? 2 : 2.5,
-                py: is960 ? 0.85 : 1,
-                minHeight: 44,
-                bgcolor: currentNavGroupIndex > 0 ? '#FFFFFF' : 'transparent',
-                color: currentNavGroupIndex > 0 ? '#64748B' : '#CBD5E1',
-                border: currentNavGroupIndex > 0 ? '1.5px solid #E2E8F0' : '1.5px solid transparent',
-                borderRadius: '999px',
+                width: p(250),
+                height: p(76),
+                bgcolor: '#FFFFFF',
+                color: currentNavGroupIndex > 0 ? '#6E6E73' : '#C5C9CE',
+                border: '1px solid #E5E7EB',
+                borderRadius: `${p(38)}px`,
+                fontFamily: FIGMA_FONT,
                 fontWeight: 700,
-                fontSize: is960 ? '0.85rem' : '0.92rem',
+                fontSize: p(32),
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: `${p(8)}px`,
+                '&.Mui-disabled': { color: '#C5C9CE', borderColor: '#E5E7EB' },
               }}
             >
+              <ChevronLeftIcon sx={{ fontSize: p(22) }} />
               Previous
             </ButtonBase>
 
@@ -3064,28 +3298,28 @@ function ExamScreen({ paper, onFinish, onExit, error, is960 }: { paper: ExamPape
               onClick={isLastGroup ? handleSubmit : handleNext}
               disabled={isLastGroup ? isExpired || submitting : !isCurrentGroupComplete}
               sx={{
+                width: p(250),
+                height: p(76),
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 0.75,
-                px: is960 ? 2.25 : 2.75,
-                py: is960 ? 0.9 : 1.05,
-                minHeight: 44,
-                bgcolor: ((isLastGroup && !isExpired) || isCurrentGroupComplete) ? examTeal : '#E5E7EB',
+                justifyContent: 'center',
+                gap: `${p(8)}px`,
+                background: ((isLastGroup && !isExpired) || isCurrentGroupComplete)
+                  ? 'linear-gradient(97.48deg, #00B4A0 9.75%, #26D6C3 89.59%, #37E7D4 97.62%)'
+                  : '#E5E7EB',
                 color: ((isLastGroup && !isExpired) || isCurrentGroupComplete) ? '#FFFFFF' : '#9CA3AF',
-                borderRadius: '999px',
-                fontWeight: 800,
-                fontSize: is960 ? '0.92rem' : '1rem',
-                boxShadow: ((isLastGroup && !isExpired) || isCurrentGroupComplete)
-                  ? '0 4px 14px rgba(91,191,175,0.35)'
-                  : 'none',
+                borderRadius: `${p(38)}px`,
+                fontFamily: FIGMA_FONT,
+                fontWeight: 700,
+                fontSize: p(32),
                 '&:active': ((isLastGroup && !isExpired) || isCurrentGroupComplete)
-                  ? { transform: 'scale(0.97)', bgcolor: examTealDark }
+                  ? { transform: 'scale(0.97)', filter: 'brightness(0.96)' }
                   : {},
-                '&.Mui-disabled': { bgcolor: '#E5E7EB', color: '#9CA3AF', boxShadow: 'none' },
+                '&.Mui-disabled': { background: '#E5E7EB', color: '#9CA3AF' },
               }}
             >
               {isLastGroup ? (submitting ? 'Submitting...' : 'Submit') : 'Next'}
-              <ArrowForwardIcon sx={{ fontSize: is960 ? 18 : 20 }} />
+              <ChevronRightIcon sx={{ fontSize: p(22) }} />
             </ButtonBase>
           </Box>
         </Box>
@@ -3816,7 +4050,7 @@ export default function HSKPrepTrainingPage() {
   const levelParam = Number(searchParams.get('level'));
   const requestedLevel: HSKLevel | null =
     levelParam === 1 || levelParam === 2 ? (levelParam as HSKLevel) : null;
-  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
+  const screenSize = APP_SCREEN_SIZE;
   const is960 = screenSize === '960x540';
 
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
@@ -4302,15 +4536,62 @@ export default function HSKPrepTrainingPage() {
 
   if (sessionRestoreError) {
     return (
-      <Box sx={{ height: '100%', display: 'grid', placeItems: 'center', bgcolor: '#FFFBF5', p: 3 }}>
-        <Box sx={{ maxWidth: 520, textAlign: 'center' }}>
-          <Typography sx={{ color: '#B42318', fontWeight: 800, mb: 2 }}>{sessionRestoreError}</Typography>
-          <ButtonBase
-            onClick={() => setSessionRestoreNonce((value) => value + 1)}
-            sx={{ px: 3, py: 1.25, borderRadius: '8px', bgcolor: '#0EAD8B', color: '#FFFFFF', fontWeight: 900 }}
-          >
-            Retry
-          </ButtonBase>
+      <Box sx={{ height: '100%', position: 'relative', bgcolor: '#FFFBF5', p: 3, boxSizing: 'border-box' }}>
+        <HskPrepBackButton
+          onClick={() => {
+            setSessionRestoreError(null);
+            setSessionRestoring(false);
+            handleExitToHub();
+          }}
+          sx={{
+            position: 'absolute',
+            left: HSK_PREP_BACK.left,
+            top: HSK_PREP_BACK.top,
+            zIndex: 2,
+          }}
+        />
+        <Box sx={{ height: '100%', display: 'grid', placeItems: 'center' }}>
+          <Box sx={{ maxWidth: 520, textAlign: 'center' }}>
+            <Typography sx={{ color: '#B42318', fontWeight: 800, mb: 2, fontFamily: FIGMA_FONT }}>
+              {sessionRestoreError}
+            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 1.5 }}>
+              <ButtonBase
+                onClick={() => {
+                  setSessionRestoreError(null);
+                  setSessionRestoring(false);
+                  handleExitToHub();
+                }}
+                sx={{
+                  minWidth: 120,
+                  minHeight: 56,
+                  px: 3,
+                  borderRadius: '8px',
+                  bgcolor: '#FFFFFF',
+                  border: '1px solid #CBD5E1',
+                  color: '#334155',
+                  fontWeight: 800,
+                  fontFamily: FIGMA_FONT,
+                }}
+              >
+                Back
+              </ButtonBase>
+              <ButtonBase
+                onClick={() => setSessionRestoreNonce((value) => value + 1)}
+                sx={{
+                  minHeight: 48,
+                  px: 3,
+                  borderRadius: '8px',
+                  bgcolor: '#0EAD8B',
+                  color: '#FFFFFF',
+                  fontWeight: 900,
+                  fontFamily: FIGMA_FONT,
+                }}
+              >
+                Retry
+              </ButtonBase>
+            </Box>
+          </Box>
         </Box>
       </Box>
     );
@@ -4318,29 +4599,30 @@ export default function HSKPrepTrainingPage() {
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      {currentScreen !== 'home' && currentScreen !== 'papers' && !isWebsiteEmbed && <SystemStatusBar variant="inline" />}
       <Box sx={{ flex: 1, minHeight: 0 }}>
-    <AnimatePresence mode="wait">
+    <AnimatePresence>
       {currentScreen === 'home' && (
-        <motion.div key={paperTrack ? 'levels' : 'version'} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -40 }} style={{ height: '100%' }}>
+        <motion.div key={paperTrack ? 'levels' : 'version'} initial={false} animate={{ opacity: 1 }} style={{ height: '100%' }}>
           {paperTrack ? (
             <HomeScreen
               onSelectLevel={handleSelectLevel}
               onBack={handleBackFromLevels}
               showBack={!isWebsiteEmbed}
+              screenSize={screenSize}
             />
           ) : (
             <VersionScreen
               onSelect={handleSelectTrack}
               onBack={handleExitToHub}
               showBack={!isWebsiteEmbed}
+              screenSize={screenSize}
             />
           )}
         </motion.div>
       )}
 
       {currentScreen === 'papers' && selectedLevel && (
-        <motion.div key="papers" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} style={{ height: '100%' }}>
+        <motion.div key="papers" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ height: '100%' }}>
           <PaperSelectionScreen
             level={selectedLevel}
             papers={catalogPapers}
@@ -4349,17 +4631,17 @@ export default function HSKPrepTrainingPage() {
             onSelectPaper={handleSelectPaper}
             onBack={handleBackToHome}
             onRetry={() => void loadCatalogPapers(selectedLevel)}
-            is960={is960}
             paperTrack={paperTrack}
+            screenSize={screenSize}
           />
         </motion.div>
       )}
 
       {currentScreen === 'intro' && activePaper && (
-        <motion.div key="intro" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={{ height: '100%' }}>
+        <motion.div key="intro" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ height: '100%' }}>
           <>
             {flowError && <Typography sx={{ color: '#B91C1C', px: 3, pt: 1 }}>{flowError}</Typography>}
-            <ExamIntroScreen paper={activePaper} onStart={handleStartExam} onBack={handleBackToPapers} starting={startLoading} is960={is960} />
+            <ExamIntroScreen paper={activePaper} onStart={handleStartExam} onBack={handleBackToPapers} starting={startLoading} />
           </>
         </motion.div>
       )}

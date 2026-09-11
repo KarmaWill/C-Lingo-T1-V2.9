@@ -36,6 +36,8 @@ interface HomeLessonHeroProps {
   masteryLabel?: string
   masteryValue?: number
   progressColor?: string
+  eyebrowColor?: string
+  scrimOpacity?: number
 }
 
 /** 三轨共用主课卡内部尺度；HSK / Business / C-Lingo 同一套比例 */
@@ -55,6 +57,8 @@ export default function HomeLessonHero({
   masteryLabel = 'Unit Mastery',
   masteryValue = 65,
   progressColor = '#00B4A0',
+  eyebrowColor = '#FDD83B',
+  scrimOpacity = 0.6,
 }: HomeLessonHeroProps) {
   const navigate = useNavigate()
   const p = (n: number) => figmaPx(n, screenSize)
@@ -115,7 +119,7 @@ export default function HomeLessonHero({
             position: 'absolute',
             inset: 0,
             background: 'linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, #000000 100%)',
-            opacity: 0.6,
+            opacity: scrimOpacity,
             zIndex: 2,
             pointerEvents: 'none',
           }}
@@ -184,7 +188,7 @@ export default function HomeLessonHero({
             <Typography
               component="p"
               sx={{
-                color: '#FDD83B',
+                color: eyebrowColor,
                 fontWeight: 500,
                 fontSize: p(26),
                 lineHeight: `${p(38)}px`,
@@ -243,7 +247,7 @@ export default function HomeLessonHero({
                     '&:active': { transform: 'none' },
                   },
                   '&:focus-visible': {
-                    outline: '3px solid #FDD83B',
+                    outline: `3px solid ${eyebrowColor}`,
                     outlineOffset: 4,
                   },
                 }}

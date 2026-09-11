@@ -7,6 +7,8 @@ import App from './App'
 import { getLocaleById, loadStoredLocaleId } from './data/localeConfig'
 import './i18n'
 import './theme/googleSansFlex.css'
+import '@fontsource/montserrat/latin-600.css'
+import '@fontsource/montserrat/latin-700.css'
 import './index.css'
 
 const initialLocale = getLocaleById(loadStoredLocaleId())

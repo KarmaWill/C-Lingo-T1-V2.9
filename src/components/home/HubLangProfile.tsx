@@ -5,7 +5,13 @@ import { useLocale } from '../../context/LocaleContext'
 import { figmaPx } from '../../utils/figmaScale'
 
 /** Figma 主界面顶栏右侧：语言胶囊 + 吉祥物头像（朝向页面内侧） */
-export default function HubLangProfile({ screenSize }: { screenSize: string }) {
+export default function HubLangProfile({
+  screenSize,
+  onDark = false,
+}: {
+  screenSize: string
+  onDark?: boolean
+}) {
   const navigate = useNavigate()
   const { locale, locales, setLocaleId } = useLocale()
   const [langAnchor, setLangAnchor] = useState<null | HTMLElement>(null)
@@ -20,7 +26,8 @@ export default function HubLangProfile({ screenSize }: { screenSize: string }) {
           width: p(200),
           height: p(90),
           borderRadius: `${p(280)}px`,
-          bgcolor: '#F3F4F6',
+          bgcolor: onDark ? 'rgba(244, 251, 248, 0.12)' : '#F3F4F6',
+          border: onDark ? '1px solid rgba(244, 251, 248, 0.22)' : 'none',
           px: `${p(30)}px`,
           display: 'flex',
           alignItems: 'center',
@@ -28,7 +35,7 @@ export default function HubLangProfile({ screenSize }: { screenSize: string }) {
         }}
       >
         <Typography sx={{ fontSize: p(28) }}>{locale.flag}</Typography>
-        <Typography sx={{ fontWeight: 700, fontSize: p(24), color: '#4B5563' }}>
+        <Typography sx={{ fontWeight: 700, fontSize: p(24), color: onDark ? '#F4FBF8' : '#4B5563' }}>
           {locale.label}
         </Typography>
         <Box
@@ -38,7 +45,7 @@ export default function HubLangProfile({ screenSize }: { screenSize: string }) {
             height: 0,
             borderLeft: `${p(8)}px solid transparent`,
             borderRight: `${p(8)}px solid transparent`,
-            borderTop: `${p(10)}px solid #9CA3AF`,
+            borderTop: `${p(10)}px solid ${onDark ? 'rgba(244, 251, 248, 0.7)' : '#9CA3AF'}`,
           }}
         />
       </ButtonBase>

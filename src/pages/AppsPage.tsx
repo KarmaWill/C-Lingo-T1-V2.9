@@ -55,6 +55,7 @@ import type { ReactNode } from 'react';
 import HubLangProfile from '../components/home/HubLangProfile';
 import HubContainBoard from '../components/home/HubContainBoard';
 import { StudioHomeFrame } from '../components/home/StudioHomeHeader';
+import HubPagerDots from '../components/home/HubPagerDots';
 import {
   EXPLORE_MAIN1,
   HUB_CANVAS_CLINGO,
@@ -1139,6 +1140,7 @@ export default function AppsPage() {
                 </HubContainBoard>
               </Box>
       </Box>
+      <HubPagerDots screenSize={screenSize} />
     </StudioHomeFrame>
 
 

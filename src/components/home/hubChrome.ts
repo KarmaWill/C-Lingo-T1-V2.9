@@ -1,5 +1,19 @@
 /** Figma 主界面1/2 默认画布（HSK / Business 仍用奶油底） */
 export const HUB_CANVAS = '#FFF8F0'
+
+/**
+ * Burnside High School · 从图1 values 海报取样。
+ * forest 底、teal / gold / sky 三色柱。只给 /hsk-standard Hub。
+ */
+export const BHS = {
+  forest: '#004840',
+  teal: '#00B090',
+  gold: '#F0C030',
+  sky: '#6BC7DE',
+  ink: '#F4FBF8',
+  mute: 'rgba(244, 251, 248, 0.68)',
+} as const
+export const HUB_CANVAS_BHS = BHS.forest
 /** 主界面1 · 2508 画布 background #F2F8FF，只给 C-Lingo /AI */
 export const HUB_CANVAS_CLINGO = '#F2F8FF'
 export const HUB_SURFACE = '#FFFFFF'
@@ -9,11 +23,26 @@ export const HUB_FRAME_PAD_X = 60
 export const HUB_FRAME_PAD_TOP = 10
 /** 主界面1：教材卡底 1257 → dock 顶 1305，约 48px / 1.30625 */
 export const HUB_FRAME_PAD_BOTTOM = 36
+/** 主区底 → dock 顶的指示点带。比 pad 多 20，避免 HubContainBoard 吃掉缝 */
+export const HUB_PAGER_BAND = HUB_FRAME_PAD_BOTTOM + 20
+
+/** 主界面1 Frame 86 · 2508 画布原值（÷1.30625 后再交给 figmaPx） */
+export const HUB_PAGER_MAIN1 = {
+  gap: 26,
+  active: 24,
+  inactive: 18,
+  color: '#D5D5D5',
+} as const
+export const HUB_MAIN1_TO_1920 = 1920 / 2508
 
 /** 首次进入页 Start Conversation 与 Studio「AI Tutor」同色 */
 export const AI_TUTOR_SURFACE =
   'linear-gradient(103.66deg, #FEDC5E -6.18%, #3FB266 43.73%)'
 export const AI_TUTOR_GLOW = 'rgba(63, 178, 102, 0.55)'
+/** 商务中文右栏满高卡 · 金轨，和 Tutor 卡同结构不同色 */
+export const BUSINESS_DIALOGUE_SURFACE =
+  'linear-gradient(158deg, #B8921F 0%, #D4A853 48%, #E4C15A 100%)'
+export const BUSINESS_DIALOGUE_GLOW = 'rgba(232, 196, 90, 0.42)'
 
 /**
  * 主界面1 画布 2508×1567.5 = 1920×1200 × 1.30625。

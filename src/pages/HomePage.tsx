@@ -8,6 +8,7 @@ import {
   HomeSideCardStack,
 } from '../components/home/HomeSideCard'
 import StudioHomeHeader, { StudioHomeFrame } from '../components/home/StudioHomeHeader'
+import HubPagerDots from '../components/home/HubPagerDots'
 import { AI_TUTOR_GLOW, HUB_CANVAS_CLINGO, STUDIO_MAIN1 } from '../components/home/hubChrome'
 import { APP_SCREEN_SIZE } from '../utils/figmaScale'
 
@@ -152,6 +153,7 @@ export default function HomePage() {
           />
         </HomeSideCardStack>
       </HomePageShell>
+      <HubPagerDots screenSize={screenSize} />
     </StudioHomeFrame>
   )
 }

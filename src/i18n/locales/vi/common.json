@@ -9,12 +9,13 @@
     "hubTitle": "AI Class Studio",
     "tracks": {
       "c-lingo": "C-Lingo Chinese",
-      "hsk-standard": "HSK Standard",
+      "hsk-standard": "Burnside High School",
       "business-chinese": "Tiếng Trung Thương mại"
     },
     "badge": {
       "onlineOnly": "Chỉ trực tuyến",
       "officialExam": "Kỳ thi chính thức",
+      "schoolEdition": "Ban nha truong",
       "premium": "Premium"
     }
   },
@@ -42,6 +43,8 @@
     "moduleMastery": "Mức thành thạo",
     "startSession": "Bắt đầu",
     "about": "Giới thiệu",
+    "businessDialogue": "Hội thoại thương mại",
+    "businessDialogueHint": "商务中文模拟对话",
     "scenarioDialogue1": "Kịch bản",
     "scenarioDialogue2": "Hội thoại",
     "documentTools1": "Tài liệu",
@@ -58,11 +61,14 @@
     }
   },
   "hsk": {
-    "eyebrow": "KHÓA HSK STANDARD",
-    "heroTitle": "HSK 1 | Chủ đề 1: Chào hỏi & Giới thiệu",
+    "eyebrow": "BURNSIDE CHINESE",
+    "heroTitle": "Chu de 1 | Hoat dong 1: Chao hoi va gioi thieu",
     "words": "Từ",
     "patterns": "Mẫu câu",
-    "topicMastery": "Thành thạo chủ đề HSK",
+    "topicMastery": "Thanh thao chu de",
+    "topicN": "Chu de {{n}}",
+    "activityN": "Hoat dong {{n}}",
+    "seminar": "Hoi thao",
     "speakingPro1": "AI Nói",
     "speakingPro2": "Pro",
     "writingTraining1": "Viết",

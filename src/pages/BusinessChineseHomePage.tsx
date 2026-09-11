@@ -9,6 +9,8 @@ import {
   HomeSideCardStack,
 } from '../components/home/HomeSideCard'
 import StudioHomeHeader, { StudioHomeFrame } from '../components/home/StudioHomeHeader'
+import HubPagerDots from '../components/home/HubPagerDots'
+import { BUSINESS_DIALOGUE_GLOW, BUSINESS_DIALOGUE_SURFACE } from '../components/home/hubChrome'
 import { APP_SCREEN_SIZE } from '../utils/figmaScale'
 import { BUSINESS_TOPIC_KEYS } from '../data/businessTopics'
 
@@ -65,13 +67,15 @@ export default function BusinessChineseHomePage() {
           progressColor="#D4A853"
         />
 
-        <HomeSideCardStack screenSize={screenSize}>
+        <HomeSideCardStack screenSize={screenSize} fill>
           <HomeSideCard
             variant="spotlight"
+            fill
             screenSize={screenSize}
-            label={`${t('business.scenarioDialogue1')} ${t('business.scenarioDialogue2')}`}
-            bgcolor="linear-gradient(135deg, #C9A227 0%, #D4A853 100%)"
-            spotlightArrowColor="#C9A227"
+            label={t('business.businessDialogue')}
+            subtitle={t('business.businessDialogueHint')}
+            bgcolor={BUSINESS_DIALOGUE_SURFACE}
+            glow={BUSINESS_DIALOGUE_GLOW}
             onClick={() =>
               navigate('/business-chinese/scenario-dialogue', { state: { from: '/business-chinese' } })
             }
@@ -79,37 +83,25 @@ export default function BusinessChineseHomePage() {
               <Box
                 component="img"
                 src="/images/clingo-ai-mascot-tutor.png?v=star-eyes"
-                alt=""
+                alt={t('business.businessDialogue')}
+                draggable={false}
+                width={260}
+                height={320}
                 sx={{
                   width: '100%',
                   height: '100%',
                   objectFit: 'contain',
-                  objectPosition: 'bottom center',
+                  objectPosition: 'center bottom',
                   display: 'block',
+                  pointerEvents: 'auto',
+                  userSelect: 'none',
                 }}
               />
             }
           />
-          <HomeSideCard
-            variant="tool"
-            screenSize={screenSize}
-            label={`${t('business.documentTools1')} ${t('business.documentTools2')}`}
-            bgcolor="#00B4A0"
-            onClick={() =>
-              navigate('/business-chinese/document-tools', { state: { from: '/business-chinese' } })
-            }
-          />
-          <HomeSideCard
-            variant="tool"
-            screenSize={screenSize}
-            label={`${t('business.enterprisePlatform1')} ${t('business.enterprisePlatform2')}`}
-            bgcolor="#FF6B35"
-            onClick={() =>
-              navigate('/business-chinese/enterprise-platform', { state: { from: '/business-chinese' } })
-            }
-          />
         </HomeSideCardStack>
       </HomePageShell>
+      <HubPagerDots screenSize={screenSize} />
     </StudioHomeFrame>
   )
 }

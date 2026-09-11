@@ -100,7 +100,11 @@ export default function SystemStatusBar({
         iconGap: FIGMA_STATUS.iconGap,
       }
     : scaled
-  const isDarkChrome = chrome.statusBarText === '#F5F0E8' || chrome.statusBarBg.startsWith('rgba(13')
+  const isDarkChrome =
+    chrome.statusBarText === '#F5F0E8' ||
+    chrome.statusBarText === '#F4FBF8' ||
+    chrome.statusBarBg.startsWith('rgba(13') ||
+    chrome.statusBarBg === '#004840'
   const isCanvas = variant === 'canvas'
   const isInline = variant === 'inline'
 
