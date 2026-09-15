@@ -1,4 +1,4 @@
-export type ExploreBuiltinId = 'tutor' | 'ai-fm' | 'pinyin' | 'flashcards' | 'favorites' | 'writing'
+export type ExploreBuiltinId = 'tutor' | 'ai-fm' | 'pinyin' | 'flashcards' | 'writing'
 
 export interface ExploreBuiltinApp {
   id: ExploreBuiltinId
@@ -12,7 +12,6 @@ export const EXPLORE_BUILTIN_APPS: ExploreBuiltinApp[] = [
   { id: 'ai-fm', label: 'AI FM', bg: '#00B4A0', path: '/ai-fm' },
   { id: 'pinyin', label: 'Pinyin', bg: '#2768FD', path: '/pinyin-chart' },
   { id: 'flashcards', label: 'FlashCards', bg: '#2563EB', path: '/lingo-flash' },
-  { id: 'favorites', label: 'Favorites', bg: '#F59E0B', path: '/favorites' },
   { id: 'writing', label: 'Writing', bg: '#FFC72C', path: '/character-writing' },
 ]
 

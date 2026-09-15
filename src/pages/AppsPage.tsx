@@ -20,7 +20,6 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import StyleIcon from '@mui/icons-material/Style';
 import EditNoteIcon from '@mui/icons-material/EditNote';
-import BookmarkIcon from '@mui/icons-material/Bookmark';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import HeadphonesIcon from '@mui/icons-material/Headphones';
 import RadioIcon from '@mui/icons-material/Radio';
@@ -191,7 +190,6 @@ const EXPLORE_APP_ICONS: Record<ExploreBuiltinId, SvgIconComponent> = {
   'ai-fm': RadioIcon,
   pinyin: HeadphonesIcon,
   flashcards: StyleIcon,
-  favorites: BookmarkIcon,
   writing: EditNoteIcon,
 };
 
