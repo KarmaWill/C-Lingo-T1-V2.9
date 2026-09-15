@@ -391,27 +391,27 @@ export default function PracticeReportView({
             <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(16)}px`, mb: `${p(20)}px`, flexShrink: 0 }}>
               <Box
                 sx={{
-                  width: p(36),
-                  height: p(36),
+                  width: p(48),
+                  height: p(48),
                   borderRadius: '50%',
                   background: 'linear-gradient(103.66deg, #FEDC5E 0.16%, #3FB266 78.79%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   overflow: 'hidden',
                   flexShrink: 0,
                 }}
               >
                 <Box
                   component="img"
-                  src="/images/clingo-ai-mascot-peek.png"
+                  src="/images/clingo-ai-mascot-head.png"
                   alt=""
                   sx={{
                     display: 'block',
-                    maxWidth: 'none',
-                    width: '210%',
-                    height: '210%',
-                    ml: '-55%',
-                    mt: '-28%',
-                    objectFit: 'cover',
-                    objectPosition: 'center 38%',
+                    width: '92%',
+                    height: '92%',
+                    objectFit: 'contain',
+                    pointerEvents: 'none',
                   }}
                 />
               </Box>

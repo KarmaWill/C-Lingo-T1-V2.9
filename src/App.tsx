@@ -57,6 +57,7 @@ import CultureMapPage from './pages/CultureMapPage'
 import HSKGoStudyPlaceholderPage from './pages/HSKGoStudyPlaceholderPage'
 import AudioReadingRoutePage from './pages/AudioReadingRoutePage'
 import CultureVideoRoutePage from './pages/CultureVideoRoutePage'
+import AIFMPage from './pages/AIFMPage'
 import ParentalControlsPage from './pages/ParentalControlsPage'
 import NskAppStorePage from './pages/NskAppStorePage'
 import JxwAppStorePage from './pages/JxwAppStorePage'
@@ -196,6 +197,7 @@ function ThemedApp() {
               <Route path="/hsk-go-study" element={<HSKGoStudyPlaceholderPage />} />
               <Route path="/audio-reading" element={<AudioReadingRoutePage />} />
               <Route path="/culture-video" element={<CultureVideoRoutePage />} />
+              <Route path="/ai-fm" element={<AIFMPage />} />
               <Route path="/hsk-prep-test" element={<HSKPrepTestIntroPage />} />
               <Route path="/hsk-prep-training" element={<HSKPrepTrainingPage />} />
               <Route path="/hsk-skill-drill" element={<HSKSkillDrillPage />} />

@@ -17,7 +17,9 @@ interface MainLayoutProps {
 const DESIGN_1920 = 1920
 const DESIGN_1125 = 1125
 /** Top + bottom chrome bars (px) — air band around the centered tablet */
-const SHELL_BAR_RESERVE = 88
+const SHELL_BAR_RESERVE = 72
+/** Soft device glow (`0 0 80px`) needs room inside the stage, not under the bars */
+const SHELL_SHADOW_AIR = 40
 const SHELL_CHROME_RESERVE = SHELL_BAR_RESERVE * 2
 
 export default function MainLayout({ children }: MainLayoutProps) {
@@ -50,17 +52,22 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const scale1920 = is1920x1125
     ? Math.min(
         1,
-        viewport.w / DESIGN_1920,
-        (viewport.h - (isWebsiteEmbed ? 0 : SHELL_CHROME_RESERVE)) / DESIGN_1125,
+        viewport.w / (DESIGN_1920 + SHELL_SHADOW_AIR * 2),
+        (viewport.h - (isWebsiteEmbed ? 0 : SHELL_CHROME_RESERVE) - SHELL_SHADOW_AIR * 2) / DESIGN_1125,
       )
     : 1
 
   const shellBezel = getDeviceShellBezelForSize(screenSize)
   const shellOuterW = screenWidth + shellBezel * 2
   const shellOuterH = screenHeight + shellBezel * 2
+  const hardwareProtrusionPreview = screenSize === '960x540' ? 10 : 12
   const fitDeviceScale = Math.min(
-    (viewport.h - (isWebsiteEmbed ? 0 : SHELL_CHROME_RESERVE) - 8) / (shellOuterH + 12),
-    (viewport.w - 8) / shellOuterW,
+    (viewport.h -
+      (isWebsiteEmbed ? 0 : SHELL_CHROME_RESERVE) -
+      (isWebsiteEmbed ? 8 : SHELL_SHADOW_AIR * 2) -
+      8) /
+      (shellOuterH + hardwareProtrusionPreview),
+    (viewport.w - (isWebsiteEmbed ? 8 : SHELL_SHADOW_AIR * 2) - 8) / shellOuterW,
   )
   const deviceScale = Math.max(0.28, Math.min(1, fitDeviceScale))
   
@@ -73,6 +80,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isProfileEditPage = location.pathname === '/profile/edit'
   const isAudioReadingPage = location.pathname === '/audio-reading'
   const isCultureVideoRoutePage = location.pathname === '/culture-video'
+  const isAIFMPage = location.pathname === '/ai-fm'
   const isBookReaderPage = location.pathname.startsWith('/library/read')
   const isStudyReportPage = location.pathname === '/study-report'
   const isMistakesReviewPage = location.pathname === '/mistakes-review'
@@ -127,6 +135,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isHSKMockExamPage ||
     isAudioReadingPage ||
     isCultureVideoRoutePage ||
+    isAIFMPage ||
     isFavoritesPage ||
     isParentalControlsPage ||
     isNskAppStorePage ||
@@ -293,12 +302,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
     position: 'relative' as const,
     alignItems: 'center',
     py: 0,
+    zIndex: 3,
   }
 
   const shellBottomBarSx = {
     ...shellBarBaseSx,
     alignItems: 'center',
     py: 0,
+    zIndex: 3,
   }
 
   const shellTopBar = (
@@ -384,7 +395,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          overflow: 'hidden',
+          // Soft glow may extend a few px; bars stay clickable via zIndex
+          overflow: 'visible',
+          position: 'relative',
+          zIndex: 1,
         }}
       >
       <Box

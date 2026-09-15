@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, ButtonBase, Snackbar, Alert } from '@mui/material';
@@ -23,8 +23,10 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import HeadphonesIcon from '@mui/icons-material/Headphones';
+import RadioIcon from '@mui/icons-material/Radio';
 import type { SvgIconComponent } from '@mui/icons-material';
 import { getInstalledExtraApps, removeInstalledExtraApp, MAX_EXTRA_APPS, type CatalogApp } from '../data/appsCatalog';
+import { CatalogAppGlyph } from '../components/apps/catalogAppIcons';
 import { getPendingAppUpdatesCount } from '../data/appUpdatesCatalog';
 import {
   GOOGLE_SYSTEM_TOOLS,
@@ -51,7 +53,6 @@ import {
   type ExploreBuiltinId,
 } from '../data/exploreAppsConfig';
 import { useLongPress } from '../utils/useLongPress';
-import type { ReactNode } from 'react';
 import HubLangProfile from '../components/home/HubLangProfile';
 import HubContainBoard from '../components/home/HubContainBoard';
 import { StudioHomeFrame } from '../components/home/StudioHomeHeader';
@@ -187,6 +188,7 @@ function UtilityToolButton({
 
 const EXPLORE_APP_ICONS: Record<ExploreBuiltinId, SvgIconComponent> = {
   tutor: SmartToyIcon,
+  'ai-fm': RadioIcon,
   pinyin: HeadphonesIcon,
   flashcards: StyleIcon,
   favorites: BookmarkIcon,
@@ -213,6 +215,7 @@ function ExtraAppTile({
       screenSize={screenSize}
       label={app.label}
       bg={app.bg}
+      glyph={<CatalogAppGlyph id={app.id} />}
       showDelete={isDeleteMode}
       onEnterEditMode={onEnterEditMode}
       onRemove={onRemove}
@@ -364,6 +367,7 @@ function ExploreAppIcon({
   label,
   bg,
   icon: Icon,
+  glyph,
   onClick,
   addSlot,
   showDelete = false,
@@ -374,6 +378,7 @@ function ExploreAppIcon({
   label?: string;
   bg?: string;
   icon?: SvgIconComponent;
+  glyph?: ReactNode;
   onClick: () => void;
   addSlot?: boolean;
   showDelete?: boolean;
@@ -441,8 +446,22 @@ function ExploreAppIcon({
               <Box sx={{ position: 'absolute', left: 0, right: 0, top: '46%', height: '12%', bgcolor: '#A7B3B8', borderRadius: 49 }} />
               <Box sx={{ position: 'absolute', top: 0, bottom: 0, left: '46%', width: '12%', bgcolor: '#A7B3B8', borderRadius: 49 }} />
             </Box>
+          ) : glyph ? (
+            glyph
+          ) : Icon ? (
+            <Icon sx={{ fontSize: '50%', color: '#FFFFFF', width: '52%', height: '52%' }} />
           ) : (
-            Icon && <Icon sx={{ fontSize: '50%', color: '#FFFFFF', width: '52%', height: '52%' }} />
+            <Box
+              sx={{
+                fontFamily: FIGMA_FONT,
+                fontWeight: 800,
+                fontSize: '42%',
+                color: '#FFFFFF',
+                lineHeight: 1,
+              }}
+            >
+              {(label || '?').charAt(0)}
+            </Box>
           )}
         </Box>
         <Typography

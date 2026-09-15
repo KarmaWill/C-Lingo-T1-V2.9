@@ -65,8 +65,8 @@ export const CURRENT_LESSON: Lesson = {
   hskLevel: 1,
   cultureVideo: {
     id: 'cult-01',
-    title: '中国家庭礼仪',
-    thumbnailUrl: 'https://picsum.photos/id/200/400/250',
+    title: 'Chinese Garden & Everyday Life',
+    thumbnailUrl: '/images/chinese-festivals-cover.jpg',
     videoUrl: 'mock-culture-video',
     unlockThreshold: 2
   },

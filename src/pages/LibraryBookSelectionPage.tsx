@@ -153,7 +153,7 @@ export default function LibraryBookSelectionPage() {
   const [books, setBooks] = useState<Book[]>(INITIAL_BOOKS);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<Category>('All');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isEditMode, setIsEditMode] = useState(false);
   const [managedBookId, setManagedBookId] = useState<string | null>(null);
   const [selectedBookIds, setSelectedBookIds] = useState<string[]>([]);

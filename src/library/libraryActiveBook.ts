@@ -9,14 +9,14 @@ export type LibraryActiveBook = {
   totalPages: number
 }
 
-/** 一期 Hub 默认 HSK1，不把快乐中文当当前教材 */
+/** Hub 默认快乐中文第一册，伴学卡走 Fun Chinese + Culture 双卡 */
 export const DEFAULT_LIBRARY_BOOK: LibraryActiveBook = {
-  id: 'hsk1',
-  title: 'HSK 1 Standard Course',
-  badge: ['HSK1', 'Volume 1'],
-  coverUrl: '/images/hsk-1-standard-course-cover.jpg',
-  currentPage: 128,
-  totalPages: 150,
+  id: 'hc-1',
+  title: 'Happy Chinese',
+  badge: ['Happy Chinese', 'Volume 1'],
+  coverUrl: '/images/happy-chinese-vol1-cover.png',
+  currentPage: 59,
+  totalPages: 198,
 }
 
 export type LibraryBookInput = {

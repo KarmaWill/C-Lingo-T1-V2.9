@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { Box, Typography, ButtonBase, LinearProgress } from '@mui/material';
-import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import AudiotrackOutlinedIcon from '@mui/icons-material/AudiotrackOutlined';
-import MovieOutlinedIcon from '@mui/icons-material/MovieOutlined';
-import SystemPageShell from '../components/SystemPageShell';
+import { useState } from 'react'
+import { Box, Typography, ButtonBase, LinearProgress } from '@mui/material'
+import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import AudiotrackOutlinedIcon from '@mui/icons-material/AudiotrackOutlined'
+import MovieOutlinedIcon from '@mui/icons-material/MovieOutlined'
+import SystemPageShell from '../components/SystemPageShell'
+import { APP_SCREEN_SIZE, FIGMA_FONT, figmaPx } from '../utils/figmaScale'
 
 const CACHE_ITEMS = [
   { id: 'fc-audio', label: 'Fun Chinese · Lesson Audio', type: 'audio' as const, size: '286 MB', cached: true },
@@ -12,42 +13,90 @@ const CACHE_ITEMS = [
   { id: 'hsk-audio', label: 'HSK Prep · Listening Pack', type: 'audio' as const, size: '98 MB', cached: true },
   { id: 'cw-video', label: 'Character Writing · Stroke Videos', type: 'video' as const, size: '156 MB', cached: false },
   { id: 'culture-video', label: 'Culture Map · Region Videos', type: 'video' as const, size: '520 MB', cached: true },
-];
+]
 
 export default function ContentCachePage() {
-  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
-  const is960 = screenSize === '960x540';
-  const [items, setItems] = useState(CACHE_ITEMS);
-  const [clearingId, setClearingId] = useState<string | null>(null);
+  const p = (n: number) => figmaPx(n, APP_SCREEN_SIZE)
+  const [items, setItems] = useState(CACHE_ITEMS)
+  const [clearingId, setClearingId] = useState<string | null>(null)
 
-  const totalCached = items.filter((i) => i.cached).reduce((sum, i) => sum + parseInt(i.size, 10), 0);
+  const totalCached = items.filter((i) => i.cached).reduce((sum, i) => sum + parseInt(i.size, 10), 0)
 
   const handleClear = (id: string) => {
-    setClearingId(id);
+    setClearingId(id)
     window.setTimeout(() => {
-      setItems((prev) => prev.map((item) => (item.id === id ? { ...item, cached: false } : item)));
-      setClearingId(null);
-    }, 600);
-  };
+      setItems((prev) => prev.map((item) => (item.id === id ? { ...item, cached: false } : item)))
+      setClearingId(null)
+    }, 600)
+  }
 
   return (
     <SystemPageShell
       title="Content Management"
       subtitle={`Cached media for offline use · ~${totalCached} MB total`}
-      icon={<FolderOutlinedIcon sx={{ fontSize: is960 ? 28 : 32, color: '#64748B' }} />}
+      icon={<FolderOutlinedIcon sx={{ fontSize: p(40), color: '#64748B' }} />}
     >
-      <Box sx={{ p: is960 ? 2 : 3, display: 'flex', flexDirection: 'column', gap: is960 ? 1 : 1.25 }}>
+      <Box
+        sx={{
+          px: `${p(60)}px`,
+          py: `${p(40)}px`,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${p(20)}px`,
+        }}
+      >
         {items.map((item) => {
-          const TypeIcon = item.type === 'audio' ? AudiotrackOutlinedIcon : MovieOutlinedIcon;
+          const TypeIcon = item.type === 'audio' ? AudiotrackOutlinedIcon : MovieOutlinedIcon
+          const tone = item.type === 'audio'
+            ? { tile: '#FEF3C7', icon: '#B45309' }
+            : { tile: '#EDE9FE', icon: '#7C3AED' }
           return (
-            <Box key={item.id} sx={{ p: is960 ? 1.5 : 1.75, borderRadius: '20px', bgcolor: 'white', border: '1px solid rgba(0,0,0,0.06)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box sx={{ width: 48, height: 48, borderRadius: '14px', bgcolor: item.type === 'audio' ? '#FEF3C7' : '#EDE9FE', color: item.type === 'audio' ? '#B45309' : '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <TypeIcon sx={{ fontSize: 24 }} />
+            <Box
+              key={item.id}
+              sx={{
+                p: `${p(28)}px`,
+                borderRadius: `${p(24)}px`,
+                bgcolor: '#FFFFFF',
+                border: '1px solid #E0E0DF',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(24)}px` }}>
+                <Box
+                  sx={{
+                    width: p(80),
+                    height: p(80),
+                    borderRadius: `${p(20)}px`,
+                    bgcolor: tone.tile,
+                    color: tone.icon,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <TypeIcon sx={{ fontSize: p(40) }} />
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.88rem' : '0.96rem', color: '#111827' }}>{item.label}</Typography>
-                  <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.78rem', color: '#9CA3AF' }}>
+                  <Typography
+                    sx={{
+                      fontFamily: FIGMA_FONT,
+                      fontWeight: 700,
+                      fontSize: p(28),
+                      lineHeight: `${p(40)}px`,
+                      color: '#2D3436',
+                    }}
+                  >
+                    {item.label}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: FIGMA_FONT,
+                      fontWeight: 400,
+                      fontSize: p(22),
+                      lineHeight: `${p(32)}px`,
+                      color: '#636E72',
+                    }}
+                  >
                     {item.cached ? `${item.size} cached` : 'Not cached · tap to prefetch'}
                   </Typography>
                 </Box>
@@ -55,24 +104,55 @@ export default function ContentCachePage() {
                   <ButtonBase
                     onClick={() => handleClear(item.id)}
                     disabled={clearingId === item.id}
-                    sx={{ minHeight: 44, minWidth: 44, borderRadius: '14px', bgcolor: '#FEF2F2', color: '#DC2626' }}
+                    sx={{
+                      width: p(80),
+                      height: p(80),
+                      borderRadius: `${p(18)}px`,
+                      bgcolor: '#FEF2F2',
+                      color: '#DC2626',
+                      flexShrink: 0,
+                      '&.Mui-disabled': { opacity: 0.5 },
+                      '&:active': { transform: 'scale(0.96)' },
+                    }}
                     aria-label={`Clear ${item.label}`}
                   >
-                    <DeleteOutlineIcon sx={{ fontSize: 22 }} />
+                    <DeleteOutlineIcon sx={{ fontSize: p(36) }} />
                   </ButtonBase>
                 ) : (
-                  <ButtonBase sx={{ minHeight: 44, px: 1.5, borderRadius: '14px', bgcolor: '#EFF6FF', color: '#2563EB', fontWeight: 800, fontSize: '0.78rem' }}>
+                  <ButtonBase
+                    sx={{
+                      minWidth: p(160),
+                      height: p(80),
+                      px: `${p(28)}px`,
+                      borderRadius: `${p(18)}px`,
+                      bgcolor: '#EFF6FF',
+                      color: '#2563EB',
+                      fontFamily: FIGMA_FONT,
+                      fontWeight: 700,
+                      fontSize: p(24),
+                      flexShrink: 0,
+                      '&:active': { transform: 'scale(0.96)' },
+                    }}
+                  >
                     Prefetch
                   </ButtonBase>
                 )}
               </Box>
               {clearingId === item.id && (
-                <LinearProgress sx={{ mt: 1.25, borderRadius: 99, height: 4, bgcolor: '#FEE2E2', '& .MuiLinearProgress-bar': { bgcolor: '#DC2626' } }} />
+                <LinearProgress
+                  sx={{
+                    mt: `${p(20)}px`,
+                    borderRadius: 99,
+                    height: p(8),
+                    bgcolor: '#FEE2E2',
+                    '& .MuiLinearProgress-bar': { bgcolor: '#DC2626' },
+                  }}
+                />
               )}
             </Box>
-          );
+          )
         })}
       </Box>
     </SystemPageShell>
-  );
+  )
 }

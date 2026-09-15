@@ -146,28 +146,29 @@ export default function ShellTopBarProductLinks({
     <Box
       sx={{
         position: 'absolute',
-        right: { xs: 10, sm: 16 },
+        right: { xs: 18, sm: 28 },
         top: 0,
         bottom: 0,
         display: 'flex',
         alignItems: 'center',
         gap: { xs: 2.5, sm: 3 },
         zIndex: 2,
+        transform: 'translate(-4px, 6px)',
       }}
     >
       {studioToggle ? (
         <ProductLink
           className="studio-toggle"
-          ariaLabel={studioToggle.onboarded ? 'Restart onboarding' : 'Skip to Home'}
-          label={studioToggle.onboarded ? 'Restart onboarding' : 'Skip to Home'}
-          reserveLabel={studioToggle.onboarded ? 'Skip to Home' : 'Restart onboarding'}
+          ariaLabel={studioToggle.onboarded ? 'Restart' : 'Home'}
+          label={studioToggle.onboarded ? 'Restart' : 'Home'}
+          reserveLabel={studioToggle.onboarded ? 'Home' : 'Restart'}
           onClick={studioToggle.onToggle}
           onLight={onLight}
         >
           <StudioLampTile on={studioToggle.onboarded} />
         </ProductLink>
       ) : null}
-      <ProductLink ariaLabel="C-Lingo ScanPen" label="C-Lingo ScanPen" onClick={onOpenScanPen} onLight={onLight}>
+      <ProductLink ariaLabel="ScanPen" label="ScanPen" onClick={onOpenScanPen} onLight={onLight}>
         <Box
           sx={{
             width: 48,
