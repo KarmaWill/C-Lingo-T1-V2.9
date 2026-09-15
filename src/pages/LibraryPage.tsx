@@ -8,6 +8,7 @@ import HubLangProfile from '../components/home/HubLangProfile'
 import HubContainBoard from '../components/home/HubContainBoard'
 import HubPagerDots from '../components/home/HubPagerDots'
 import { HUB_CANVAS_CLINGO } from '../components/home/hubChrome'
+import { getActiveLibraryBook, isHappyChineseBook } from '../library/libraryActiveBook'
 
 /**
  * Figma 真源：设计稿 · 主界面1 (2725:331)
@@ -57,7 +58,9 @@ export default function LibraryPage() {
   const screenSize = APP_SCREEN_SIZE
   const p = (n: number) => figmaPx(n, screenSize)
   const [unitIndex, setUnitIndex] = useState(0)
+  const [activeBook] = useState(() => getActiveLibraryBook())
   const unit = UNITS[unitIndex]
+  const happyChinese = isHappyChineseBook(activeBook)
 
   const goPrev = () => setUnitIndex((i) => (i === 0 ? UNITS.length - 1 : i - 1))
   const goNext = () => setUnitIndex((i) => (i === UNITS.length - 1 ? 0 : i + 1))
@@ -245,7 +248,7 @@ export default function LibraryPage() {
           </Box>
 
           <ButtonBase
-            onClick={() => navigate('/starting-learning', { state: { from: '/Home' } })}
+            onClick={() => navigate(`/library/read/${activeBook.id}`, { state: { from: '/Home' } })}
             aria-label="Starting Learning"
             sx={{
               position: 'absolute',
@@ -352,15 +355,15 @@ export default function LibraryPage() {
           >
             <Box
               component="img"
-              src="/images/happy-chinese-vol1-cover.png"
-              alt="Happy Chinese Volume 1"
+              src={activeBook.coverUrl}
+              alt={activeBook.title}
               sx={{
                 display: 'block',
                 width: '100%',
                 height: '100%',
-                objectFit: 'contain',
+                objectFit: 'cover',
                 objectPosition: 'center top',
-                bgcolor: '#E8F4FC',
+                bgcolor: '#F4F4F4',
               }}
             />
             <Box
@@ -395,9 +398,9 @@ export default function LibraryPage() {
                 fontFamily: FIGMA_FONT,
               }}
             >
-              Happy Chinese
+              {activeBook.badge[0]}
               <Box component="span" sx={{ display: 'block' }}>
-                Volume 1
+                {activeBook.badge[1]}
               </Box>
             </Box>
             <Typography
@@ -415,7 +418,7 @@ export default function LibraryPage() {
                 fontFamily: FIGMA_FONT,
               }}
             >
-              59/198
+              {activeBook.currentPage}/{activeBook.totalPages}
             </Typography>
           </Box>
           <Box
@@ -439,7 +442,7 @@ export default function LibraryPage() {
               width: 457,
               height: 78,
               borderRadius: '54px',
-              bgcolor: '#00B4C0',
+              bgcolor: '#FDB24F',
               color: '#fff',
               fontSize: 36,
               fontWeight: 600,
@@ -454,22 +457,37 @@ export default function LibraryPage() {
           </ButtonBase>
         </Box>
 
-        <TextbookToolCard
-          left={0}
-          bgcolor="#00B4A0"
-          iconSrc="/images/hub/fun-chinese.svg?v=cards4"
-          label="Fun Chinese"
-          subtitle="Games & Activities"
-          onClick={() => navigate('/library/hub/fun-chinese')}
-        />
-        <TextbookToolCard
-          left={638}
-          bgcolor="#26D0A0"
-          iconSrc="/images/hub/culture.svg"
-          label="Culture"
-          subtitle="Explore traditions"
-          onClick={() => navigate('/library/hub/culture')}
-        />
+        {happyChinese ? (
+          <>
+            <TextbookToolCard
+              left={0}
+              bgcolor="#00B4A0"
+              iconSrc="/images/hub/fun-chinese.svg?v=cards4"
+              label="Fun Chinese"
+              subtitle="Games & Activities"
+              onClick={() => navigate('/library/hub/fun-chinese')}
+            />
+            <TextbookToolCard
+              left={638}
+              bgcolor="#26D0A0"
+              iconSrc="/images/hub/culture.svg"
+              label="Culture"
+              subtitle="Explore traditions"
+              onClick={() => navigate('/library/hub/culture')}
+            />
+          </>
+        ) : (
+          <TextbookToolCard
+            left={0}
+            width={1239}
+            radius={70}
+            bgcolor="linear-gradient(90deg, #FF8457 19.23%, #FFB499 100%)"
+            iconSrc="/images/hub/fun-chinese.svg?v=cards4"
+            label="HSK Chinese"
+            subtitle="Games & Activities"
+            onClick={() => navigate('/library/hub/fun-chinese')}
+          />
+        )}
       </HubContainBoard>
       <HubPagerDots screenSize={screenSize} />
     </StudioHomeFrame>
@@ -478,6 +496,8 @@ export default function LibraryPage() {
 
 function TextbookToolCard({
   left,
+  width = 599,
+  radius = 54,
   bgcolor,
   iconSrc,
   iconSize = TOOL_ICON,
@@ -486,6 +506,8 @@ function TextbookToolCard({
   onClick,
 }: {
   left: number
+  width?: number
+  radius?: number
   bgcolor: string
   iconSrc: string
   iconSize?: number
@@ -500,10 +522,10 @@ function TextbookToolCard({
         position: 'absolute',
         top: 568,
         left,
-        width: 599,
+        width,
         height: 206,
-        borderRadius: '54px',
-        bgcolor,
+        borderRadius: `${radius}px`,
+        background: bgcolor,
         px: '40px',
         display: 'flex',
         alignItems: 'center',

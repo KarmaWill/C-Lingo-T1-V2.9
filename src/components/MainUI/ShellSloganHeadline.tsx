@@ -13,6 +13,7 @@ function SloganStarIcon({ gradientId }: { gradientId: string }) {
         width: '0.82em',
         height: '0.82em',
         mx: '0.01em',
+        filter: 'drop-shadow(0 0 6px rgba(185, 255, 90, 0.9)) drop-shadow(0 1px 2px rgba(246, 200, 58, 0.55))',
       }}
     >
       <svg viewBox="0 0 24 24" fill="none" width="100%" height="100%" style={{ display: 'block', overflow: 'visible' }}>
@@ -43,6 +44,7 @@ function SloganGlobeIcon({ gradientId }: { gradientId: string }) {
         width: '0.82em',
         height: '0.82em',
         mx: '0.01em',
+        filter: 'drop-shadow(0 0 6px rgba(185, 255, 90, 0.9)) drop-shadow(0 1px 2px rgba(246, 200, 58, 0.55))',
       }}
     >
       <svg viewBox="0 0 48 48" fill="none" width="100%" height="100%" style={{ display: 'block', overflow: 'visible' }}>
@@ -67,7 +69,7 @@ function SloganGlobeIcon({ gradientId }: { gradientId: string }) {
   )
 }
 
-export default function ShellSloganHeadline() {
+export default function ShellSloganHeadline({ onLight = false }: { onLight?: boolean }) {
   return (
     <Box
       className="about-slogan-banner"
@@ -88,8 +90,9 @@ export default function ShellSloganHeadline() {
           transform: 'translate(-50%, -50%)',
           width: 'min(260px, 48vw)',
           height: 'min(260px, 48vw)',
-          background:
-            'radial-gradient(circle, rgba(185, 255, 90, 0.22) 0%, rgba(185, 255, 90, 0.08) 42%, transparent 72%)',
+          background: onLight
+            ? 'radial-gradient(circle, rgba(185, 255, 90, 0.42) 0%, rgba(246, 200, 58, 0.16) 42%, transparent 72%)'
+            : 'radial-gradient(circle, rgba(185, 255, 90, 0.22) 0%, rgba(185, 255, 90, 0.08) 42%, transparent 72%)',
           filter: 'blur(24px)',
           pointerEvents: 'none',
           zIndex: 0,
@@ -105,7 +108,7 @@ export default function ShellSloganHeadline() {
           fontFamily: APP_FONT_FAMILY,
           fontSize: 'clamp(1.15rem, 2.15vw, 1.5rem)',
           fontWeight: 700,
-          color: '#F7FFF6',
+          color: onLight ? 'rgb(22 62 104 / 0.72)' : '#F7FFF6',
           lineHeight: 1.1,
           letterSpacing: '-0.03em',
           whiteSpace: 'nowrap',

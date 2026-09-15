@@ -11,6 +11,10 @@ export const APP_FONT_JA =
 export const APP_FONT_KO =
   '"Google Sans Flex Variable", "Google Sans Flex", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
 
+/** MSA UI: Noto Sans Arabic, not Naskh/calligraphy. */
+export const APP_FONT_AR =
+  '"Google Sans Flex Variable", "Google Sans Flex", "Noto Sans Arabic", "Geeza Pro", "Segoe UI", sans-serif'
+
 /** Burnside lockup approximation: geometric sans, not a licensed school face. */
 export const BHS_FONT =
   '"Montserrat", "Google Sans Flex Variable", "Google Sans Flex", "Noto Sans SC", sans-serif'

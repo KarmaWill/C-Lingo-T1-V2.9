@@ -7,13 +7,15 @@ import {
   Dialog,
   IconButton,
 } from '@mui/material';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import CloseIcon from '@mui/icons-material/Close';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import AutoStoriesOutlinedIcon from '@mui/icons-material/AutoStoriesOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { resolveBackPath } from '../utils/navigateBack';
+import { APP_FONT_FAMILY } from '../theme/appFont';
+import { APP_SCREEN_SIZE, figmaPx } from '../utils/figmaScale';
+import { HskPrepBackButton } from '../components/hsk/HskPrepBackButton';
 import { applyTone } from '../utils/pinyinCombine';
 import {
   PINYIN_FINALS,
@@ -25,6 +27,22 @@ import { hasPinyinSyllableEntry, lookupPinyinSyllable, resolvePinyinMeaning } fr
 import { useLocale } from '../context/LocaleContext';
 import PinyinRubyText from '../components/PinyinRubyText';
 import PinyinTianziGrid from '../components/PinyinTianziGrid';
+
+const C = {
+  page: '#F8F9F8',
+  surface: '#FFFFFF',
+  mutedFill: '#F3F4F6',
+  mint: '#F3FAF6',
+  cream: '#FFF8F0',
+  line: '#E0E0DF',
+  text: '#292E2E',
+  muted: '#636E72',
+  weak: '#A5B0BA',
+  idle: '#D5D5D5',
+  teal: '#00B4A0',
+  orange: '#FF6B35',
+  glow: '0px 0px 24px #BBD8D5',
+} as const
 
 const TONE_OPTIONS = [
   { tone: 1 as const, label: '1st Tone' },
@@ -47,9 +65,11 @@ export default function PinyinChartPage() {
   const location = useLocation();
   const { locale } = useLocale();
 
-  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
+  const screenSize = APP_SCREEN_SIZE
+  const p = (n: number) => figmaPx(n, screenSize)
   const is960 = screenSize === '960x540';
-  const is1920x1125 = screenSize === '1920x1125';
+  const backSize = p(80)
+  const backIcon = p(40)
 
   const initials = PINYIN_INITIALS;
   const finals = PINYIN_FINALS;
@@ -163,14 +183,14 @@ export default function PinyinChartPage() {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: is960 ? minW : minW + 6,
-    minHeight: is960 ? 34 : 38,
-    px: is960 ? 0.85 : 1,
-    borderRadius: is960 ? '10px' : '12px',
+    minWidth: p(minW),
+    minHeight: p(48),
+    px: `${p(12)}px`,
+    borderRadius: `${p(12)}px`,
     bgcolor: bg,
     color,
     fontWeight: 900,
-    fontSize: is960 ? '1.05rem' : '1.18rem',
+    fontSize: p(32),
     lineHeight: 1,
     boxShadow: '0 2px 8px rgba(15,23,42,0.1)',
   });
@@ -184,11 +204,12 @@ export default function PinyinChartPage() {
       sx={{
         height: '100%',
         overflow: 'hidden',
-        p: is960 ? 2 : (is1920x1125 ? 4 : 3),
-        bgcolor: 'white',
+        p: `${p(40)}px`,
+        bgcolor: C.page,
         display: 'flex',
         flexDirection: 'column',
         boxSizing: 'border-box',
+        fontFamily: APP_FONT_FAMILY,
       }}
     >
       <Box
@@ -197,34 +218,29 @@ export default function PinyinChartPage() {
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
-          mb: is960 ? 2 : (is1920x1125 ? 3 : 2.5),
+          minHeight: backSize,
+          mb: `${p(24)}px`,
           flexShrink: 0,
         }}
       >
-        <ButtonBase
+        <HskPrepBackButton
           onClick={() => navigate(resolveBackPath(location), { replace: true })}
           sx={{
             position: 'absolute',
             left: 0,
-            width: is960 ? 40 : (is1920x1125 ? 56 : 48),
-            height: is960 ? 40 : (is1920x1125 ? 56 : 48),
-            borderRadius: '50%',
-            bgcolor: '#F3F4F6',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-            '&:active': { transform: 'scale(0.95)' },
+            width: backSize,
+            height: backSize,
+            '& .MuiSvgIcon-root': { fontSize: `${backIcon}px` },
           }}
-        >
-          <ChevronLeftIcon sx={{ fontSize: is960 ? 20 : (is1920x1125 ? 28 : 24), color: '#1F2937' }} />
-        </ButtonBase>
+        />
 
         <Typography
           sx={{
             fontWeight: 700,
-            fontSize: is960 ? '1.25rem' : (is1920x1125 ? '2rem' : '1.5rem'),
-            color: '#1F2937',
+            fontSize: p(40),
+            lineHeight: 1.6,
+            color: C.text,
+            fontFamily: APP_FONT_FAMILY,
           }}
         >
           Pinyin Chart
@@ -236,14 +252,14 @@ export default function PinyinChartPage() {
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          gap: is960 ? 2 : (is1920x1125 ? 3 : 2.5),
+          gap: `${p(24)}px`,
           minHeight: 0,
         }}
       >
         <Box
           sx={{
             display: 'flex',
-            gap: is960 ? 2 : (is1920x1125 ? 3 : 2.5),
+            gap: `${p(24)}px`,
             flex: 1,
             minHeight: 0,
           }}
@@ -251,10 +267,11 @@ export default function PinyinChartPage() {
           <Box
             sx={{
               flex: 1,
-              bgcolor: '#F7F7F7',
-              borderRadius: is960 ? '20px' : (is1920x1125 ? '32px' : '24px'),
-              p: is960 ? 2 : (is1920x1125 ? 3.5 : 3),
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              bgcolor: C.surface,
+              border: `1px solid ${C.line}`,
+              borderRadius: `${p(40)}px`,
+              p: `${p(28)}px`,
+              boxShadow: '0 4px 20px rgba(213,213,213,0.35)',
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
@@ -262,10 +279,11 @@ export default function PinyinChartPage() {
           >
             <Typography
               sx={{
-                fontSize: is960 ? '1rem' : (is1920x1125 ? '1.5rem' : '1.25rem'),
-                fontWeight: 900,
-                color: '#E88B52',
-                mb: is960 ? 1.5 : (is1920x1125 ? 2 : 1.75),
+                fontSize: p(32),
+                lineHeight: 1.6,
+                fontWeight: 700,
+                color: C.orange,
+                mb: `${p(16)}px`,
               }}
             >
               Initial Consonants
@@ -275,7 +293,7 @@ export default function PinyinChartPage() {
               sx={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(5, 1fr)',
-                gap: is960 ? 0.75 : (is1920x1125 ? 1.25 : 1),
+                gap: `${p(12)}px`,
                 flex: 1,
                 overflowY: 'auto',
               }}
@@ -288,23 +306,20 @@ export default function PinyinChartPage() {
                     onClick={() => handleSelectInitial(initial)}
                     disabled={isDisabled}
                     sx={{
-                      py: is960 ? 1.15 : (is1920x1125 ? 1.65 : 1.4),
-                      borderRadius: is960 ? '12px' : (is1920x1125 ? '16px' : '14px'),
-                      bgcolor: isSelected ? '#E88B52' : isHighlighted ? '#FFF4ED' : 'white',
-                      color: isSelected ? 'white' : isDisabled ? '#CBD5E1' : '#E88B52',
-                      border: '2px solid',
-                      borderColor: isSelected
-                        ? '#E88B52'
-                        : isHighlighted
-                          ? '#E88B52'
-                          : isDisabled
-                            ? '#E2E8F0'
-                            : '#E88B52',
-                      fontWeight: 800,
-                      fontSize: is960 ? '1.08rem' : (is1920x1125 ? '1.35rem' : '1.22rem'),
+                      py: `${p(12)}px`,
+                      borderRadius: `${p(16)}px`,
+                      minHeight: p(64),
+                      bgcolor: isSelected || isHighlighted ? C.cream : C.surface,
+                      color: isDisabled ? C.idle : C.text,
+                      border: '1px solid',
+                      borderColor: isSelected || isHighlighted ? C.orange : isDisabled ? C.line : C.line,
+                      fontWeight: 700,
+                      fontSize: p(32),
+                      lineHeight: 1.2,
                       opacity: isDisabled ? 0.45 : 1,
-                      boxShadow: isHighlighted ? '0 0 0 2px rgba(232,139,82,0.25)' : 'none',
-                      transition: 'all 0.2s',
+                      boxShadow: isSelected ? C.glow : 'none',
+                      transition: 'background-color 0.2s ease, box-shadow 0.2s ease',
+                      '&:focus-visible': { outline: `2px solid ${C.teal}`, outlineOffset: 2 },
                       '&:active': { transform: isDisabled ? 'none' : 'scale(0.95)' },
                     }}
                   >
@@ -318,10 +333,11 @@ export default function PinyinChartPage() {
           <Box
             sx={{
               flex: 1,
-              bgcolor: '#F7F7F7',
-              borderRadius: is960 ? '20px' : (is1920x1125 ? '32px' : '24px'),
-              p: is960 ? 2 : (is1920x1125 ? 3.5 : 3),
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              bgcolor: C.surface,
+              border: `1px solid ${C.line}`,
+              borderRadius: `${p(40)}px`,
+              p: `${p(28)}px`,
+              boxShadow: '0 4px 20px rgba(213,213,213,0.35)',
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
@@ -329,10 +345,11 @@ export default function PinyinChartPage() {
           >
             <Typography
               sx={{
-                fontSize: is960 ? '1rem' : (is1920x1125 ? '1.5rem' : '1.25rem'),
-                fontWeight: 900,
-                color: '#008B8B',
-                mb: is960 ? 1.5 : (is1920x1125 ? 2 : 1.75),
+                fontSize: p(32),
+                lineHeight: 1.6,
+                fontWeight: 700,
+                color: C.teal,
+                mb: `${p(16)}px`,
               }}
             >
               Finals
@@ -342,11 +359,11 @@ export default function PinyinChartPage() {
               sx={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(5, 1fr)',
-                gap: is960 ? 0.75 : (is1920x1125 ? 1.25 : 1),
+                gap: `${p(12)}px`,
                 flex: 1,
                 overflowY: 'auto',
                 pr: 1,
-                '&::-webkit-scrollbar': { width: is960 ? 4 : (is1920x1125 ? 8 : 6) },
+                '&::-webkit-scrollbar': { width: p(8) },
                 '&::-webkit-scrollbar-track': { bgcolor: '#E5E5E5', borderRadius: '4px' },
                 '&::-webkit-scrollbar-thumb': {
                   bgcolor: '#C0C0C0',
@@ -363,23 +380,20 @@ export default function PinyinChartPage() {
                     onClick={() => handleSelectFinal(final)}
                     disabled={isDisabled}
                     sx={{
-                      py: is960 ? 1.15 : (is1920x1125 ? 1.65 : 1.4),
-                      borderRadius: is960 ? '12px' : (is1920x1125 ? '16px' : '14px'),
-                      bgcolor: isSelected ? '#008B8B' : isHighlighted ? '#ECFEFF' : 'white',
-                      color: isSelected ? 'white' : isDisabled ? '#CBD5E1' : '#008B8B',
-                      border: '2px solid',
-                      borderColor: isSelected
-                        ? '#008B8B'
-                        : isHighlighted
-                          ? '#008B8B'
-                          : isDisabled
-                            ? '#E2E8F0'
-                            : '#008B8B',
-                      fontWeight: 800,
-                      fontSize: is960 ? '1.08rem' : (is1920x1125 ? '1.35rem' : '1.22rem'),
+                      py: `${p(12)}px`,
+                      borderRadius: `${p(16)}px`,
+                      minHeight: p(64),
+                      bgcolor: isSelected || isHighlighted ? C.mint : C.surface,
+                      color: isDisabled ? C.idle : C.text,
+                      border: '1px solid',
+                      borderColor: isSelected || isHighlighted ? C.teal : C.line,
+                      fontWeight: 700,
+                      fontSize: p(32),
+                      lineHeight: 1.2,
                       opacity: isDisabled ? 0.45 : 1,
-                      boxShadow: isHighlighted ? '0 0 0 2px rgba(0,139,139,0.25)' : 'none',
-                      transition: 'all 0.2s',
+                      boxShadow: isSelected ? C.glow : 'none',
+                      transition: 'background-color 0.2s ease, box-shadow 0.2s ease',
+                      '&:focus-visible': { outline: `2px solid ${C.teal}`, outlineOffset: 2 },
                       '&:active': { transform: isDisabled ? 'none' : 'scale(0.95)' },
                     }}
                   >
@@ -393,10 +407,11 @@ export default function PinyinChartPage() {
 
         <Box
           sx={{
-            bgcolor: '#F7F7F7',
-            borderRadius: is960 ? '20px' : (is1920x1125 ? '32px' : '24px'),
-            p: is960 ? 2 : (is1920x1125 ? 3.5 : 3),
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            bgcolor: C.surface,
+            border: `1px solid ${C.line}`,
+            borderRadius: `${p(40)}px`,
+            p: `${p(28)}px`,
+            boxShadow: '0 4px 20px rgba(213,213,213,0.35)',
             flexShrink: 0,
           }}
         >
@@ -405,16 +420,17 @@ export default function PinyinChartPage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: 2,
-              mb: is960 ? 1.25 : (is1920x1125 ? 2 : 1.75),
+              gap: `${p(16)}px`,
+              mb: `${p(16)}px`,
               flexWrap: 'wrap',
             }}
           >
             <Typography
               sx={{
-                fontSize: is960 ? '1rem' : (is1920x1125 ? '1.5rem' : '1.25rem'),
-                fontWeight: 900,
-                color: '#3D68B3',
+                fontSize: p(32),
+                lineHeight: 1.6,
+                fontWeight: 700,
+                color: C.text,
               }}
             >
               Combine & Tones
@@ -424,47 +440,50 @@ export default function PinyinChartPage() {
               sx={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: is960 ? 0.75 : 1,
-                px: is960 ? 1.25 : 1.5,
-                py: is960 ? 0.65 : 0.85,
+                gap: `${p(12)}px`,
+                px: `${p(16)}px`,
+                py: `${p(8)}px`,
                 borderRadius: '999px',
-                bgcolor: 'white',
-                border: '1px solid rgba(61,104,179,0.22)',
+                bgcolor: C.mutedFill,
+                border: `1px solid ${C.line}`,
               }}
             >
               <Typography
                 component="span"
                 sx={{
                   fontWeight: 800,
-                  color: selectedInitial ? '#E88B52' : '#94A3B8',
-                  fontSize: is960 ? '0.9rem' : '1rem',
+                  color: selectedInitial ? C.orange : C.weak,
+                  fontSize: p(32),
+                  lineHeight: 1,
                 }}
               >
                 {selectedInitial ?? '—'}
               </Typography>
-              <Typography component="span" sx={{ color: '#94A3B8', fontWeight: 700 }}>
+              <Typography component="span" sx={{ color: C.weak, fontWeight: 700, fontSize: p(28) }}>
                 +
               </Typography>
               <Typography
                 component="span"
                 sx={{
                   fontWeight: 800,
-                  color: selectedFinal ? '#008B8B' : '#94A3B8',
-                  fontSize: is960 ? '0.9rem' : '1rem',
+                  color: selectedFinal ? C.teal : C.weak,
+                  fontSize: p(32),
+                  lineHeight: 1,
                 }}
               >
                 {selectedFinal ?? '—'}
               </Typography>
-              <Typography component="span" sx={{ color: '#94A3B8', fontWeight: 700 }}>
+              <Typography component="span" sx={{ color: C.weak, fontWeight: 700, fontSize: p(28) }}>
                 =
               </Typography>
               <Typography
                 component="span"
                 sx={{
                   fontWeight: 900,
-                  color: '#3D68B3',
-                  fontSize: is960 ? '1rem' : '1.12rem',
+                  color: C.text,
+                  fontSize: p(32),
                   letterSpacing: '0.02em',
+                  lineHeight: 1,
                 }}
               >
                 {baseSyllable || '—'}
@@ -475,7 +494,7 @@ export default function PinyinChartPage() {
           <Box
             sx={{
               display: 'flex',
-              gap: is960 ? 1 : (is1920x1125 ? 1.5 : 1.25),
+              gap: `${p(16)}px`,
             }}
           >
             {TONE_OPTIONS.map(({ tone, label }, idx) => {
@@ -488,16 +507,20 @@ export default function PinyinChartPage() {
                   disabled={!isPairValid}
                   sx={{
                     flex: 1,
-                    py: is960 ? 1.35 : (is1920x1125 ? 2.25 : 1.85),
-                    borderRadius: is960 ? '12px' : (is1920x1125 ? '16px' : '14px'),
-                    bgcolor: isActive ? '#3D68B3' : 'white',
-                    color: isActive ? 'white' : isPairValid ? '#3D68B3' : '#94A3B8',
+                    py: `${p(16)}px`,
+                    borderRadius: `${p(16)}px`,
+                    bgcolor: isActive ? C.mint : C.surface,
+                    color: isPairValid ? C.text : C.weak,
                     border: '1px solid',
-                    borderColor: isPairValid ? '#3D68B3' : '#E2E8F0',
+                    borderColor: isActive ? C.teal : isPairValid ? C.line : C.line,
+                    boxShadow: isActive ? C.glow : 'none',
+                    backgroundImage: isActive
+                      ? 'linear-gradient(150.37deg, #1BE0CA, #00B4A0)'
+                      : 'none',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: is960 ? 0.45 : (is1920x1125 ? 0.75 : 0.55),
+                    gap: `${p(8)}px`,
                     opacity: isPairValid ? 1 : 0.45,
                     transition: 'all 0.2s',
                     '&:active': { transform: isPairValid ? 'scale(0.97)' : 'none' },
@@ -505,7 +528,7 @@ export default function PinyinChartPage() {
                 >
                   <Typography
                     sx={{
-                      fontSize: is960 ? '1.65rem' : (is1920x1125 ? '2.5rem' : '2.1rem'),
+                      fontSize: p(40),
                       fontWeight: 900,
                       lineHeight: 1,
                       color: 'inherit',
@@ -515,8 +538,9 @@ export default function PinyinChartPage() {
                   </Typography>
                   <Typography
                     sx={{
-                      fontSize: is960 ? '0.62rem' : (is1920x1125 ? '0.875rem' : '0.72rem'),
+                      fontSize: p(24),
                       fontWeight: 700,
+                      lineHeight: 1.3,
                       color: 'inherit',
                       opacity: 0.92,
                     }}
@@ -530,48 +554,24 @@ export default function PinyinChartPage() {
 
           <Box
             sx={{
-              mt: is960 ? 1.1 : 1.35,
+              mt: `${p(16)}px`,
               display: 'flex',
               alignItems: 'center',
-              gap: is960 ? 1 : 1.25,
-              px: is960 ? 1.35 : 1.6,
-              py: is960 ? 0.85 : 1,
-              borderRadius: is960 ? '14px' : '16px',
-              bgcolor: '#EEF4FF',
-              border: '1px solid rgba(61,104,179,0.22)',
+              gap: `${p(12)}px`,
+              px: `${p(16)}px`,
+              py: `${p(12)}px`,
+              borderRadius: `${p(16)}px`,
+              bgcolor: C.mint,
+              border: `1px solid ${C.line}`,
             }}
           >
-            <Box
-              sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 0.45,
-                flexShrink: 0,
-                px: is960 ? 0.85 : 1,
-                py: is960 ? 0.35 : 0.45,
-                borderRadius: '999px',
-                bgcolor: '#3D68B3',
-                color: 'white',
-              }}
-            >
-              <InfoOutlinedIcon sx={{ fontSize: is960 ? 16 : 18 }} />
-              <Typography
-                sx={{
-                  fontSize: is960 ? '0.72rem' : '0.78rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.06em',
-                  lineHeight: 1,
-                }}
-              >
-                TIP
-              </Typography>
-            </Box>
+            <InfoOutlinedIcon sx={{ fontSize: p(28), color: C.teal, flexShrink: 0 }} />
             <Typography
               sx={{
-                fontSize: is960 ? '0.88rem' : '0.98rem',
-                color: '#334155',
-                fontWeight: 650,
-                lineHeight: 1.4,
+                fontSize: p(24),
+                color: C.muted,
+                fontWeight: 400,
+                lineHeight: 1.6,
               }}
             >
               {tipMessage}
@@ -615,7 +615,9 @@ export default function PinyinChartPage() {
               position: 'absolute',
               top: 10,
               right: 10,
-              bgcolor: '#F1F5F9',
+              bgcolor: C.surface,
+              border: `1px solid ${C.line}`,
+              color: C.text,
               zIndex: 2,
             }}
           >
@@ -627,24 +629,22 @@ export default function PinyinChartPage() {
               mb: is960 ? 1.25 : 1.5,
               p: is960 ? 1.25 : 1.5,
               borderRadius: is960 ? '16px' : '18px',
-              bgcolor: '#1E3A8A',
-              border: '2px solid #3B82F6',
+              bgcolor: C.mint,
+              border: `1px solid ${C.line}`,
               textAlign: 'center',
-              boxShadow: '0 6px 20px rgba(30,58,138,0.2)',
+              boxShadow: '0 4px 20px rgba(213,213,213,0.35)',
               flexShrink: 0,
             }}
           >
             <Typography
               sx={{
-                fontSize: is960 ? '0.62rem' : '0.68rem',
-                fontWeight: 800,
-                color: 'rgba(255,255,255,0.72)',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
+                fontSize: is960 ? '0.72rem' : '0.78rem',
+                fontWeight: 700,
+                color: C.muted,
                 mb: is960 ? 0.75 : 0.9,
               }}
             >
-              Syllable Formula
+              Syllable
             </Typography>
 
             <Box
@@ -656,19 +656,19 @@ export default function PinyinChartPage() {
                 gap: is960 ? 0.55 : 0.7,
               }}
             >
-              <Box component="span" sx={formulaChipSx('#E88B52', '#FFFFFF')}>
+              <Box component="span" sx={formulaChipSx(C.cream, C.text)}>
                 {selectedInitial ?? '—'}
               </Box>
-              <Typography sx={{ fontSize: is960 ? '1.05rem' : '1.15rem', fontWeight: 900, color: 'rgba(255,255,255,0.55)' }}>
+              <Typography sx={{ fontSize: is960 ? '1.05rem' : '1.15rem', fontWeight: 700, color: C.weak }}>
                 +
               </Typography>
-              <Box component="span" sx={formulaChipSx('#008B8B', '#FFFFFF')}>
+              <Box component="span" sx={formulaChipSx(C.mint, C.text)}>
                 {selectedFinal ?? '—'}
               </Box>
-              <Typography sx={{ fontSize: is960 ? '1.05rem' : '1.15rem', fontWeight: 900, color: 'rgba(255,255,255,0.55)' }}>
+              <Typography sx={{ fontSize: is960 ? '1.05rem' : '1.15rem', fontWeight: 700, color: C.weak }}>
                 →
               </Typography>
-              <Box component="span" sx={formulaChipSx('#2563EB', '#FFFFFF', 72)}>
+              <Box component="span" sx={formulaChipSx(C.mutedFill, C.text, 72)}>
                 {TONE_OPTIONS.find((t) => t.tone === selectedTone)?.label ?? ''}
               </Box>
             </Box>
@@ -677,8 +677,8 @@ export default function PinyinChartPage() {
               sx={{
                 mt: is960 ? 0.75 : 0.9,
                 fontSize: is960 ? '1.55rem' : '1.75rem',
-                fontWeight: 900,
-                color: '#FFFFFF',
+                fontWeight: 700,
+                color: C.text,
                 letterSpacing: '0.04em',
                 lineHeight: 1,
               }}
@@ -704,7 +704,7 @@ export default function PinyinChartPage() {
                 sx={{
                   fontSize: is960 ? '1.25rem' : '1.45rem',
                   fontWeight: 800,
-                  color: '#3D68B3',
+                  color: C.teal,
                   letterSpacing: '0.04em',
                   lineHeight: 1,
                 }}
@@ -715,11 +715,11 @@ export default function PinyinChartPage() {
                 onClick={handleSpeak}
                 aria-label="Play pronunciation"
                 sx={{
-                  width: is960 ? 40 : 44,
-                  height: is960 ? 40 : 44,
-                  bgcolor: '#EEF2FF',
-                  color: '#3D68B3',
-                  '&:hover': { bgcolor: '#E0E7FF' },
+                  width: is960 ? 48 : 56,
+                  height: is960 ? 48 : 56,
+                  bgcolor: C.orange,
+                  color: C.surface,
+                  '&:hover': { bgcolor: '#FF926A' },
                 }}
               >
                 <VolumeUpIcon sx={{ fontSize: is960 ? 20 : 22 }} />
@@ -737,8 +737,8 @@ export default function PinyinChartPage() {
                     px: is960 ? 0.7 : 0.85,
                     py: 0.25,
                     borderRadius: '7px',
-                    bgcolor: '#C8102E',
-                    color: '#FFFFFF',
+                    bgcolor: C.orange,
+                    color: C.surface,
                     fontSize: is960 ? '0.62rem' : '0.68rem',
                     fontWeight: 900,
                     letterSpacing: '0.04em',
@@ -755,7 +755,7 @@ export default function PinyinChartPage() {
               sx={{
                 fontSize: is960 ? '0.8rem' : '0.88rem',
                 fontWeight: 650,
-                color: '#475569',
+                color: C.muted,
                 textAlign: 'center',
                 px: 1,
               }}
@@ -766,13 +766,13 @@ export default function PinyinChartPage() {
             <ButtonBase
               onClick={() => setPhrasesOpen((open) => !open)}
               sx={{
-                minHeight: is960 ? 40 : 44,
+                minHeight: 56,
                 px: is960 ? 1.5 : 1.85,
                 borderRadius: '999px',
-                bgcolor: phrasesOpen ? '#3D68B3' : '#EEF4FF',
-                color: phrasesOpen ? '#FFFFFF' : '#3D68B3',
-                border: '2px solid',
-                borderColor: phrasesOpen ? '#3D68B3' : 'rgba(61,104,179,0.35)',
+                bgcolor: phrasesOpen ? C.mint : C.mutedFill,
+                color: C.text,
+                border: '1px solid',
+                borderColor: phrasesOpen ? C.teal : C.line,
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 0.65,
@@ -806,7 +806,7 @@ export default function PinyinChartPage() {
                   sx={{
                     fontSize: is960 ? '1.05rem' : '1.15rem',
                     fontWeight: 800,
-                    color: '#3D68B3',
+                    color: C.text,
                     mb: 0.75,
                   }}
                 >
@@ -816,7 +816,7 @@ export default function PinyinChartPage() {
                   sx={{
                     fontSize: is960 ? '0.85rem' : '0.92rem',
                     fontWeight: 600,
-                    color: '#64748B',
+                    color: C.muted,
                     lineHeight: 1.5,
                     mb: 1.25,
                   }}
@@ -829,9 +829,9 @@ export default function PinyinChartPage() {
                     minHeight: is960 ? 44 : 48,
                     px: is960 ? 1.75 : 2,
                     borderRadius: '999px',
-                    bgcolor: '#EEF2FF',
-                    color: '#3D68B3',
-                    border: '2px solid rgba(61,104,179,0.35)',
+                    bgcolor: C.orange,
+                    color: C.surface,
+                    border: `1px solid ${C.orange}`,
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 0.65,
@@ -859,7 +859,7 @@ export default function PinyinChartPage() {
                 pr: 0.5,
                 mt: 0.25,
                 '&::-webkit-scrollbar': { width: 5 },
-                '&::-webkit-scrollbar-thumb': { bgcolor: '#CBD5E1', borderRadius: '999px' },
+                '&::-webkit-scrollbar-thumb': { bgcolor: C.idle, borderRadius: '999px' },
               }}
             >
               {lookupEntry.phrases.map((phraseItem) => (
@@ -868,8 +868,8 @@ export default function PinyinChartPage() {
                   sx={{
                     p: is960 ? 0.95 : 1.05,
                     borderRadius: '14px',
-                    bgcolor: '#F8FAFC',
-                    border: '1px solid #E2E8F0',
+                    bgcolor: C.surface,
+                    border: `1px solid ${C.line}`,
                     flexShrink: 0,
                     display: 'flex',
                     alignItems: 'center',
@@ -880,12 +880,12 @@ export default function PinyinChartPage() {
                   <PinyinRubyText
                     original={phraseItem.hanzi}
                     words={[{ chinese: phraseItem.hanzi, pinyin: phraseItem.pinyin }]}
-                    hanziClassName="text-lg font-bold text-slate-900 leading-none"
-                    pinyinClassName="text-xs font-semibold text-blue-600 tracking-wide leading-none mb-1 whitespace-nowrap"
+                    hanziClassName="text-lg font-bold leading-none"
+                    pinyinClassName="text-xs font-semibold tracking-wide leading-none mb-1 whitespace-nowrap"
                   />
                   <Typography
                     sx={{
-                      color: '#CBD5E1',
+                      color: C.idle,
                       fontWeight: 300,
                       fontSize: is960 ? '1rem' : '1.1rem',
                       lineHeight: 1,
@@ -897,7 +897,7 @@ export default function PinyinChartPage() {
                   <Typography
                     sx={{
                       fontSize: is960 ? '0.78rem' : '0.84rem',
-                      color: '#475569',
+                      color: C.muted,
                       fontWeight: 600,
                       lineHeight: 1.4,
                       flex: 1,

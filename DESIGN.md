@@ -105,6 +105,14 @@
 
 `/ai-chat` 的 `TopicSelectionScreen`：全屏、无底栏。页底 `#F8F9F8`，顶栏 160。左 Free Chat 橙卡，右 Scenarios 绿卡 + 280 方场景。回溯：又出现「Choose practice mode」+ 窄双栏 + 「DIY」= 旧分辨率分支被加回来了。
 
+场景设置：同一套浅色 160 顶栏、80 Back、字阶 24/32/40。左栏场景绿 `#3FB266`，主按钮青绿。不要 44 灰圆、不要 `#16B77E`、不要 `1024x768` fallback。
+
+选角色（Figma「角色选择1」）：页底 `#080E21`。标题 **Choose Your Role** 56/700 白；副标 32 `#E0E0DF`。返回 80×80、`rgba(255,255,255,0.2)`、白 chevron，左 60 顶 40。双卡约 780×380、`rgba(255,255,255,0.08)`、圆角 48。Role A 角标 `#00B4A0`，Role B `#FF6B35`。主按钮 570×100、场景绿渐变；未选 opacity 0.3。不要浅色 PracticeHeader。IA（点卡、`playedRole`、进对话）不改。
+
+练习报告（Figma「Ai导师3学习报告」）：顶栏 160。标题 **Practice Report** 40/700 + 日期 28。≥60 绿 `#3FB266`；<60（不含 60）珊瑚 `#FD636D`。左 680 分+时长/亮点；右 AI Feedback + Key Fixes。AI Feedback 圆头像用 `clingo-ai-mascot-peek.png`（探出身），不要 `mascot-head` / 左栏分卡图。右上反馈 80×80、圆角 18、`clingo-ai-mascot-think.png`。中间 flex 吃剩余高度。不要矮顶栏、不要星星、不要青绿 Done 大钮。
+
+对话 Deep Dive（Figma「Ai导师5对话5深度解析」）：开侧栏时右栏固定 720、左对话列吃剩余（顶栏只在左 1200）。侧栏底 `#F5FDED → #FAFAFA`。标题 **Sentence Analysis** 40/700 绿字渐变。加载先出白骨架条，再出 Sentence + Key Words + When to use / Grammar structure / Culture tip 手风琴。扣次仍在打开当下。不要把三段手风琴改成单块 Grammar。
+
 ## Target
 
 全产品要长成上面这套语言。下面这些页 **现在还不是**，标待稿。没有 CSS/PNG，不优化。
@@ -113,15 +121,19 @@
 |---|---|
 | 壳（顶栏头像、底栏 4+1、状态栏） | Locked |
 | `/ai-chat` 选模式 | Locked |
+| `/ai-chat` 练习报告 | Locked；≥60 绿 / <60 珊瑚 |
 | HSK 备考线（诊断 intro + 模考到答题） | Locked 铬；各题型内容布局仍可按新稿补 |
 | `/hsk-test` 入口 | 部分；新稿再对齐 |
-| Library / 书架 / 点读 | 待稿 |
-| `/Home` 教材、课程、课时 | 待稿 |
+| Library / 书架 / 点读 | 选书后走快乐中文同一套 ebook 壳（Tap to Read / spread / footer），不要旧「退出 / 课程目录」页 |
+| `/Home` 首次 onboarding（5 步 + Skip to Home） | Locked 流程；第 2 步 WiFi，第 3 步 Figma「开机向导3输入邮箱」，第 5 步 Figma「Choose Your Learning Path」（三卡 + CTA；HSK3–6 锁定）。壳外浅蓝 `#d5ebf5` + 灯按钮：非 embed 全路由同套 |
+| `/Home` 教材主页（完成后） | 部分；封面跟当前书走。HSK：橙条 **HSK Chinese · Games**。快乐中文：双卡 **Fun Chinese + Culture**。默认 HSK1 |
 | Camera | 待稿 |
 | Profile / 设置 | 待稿 |
 | 快乐中文（一期不展示） | 不改 |
 | HSK 成绩页 / 技能练 / 口语复盘 | 待稿 |
 | Explore `/apps` | 部分；新稿再对齐 |
+| `/pinyin-chart` | 部分；Locked 铬（Back、去蓝、青绿/橙）。字阶走课程稿 24/32/40。表结构待稿 |
+| `/lesson/:id` 单元 Hub | 部分；「课程学习1」字阶与 160 顶栏已对齐。Bonus / AI Tutor 卡仍按现有双栏，不整页绝对定位 |
 
 Target 共性（有稿时一起用，不要另起炉灶）：
 

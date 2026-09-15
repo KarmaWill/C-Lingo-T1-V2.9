@@ -21,6 +21,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import { APP_SCREEN_SIZE, figmaPx, FIGMA_FONT } from '../utils/figmaScale';
+import { setActiveLibraryBook, toActiveLibraryBook } from '../library/libraryActiveBook';
 
 interface Book {
   id: string;
@@ -194,6 +195,11 @@ export default function LibraryBookSelectionPage() {
   const navigate = useNavigate();
   const screenSize = APP_SCREEN_SIZE;
   const p = (n: number) => figmaPx(n, screenSize);
+
+  const openBook = (book: Book) => {
+    setActiveLibraryBook(toActiveLibraryBook(book));
+    navigate(`/library/read/${book.id}`);
+  };
 
   const [books, setBooks] = useState<Book[]>(INITIAL_BOOKS);
   const [searchQuery, setSearchQuery] = useState('');
@@ -403,7 +409,7 @@ export default function LibraryBookSelectionPage() {
         <ButtonBase
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/library/read/${book.id}`);
+            openBook(book);
           }}
           sx={{ ...ctaSx, bgcolor: teal, color: '#FFF' }}
         >
@@ -679,7 +685,7 @@ export default function LibraryBookSelectionPage() {
               {continueReadingBooks.slice(0, 3).map((book) => (
                 <ButtonBase
                   key={book.id}
-                  onClick={() => navigate(`/library/read/${book.id}`)}
+                  onClick={() => openBook(book)}
                   sx={{
                     width: '100%',
                     height: p(300),
@@ -1034,7 +1040,7 @@ export default function LibraryBookSelectionPage() {
                           onClick={(e) => {
                             e.stopPropagation();
                             setManagedBookId(null);
-                            navigate(`/library/read/${book.id}`);
+                            openBook(book);
                           }}
                           sx={{
                             width: p(80),
@@ -1144,7 +1150,7 @@ export default function LibraryBookSelectionPage() {
                     toggleSelectBook(book.id);
                     return;
                   }
-                  navigate(`/library/read/${book.id}`);
+                  openBook(book);
                 }}
                 sx={{
                   position: 'relative',

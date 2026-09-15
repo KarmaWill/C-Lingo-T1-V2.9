@@ -348,9 +348,9 @@ function MockDeskArt({ screenSize }: { screenSize: string }) {
   return (
     <Box
       component="img"
+      id="hsk-mock-desk-art"
       src="/images/hsk-mock-desk.png"
-      alt=""
-      aria-hidden
+      alt="Mock Exam desk"
       sx={{
         width: p(420),
         height: 'auto',
@@ -358,8 +358,6 @@ function MockDeskArt({ screenSize }: { screenSize: string }) {
         objectFit: 'contain',
         objectPosition: 'left bottom',
         display: 'block',
-        pointerEvents: 'none',
-        userSelect: 'none',
       }}
     />
   )
@@ -685,16 +683,15 @@ export default function HSKTestPage() {
                   </Typography>
                 </Box>
                 <Box
-                  aria-hidden
+                  id="hsk-mock-desk-wrap"
                   sx={{
                     position: 'absolute',
-                    left: HSK_PREP_MAIN1.mockPadX,
-                    bottom: 8,
+                    left: 0,
+                    bottom: 0,
                     zIndex: 1,
-                    pointerEvents: 'none',
                   }}
                 >
-                  <MockDeskArt screenSize="1920x1125" />
+                  <MockDeskArt screenSize={screenSize} />
                 </Box>
                 <MockLevelPanel
                   screenSize="1920x1125"

@@ -8,6 +8,7 @@ import ShellSloganHeadline from './ShellSloganHeadline'
 import ShellTopBarProductLinks from './ShellTopBarProductLinks'
 import IpadDeviceShell, { getDeviceShellBezelForSize } from './IpadDeviceShell'
 import { getChromeThemeFromPath } from '../../data/programTracks'
+import { useOnboarding } from '../../onboarding/OnboardingContext'
 
 interface MainLayoutProps {
   children: ReactNode
@@ -21,6 +22,7 @@ const SHELL_CHROME_RESERVE = SHELL_BAR_RESERVE * 2
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation()
+  const { active: onboardingActive, onboarded, toggleStudioOnboard } = useOnboarding()
   const isWebsiteEmbed = new URLSearchParams(location.search).get('mode') === 'website'
 
   const openExternal = (url: string) => {
@@ -110,6 +112,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isBusinessChineseSubPage = location.pathname.startsWith('/business-chinese/')
   /** 全屏覆盖主区域（无顶栏留白）；LingoFlash/GrammarPuzzle/HSKPrepTraining/LibraryBookSelection 单独：保留系统状态栏高度，主内容在其下方 */
   const isCoveringMain =
+    onboardingActive ||
     isCameraPage ||
     isAIPage ||
     isLessonPage ||
@@ -139,6 +142,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isHSKOralReviewPage ||
     isReadingBuddyPage
   const hideChromeNav =
+    onboardingActive ||
     isCoveringMain ||
     isLingoFlashPage ||
     isGrammarPuzzlePage ||
@@ -150,6 +154,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
   // 主四 tab + LingoFlash 等：壳层状态栏。/hsk-prep-training 由页面自己画 Group 17，不在这里铺。
   const showSystemBar =
+    !onboardingActive && (
     ['/', '/AI', '/Home', '/library', '/specialized', '/apps', '/hsk-test', '/hsk-standard', '/business-chinese'].includes(location.pathname) || 
     isGrammarPuzzlePage || 
     isSyntaxSnapPage ||
@@ -163,7 +168,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isCultureMapPage ||
     isCharacterWritingPage ||
     isHSKStandardSubPage ||
-    isBusinessChineseSubPage
+    isBusinessChineseSubPage)
 
   const isLibraryHomePage =
     location.pathname === '/Home' || location.pathname === '/library'
@@ -243,17 +248,26 @@ export default function MainLayout({ children }: MainLayoutProps) {
           }),
   }
 
+  /** 壳外 Studio 外景：非官网 embed 全路由同一套浅蓝，标语/灯按钮用深色字 */
+  const isHomeStudioBackdrop = !isWebsiteEmbed
   const shellBackdropSx = {
     position: 'relative' as const,
-    background: `
-      radial-gradient(ellipse 48% 70% at 50% 0%, rgba(185, 255, 90, 0.2) 0%, transparent 72%),
-      linear-gradient(135deg, #004735, #006D50)
+    backgroundColor: '#d5ebf5',
+    backgroundImage: `
+      radial-gradient(ellipse 140% 110% at 8% -10%, rgb(255 255 255 / 0.95), transparent 72%),
+      radial-gradient(ellipse 120% 100% at 100% 0%, rgb(186 224 242 / 0.55), transparent 74%),
+      radial-gradient(ellipse 130% 110% at 85% 110%, rgb(160 210 234 / 0.42), transparent 76%),
+      radial-gradient(ellipse 100% 90% at 0% 100%, rgb(236 248 252 / 0.7), transparent 74%)
     `,
     '&::before': {
       content: '""',
       position: 'absolute',
-      inset: 0,
-      background: 'radial-gradient(ellipse 60% 100% at 50% 50%, rgba(246, 200, 58, 0.16) 0%, transparent 70%)',
+      inset: '-18%',
+      background: `
+        radial-gradient(ellipse 80% 70% at 30% 20%, rgb(255 255 255 / 0.7), transparent 60%),
+        radial-gradient(ellipse 70% 60% at 75% 80%, rgb(170 216 236 / 0.5), transparent 62%)
+      `,
+      filter: 'blur(56px)',
       pointerEvents: 'none',
       zIndex: 0,
     },
@@ -289,9 +303,15 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
   const shellTopBar = (
     <Box id="shell-top-bar" sx={shellTopBarSx}>
-      <ShellSloganHeadline />
+      <ShellSloganHeadline onLight={isHomeStudioBackdrop} />
       <ShellTopBarProductLinks
         onOpenScanPen={() => openExternal('https://c-lingo-scan-pen.vercel.app/')}
+        onLight={isHomeStudioBackdrop}
+        studioToggle={
+          isHomeStudioBackdrop
+            ? { onboarded, onToggle: toggleStudioOnboard }
+            : undefined
+        }
       />
     </Box>
   )
@@ -320,11 +340,11 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <Box
           component="img"
           className="footer-brand-logo"
-          src="/branding/c-lingo-logo-footer-shell.png"
+          src="/branding/c-lingo-page-logo.png"
           alt="C-Lingo AIOS"
           draggable={false}
           sx={{
-            height: '56px',
+            height: '44px',
             width: 'auto',
             maxWidth: 'none',
             objectFit: 'contain',
@@ -364,6 +384,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
+          overflow: 'hidden',
         }}
       >
       <Box

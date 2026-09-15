@@ -6,6 +6,8 @@ import { LocaleProvider, useLocale } from './context/LocaleContext'
 import MainLayout from './components/MainUI/MainLayout'
 import { FeedbackProvider } from './components/feedback/FeedbackProvider'
 import HomePage from './pages/HomePage'
+import HomeEntryPage from './pages/HomeEntryPage'
+import { OnboardingProvider } from './onboarding/OnboardingContext'
 import HSKStandardHomePage from './pages/HSKStandardHomePage'
 import HSKStandardSpeakingProPage from './pages/hsk-standard/HSKStandardSpeakingProPage'
 import HSKStandardWritingTrainingPage from './pages/hsk-standard/HSKStandardWritingTrainingPage'
@@ -17,7 +19,6 @@ import BusinessDocumentToolsPage from './pages/business-chinese/BusinessDocument
 import BusinessEnterprisePlatformPage from './pages/business-chinese/BusinessEnterprisePlatformPage'
 import LessonPage from './pages/LessonPage'
 import AIChatPage from './pages/AIChatPage'
-import LibraryPage from './pages/LibraryPage'
 import LibraryBookSelectionPage from './pages/LibraryBookSelectionPage'
 import SpecializedTracksPage from './pages/SpecializedTracksPage'
 import CameraPage from './pages/CameraPage'
@@ -138,6 +139,7 @@ function ThemedApp() {
         
         {/* Regular pages with MainLayout */}
         <Route path="*" element={
+      <OnboardingProvider>
       <MainLayout>
         <FeedbackProvider>
         <Routes>
@@ -152,7 +154,7 @@ function ThemedApp() {
               <Route path="/business-chinese/scenario-dialogue" element={<BusinessScenarioDialoguePage />} />
               <Route path="/business-chinese/document-tools" element={<BusinessDocumentToolsPage />} />
               <Route path="/business-chinese/enterprise-platform" element={<BusinessEnterprisePlatformPage />} />
-              <Route path="/Home" element={<LibraryPage />} />
+              <Route path="/Home" element={<HomeEntryPage />} />
               <Route path="/library" element={<Navigate to="/Home" replace />} />
               <Route path="/library/select-books" element={<LibraryBookSelectionPage />} />
               <Route path="/starting-learning" element={<StartingLearningPage />} />
@@ -211,6 +213,7 @@ function ThemedApp() {
         </Routes>
         </FeedbackProvider>
       </MainLayout>
+      </OnboardingProvider>
         } />
       </Routes>
     </ThemeProvider>

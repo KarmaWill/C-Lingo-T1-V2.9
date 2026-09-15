@@ -1,10 +1,10 @@
 import { Box } from '@mui/material';
 import FunChineseInteractiveEbook from './FunChineseInteractiveEbook';
-import { figmaPx } from '../../utils/figmaScale';
+import { APP_SCREEN_SIZE, figmaPx } from '../../utils/figmaScale';
 
 /** Full-area shell — Figma「书本选中时」底色 #F3F4F6 */
 export default function FunChineseEbookPageLayout() {
-  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
+  const screenSize = APP_SCREEN_SIZE;
   const p = (n: number) => figmaPx(n, screenSize);
 
   return (
