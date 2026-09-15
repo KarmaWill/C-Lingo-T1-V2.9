@@ -8,6 +8,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import InfoIcon from '@mui/icons-material/InfoOutlined';
 import { resolveWritingPracticeExit } from '../utils/navigateBack';
+import { APP_FONT_FAMILY } from '../theme/appFont';
 
 // 汉字笔画信息（示例数据）
 const CHARACTER_INFO: Record<string, {
@@ -183,7 +184,7 @@ export default function CharacterWritingPage() {
             overflow: 'visible',
           }}
         >
-          <Typography sx={{ fontSize: is960 ? '0.92rem' : '1.08rem', color: '#6B7280', fontWeight: 600, mb: is960 ? 1.3 : 1.8, fontFamily: '"Google Sans", "Roboto", sans-serif' }}>
+          <Typography sx={{ fontSize: is960 ? '0.92rem' : '1.08rem', color: '#6B7280', fontWeight: 600, mb: is960 ? 1.3 : 1.8, fontFamily: APP_FONT_FAMILY }}>
             {getStepTitle() === 'Trace Once' ? 'Trace the gray character outline' : getStepTitle()}
           </Typography>
           <Box
@@ -395,7 +396,7 @@ export default function CharacterWritingPage() {
                 py: is960 ? 1.4 : 1.8,
               }}
             >
-              <Typography sx={{ color: '#A6AEB4', fontSize: is960 ? '0.78rem' : '0.88rem', fontWeight: 500, fontFamily: '"Google Sans", "Roboto", sans-serif' }}>
+              <Typography sx={{ color: '#A6AEB4', fontSize: is960 ? '0.78rem' : '0.88rem', fontWeight: 500, fontFamily: APP_FONT_FAMILY }}>
                 Stroke Count
               </Typography>
               <Typography sx={{ color: orange, fontSize: is960 ? '1.8rem' : '2.2rem', fontWeight: 700, mt: is960 ? 0.4 : 0.5 }}>
@@ -411,7 +412,7 @@ export default function CharacterWritingPage() {
                 py: is960 ? 1.4 : 1.8,
               }}
             >
-              <Typography sx={{ color: '#A6AEB4', fontSize: is960 ? '0.78rem' : '0.88rem', fontWeight: 500, fontFamily: '"Google Sans", "Roboto", sans-serif' }}>
+              <Typography sx={{ color: '#A6AEB4', fontSize: is960 ? '0.78rem' : '0.88rem', fontWeight: 500, fontFamily: APP_FONT_FAMILY }}>
                 Structure
               </Typography>
               <Typography sx={{ color: '#202428', fontSize: is960 ? '1.1rem' : '1.3rem', fontWeight: 500, lineHeight: 1.2, mt: is960 ? 0.4 : 0.5 }}>
@@ -427,7 +428,7 @@ export default function CharacterWritingPage() {
                 py: is960 ? 1.4 : 1.8,
               }}
             >
-              <Typography sx={{ color: '#A6AEB4', fontSize: is960 ? '0.78rem' : '0.88rem', fontWeight: 500, fontFamily: '"Google Sans", "Roboto", sans-serif' }}>
+              <Typography sx={{ color: '#A6AEB4', fontSize: is960 ? '0.78rem' : '0.88rem', fontWeight: 500, fontFamily: APP_FONT_FAMILY }}>
                 Components
               </Typography>
               <Typography sx={{ color: '#202428', fontSize: is960 ? '1.1rem' : '1.3rem', fontWeight: 500, lineHeight: 1.2, mt: is960 ? 0.4 : 0.5 }}>
@@ -453,7 +454,7 @@ export default function CharacterWritingPage() {
             color: '#6B7280',
             fontSize: is960 ? '1rem' : '1.18rem',
             fontWeight: 800,
-            fontFamily: '"Google Sans", "Roboto", sans-serif',
+            fontFamily: APP_FONT_FAMILY,
             border: '1px solid #DADADA',
             '&:active': { transform: 'scale(0.99)' },
           }}
@@ -469,7 +470,7 @@ export default function CharacterWritingPage() {
             color: 'white',
             fontSize: is960 ? '1rem' : '1.18rem',
             fontWeight: 800,
-            fontFamily: '"Google Sans", "Roboto", sans-serif',
+            fontFamily: APP_FONT_FAMILY,
             boxShadow: `0 8px 20px ${teal}22`,
             '&:active': { transform: 'scale(0.99)' },
           }}

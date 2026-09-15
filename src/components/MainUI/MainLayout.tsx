@@ -1,13 +1,14 @@
 import { ReactNode, useState, useEffect } from 'react'
 import { Box, ButtonBase } from '@mui/material'
 import { useLocation } from 'react-router-dom'
-import BottomNavigator from './BottomNavigator'
+import BottomNavigator, { getBottomNavReserve } from './BottomNavigator'
 import TopBanner from './TopBanner'
-import SystemStatusBar from './SystemStatusBar'
+import SystemStatusBar, { getSystemBarMetrics } from './SystemStatusBar'
 import ShellSloganHeadline from './ShellSloganHeadline'
 import ShellTopBarProductLinks from './ShellTopBarProductLinks'
-import IpadDeviceShell from './IpadDeviceShell'
+import IpadDeviceShell, { getDeviceShellBezelForSize } from './IpadDeviceShell'
 import { getChromeThemeFromPath } from '../../data/programTracks'
+import { useOnboarding } from '../../onboarding/OnboardingContext'
 
 interface MainLayoutProps {
   children: ReactNode
@@ -15,12 +16,15 @@ interface MainLayoutProps {
 
 const DESIGN_1920 = 1920
 const DESIGN_1125 = 1125
-/** Top + bottom chrome bars (px) — symmetric frame for centered iPad */
+/** Top + bottom chrome bars (px) — air band around the centered tablet */
 const SHELL_BAR_RESERVE = 72
+/** Soft device glow (`0 0 80px`) needs room inside the stage, not under the bars */
+const SHELL_SHADOW_AIR = 40
 const SHELL_CHROME_RESERVE = SHELL_BAR_RESERVE * 2
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation()
+  const { active: onboardingActive, onboarded, toggleStudioOnboard } = useOnboarding()
   const isWebsiteEmbed = new URLSearchParams(location.search).get('mode') === 'website'
 
   const openExternal = (url: string) => {
@@ -28,7 +32,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   }
   
   // Read screen size from environment variable
-  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768'
+  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '2000x1200'
   const [screenWidth, screenHeight] = screenSize.split('x').map(Number)
   const is2000x1200 = screenSize === '2000x1200'
   const is1920x1125 = screenSize === '1920x1125'
@@ -48,19 +52,24 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const scale1920 = is1920x1125
     ? Math.min(
         1,
-        viewport.w / DESIGN_1920,
-        (viewport.h - (isWebsiteEmbed ? 0 : SHELL_CHROME_RESERVE)) / DESIGN_1125,
+        viewport.w / (DESIGN_1920 + SHELL_SHADOW_AIR * 2),
+        (viewport.h - (isWebsiteEmbed ? 0 : SHELL_CHROME_RESERVE) - SHELL_SHADOW_AIR * 2) / DESIGN_1125,
       )
     : 1
 
-  const breakpointDeviceScale =
-    viewport.w < 600 ? 0.35 : viewport.w < 900 ? 0.6 : viewport.w < 1200 ? 0.85 : 1
+  const shellBezel = getDeviceShellBezelForSize(screenSize)
+  const shellOuterW = screenWidth + shellBezel * 2
+  const shellOuterH = screenHeight + shellBezel * 2
+  const hardwareProtrusionPreview = screenSize === '960x540' ? 10 : 12
   const fitDeviceScale = Math.min(
-    breakpointDeviceScale,
-    (viewport.h - (isWebsiteEmbed ? 0 : SHELL_CHROME_RESERVE) - 12) / screenHeight,
-    (viewport.w - 24) / screenWidth,
+    (viewport.h -
+      (isWebsiteEmbed ? 0 : SHELL_CHROME_RESERVE) -
+      (isWebsiteEmbed ? 8 : SHELL_SHADOW_AIR * 2) -
+      8) /
+      (shellOuterH + hardwareProtrusionPreview),
+    (viewport.w - (isWebsiteEmbed ? 8 : SHELL_SHADOW_AIR * 2) - 8) / shellOuterW,
   )
-  const deviceScale = Math.max(0.28, fitDeviceScale)
+  const deviceScale = Math.max(0.28, Math.min(1, fitDeviceScale))
   
   const isCameraPage = location.pathname === '/camera'
   const isAIPage = location.pathname === '/ai-chat'
@@ -71,6 +80,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isProfileEditPage = location.pathname === '/profile/edit'
   const isAudioReadingPage = location.pathname === '/audio-reading'
   const isCultureVideoRoutePage = location.pathname === '/culture-video'
+  const isAIFMPage = location.pathname === '/ai-fm'
   const isBookReaderPage = location.pathname.startsWith('/library/read')
   const isStudyReportPage = location.pathname === '/study-report'
   const isMistakesReviewPage = location.pathname === '/mistakes-review'
@@ -110,6 +120,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isBusinessChineseSubPage = location.pathname.startsWith('/business-chinese/')
   /** 全屏覆盖主区域（无顶栏留白）；LingoFlash/GrammarPuzzle/HSKPrepTraining/LibraryBookSelection 单独：保留系统状态栏高度，主内容在其下方 */
   const isCoveringMain =
+    onboardingActive ||
     isCameraPage ||
     isAIPage ||
     isLessonPage ||
@@ -124,6 +135,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isHSKMockExamPage ||
     isAudioReadingPage ||
     isCultureVideoRoutePage ||
+    isAIFMPage ||
     isFavoritesPage ||
     isParentalControlsPage ||
     isNskAppStorePage ||
@@ -139,6 +151,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isHSKOralReviewPage ||
     isReadingBuddyPage
   const hideChromeNav =
+    onboardingActive ||
     isCoveringMain ||
     isLingoFlashPage ||
     isGrammarPuzzlePage ||
@@ -148,27 +161,37 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isGrammarSnapPage ||
     isLibraryBookSelectionPage || isStartingLearningPage || isFunChineseTeacherGuidePage || isFunChineseHubPage || isFunChineseCardCollectionPage || isFunChineseIntensivePage || isFunChineseLessonPage || isCultureMapPage || isCharacterWritingPage || isHSKStandardSubPage || isBusinessChineseSubPage
 
-  // 主四 tab + LingoFlash + GrammarPuzzle + SyntaxSnap + HSKPrepTraining + LibraryBookSelection + FunChineseHub + FunChineseLesson + CultureMap + CharacterWriting：显示系统状态栏；其它全屏页不显示
+  // 主四 tab + LingoFlash 等：壳层状态栏。/hsk-prep-training 由页面自己画 Group 17，不在这里铺。
   const showSystemBar =
+    !onboardingActive && (
     ['/', '/AI', '/Home', '/library', '/specialized', '/apps', '/hsk-test', '/hsk-standard', '/business-chinese'].includes(location.pathname) || 
-    isLingoFlashPage || 
     isGrammarPuzzlePage || 
     isSyntaxSnapPage ||
-    (isHSKPrepTrainingPage && !isWebsiteEmbed) ||
     isHSKSkillDrillPage ||
     isHSKOralReviewPage ||
     isGrammarSnapPage ||
     isLibraryBookSelectionPage ||
-    isFunChineseHubPage ||
     isFunChineseCardCollectionPage ||
     isFunChineseIntensivePage ||
     isFunChineseLessonPage ||
     isCultureMapPage ||
     isCharacterWritingPage ||
     isHSKStandardSubPage ||
-    isBusinessChineseSubPage
+    isBusinessChineseSubPage)
 
-  const showTopBanner = !hideChromeNav
+  const isLibraryHomePage =
+    location.pathname === '/Home' || location.pathname === '/library'
+  const isStudioHomePage =
+    location.pathname === '/AI' ||
+    location.pathname === '/' ||
+    location.pathname === '/hsk-standard' ||
+    location.pathname === '/business-chinese'
+  const isHskPrepHub = location.pathname === '/hsk-test'
+  const isExploreHub = location.pathname === '/apps'
+
+  // Figma 主界面1/2：Studio、HSK Preparation、Explore 页内自带顶栏，隐藏全局 TopBanner
+  const showTopBanner =
+    !hideChromeNav && !isLibraryHomePage && !isStudioHomePage && !isHskPrepHub && !isExploreHub
   const showBottomNav = !hideChromeNav
   
   // Calculate scaled heights based on screen size
@@ -176,15 +199,15 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const hardwareProtrusion = is960 ? 10 : 12
   const websiteEmbedScale = isWebsiteEmbed
     ? Math.min(
-        (viewport.w - 4) / screenWidth,
-        (viewport.h - 4) / (screenHeight + hardwareProtrusion),
+        (viewport.w - 4) / shellOuterW,
+        (viewport.h - 4) / (shellOuterH + hardwareProtrusion),
       ) * 0.9
     : null
   const effectiveDeviceScale = Math.max(0.28, websiteEmbedScale ?? deviceScale)
-  const systemBarHeight = is960 ? 24 : (is2000x1200 ? 44 : (is1920x1125 ? 40 : 32))
+  // Figma 主界面2：dock 130 + 底边 40；Library 自带顶栏故无 TopBanner
+  const systemBarHeight = getSystemBarMetrics(screenSize).height
   const topBannerHeight = is960 ? 56 : (is2000x1200 ? 110 : (is1920x1125 ? 100 : 80))
-  // Reserve space for BottomNavigator: 4-dot tab indicator + dock + camera (absolute bottom)
-  const bottomNavHeight = is960 ? 96 : (is2000x1200 ? 158 : (is1920x1125 ? 146 : 124))
+  const bottomNavHeight = getBottomNavReserve(screenSize)
   const totalTopHeight = (showSystemBar ? systemBarHeight : 0) + (showTopBanner ? topBannerHeight : 0)
   const mainChromeBottom = showBottomNav ? bottomNavHeight : 0
   /** SystemStatusBar is absolute; immersive pages must start below it. */
@@ -221,7 +244,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
             inset: 'auto',
             mt: 0,
             pt: `${systemBarHeight}px`,
-            height: '100%',
+            // border-box：pt 吃在 height 内。height 必须先扣掉底栏，否则 100% + mb 会压进 dock。
+            height: `calc(100% - ${mainChromeBottom}px)`,
             mb: mainChromeBottom ? `${mainChromeBottom}px` : 0,
           }
         : {
@@ -233,17 +257,26 @@ export default function MainLayout({ children }: MainLayoutProps) {
           }),
   }
 
+  /** 壳外 Studio 外景：非官网 embed 全路由同一套浅蓝，标语/灯按钮用深色字 */
+  const isHomeStudioBackdrop = !isWebsiteEmbed
   const shellBackdropSx = {
     position: 'relative' as const,
-    background: `
-      radial-gradient(ellipse 48% 70% at 50% 0%, rgba(185, 255, 90, 0.2) 0%, transparent 72%),
-      linear-gradient(135deg, #004735, #006D50)
+    backgroundColor: '#d5ebf5',
+    backgroundImage: `
+      radial-gradient(ellipse 140% 110% at 8% -10%, rgb(255 255 255 / 0.95), transparent 72%),
+      radial-gradient(ellipse 120% 100% at 100% 0%, rgb(186 224 242 / 0.55), transparent 74%),
+      radial-gradient(ellipse 130% 110% at 85% 110%, rgb(160 210 234 / 0.42), transparent 76%),
+      radial-gradient(ellipse 100% 90% at 0% 100%, rgb(236 248 252 / 0.7), transparent 74%)
     `,
     '&::before': {
       content: '""',
       position: 'absolute',
-      inset: 0,
-      background: 'radial-gradient(ellipse 60% 100% at 50% 50%, rgba(246, 200, 58, 0.16) 0%, transparent 70%)',
+      inset: '-18%',
+      background: `
+        radial-gradient(ellipse 80% 70% at 30% 20%, rgb(255 255 255 / 0.7), transparent 60%),
+        radial-gradient(ellipse 70% 60% at 75% 80%, rgb(170 216 236 / 0.5), transparent 62%)
+      `,
+      filter: 'blur(56px)',
       pointerEvents: 'none',
       zIndex: 0,
     },
@@ -267,23 +300,29 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const shellTopBarSx = {
     ...shellBarBaseSx,
     position: 'relative' as const,
-    alignItems: 'flex-end',
-    pt: 0.5,
-    pb: 0.75,
+    alignItems: 'center',
+    py: 0,
+    zIndex: 3,
   }
 
   const shellBottomBarSx = {
     ...shellBarBaseSx,
-    alignItems: 'flex-start',
-    pt: 0.75,
-    pb: 0.5,
+    alignItems: 'center',
+    py: 0,
+    zIndex: 3,
   }
 
   const shellTopBar = (
     <Box id="shell-top-bar" sx={shellTopBarSx}>
-      <ShellSloganHeadline />
+      <ShellSloganHeadline onLight={isHomeStudioBackdrop} />
       <ShellTopBarProductLinks
         onOpenScanPen={() => openExternal('https://c-lingo-scan-pen.vercel.app/')}
+        onLight={isHomeStudioBackdrop}
+        studioToggle={
+          isHomeStudioBackdrop
+            ? { onboarded, onToggle: toggleStudioOnboard }
+            : undefined
+        }
       />
     </Box>
   )
@@ -296,9 +335,11 @@ export default function MainLayout({ children }: MainLayoutProps) {
         sx={{
           display: 'block',
           borderRadius: 0,
-          p: 0,
+          py: 0,
+          px: '8px',
           m: 0,
-          minWidth: 0,
+          minWidth: 44,
+          minHeight: 0,
           lineHeight: 0,
           cursor: 'pointer',
           flexShrink: 0,
@@ -310,7 +351,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <Box
           component="img"
           className="footer-brand-logo"
-          src="/branding/c-lingo-logo-footer-shell.png"
+          src="/branding/c-lingo-page-logo.png"
           alt="C-Lingo AIOS"
           draggable={false}
           sx={{
@@ -354,6 +395,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
+          // Soft glow may extend a few px; bars stay clickable via zIndex
+          overflow: 'visible',
+          position: 'relative',
+          zIndex: 1,
         }}
       >
       <Box
@@ -369,8 +414,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
       {is1920x1125 ? (
         <Box
           sx={{
-            width: DESIGN_1920 * scale1920,
-            height: DESIGN_1125 * scale1920 + hardwareProtrusion * scale1920,
+            width: (DESIGN_1920 + getDeviceShellBezelForSize('1920x1125') * 2) * scale1920,
+            height: (DESIGN_1125 + getDeviceShellBezelForSize('1920x1125') * 2) * scale1920 + hardwareProtrusion * scale1920,
             flexShrink: 0,
             overflow: 'visible',
             display: 'flex',
@@ -404,8 +449,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
       {/* iPad/Tablet Container: non-1920x1125（含 2000x1200 原比例） */}
       <Box
         sx={{
-          width: screenWidth * effectiveDeviceScale,
-          height: screenHeight * effectiveDeviceScale + hardwareProtrusion * effectiveDeviceScale,
+          width: shellOuterW * effectiveDeviceScale,
+          height: (shellOuterH + hardwareProtrusion) * effectiveDeviceScale,
           position: 'relative',
           flexShrink: 0,
           overflow: 'visible',

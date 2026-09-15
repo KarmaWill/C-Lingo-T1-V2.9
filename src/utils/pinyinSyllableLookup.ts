@@ -56,6 +56,7 @@ export const LOCALE_LABELS: Record<AppLocaleId, string> = {
   fr: 'FR',
   ja: 'JA',
   ko: 'KO',
+  ar: 'AR',
 };
 
 function phrase(hanzi: string, pinyin: string, meanings: PinyinMeanings): PinyinPhraseEntry {

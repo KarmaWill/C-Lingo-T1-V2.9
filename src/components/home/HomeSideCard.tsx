@@ -1,311 +1,486 @@
-import { Box, Typography } from '@mui/material';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
-import type { ReactNode } from 'react';
+import { Box, ButtonBase, Typography } from '@mui/material'
+import type { ReactNode } from 'react'
+import { figmaPx, FIGMA_FONT } from '../../utils/figmaScale'
 
-export function useHomeSideStyles(is960: boolean) {
-  const sideCardSx = {
-    p: is960 ? '1.15rem 1rem 1.15rem 1.25rem' : '1.55rem 1.2rem 1.55rem 1.65rem',
-    borderRadius: is960 ? '28px' : '36px',
-    color: 'white',
-    position: 'relative' as const,
-    overflow: 'hidden',
-    minHeight: 0,
-    height: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    gap: is960 ? 0.75 : 1,
-    cursor: 'pointer',
-    transition: '0.3s',
-    boxSizing: 'border-box' as const,
-    boxShadow: '0 10px 28px rgba(15, 23, 42, 0.12)',
-    '&:active': { transform: 'scale(0.98)' },
-  };
-
-  const sideTrailingSx = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: is960 ? 0.75 : 1,
-    flexShrink: 0,
-    zIndex: 1,
-  };
-
-  const sideArrowSx = {
-    bgcolor: 'rgba(255,255,255,0.22)',
-    width: is960 ? 48 : 56,
-    height: is960 ? 48 : 56,
-    borderRadius: is960 ? '16px' : '20px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backdropFilter: 'blur(10px)',
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28)',
-    flexShrink: 0,
-  };
-
-  const sideNextSx = {
-    color: 'rgba(255,255,255,0.92)',
-    flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-  };
-
-  return { sideCardSx, sideTrailingSx, sideArrowSx, sideNextSx };
-}
-
-export function HomePageShell({
-  is960,
-  pageBg,
-  children,
+/** 稿上 4px 描边直角箭头；不用 MUI rounded，避免光学中心发歪 */
+function FigmaForwardArrow({
+  size,
+  color,
+  stroke,
 }: {
-  is960: boolean;
-  pageBg?: string;
-  children: ReactNode;
+  size: number
+  color: string
+  stroke: number
 }) {
   return (
     <Box
+      component="svg"
+      viewBox="0 0 48 48"
+      aria-hidden
       sx={{
-        p: is960 ? 2 : 3,
-        height: '100%',
-        width: '100%',
+        width: size,
+        height: size,
+        display: 'block',
+        flexShrink: 0,
+      }}
+    >
+      <path
+        d="M6 24h26M24 12l14 12-14 12"
+        fill="none"
+        stroke={color}
+        strokeWidth={stroke}
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+      />
+    </Box>
+  )
+}
+
+/** 左主课卡默认 1250；C-Lingo 主界面1 用 1298 / 464 / 37 */
+export function HomePageShell({
+  screenSize,
+  children,
+  hero = 1250,
+  rail = 510,
+  gap = 40,
+}: {
+  screenSize: string
+  children: ReactNode
+  hero?: number
+  rail?: number
+  gap?: number
+}) {
+  const p = (n: number) => figmaPx(n, screenSize)
+  return (
+    <Box
+      sx={{
+        flex: 1,
         minHeight: 0,
+        width: '100%',
         overflow: 'hidden',
         boxSizing: 'border-box',
-        bgcolor: pageBg ?? 'transparent',
         display: 'grid',
-        // Tablet shell is fixed landscape — never stack on viewport < lg (that caused the broken "compressed" home).
-        gridTemplateColumns: 'minmax(0, 2.45fr) minmax(0, 1fr)',
+        gridTemplateColumns: `${p(hero)}fr ${p(rail)}fr`,
         gridTemplateRows: 'minmax(0, 1fr)',
-        gap: is960 ? 1.25 : 1.5,
+        gap: `${p(gap)}px`,
         alignItems: 'stretch',
+        fontFamily: FIGMA_FONT,
       }}
     >
       {children}
     </Box>
-  );
+  )
 }
 
-function TitleBlock({
-  label,
-  lines,
-  subtitle,
-  is960,
+/** triple：280+192+192；pair：主界面1 两张等高，缝 38；fill：一卡吃满右栏 */
+export function HomeSideCardStack({
+  screenSize,
+  children,
+  pair = false,
+  fill = false,
 }: {
-  label?: string;
-  lines?: [string, string];
-  subtitle?: string;
-  is960: boolean;
+  screenSize: string
+  children: ReactNode
+  pair?: boolean
+  fill?: boolean
 }) {
-  return (
-    <>
-      {lines ? (
-        <Typography
-          component="div"
-          sx={{
-            fontWeight: 900,
-            fontSize: is960 ? '0.95rem' : '1.28rem',
-            lineHeight: 1.15,
-            letterSpacing: '-0.01em',
-            minWidth: 0,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <span>{lines[0]}</span>
-          <span>{lines[1]}</span>
-        </Typography>
-      ) : (
-        <Typography
-          sx={{
-            fontWeight: 900,
-            fontSize: is960 ? '0.95rem' : '1.28rem',
-            lineHeight: 1.15,
-            letterSpacing: '-0.01em',
-          }}
-        >
-          {label}
-        </Typography>
-      )}
-      {subtitle ? (
-        <Typography
-          sx={{
-            mt: is960 ? 0.45 : 0.6,
-            fontSize: is960 ? '0.68rem' : '0.78rem',
-            fontWeight: 650,
-            lineHeight: 1.3,
-            color: 'rgba(255,255,255,0.78)',
-          }}
-        >
-          {subtitle}
-        </Typography>
-      ) : null}
-    </>
-  );
-}
-
-export function HomeSideCard({
-  label,
-  lines,
-  subtitle,
-  bgcolor,
-  icon,
-  extra,
-  is960,
-  sideCardSx,
-  sideTrailingSx,
-  sideArrowSx,
-  sideNextSx,
-  onClick,
-  variant = 'default',
-  spotlightVisual,
-  accentColor,
-}: {
-  label?: string;
-  lines?: [string, string];
-  subtitle?: string;
-  bgcolor: string;
-  icon?: ReactNode;
-  extra?: ReactNode;
-  is960: boolean;
-  sideCardSx: object;
-  sideTrailingSx?: object;
-  sideArrowSx: object;
-  sideNextSx?: object;
-  onClick: () => void;
-  /** default = legacy icon+chevron; spotlight = pill CTA + right visual; tool = glass arrow only */
-  variant?: 'default' | 'spotlight' | 'tool';
-  spotlightVisual?: ReactNode;
-  accentColor?: string;
-}) {
-  const defaultStyles = useHomeSideStyles(is960);
-  const accent = accentColor ?? bgcolor;
-
-  if (variant === 'spotlight') {
-    const isGradient = typeof bgcolor === 'string' && bgcolor.includes('gradient');
-    return (
-      <Box
-        onClick={onClick}
-        sx={{
-          ...sideCardSx,
-          ...(isGradient ? { background: bgcolor, bgcolor: 'transparent' } : { bgcolor }),
-          alignItems: 'stretch',
-          // Match tool-card left inset so "AI Tutor" lines up with "Reading"
-          pl: is960 ? '1.25rem' : '1.65rem',
-          pr: 0,
-          py: 0,
-          // Clip to card radius so bottom edge stays seamless with the gradient
-          overflow: 'hidden',
-        }}
-      >
-        <Box
-          sx={{
-            position: 'relative',
-            zIndex: 1,
-            flex: '1 1 0',
-            minWidth: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            py: is960 ? 1.15 : 1.4,
-            // Nudge content slightly down to match tool-card visual weight
-            pt: is960 ? 1.35 : 1.55,
-            pb: is960 ? 1.05 : 1.2,
-          }}
-        >
-          <TitleBlock label={label} lines={lines} is960={is960} />
-          <Box
-            sx={{
-              mt: is960 ? 0.95 : 1.15,
-              ml: is960 ? 0.35 : 0.5,
-              width: is960 ? 42 : 48,
-              height: is960 ? 42 : 48,
-              borderRadius: '999px',
-              bgcolor: '#FFFFFF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 8px 20px rgba(15, 23, 42, 0.16)',
-              flexShrink: 0,
-            }}
-            aria-hidden
-          >
-            <ArrowForwardRoundedIcon sx={{ fontSize: is960 ? 22 : 26, color: accent }} />
-          </Box>
-          {extra}
-        </Box>
-        <Box
-          sx={{
-            position: 'relative',
-            width: is960 ? '52%' : '56%',
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'flex-start',
-            alignSelf: 'stretch',
-            overflow: 'hidden',
-            // Pull mascot further into the card (left) and pin to bottom edge
-            ml: is960 ? -4 : -5.5,
-            mr: is960 ? -0.5 : -0.75,
-            zIndex: 2,
-          }}
-        >
-          {spotlightVisual}
-        </Box>
-      </Box>
-    );
-  }
-
-  if (variant === 'tool') {
-    const toolArrowSx = {
-      ...sideArrowSx,
-      width: is960 ? 52 : 64,
-      height: is960 ? 52 : 64,
-      borderRadius: is960 ? '18px' : '22px',
-      bgcolor: 'rgba(255,255,255,0.24)',
-    };
-    return (
-      <Box onClick={onClick} sx={{ ...sideCardSx, bgcolor }}>
-        <Box sx={{ position: 'relative', zIndex: 1, flex: 1, minWidth: 0, pr: 0.5 }}>
-          <TitleBlock label={label} lines={lines} subtitle={subtitle} is960={is960} />
-        </Box>
-        <Box sx={toolArrowSx} aria-hidden>
-          <ArrowForwardRoundedIcon sx={{ fontSize: is960 ? 26 : 30, color: 'rgba(255,255,255,0.96)' }} />
-        </Box>
-      </Box>
-    );
-  }
-
-  return (
-    <Box onClick={onClick} sx={{ ...sideCardSx, bgcolor }}>
-      <Box sx={{ position: 'relative', zIndex: 1, flex: 1, minWidth: 0 }}>
-        <TitleBlock label={label} lines={lines} subtitle={subtitle} is960={is960} />
-        {extra}
-      </Box>
-      <Box sx={{ ...defaultStyles.sideTrailingSx, ...sideTrailingSx }}>
-        <Box sx={sideArrowSx}>{icon}</Box>
-        <Box sx={{ ...defaultStyles.sideNextSx, ...sideNextSx }} aria-hidden>
-          <ChevronRightIcon sx={{ fontSize: is960 ? 22 : 26 }} />
-        </Box>
-      </Box>
-    </Box>
-  );
-}
-
-export function HomeSideCardStack({ is960, children }: { is960: boolean; children: ReactNode }) {
+  const p = (n: number) => figmaPx(n, screenSize)
   return (
     <Box
       sx={{
         minWidth: 0,
         minHeight: 0,
-        height: { lg: '100%' },
+        height: '100%',
         display: 'grid',
-        gridTemplateRows: 'repeat(3, minmax(0, 1fr))',
-        gap: is960 ? 1.1 : 1.35,
+        gridTemplateRows: fill ? 'minmax(0, 1fr)' : pair ? '1fr 1fr' : `${p(280)}fr ${p(192)}fr ${p(192)}fr`,
+        gap: fill ? 0 : `${p(pair ? 38 : 23)}px`,
         boxSizing: 'border-box',
         overflow: 'hidden',
       }}
     >
       {children}
     </Box>
-  );
+  )
+}
+
+export function HomeSideCard({
+  screenSize,
+  label,
+  subtitle,
+  bgcolor,
+  onClick,
+  variant = 'tool',
+  spotlightVisual,
+  leadingIcon,
+  pair = false,
+  fill = false,
+  glow,
+}: {
+  screenSize: string
+  label: string
+  subtitle?: string
+  bgcolor: string
+  onClick: () => void
+  variant?: 'spotlight' | 'tool'
+  spotlightVisual?: ReactNode
+  spotlightArrowColor?: string
+  leadingIcon?: ReactNode
+  /** 主界面1 右栏：标题顶左、箭头底左 */
+  pair?: boolean
+  /** 商务中文右栏：一卡铺满 */
+  fill?: boolean
+  glow?: string
+}) {
+  const p = (n: number) => figmaPx(n, screenSize)
+  const isGradient = bgcolor.includes('gradient')
+  const compact = pair && !fill
+  const railCard = pair || fill
+  const arrow = p(fill ? 88 : compact ? 76 : 99)
+
+  const arrowBox = (
+    <Box
+      sx={{
+        width: arrow,
+        height: arrow,
+        borderRadius: `${p(fill ? 28 : compact ? 25 : 33)}px`,
+        bgcolor: 'rgba(255,255,255,0.2)',
+        backdropFilter: 'blur(2px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}
+    >
+      <FigmaForwardArrow
+        size={p(fill ? 42 : compact ? 37 : 48)}
+        color="#fff"
+        stroke={p(fill ? 2.8 : compact ? 2.5 : 3.3)}
+      />
+    </Box>
+  )
+
+  const pairGlow = glow ? (
+    <Box
+      aria-hidden
+      sx={{
+        position: 'absolute',
+        width: '108%',
+        height: '82%',
+        left: '18%',
+        top: '18%',
+        bgcolor: glow,
+        filter: 'blur(28px)',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }}
+    />
+  ) : null
+
+  if (variant === 'spotlight') {
+    return (
+      <ButtonBase
+        onClick={onClick}
+        sx={{
+          position: 'relative',
+          height: '100%',
+          minHeight: 0,
+          width: '100%',
+          borderRadius: `${p(54)}px`,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          ...(isGradient ? { background: bgcolor } : { bgcolor }),
+          px: `${p(fill ? 40 : compact ? 34 : 40)}px`,
+          pt: `${p(fill ? 40 : compact ? 31 : 40)}px`,
+          pb: `${p(fill ? 36 : compact ? 31 : 36)}px`,
+          boxSizing: 'border-box',
+          textAlign: 'left',
+          isolation: 'isolate',
+          cursor: 'pointer',
+          touchAction: 'manipulation',
+          WebkitTapHighlightColor: 'transparent',
+          transition: 'transform 120ms ease-out',
+          '&:active': { transform: 'scale(0.98)' },
+          '&:focus-visible': { outline: '3px solid #FDD83B', outlineOffset: 4 },
+          '@media (prefers-reduced-motion: reduce)': {
+            transition: 'none',
+            '&:active': { transform: 'none' },
+          },
+          ...(railCard
+            ? {}
+            : {
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  width: p(403),
+                  height: p(118),
+                  left: p(-176),
+                  top: p(-129),
+                  bgcolor: '#A24BFF',
+                  filter: 'blur(47px)',
+                  mixBlendMode: 'screen',
+                  transform: 'rotate(-12deg)',
+                  pointerEvents: 'none',
+                },
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  width: p(403),
+                  height: p(208),
+                  right: p(-40),
+                  bottom: p(-80),
+                  bgcolor: '#7300FF',
+                  opacity: 0.51,
+                  filter: 'blur(47px)',
+                  mixBlendMode: 'screen',
+                  pointerEvents: 'none',
+                },
+              }),
+        }}
+      >
+        {railCard ? pairGlow : null}
+        <Box sx={{ position: 'relative', zIndex: 2, minWidth: 0, maxWidth: fill ? '92%' : undefined }}>
+          <Typography
+            sx={{
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: p(fill ? 48 : compact ? 43 : 56),
+              lineHeight: `${p(fill ? 62 : compact ? 63 : 81)}px`,
+              fontFamily: FIGMA_FONT,
+            }}
+          >
+            {label}
+          </Typography>
+          {fill && subtitle ? (
+            <Typography
+              sx={{
+                mt: `${p(10)}px`,
+                color: '#FFF8E7',
+                fontWeight: 600,
+                fontSize: p(30),
+                lineHeight: `${p(38)}px`,
+                fontFamily: FIGMA_FONT,
+              }}
+            >
+              {subtitle}
+            </Typography>
+          ) : null}
+        </Box>
+        <Box
+          sx={{
+            position: 'relative',
+            zIndex: 2,
+            alignSelf: railCard ? 'flex-start' : 'flex-end',
+            mt: 'auto',
+          }}
+        >
+          {arrowBox}
+        </Box>
+        {spotlightVisual ? (
+          <Box
+            onClick={
+              railCard
+                ? (event) => {
+                    event.stopPropagation()
+                    onClick()
+                  }
+                : undefined
+            }
+            sx={{
+              position: 'absolute',
+              right: fill ? '-4%' : compact ? p(10) : p(-6),
+              bottom: 0,
+              width: fill ? '82%' : p(compact ? 228 : 240),
+              height: fill ? '64%' : p(compact ? 228 : 260),
+              zIndex: fill ? 1 : railCard ? 3 : 1,
+              pointerEvents: railCard ? 'auto' : 'none',
+              cursor: railCard ? 'pointer' : 'inherit',
+              transform: 'none',
+              transformOrigin: 'bottom right',
+            }}
+          >
+            {spotlightVisual}
+          </Box>
+        ) : null}
+      </ButtonBase>
+    )
+  }
+
+  if (pair) {
+    return (
+      <ButtonBase
+        onClick={onClick}
+        sx={{
+          position: 'relative',
+          height: '100%',
+          minHeight: 0,
+          width: '100%',
+          borderRadius: `${p(54)}px`,
+          overflow: 'hidden',
+          bgcolor,
+          px: `${p(34)}px`,
+          pt: `${p(31)}px`,
+          pb: `${p(31)}px`,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          boxSizing: 'border-box',
+          textAlign: 'left',
+          isolation: 'isolate',
+          cursor: 'pointer',
+          touchAction: 'manipulation',
+          WebkitTapHighlightColor: 'transparent',
+          transition: 'transform 120ms ease-out',
+          '&:active': { transform: 'scale(0.98)' },
+          '&:focus-visible': { outline: '3px solid #FDD83B', outlineOffset: 4 },
+          '@media (prefers-reduced-motion: reduce)': {
+            transition: 'none',
+            '&:active': { transform: 'none' },
+          },
+        }}
+      >
+        {pairGlow}
+        <Box sx={{ position: 'relative', zIndex: 2, minWidth: 0, maxWidth: '92%' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(7)}px`, minWidth: 0 }}>
+            {leadingIcon}
+            <Typography
+              sx={{
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: p(43),
+                lineHeight: `${p(54)}px`,
+                fontFamily: FIGMA_FONT,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+              }}
+            >
+              {label}
+            </Typography>
+          </Box>
+          {subtitle ? (
+            <Typography
+              sx={{
+                mt: `${p(9)}px`,
+                color: '#fff',
+                opacity: 0.6,
+                fontWeight: 500,
+                fontSize: p(28),
+                lineHeight: `${p(34)}px`,
+                fontFamily: FIGMA_FONT,
+              }}
+            >
+              {subtitle}
+            </Typography>
+          ) : null}
+        </Box>
+        <Box sx={{ position: 'relative', zIndex: 2 }}>{arrowBox}</Box>
+        {spotlightVisual ? (
+          <Box
+            onClick={(event) => {
+              event.stopPropagation()
+              onClick()
+            }}
+            sx={{
+              position: 'absolute',
+              right: p(10),
+              bottom: 0,
+              width: p(228),
+              height: p(228),
+              zIndex: 3,
+              pointerEvents: 'auto',
+              cursor: 'pointer',
+            }}
+          >
+            {spotlightVisual}
+          </Box>
+        ) : null}
+      </ButtonBase>
+    )
+  }
+
+  return (
+    <ButtonBase
+      onClick={onClick}
+      sx={{
+        position: 'relative',
+        height: '100%',
+        minHeight: 0,
+        width: '100%',
+        borderRadius: `${p(54)}px`,
+        overflow: 'hidden',
+        bgcolor,
+        px: `${p(40)}px`,
+        py: `${p(36)}px`,
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+        gap: `${p(16)}px`,
+        boxSizing: 'border-box',
+        textAlign: 'left',
+        touchAction: 'manipulation',
+        WebkitTapHighlightColor: 'transparent',
+        transition: 'transform 120ms ease-out',
+        '&:active': { transform: 'scale(0.98)' },
+        '&:focus-visible': { outline: '3px solid #FDD83B', outlineOffset: 4 },
+        '@media (prefers-reduced-motion: reduce)': {
+          transition: 'none',
+          '&:active': { transform: 'none' },
+        },
+      }}
+    >
+      <Box sx={{ minWidth: 0, flex: 1, alignSelf: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(9)}px`, minWidth: 0 }}>
+          {leadingIcon}
+          <Typography
+            sx={{
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: p(56),
+              lineHeight: `${p(70)}px`,
+              fontFamily: FIGMA_FONT,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+            }}
+          >
+            {label}
+          </Typography>
+        </Box>
+        {subtitle ? (
+          <Typography
+            sx={{
+              mt: `${p(12)}px`,
+              color: '#fff',
+              opacity: 0.6,
+              fontWeight: 500,
+              fontSize: p(36),
+              lineHeight: `${p(45)}px`,
+              fontFamily: FIGMA_FONT,
+            }}
+          >
+            {subtitle}
+          </Typography>
+        ) : null}
+      </Box>
+      {arrowBox}
+    </ButtonBase>
+  )
+}
+
+/** @deprecated kept for older imports */
+export function useHomeSideStyles(_is960: boolean) {
+  return {
+    sideCardSx: {},
+    sideTrailingSx: {},
+    sideArrowSx: {},
+    sideNextSx: {},
+  }
 }

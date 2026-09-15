@@ -32,6 +32,11 @@ export function useLongPress(onLongPress: () => void, delayMs = 550) {
     onPointerUp: clear,
     onPointerLeave: clear,
     onPointerCancel: clear,
+    onMouseDown: start,
+    onMouseUp: clear,
+    onMouseLeave: clear,
+    onTouchStart: start,
+    onTouchEnd: clear,
     consumeLongPress,
   };
 }

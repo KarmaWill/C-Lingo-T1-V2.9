@@ -3,18 +3,20 @@
     "library": "Library",
     "learn": "Learn",
     "hsk": "HSK",
-    "explore": "Explore"
+    "explore": "Explore",
+    "camera": "Camera"
   },
   "program": {
     "hubTitle": "AI Class Studio",
     "tracks": {
       "c-lingo": "C-Lingo Chinese",
-      "hsk-standard": "HSK Standard",
+      "hsk-standard": "Burnside High School",
       "business-chinese": "Business Chinese"
     },
     "badge": {
       "onlineOnly": "Online only",
       "officialExam": "Official exam",
+      "schoolEdition": "School edition",
       "premium": "Premium"
     }
   },
@@ -42,6 +44,8 @@
     "moduleMastery": "Module Mastery",
     "startSession": "Start Session",
     "about": "About",
+    "businessDialogue": "Business Dialogue",
+    "businessDialogueHint": "商务中文模拟对话",
     "scenarioDialogue1": "Scenario",
     "scenarioDialogue2": "Dialogue",
     "documentTools1": "Document",
@@ -58,11 +62,14 @@
     }
   },
   "hsk": {
-    "eyebrow": "HSK STANDARD COURSE",
-    "heroTitle": "HSK 1 | Topic 1: Greetings & Self Introduction",
+    "eyebrow": "BURNSIDE CHINESE",
+    "heroTitle": "Topic 1 | Activity 1: Greetings & Self Introduction",
     "words": "Words",
     "patterns": "Patterns",
-    "topicMastery": "HSK Topic Mastery",
+    "topicMastery": "Topic Mastery",
+    "topicN": "Topic {{n}}",
+    "activityN": "Activity {{n}}",
+    "seminar": "Seminar",
     "speakingPro1": "AI Speaking",
     "speakingPro2": "Pro",
     "writingTraining1": "Writing",
@@ -168,5 +175,88 @@
       "imageSize": "Image must be 4 MB or smaller."
     },
     "contextHint": "Context: {{module}} · {{route}}"
+  },
+  "onboard": {
+    "progress": "Progress",
+    "back": "Go Back",
+    "next": "Next",
+    "continue": "Continue",
+    "confirm": "Confirm",
+    "steps": {
+      "language": "Language",
+      "wifi": "WiFi Connection",
+      "activation": "Activation",
+      "goal": "Your goal",
+      "email": "Email",
+      "profile": "Profile",
+      "personal": "Personal Info",
+      "start": "Start",
+      "complete": "Complete"
+    },
+    "titles": {
+      "language": "Please Select Your Language",
+      "wifi": "Select WiFi",
+      "activation": "Activate Your Device",
+      "goal": "What brings you here?",
+      "email": "Leave an email",
+      "profile": "Complete Your Profile",
+      "path": "Choose Your Learning Path"
+    },
+    "subs": {
+      "wifi": "Please select an available Wi-Fi network",
+      "goal": "This sets the books we show first. You can change later.",
+      "email": "Optional contact. Nothing is sent off this tablet in phase one.",
+      "profile": "Help us understand you better and personalize your learning plan.",
+      "path": "Select the best-fit option. You can adjust it later in Settings."
+    },
+    "goals": {
+      "learn": "Learn",
+      "exam": "Exam",
+      "dailyTitle": "Daily Chinese",
+      "dailyBody": "Speak and read on Learn. Zero-foundation books first.",
+      "hskTitle": "HSK track",
+      "hskBody": "Aim for a level book. Placement can set the starting paper."
+    },
+    "email": "Email",
+    "emailLabel": "Please enter your E-mail address",
+    "emailPlaceholder": "Enter email address",
+    "emailHint": "Add an @ to continue.",
+    "snLabel": "Please verify the SN matches your device",
+    "snPrefix": "SN：",
+    "tos": "I have read and agree to the <terms>Terms of Service</terms>, <privacy>Privacy Policy</privacy>, and <kids>Children's Privacy Policy</kids>.",
+    "activate": "Activate & Proceed",
+    "avatarHint": "Tap to choose an avatar",
+    "nickname": "Nickname",
+    "nicknamePlaceholder": "What should we call you?",
+    "dob": "Date of Birth",
+    "dobPlaceholder": "Select your birthday",
+    "gender": "Gender",
+    "genderMale": "Male",
+    "genderFemale": "Female",
+    "genderUnspecified": "Prefer not to say",
+    "changeAvatar": "Change Avatar",
+    "close": "Close",
+    "wlan": "WLAN",
+    "wifiRefresh": "Refresh networks",
+    "path1Small": "Path 1 · No test",
+    "path1Title": "I’m new. Start C-Lingo",
+    "path1Body": "Zero foundation. Enter the original course on Learn.",
+    "path2Small": "Path 2 · Placement",
+    "path2Title": "Take placement",
+    "path2Body": "A short diagnostic. Score sets your HSK book.",
+    "pathBeginnerTag": "Recommended for Beginners",
+    "pathBeginnerTitle": "I'm a complete Chinese beginner",
+    "pathBeginnerBody": "Start with C-Lingo Level 1 and learn step-by-step.",
+    "pathHskTag": "Clear Goal in Mind",
+    "pathHskTitle": "I know my HSK level",
+    "pathHskBody": "Select target level to access corresponding exam-prep content.",
+    "pathPlaceTag": "Find Your Starting Point",
+    "pathPlaceTitle": "I'm not sure yet",
+    "pathPlaceBody": "Complete a short placement test for your recommended path.",
+    "startLevel1": "Start C-Lingo Level 1",
+    "selectHskLevel": "Select Your HSK Level",
+    "startPlacement": "Start Placement Test",
+    "hskDialogHint": "HSK 1 and HSK 2 are open in phase one.",
+    "hskLocked": "HSK {{level}} locked"
   }
 }

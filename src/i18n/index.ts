@@ -9,6 +9,7 @@ import es from './locales/es/common.json';
 import fr from './locales/fr/common.json';
 import ja from './locales/ja/common.json';
 import ko from './locales/ko/common.json';
+import ar from './locales/ar/common.json';
 
 void i18n.use(initReactI18next).init({
   resources: {
@@ -20,6 +21,7 @@ void i18n.use(initReactI18next).init({
     fr: { common: fr },
     ja: { common: ja },
     ko: { common: ko },
+    ar: { common: ar },
   },
   lng: loadStoredLocaleId(),
   fallbackLng: DEFAULT_LOCALE_ID,

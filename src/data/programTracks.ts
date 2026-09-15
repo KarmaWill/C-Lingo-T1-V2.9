@@ -84,52 +84,27 @@ export const DEFAULT_CHROME: ProgramChromeTheme = {
 
 const HSK_CHROME: ProgramChromeTheme = {
   ...DEFAULT_CHROME,
-  screenBg: '#FBF7F7',
-  mainBg: '#FBF7F7',
-  statusBarBg: 'rgba(251, 247, 247, 0.92)',
-  statusBarBorder: '0.5px solid rgba(192, 57, 43, 0.08)',
-  topBarBg: 'rgba(255, 252, 252, 0.9)',
-  topBarBorder: '0.5px solid rgba(192, 57, 43, 0.1)',
-  hubTitleColor: '#991B1B',
-  programBtnBg: '#FEF2F2',
-  programBtnBorder: '1px solid rgba(192, 57, 43, 0.15)',
-  programBtnText: '#991B1B',
-  programBtnHoverBg: '#FEE2E2',
-  bottomNavAccent: '#C0392B',
-  bottomNavDotInactive: 'rgba(192, 57, 43, 0.18)',
+  bottomNavAccent: '#00B090',
+  bottomNavDotInactive: 'rgba(0, 176, 144, 0.22)',
+};
+
+/** Hub 首页整页林绿，和 values 海报同底；子页 Seminar 仍走浅底 HSK_CHROME */
+const BHS_HUB_CHROME: ProgramChromeTheme = {
+  ...HSK_CHROME,
+  screenBg: '#004840',
+  mainBg: '#004840',
+  statusBarBg: '#004840',
+  statusBarText: '#F4FBF8',
+  statusBarIcon: '#F4FBF8',
+  statusBarBorder: 'none',
+  topBarBg: '#004840',
+  topBarText: '#F4FBF8',
 };
 
 const BUSINESS_CHROME: ProgramChromeTheme = {
-  screenBg: '#0D0D0D',
-  mainBg: '#0D0D0D',
-  statusBarBg: 'rgba(13, 13, 13, 0.92)',
-  statusBarText: '#F5F0E8',
-  statusBarIcon: 'rgba(245, 240, 232, 0.75)',
-  statusBarBorder: '0.5px solid rgba(212, 168, 83, 0.12)',
-  batteryBorder: '1.5px solid rgba(212, 168, 83, 0.35)',
-  batteryFill: 'linear-gradient(90deg, #E8C878 0%, #D4A853 55%, #B8892E 100%)',
-  topBarBg: 'rgba(18, 18, 18, 0.92)',
-  topBarText: '#F5F0E8',
-  topBarBorder: '0.5px solid rgba(212, 168, 83, 0.15)',
-  hubTitleColor: '#F5F0E8',
-  programBtnBg: 'rgba(212, 168, 83, 0.12)',
-  programBtnBorder: '1px solid rgba(212, 168, 83, 0.28)',
-  programBtnText: '#D4A853',
-  programBtnHoverBg: 'rgba(212, 168, 83, 0.18)',
-  langBtnBg: 'rgba(212, 168, 83, 0.1)',
-  langBtnText: '#D4A853',
-  langMenuBg: '#1A1A1A',
-  langMenuBorder: '1px solid rgba(212, 168, 83, 0.2)',
-  avatarBorder: '2px solid rgba(212, 168, 83, 0.35)',
-  bottomNavDockBg: 'rgba(26, 26, 26, 0.88)',
-  bottomNavDockBorder: '1px solid rgba(212, 168, 83, 0.2)',
-  bottomNavShadow: '0 20px 50px rgba(0,0,0,0.45)',
+  ...DEFAULT_CHROME,
   bottomNavAccent: '#D4A853',
-  bottomNavInactive: 'rgba(245, 240, 232, 0.45)',
   bottomNavDotInactive: 'rgba(212, 168, 83, 0.22)',
-  cameraBtnBg: 'rgba(26, 26, 26, 0.88)',
-  cameraBtnColor: '#D4A853',
-  cameraBtnActiveBg: '#D4A853',
 };
 
 export const PROGRAM_TRACKS: ProgramTrack[] = [
@@ -139,29 +114,33 @@ export const PROGRAM_TRACKS: ProgramTrack[] = [
     route: '/AI',
     hubTitle: 'AI Class Studio',
     badge: {
-      text: 'Online only',
-      bg: '#ECFDF5',
-      border: '#A7F3D0',
-      color: '#047857',
-      dot: '#10B981',
+      text: 'ONLINE ONLY',
+      bg: 'rgba(0, 180, 160, 0.06)',
+      border: '#00B4A0',
+      color: '#00B4A0',
+      dot: '#00B4A0',
     },
     pageBg: 'transparent',
-    chrome: DEFAULT_CHROME,
+    chrome: {
+      ...DEFAULT_CHROME,
+      screenBg: '#F2F8FF',
+      mainBg: '#F2F8FF',
+    },
   },
   {
     id: 'hsk-standard',
-    label: 'HSK Standard',
+    label: 'Burnside High School',
     route: '/hsk-standard',
     hubTitle: 'AI Class Studio',
     badge: {
-      text: 'Official exam',
-      bg: '#FEF2F2',
-      border: '#FECACA',
-      color: '#B91C1C',
-      dot: '#DC2626',
+      text: 'School edition',
+      bg: '#EEF2F7',
+      border: '#C5D0DE',
+      color: '#1B3A6B',
+      dot: '#1B3A6B',
     },
-    pageBg: '#FBF7F7',
-    chrome: HSK_CHROME,
+    pageBg: '#004840',
+    chrome: BHS_HUB_CHROME,
   },
   {
     id: 'business-chinese',
@@ -170,12 +149,12 @@ export const PROGRAM_TRACKS: ProgramTrack[] = [
     hubTitle: 'AI Class Studio',
     badge: {
       text: 'Premium',
-      bg: 'rgba(212,168,83,0.12)',
-      border: 'rgba(212,168,83,0.35)',
-      color: '#D4A853',
+      bg: '#FFF8E7',
+      border: '#F3E0A8',
+      color: '#A16207',
       dot: '#D4A853',
     },
-    pageBg: '#0D0D0D',
+    pageBg: '#FFF8F0',
     chrome: BUSINESS_CHROME,
   },
 ];
@@ -183,8 +162,15 @@ export const PROGRAM_TRACKS: ProgramTrack[] = [
 const ID_TO_TRACK = new Map(PROGRAM_TRACKS.map((t) => [t.id, t]));
 
 export function getProgramTrackFromPath(pathname: string): ProgramTrack {
-  if (pathname === '/hsk-standard' || pathname.startsWith('/hsk-standard/')) {
+  if (pathname === '/hsk-standard') {
     return ID_TO_TRACK.get('hsk-standard')!;
+  }
+  if (pathname.startsWith('/hsk-standard/')) {
+    return {
+      ...ID_TO_TRACK.get('hsk-standard')!,
+      pageBg: '#FFF8F0',
+      chrome: HSK_CHROME,
+    };
   }
   if (pathname === '/business-chinese' || pathname.startsWith('/business-chinese/')) {
     return ID_TO_TRACK.get('business-chinese')!;
@@ -197,7 +183,7 @@ export function getProgramTrackById(id: ProgramTrackId): ProgramTrack | undefine
 }
 
 export function getProgramBadgeKey(id: ProgramTrackId): string {
-  if (id === 'hsk-standard') return 'program.badge.officialExam';
+  if (id === 'hsk-standard') return 'program.badge.schoolEdition';
   if (id === 'business-chinese') return 'program.badge.premium';
   return 'program.badge.onlineOnly';
 }

@@ -1,6 +1,5 @@
 import { Box, Typography } from '@mui/material'
-
-const OPPO_FONT = '"OPPO Sans", "Helvetica Neue", Arial, sans-serif'
+import { APP_FONT_FAMILY } from '../../theme/appFont'
 
 function SloganStarIcon({ gradientId }: { gradientId: string }) {
   return (
@@ -14,6 +13,7 @@ function SloganStarIcon({ gradientId }: { gradientId: string }) {
         width: '0.82em',
         height: '0.82em',
         mx: '0.01em',
+        filter: 'drop-shadow(0 0 6px rgba(185, 255, 90, 0.9)) drop-shadow(0 1px 2px rgba(246, 200, 58, 0.55))',
       }}
     >
       <svg viewBox="0 0 24 24" fill="none" width="100%" height="100%" style={{ display: 'block', overflow: 'visible' }}>
@@ -44,6 +44,7 @@ function SloganGlobeIcon({ gradientId }: { gradientId: string }) {
         width: '0.82em',
         height: '0.82em',
         mx: '0.01em',
+        filter: 'drop-shadow(0 0 6px rgba(185, 255, 90, 0.9)) drop-shadow(0 1px 2px rgba(246, 200, 58, 0.55))',
       }}
     >
       <svg viewBox="0 0 48 48" fill="none" width="100%" height="100%" style={{ display: 'block', overflow: 'visible' }}>
@@ -68,7 +69,7 @@ function SloganGlobeIcon({ gradientId }: { gradientId: string }) {
   )
 }
 
-export default function ShellSloganHeadline() {
+export default function ShellSloganHeadline({ onLight = false }: { onLight?: boolean }) {
   return (
     <Box
       className="about-slogan-banner"
@@ -87,10 +88,11 @@ export default function ShellSloganHeadline() {
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: 'min(240px, 55vw)',
-          height: 'min(240px, 55vw)',
-          background:
-            'radial-gradient(circle, rgba(185, 255, 90, 0.22) 0%, rgba(185, 255, 90, 0.08) 42%, transparent 72%)',
+          width: 'min(260px, 48vw)',
+          height: 'min(260px, 48vw)',
+          background: onLight
+            ? 'radial-gradient(circle, rgba(185, 255, 90, 0.42) 0%, rgba(246, 200, 58, 0.16) 42%, transparent 72%)'
+            : 'radial-gradient(circle, rgba(185, 255, 90, 0.22) 0%, rgba(185, 255, 90, 0.08) 42%, transparent 72%)',
           filter: 'blur(24px)',
           pointerEvents: 'none',
           zIndex: 0,
@@ -103,12 +105,12 @@ export default function ShellSloganHeadline() {
           position: 'relative',
           zIndex: 1,
           m: 0,
-          fontFamily: OPPO_FONT,
-          fontSize: 'clamp(0.88rem, 1.85vw, 1.32rem)',
+          fontFamily: APP_FONT_FAMILY,
+          fontSize: 'clamp(1.15rem, 2.15vw, 1.5rem)',
           fontWeight: 700,
-          color: '#F7FFF6',
+          color: onLight ? 'rgb(22 62 104 / 0.72)' : '#F7FFF6',
           lineHeight: 1.1,
-          letterSpacing: '-0.8px',
+          letterSpacing: '-0.03em',
           whiteSpace: 'nowrap',
           WebkitFontSmoothing: 'antialiased',
           textRendering: 'optimizeLegibility',

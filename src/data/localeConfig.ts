@@ -1,4 +1,11 @@
-export type AppLocaleId = 'zh' | 'en' | 'vi' | 'ms' | 'es' | 'fr' | 'ja' | 'ko';
+import {
+  APP_FONT_AR,
+  APP_FONT_FAMILY,
+  APP_FONT_JA,
+  APP_FONT_KO,
+} from '../theme/appFont'
+
+export type AppLocaleId = 'zh' | 'en' | 'vi' | 'ms' | 'es' | 'fr' | 'ja' | 'ko' | 'ar';
 
 export interface AppLocale {
   id: AppLocaleId;
@@ -15,7 +22,7 @@ export const APP_LOCALES: AppLocale[] = [
     name: '中文',
     flag: '🇨🇳',
     label: 'CN',
-    fontFamily: '"Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
+    fontFamily: APP_FONT_FAMILY,
     htmlLang: 'zh-CN',
   },
   {
@@ -23,7 +30,7 @@ export const APP_LOCALES: AppLocale[] = [
     name: 'English',
     flag: '🇺🇸',
     label: 'EN',
-    fontFamily: '"Google Sans", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: APP_FONT_FAMILY,
     htmlLang: 'en',
   },
   {
@@ -31,7 +38,7 @@ export const APP_LOCALES: AppLocale[] = [
     name: 'Tiếng Việt',
     flag: '🇻🇳',
     label: 'VI',
-    fontFamily: '"Be Vietnam Pro", "Noto Sans", sans-serif',
+    fontFamily: APP_FONT_FAMILY,
     htmlLang: 'vi',
   },
   {
@@ -39,7 +46,7 @@ export const APP_LOCALES: AppLocale[] = [
     name: 'Bahasa Melayu',
     flag: '🇲🇾',
     label: 'MS',
-    fontFamily: '"Plus Jakarta Sans", "Noto Sans", sans-serif',
+    fontFamily: APP_FONT_FAMILY,
     htmlLang: 'ms',
   },
   {
@@ -47,7 +54,7 @@ export const APP_LOCALES: AppLocale[] = [
     name: 'Español',
     flag: '🇪🇸',
     label: 'ES',
-    fontFamily: '"Google Sans", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: APP_FONT_FAMILY,
     htmlLang: 'es',
   },
   {
@@ -55,7 +62,7 @@ export const APP_LOCALES: AppLocale[] = [
     name: 'Français',
     flag: '🇫🇷',
     label: 'FR',
-    fontFamily: '"Google Sans", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: APP_FONT_FAMILY,
     htmlLang: 'fr',
   },
   {
@@ -63,7 +70,7 @@ export const APP_LOCALES: AppLocale[] = [
     name: '日本語',
     flag: '🇯🇵',
     label: 'JA',
-    fontFamily: '"Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif',
+    fontFamily: APP_FONT_JA,
     htmlLang: 'ja',
   },
   {
@@ -71,8 +78,16 @@ export const APP_LOCALES: AppLocale[] = [
     name: '한국어',
     flag: '🇰🇷',
     label: 'KO',
-    fontFamily: '"Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
+    fontFamily: APP_FONT_KO,
     htmlLang: 'ko',
+  },
+  {
+    id: 'ar',
+    name: 'العربية',
+    flag: '🇦🇪',
+    label: 'AR',
+    fontFamily: APP_FONT_AR,
+    htmlLang: 'ar',
   },
 ];
 
@@ -110,6 +125,7 @@ export function localeRecord(base: {
   fr?: string;
   ja?: string;
   ko?: string;
+  ar?: string;
 }): Record<AppLocaleId, string> {
   const { en } = base;
   return {
@@ -121,5 +137,6 @@ export function localeRecord(base: {
     fr: base.fr ?? en,
     ja: base.ja ?? en,
     ko: base.ko ?? en,
+    ar: base.ar ?? en,
   };
 }

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { buildRubySegments, type PinyinWordSegment } from '../utils/pinyinRuby';
+import { APP_FONT_FAMILY } from '../theme/appFont';
 
 interface PinyinRubyTextProps {
   original: string;
@@ -40,7 +41,7 @@ const PinyinRubyText: React.FC<PinyinRubyTextProps> = ({
           >
             <span
               className={pinyinClassName}
-              style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+              style={{ fontFamily: APP_FONT_FAMILY }}
             >
               {segment.pinyin}
             </span>

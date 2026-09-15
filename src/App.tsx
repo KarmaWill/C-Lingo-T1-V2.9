@@ -6,17 +6,19 @@ import { LocaleProvider, useLocale } from './context/LocaleContext'
 import MainLayout from './components/MainUI/MainLayout'
 import { FeedbackProvider } from './components/feedback/FeedbackProvider'
 import HomePage from './pages/HomePage'
+import HomeEntryPage from './pages/HomeEntryPage'
+import { OnboardingProvider } from './onboarding/OnboardingContext'
 import HSKStandardHomePage from './pages/HSKStandardHomePage'
 import HSKStandardSpeakingProPage from './pages/hsk-standard/HSKStandardSpeakingProPage'
 import HSKStandardWritingTrainingPage from './pages/hsk-standard/HSKStandardWritingTrainingPage'
 import HSKStandardStudyWorkChinaPage from './pages/hsk-standard/HSKStandardStudyWorkChinaPage'
+import HSKStandardSeminarPage from './pages/hsk-standard/HSKStandardSeminarPage'
 import BusinessChineseHomePage from './pages/BusinessChineseHomePage'
 import BusinessScenarioDialoguePage from './pages/business-chinese/BusinessScenarioDialoguePage'
 import BusinessDocumentToolsPage from './pages/business-chinese/BusinessDocumentToolsPage'
 import BusinessEnterprisePlatformPage from './pages/business-chinese/BusinessEnterprisePlatformPage'
 import LessonPage from './pages/LessonPage'
 import AIChatPage from './pages/AIChatPage'
-import LibraryPage from './pages/LibraryPage'
 import LibraryBookSelectionPage from './pages/LibraryBookSelectionPage'
 import SpecializedTracksPage from './pages/SpecializedTracksPage'
 import CameraPage from './pages/CameraPage'
@@ -55,6 +57,7 @@ import CultureMapPage from './pages/CultureMapPage'
 import HSKGoStudyPlaceholderPage from './pages/HSKGoStudyPlaceholderPage'
 import AudioReadingRoutePage from './pages/AudioReadingRoutePage'
 import CultureVideoRoutePage from './pages/CultureVideoRoutePage'
+import AIFMPage from './pages/AIFMPage'
 import ParentalControlsPage from './pages/ParentalControlsPage'
 import NskAppStorePage from './pages/NskAppStorePage'
 import JxwAppStorePage from './pages/JxwAppStorePage'
@@ -108,7 +111,7 @@ const baseThemeOptions = {
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          fontFamily: 'var(--app-font-family, "Google Sans", "Roboto", sans-serif)',
+          fontFamily: 'var(--app-font-family, "Google Sans Flex Variable", "Noto Sans SC", sans-serif)',
         },
       },
     },
@@ -137,20 +140,22 @@ function ThemedApp() {
         
         {/* Regular pages with MainLayout */}
         <Route path="*" element={
+      <OnboardingProvider>
       <MainLayout>
         <FeedbackProvider>
         <Routes>
-          <Route path="/" element={<Navigate to="/AI" replace />} />
+          <Route path="/" element={<Navigate to="/Home" replace />} />
               <Route path="/AI" element={<HomePage />} />
               <Route path="/hsk-standard" element={<HSKStandardHomePage />} />
               <Route path="/hsk-standard/speaking-pro" element={<HSKStandardSpeakingProPage />} />
               <Route path="/hsk-standard/writing-training" element={<HSKStandardWritingTrainingPage />} />
               <Route path="/hsk-standard/study-work-china" element={<HSKStandardStudyWorkChinaPage />} />
+              <Route path="/hsk-standard/seminar" element={<HSKStandardSeminarPage />} />
               <Route path="/business-chinese" element={<BusinessChineseHomePage />} />
               <Route path="/business-chinese/scenario-dialogue" element={<BusinessScenarioDialoguePage />} />
               <Route path="/business-chinese/document-tools" element={<BusinessDocumentToolsPage />} />
               <Route path="/business-chinese/enterprise-platform" element={<BusinessEnterprisePlatformPage />} />
-              <Route path="/Home" element={<LibraryPage />} />
+              <Route path="/Home" element={<HomeEntryPage />} />
               <Route path="/library" element={<Navigate to="/Home" replace />} />
               <Route path="/library/select-books" element={<LibraryBookSelectionPage />} />
               <Route path="/starting-learning" element={<StartingLearningPage />} />
@@ -192,6 +197,7 @@ function ThemedApp() {
               <Route path="/hsk-go-study" element={<HSKGoStudyPlaceholderPage />} />
               <Route path="/audio-reading" element={<AudioReadingRoutePage />} />
               <Route path="/culture-video" element={<CultureVideoRoutePage />} />
+              <Route path="/ai-fm" element={<AIFMPage />} />
               <Route path="/hsk-prep-test" element={<HSKPrepTestIntroPage />} />
               <Route path="/hsk-prep-training" element={<HSKPrepTrainingPage />} />
               <Route path="/hsk-skill-drill" element={<HSKSkillDrillPage />} />
@@ -209,6 +215,7 @@ function ThemedApp() {
         </Routes>
         </FeedbackProvider>
       </MainLayout>
+      </OnboardingProvider>
         } />
       </Routes>
     </ThemeProvider>

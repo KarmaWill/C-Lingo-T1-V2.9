@@ -1,0 +1,262 @@
+{
+  "nav": {
+    "library": "المكتبة",
+    "learn": "التعلّم",
+    "hsk": "HSK",
+    "explore": "استكشف",
+    "camera": "الكاميرا"
+  },
+  "program": {
+    "hubTitle": "استوديو الصف بالذكاء الاصطناعي",
+    "tracks": {
+      "c-lingo": "C-Lingo الصينية",
+      "hsk-standard": "Burnside High School",
+      "business-chinese": "الصينية للأعمال"
+    },
+    "badge": {
+      "onlineOnly": "عبر الإنترنت فقط",
+      "officialExam": "اختبار رسمي",
+      "schoolEdition": "إصدار مدرسي",
+      "premium": "مميز"
+    }
+  },
+  "topBanner": {
+    "languageSwitch": "تغيير اللغة",
+    "offline": "غير متصل",
+    "onlineOnly": "عبر الإنترنت فقط",
+    "pages": {
+      "aiClassStudio": "استوديو الصف بالذكاء الاصطناعي",
+      "chineseTextbooks": "كتب الصينية",
+      "specializedTracks": "مسارات متخصصة",
+      "cameraTools": "أدوات الكاميرا",
+      "exploreDevice": "استكشف الجهاز",
+      "speakingTutor": "مدرّس المحادثة",
+      "hskPreparation": "التحضير لـ HSK",
+      "nsk": "NSK 1.0"
+    }
+  },
+  "business": {
+    "eyebrow": "معرفة الأعمال",
+    "heroTitle": "BCT 1 | الاجتماع: الافتتاح وجدول الأعمال",
+    "points": "نقاط",
+    "modules": "وحدات",
+    "mins": "دقيقة",
+    "moduleMastery": "إتقان الوحدة",
+    "startSession": "بدء الجلسة",
+    "about": "نبذة",
+    "businessDialogue": "حوار الأعمال",
+    "businessDialogueHint": "محاكاة حوار بالصينية للأعمال",
+    "scenarioDialogue1": "مشهد",
+    "scenarioDialogue2": "حوار",
+    "documentTools1": "مستندات",
+    "documentTools2": "أدوات",
+    "enterprisePlatform1": "المؤسسات",
+    "enterprisePlatform2": "منصة",
+    "topics": {
+      "meeting": "اجتماع",
+      "negotiation": "تفاوض",
+      "email": "بريد",
+      "presentation": "عرض",
+      "interview": "مقابلة",
+      "networking": "تواصل مهني"
+    }
+  },
+  "hsk": {
+    "eyebrow": "BURNSIDE CHINESE",
+    "heroTitle": "الموضوع 1 | النشاط 1: التحية والتعريف بالنفس",
+    "words": "كلمات",
+    "patterns": "تراكيب",
+    "topicMastery": "إتقان الموضوع",
+    "topicN": "الموضوع {{n}}",
+    "activityN": "النشاط {{n}}",
+    "seminar": "ندوة",
+    "speakingPro1": "محادثة بالذكاء الاصطناعي",
+    "speakingPro2": "احترافي",
+    "writingTraining1": "الكتابة",
+    "writingTraining2": "تدريب",
+    "studyWork1": "الدراسة والعمل",
+    "studyWork2": "في الصين"
+  },
+  "hskExamIntro": {
+    "volume": "المجلد {{volume}}",
+    "mockTest": "اختبار HSK {{level}} التجريبي",
+    "practiceTest": "اختبار HSK {{level}} التدريبي",
+    "durationMin": "المدة · دقيقة",
+    "totalQuestions": "عدد الأسئلة",
+    "fullScore": "الدرجة الكاملة",
+    "examRules": "قواعد الاختبار",
+    "questionTypes": "أنواع الأسئلة",
+    "rule1": "ركّز وأكمل الاختبار بنفسك.",
+    "rule2Prefix": "يُشغَّل صوت الاستماع",
+    "rule2Suffix": ". أنصت جيداً.",
+    "rule3Prefix": "يمكنك التسليم مبكراً. عند انتهاء الوقت، سيقوم النظام بـ",
+    "rule3Suffix": ".",
+    "rule4": "نظّم وقتك: ابدأ بالأسئلة الأسهل ثم الأصعب.",
+    "listenOnce": "مرة واحدة",
+    "listenTwice": "مرتين",
+    "autoSubmit": "التسليم التلقائي",
+    "questions": "{{count}} أسئلة",
+    "minutesApprox": "~{{count}} د",
+    "rulesAccepted": "لقد قرأت قواعد الاختبار وأفهمها",
+    "startExam": "بدء الاختبار",
+    "starting": "جارٍ البدء...",
+    "sections": {
+      "listening": "الاستماع",
+      "reading": "القراءة",
+      "writing": "الكتابة"
+    }
+  },
+  "hskExamResult": {
+    "scoreDetails": "تفاصيل الدرجة",
+    "correctCount": "أسئلة صحيحة",
+    "answerReview": "مراجعة الإجابات",
+    "correct": "صحيح",
+    "incorrect": "غير صحيح",
+    "loadingReview": "جارٍ تحميل تفاصيل الإجابات…",
+    "noReview": "لا توجد تفاصيل للإجابات",
+    "overallScoreRate": "نسبة الدرجة الإجمالية {{rate}}%",
+    "bestScore": "أفضل درجة",
+    "scorePoints": "{{score}} نقطة",
+    "examDuration": "الوقت المستغرق",
+    "durationFormat": "{{minutes}} د {{seconds}} ث",
+    "viewDetails": "عرض التفاصيل",
+    "openingDetails": "جارٍ فتح التفاصيل…",
+    "retryDetails": "إعادة محاولة التفاصيل",
+    "tryAgain": "حاول مرة أخرى",
+    "checkingAvailability": "جارٍ التحقق من التوفر…",
+    "retryAvailability": "إعادة محاولة التوفر",
+    "noLongerAvailable": "لم يعد متاحاً"
+  },
+  "feedback": {
+    "title": "ملاحظات حول مشكلة",
+    "subtitle": "اختر أقرب نوع للمشكلة حتى نتمكن من تحديدها ومعالجتها أسرع.",
+    "typeLabel": "نوع الملاحظة · اختيار واحد",
+    "tagsLabel": "تفاصيل المشكلة · اختيار متعدد",
+    "detailsLabel": "التفاصيل · مطلوب · حتى 400 حرف",
+    "detailsPlaceholder": "صف المشكلة أو الفكرة التي واجهتها…",
+    "screenshotHint": "أضف لقطة شاشة · صورة واحدة فقط · صورة واحدة على الأقل مطلوبة",
+    "remainingToday": "تبقّى {{count}} إرسالات اليوم",
+    "cancel": "إلغاء",
+    "submit": "إرسال الملاحظة",
+    "submitting": "جارٍ الإرسال…",
+    "categories": {
+      "content_error": {
+        "title": "خطأ في المحتوى",
+        "desc": "أخطاء في الترجمة أو الحروف أو البينين أو نقطة معرفية."
+      },
+      "functional_failure": {
+        "title": "خلل في الوظيفة",
+        "desc": "تقطيع، تعذّر تحميل الصوت، أو سلوك غير طبيعي."
+      },
+      "user_experience": {
+        "title": "تجربة الاستخدام",
+        "desc": "إحساس الواجهة أو توقعات الميزات أو ملاحظات الاستخدام."
+      },
+      "suggestion": {
+        "title": "اقتراحات وطلبات",
+        "desc": "أفكار للتحسين أو ميزات تريدها."
+      }
+    },
+    "tags": {
+      "font_too_small": "الخط صغير يصعب قراءته",
+      "more_interactive_games": "أريد ألعاباً تفاعلية أكثر",
+      "too_few_rewards": "المكافآت قليلة",
+      "parental_controls": "أريد أدوات للرقابة العائلية",
+      "more_levels": "أريد مستويات أكثر",
+      "other": "أخرى"
+    },
+    "toast": {
+      "success": "تم الإرسال. يمكنك الإرسال {{count}} مرات إضافية اليوم.",
+      "limitReached": "لضمان مراجعة كل تقرير، يرجى العودة غداً.",
+      "authRequired": "يرجى تسجيل الدخول قبل إرسال الملاحظات."
+    },
+    "errors": {
+      "imageType": "يرجى رفع ملف صورة.",
+      "imageSize": "يجب ألا يتجاوز حجم الصورة 4 ميغابايت."
+    },
+    "contextHint": "السياق: {{module}} · {{route}}"
+  },
+  "onboard": {
+    "progress": "التقدم",
+    "back": "رجوع",
+    "next": "التالي",
+    "continue": "متابعة",
+    "confirm": "تأكيد",
+    "steps": {
+      "language": "اللغة",
+      "wifi": "اتصال Wi-Fi",
+      "activation": "التفعيل",
+      "goal": "هدفك",
+      "email": "البريد",
+      "profile": "الملف الشخصي",
+      "personal": "المعلومات الشخصية",
+      "start": "البدء",
+      "complete": "اكتمال"
+    },
+    "titles": {
+      "language": "الرجاء اختيار لغتك",
+      "wifi": "اختر شبكة Wi-Fi",
+      "activation": "فعّل جهازك",
+      "goal": "ما الذي جاء بك إلى هنا؟",
+      "email": "أضف بريداً إلكترونياً",
+      "profile": "أكمل ملفك الشخصي",
+      "path": "اختر مسار التعلّم"
+    },
+    "subs": {
+      "wifi": "يُرجى اختيار شبكة Wi-Fi متاحة.",
+      "goal": "يحدد هذا الكتب التي نعرضها أولاً. يمكنك التغيير لاحقاً.",
+      "email": "تواصل اختياري. لا يُرسل شيء خارج هذا الجهاز في المرحلة الأولى.",
+      "profile": "ساعدنا على فهمك بشكل أفضل وتخصيص خطة تعلمك.",
+      "path": "اختر الأنسب لك. يمكنك التعديل لاحقاً من الإعدادات."
+    },
+    "goals": {
+      "learn": "تعلّم",
+      "exam": "اختبار",
+      "dailyTitle": "الصينية اليومية",
+      "dailyBody": "تحدث واقرأ في التعلّم. نبدأ بكتب المستوى المبتدئ.",
+      "hskTitle": "مسار HSK",
+      "hskBody": "استهدف كتاب المستوى المناسب. يمكن لاختبار تحديد المستوى اختيار الورقة الأولى."
+    },
+    "email": "البريد الإلكتروني",
+    "emailLabel": "يُرجى إدخال عنوان بريدك الإلكتروني",
+    "emailPlaceholder": "أدخل البريد الإلكتروني",
+    "emailHint": "أضف علامة @ للمتابعة.",
+    "snLabel": "يُرجى التأكد من أن الرقم التسلسلي يطابق جهازك",
+    "snPrefix": "SN：",
+    "tos": "لقد قرأت وأوافق على <terms>شروط الخدمة</terms> و<privacy>سياسة الخصوصية</privacy> و<kids>سياسة خصوصية الأطفال</kids>.",
+    "activate": "تفعيل ومتابعة",
+    "avatarHint": "اضغط لاختيار صورة شخصية",
+    "nickname": "الاسم المستعار",
+    "nicknamePlaceholder": "بماذا نناديك؟",
+    "dob": "تاريخ الميلاد",
+    "dobPlaceholder": "اختر تاريخ ميلادك",
+    "gender": "الجنس",
+    "genderMale": "ذكر",
+    "genderFemale": "أنثى",
+    "genderUnspecified": "أفضل عدم الإفصاح",
+    "changeAvatar": "تغيير الصورة",
+    "close": "إغلاق",
+    "wlan": "WLAN",
+    "wifiRefresh": "تحديث الشبكات",
+    "path1Small": "المسار 1 · بدون اختبار",
+    "path1Title": "أنا مبتدئ. ابدأ C-Lingo",
+    "path1Body": "مستوى صفري. ادخل الدورة الأصلية في التعلّم.",
+    "path2Small": "المسار 2 · تحديد المستوى",
+    "path2Title": "خذ اختبار تحديد المستوى",
+    "path2Body": "تشخيص قصير. النتيجة تحدد كتاب HSK الخاص بك.",
+    "pathBeginnerTag": "موصى به للمبتدئين",
+    "pathBeginnerTitle": "أنا مبتدئ تماماً في الصينية",
+    "pathBeginnerBody": "ابدأ من C-Lingo المستوى 1 وتعلّم خطوة بخطوة.",
+    "pathHskTag": "هدف واضح",
+    "pathHskTitle": "أعرف مستواي في HSK",
+    "pathHskBody": "اختر المستوى للوصول إلى محتوى التحضير للاختبار.",
+    "pathPlaceTag": "اعثر على نقطة البداية",
+    "pathPlaceTitle": "لست متأكداً بعد",
+    "pathPlaceBody": "أكمل اختبار تحديد مستوى قصيراً لمسار مناسب.",
+    "startLevel1": "ابدأ C-Lingo المستوى 1",
+    "selectHskLevel": "اختر مستوى HSK",
+    "startPlacement": "ابدأ اختبار تحديد المستوى",
+    "hskDialogHint": "HSK 1 و HSK 2 متاحان في المرحلة الأولى.",
+    "hskLocked": "HSK {{level}} مقفل"
+  }
+}

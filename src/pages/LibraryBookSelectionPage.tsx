@@ -19,6 +19,9 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
+import { APP_SCREEN_SIZE, figmaPx, FIGMA_FONT } from '../utils/figmaScale';
+import { setActiveLibraryBook, toActiveLibraryBook } from '../library/libraryActiveBook';
 
 interface Book {
   id: string;
@@ -35,59 +38,7 @@ interface Book {
   downloadProgress?: number;
 }
 
-type Category = 'All' | 'Happy Chinese' | 'HSK' | 'Culture' | 'Practice';
-
-const buildCourseCover = (level: string, title: string, startColor: string, endColor: string) =>
-  `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="560" viewBox="0 0 400 560">
-      <defs>
-        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="${startColor}"/>
-          <stop offset="100%" stop-color="${endColor}"/>
-        </linearGradient>
-        <radialGradient id="glow" cx="70%" cy="20%" r="65%">
-          <stop offset="0%" stop-color="rgba(255,255,255,0.55)"/>
-          <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
-        </radialGradient>
-      </defs>
-      <rect width="400" height="560" rx="28" fill="url(#bg)"/>
-      <rect width="400" height="560" rx="28" fill="url(#glow)"/>
-      <circle cx="316" cy="78" r="52" fill="rgba(255,255,255,0.22)"/>
-      <circle cx="84" cy="456" r="72" fill="rgba(15,23,42,0.12)"/>
-      <rect x="36" y="44" width="328" height="472" rx="24" fill="rgba(255,255,255,0.13)" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
-      <text x="56" y="112" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="white" letter-spacing="2">CHINESE</text>
-      <text x="56" y="174" font-family="Arial, sans-serif" font-size="70" font-weight="900" fill="white">${level}</text>
-      <text x="56" y="224" font-family="Arial, sans-serif" font-size="28" font-weight="800" fill="rgba(255,255,255,0.92)">${title}</text>
-      <text x="56" y="266" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="rgba(255,255,255,0.78)">Standard Course</text>
-      <path d="M82 358 C128 322, 176 320, 222 356 S310 392, 344 346" fill="none" stroke="rgba(255,255,255,0.78)" stroke-width="14" stroke-linecap="round"/>
-      <path d="M86 410 H314" stroke="rgba(255,255,255,0.45)" stroke-width="4" stroke-linecap="round"/>
-      <path d="M112 438 H288" stroke="rgba(255,255,255,0.32)" stroke-width="4" stroke-linecap="round"/>
-    </svg>`
-  )}`;
-
-const buildSeriesCover = (label: string, title: string, subtitle: string, startColor: string, endColor: string) =>
-  `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="560" viewBox="0 0 400 560">
-      <defs>
-        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="${startColor}"/>
-          <stop offset="100%" stop-color="${endColor}"/>
-        </linearGradient>
-      </defs>
-      <rect width="400" height="560" rx="28" fill="url(#bg)"/>
-      <circle cx="318" cy="94" r="70" fill="rgba(255,255,255,0.18)"/>
-      <circle cx="70" cy="432" r="92" fill="rgba(15,23,42,0.12)"/>
-      <rect x="38" y="42" width="324" height="476" rx="24" fill="rgba(255,255,255,0.13)" stroke="rgba(255,255,255,0.34)" stroke-width="2"/>
-      <text x="58" y="108" font-family="Arial, sans-serif" font-size="22" font-weight="900" fill="rgba(255,255,255,0.78)" letter-spacing="2">${label}</text>
-      <text x="58" y="184" font-family="Arial, sans-serif" font-size="52" font-weight="900" fill="white">${title}</text>
-      <text x="58" y="226" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="rgba(255,255,255,0.88)">${subtitle}</text>
-      <rect x="58" y="286" width="116" height="116" rx="26" fill="rgba(255,255,255,0.88)"/>
-      <text x="116" y="360" text-anchor="middle" font-family="Arial, sans-serif" font-size="54" font-weight="900" fill="${endColor}">中</text>
-      <path d="M210 310 C244 286, 282 286, 316 310" fill="none" stroke="rgba(255,255,255,0.78)" stroke-width="10" stroke-linecap="round"/>
-      <path d="M202 356 H326" stroke="rgba(255,255,255,0.48)" stroke-width="5" stroke-linecap="round"/>
-      <path d="M202 386 H286" stroke="rgba(255,255,255,0.34)" stroke-width="5" stroke-linecap="round"/>
-    </svg>`
-  )}`;
+type Category = 'All' | 'Happy Chinese' | 'HSK 2.0' | 'HSK 3.0';
 
 const INITIAL_BOOKS: Book[] = [
   {
@@ -121,11 +72,11 @@ const INITIAL_BOOKS: Book[] = [
     title: 'HSK 1 Standard Course',
     subtitle: 'Textbook',
     author: 'Confucius Institute',
-    coverUrl: buildCourseCover('HSK 1', 'Textbook', '#F97316', '#F59E0B'),
+    coverUrl: '/images/hsk-1-standard-course-cover.jpg',
     progress: 85,
     totalPages: 150,
     currentPage: 128,
-    category: 'HSK',
+    category: 'HSK 2.0',
     hskLevel: 1,
     isDownloaded: true,
   },
@@ -134,38 +85,39 @@ const INITIAL_BOOKS: Book[] = [
     title: 'HSK 2 Standard Course',
     subtitle: 'Textbook',
     author: 'Confucius Institute',
-    coverUrl: buildCourseCover('HSK 2', 'Textbook', '#2563EB', '#06B6D4'),
+    coverUrl: '/images/hsk-2-standard-course-cover.jpg',
     progress: 0,
     totalPages: 180,
     currentPage: 0,
-    category: 'HSK',
+    category: 'HSK 2.0',
     hskLevel: 2,
     isDownloaded: false,
     downloadProgress: 45,
   },
   {
     id: 'culture-1',
-    title: 'Chinese Festivals',
-    subtitle: 'Culture Series',
-    author: 'Wang Ming',
-    coverUrl: buildSeriesCover('CULTURE', 'Festivals', 'Culture Series', '#DC2626', '#F97316'),
+    title: 'New HSK Course 1',
+    subtitle: 'Volume 1',
+    author: 'Foreign Language Teaching and Research Press',
+    coverUrl: '/images/chinese-festivals-cover.jpg',
     progress: 50,
     totalPages: 100,
     currentPage: 50,
-    category: 'Culture',
+    category: 'HSK 3.0',
+    hskLevel: 1,
     isDownloaded: false,
   },
   {
     id: 'exercise-1',
-    title: 'Grammar Master',
-    subtitle: 'HSK 1-2',
-    author: 'Zhang San',
-    coverUrl: buildSeriesCover('PRACTICE', 'Grammar', 'HSK 1-2', '#334155', '#0F172A'),
+    title: 'New HSK Course 2',
+    subtitle: 'Volume 2',
+    author: 'Foreign Language Teaching and Research Press',
+    coverUrl: '/images/grammar-master-cover.jpg',
     progress: 15,
     totalPages: 80,
     currentPage: 12,
-    category: 'Practice',
-    hskLevel: 1,
+    category: 'HSK 3.0',
+    hskLevel: 2,
     isDownloaded: true,
   },
 ];
@@ -190,8 +142,13 @@ const buildFallbackCover = (title: string) =>
 
 export default function LibraryBookSelectionPage() {
   const navigate = useNavigate();
-  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
-  const is960 = screenSize === '960x540';
+  const screenSize = APP_SCREEN_SIZE;
+  const p = (n: number) => figmaPx(n, screenSize);
+
+  const openBook = (book: Book) => {
+    setActiveLibraryBook(toActiveLibraryBook(book));
+    navigate(`/library/read/${book.id}`);
+  };
 
   const [books, setBooks] = useState<Book[]>(INITIAL_BOOKS);
   const [searchQuery, setSearchQuery] = useState('');
@@ -205,11 +162,11 @@ export default function LibraryBookSelectionPage() {
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const downloadTimersRef = useRef<Record<string, ReturnType<typeof setInterval>>>({});
 
-  const categories: Category[] = ['All', 'Happy Chinese', 'HSK', 'Culture', 'Practice'];
+  const categories: Category[] = ['All', 'Happy Chinese', 'HSK 2.0', 'HSK 3.0'];
 
   const filteredBooks = useMemo(() => {
     const q = searchQuery.toLowerCase();
-    return books.filter(book => {
+    return books.filter((book) => {
       const matchesSearch =
         book.title.toLowerCase().includes(q) || book.author.toLowerCase().includes(q);
       const matchesCategory = activeCategory === 'All' || book.category === activeCategory;
@@ -218,11 +175,10 @@ export default function LibraryBookSelectionPage() {
   }, [books, searchQuery, activeCategory]);
 
   const continueReadingBooks = useMemo(
-    () => books.filter(b => b.progress > 0 && b.progress < 100),
-    [books]
+    () => books.filter((b) => b.progress > 0 && b.progress < 100),
+    [books],
   );
 
-  // ── Book actions ──
   const clearDownloadTimer = (id: string) => {
     const timer = downloadTimersRef.current[id];
     if (timer) {
@@ -233,19 +189,17 @@ export default function LibraryBookSelectionPage() {
 
   const startDownload = (id: string) => {
     clearDownloadTimer(id);
-
-    setBooks(prev =>
-      prev.map(b => {
+    setBooks((prev) =>
+      prev.map((b) => {
         if (b.id !== id) return b;
         if (b.isDownloaded) return b;
         return { ...b, downloadProgress: b.downloadProgress ?? 0 };
-      })
+      }),
     );
-
     downloadTimersRef.current[id] = setInterval(() => {
       let completed = false;
-      setBooks(prev =>
-        prev.map(b => {
+      setBooks((prev) =>
+        prev.map((b) => {
           if (b.id !== id) return b;
           if (b.isDownloaded) {
             completed = true;
@@ -258,53 +212,51 @@ export default function LibraryBookSelectionPage() {
             return { ...b, isDownloaded: true, downloadProgress: undefined };
           }
           return { ...b, downloadProgress: next };
-        })
+        }),
       );
-      if (completed) {
-        clearDownloadTimer(id);
-      }
+      if (completed) clearDownloadTimer(id);
     }, 160);
   };
 
   const downloadBook = (id: string) => {
-    const target = books.find(b => b.id === id);
+    const target = books.find((b) => b.id === id);
     if (!target || target.isDownloaded) return;
     startDownload(id);
   };
 
   const deleteBook = (id: string) => {
     clearDownloadTimer(id);
-    setBooks(prev =>
-      prev.map(b => (b.id === id ? { ...b, isDownloaded: false, downloadProgress: undefined } : b))
+    setBooks((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, isDownloaded: false, downloadProgress: undefined } : b)),
     );
   };
 
   const deleteAllDownloaded = () => {
     Object.keys(downloadTimersRef.current).forEach(clearDownloadTimer);
-    setBooks(prev => prev.map(b => ({ ...b, isDownloaded: false, downloadProgress: undefined })));
+    setBooks((prev) => prev.map((b) => ({ ...b, isDownloaded: false, downloadProgress: undefined })));
   };
 
   const toggleSelectBook = (id: string) => {
-    setSelectedBookIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
+    setSelectedBookIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
   const toggleSelectAll = () => {
     if (selectedBookIds.length === filteredBooks.length) {
       setSelectedBookIds([]);
     } else {
-      setSelectedBookIds(filteredBooks.map(b => b.id));
+      setSelectedBookIds(filteredBooks.map((b) => b.id));
     }
   };
 
   const deleteSelectedBooks = () => {
     if (selectedBookIds.length === 0) return;
     selectedBookIds.forEach(clearDownloadTimer);
-    setBooks(prev =>
-      prev.map(b =>
+    setBooks((prev) =>
+      prev.map((b) =>
         selectedBookIds.includes(b.id)
           ? { ...b, isDownloaded: false, downloadProgress: undefined }
-          : b
-      )
+          : b,
+      ),
     );
     setSelectedBookIds([]);
   };
@@ -314,20 +266,14 @@ export default function LibraryBookSelectionPage() {
     setIsDeleteConfirmOpen(true);
   };
 
-  const closeDeleteConfirm = () => {
-    setIsDeleteConfirmOpen(false);
-  };
+  const closeDeleteConfirm = () => setIsDeleteConfirmOpen(false);
 
   const confirmDelete = () => {
-    if (deleteConfirmMode === 'selected') {
-      deleteSelectedBooks();
-    } else {
-      deleteAllDownloaded();
-    }
+    if (deleteConfirmMode === 'selected') deleteSelectedBooks();
+    else deleteAllDownloaded();
     setIsDeleteConfirmOpen(false);
   };
 
-  // ── Long-press (grid, non-edit) ──
   const handleLongPressStart = (bookId: string) => {
     longPressTimer.current = setTimeout(() => {
       setManagedBookId(bookId);
@@ -355,56 +301,133 @@ export default function LibraryBookSelectionPage() {
   }, []);
 
   useEffect(() => {
-    if (isEditMode) {
-      // Avoid carrying over any long-press management overlay into edit mode.
-      setManagedBookId(null);
-    }
+    if (isEditMode) setManagedBookId(null);
   }, [isEditMode]);
 
-  // ── Design tokens ──
-  const teal = '#14B8A6';
-  const pageBg = '#FDF6E9';
-  const sz = {
-    iconBtn: is960 ? 44 : 46,
-    tabH: is960 ? 40 : 44,
-    tabPx: is960 ? 16 : 20,
-    cardRadius: is960 ? '14px' : '16px',
-    coverRadius: is960 ? '12px' : '14px',
-  };
+  /** Figma 书架1 tokens */
+  const teal = '#00B4A0';
+  const ink = '#2D3436';
+  const mute = '#636E72';
+  const place = '#A7B3B8';
+  const line = '#E0E0DF';
+  const soft = '#F3F4F6';
+  const pageBg = '#F8F9F8';
+  const downloadedCount = books.filter((b) => b.isDownloaded).length;
 
-  const downloadedCount = books.filter(b => b.isDownloaded).length;
-
-  const renderViewToggle = () => (
+  const coverImg = (book: Book, sx: Record<string, unknown> = {}) => (
     <Box
-      sx={{
-        display: 'flex',
-        gap: 0.5,
-        bgcolor: '#F5F5F0',
-        p: 0.5,
-        borderRadius: is960 ? '13px' : '14px',
+      component="img"
+      src={book.coverUrl}
+      alt={book.title}
+      onError={(e: SyntheticEvent<HTMLImageElement>) => {
+        e.currentTarget.onerror = null;
+        e.currentTarget.src = buildFallbackCover(book.title);
       }}
-    >
-      {(['grid', 'list'] as const).map((mode) => (
+      sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', ...sx }}
+    />
+  );
+
+  const bookCaption = (book: Book) =>
+    book.category === 'Happy Chinese'
+      ? [book.subtitle, "People's Education Press"].filter(Boolean).join(' ')
+      : [book.subtitle, book.author].filter(Boolean).join(' · ');
+
+  const renderGridCta = (book: Book, variant: 'cover' | 'row' = 'cover') => {
+    const downloading = book.downloadProgress !== undefined && !book.isDownloaded;
+    const h = variant === 'row' ? 90 : 80;
+    const radius = variant === 'row' ? 82 : 84;
+    const font = variant === 'row' ? 32 : 28;
+    const ctaSx = {
+      width: p(270),
+      height: p(h),
+      borderRadius: `${p(radius)}px`,
+      fontFamily: FIGMA_FONT,
+      fontWeight: 400,
+      fontSize: p(font),
+      touchAction: 'manipulation',
+      WebkitTapHighlightColor: 'transparent',
+      '&:active': { transform: 'scale(0.97)' },
+      '@media (prefers-reduced-motion: reduce)': {
+        '&:active': { transform: 'none' },
+      },
+      '&:focus-visible': { outline: `3px solid ${teal}`, outlineOffset: 3 },
+    } as const;
+    if (book.isDownloaded) {
+      return (
         <ButtonBase
-          key={mode}
-          onClick={() => setViewMode(mode)}
+          onClick={(e) => {
+            e.stopPropagation();
+            openBook(book);
+          }}
+          sx={{ ...ctaSx, bgcolor: teal, color: '#FFF' }}
+        >
+          Open
+        </ButtonBase>
+      );
+    }
+    if (downloading) {
+      const pct = book.downloadProgress ?? 0;
+      return (
+        <Box
           sx={{
-            width: sz.iconBtn,
-            height: sz.iconBtn,
-            borderRadius: is960 ? '11px' : '12px',
-            bgcolor: viewMode === mode ? 'white' : 'transparent',
-            color: viewMode === mode ? teal : '#9CA3AF',
-            boxShadow: viewMode === mode ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
-            transition: 'all 0.18s',
+            position: 'relative',
+            width: p(270),
+            height: p(h),
+            borderRadius: `${p(radius)}px`,
+            bgcolor: 'rgba(0,0,0,0.2)',
+            overflow: 'hidden',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          {mode === 'grid'
-            ? <GridViewIcon sx={{ fontSize: is960 ? 20 : 22 }} />
-            : <ViewListIcon sx={{ fontSize: is960 ? 20 : 22 }} />}
-        </ButtonBase>
-      ))}
-    </Box>
-  );
+          <Box
+            sx={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: `${pct}%`,
+              bgcolor: teal,
+              borderRadius: `${p(60)}px 0 0 ${p(60)}px`,
+            }}
+          />
+          <Typography
+            sx={{
+              position: 'relative',
+              zIndex: 1,
+              fontFamily: FIGMA_FONT,
+              fontWeight: 400,
+              fontSize: p(font),
+              color: '#FFF',
+            }}
+          >
+            {pct}%
+          </Typography>
+        </Box>
+      );
+    }
+    return (
+      <ButtonBase
+        onClick={(e) => {
+          e.stopPropagation();
+          downloadBook(book.id);
+        }}
+        sx={{
+          ...ctaSx,
+          bgcolor: '#2188FE',
+          color: '#FFF',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: `${p(16)}px`,
+        }}
+      >
+        <DownloadIcon sx={{ fontSize: p(26), color: '#FFF' }} />
+        Download
+      </ButtonBase>
+    );
+  };
 
   return (
     <Box
@@ -414,131 +437,132 @@ export default function LibraryBookSelectionPage() {
         display: 'flex',
         flexDirection: 'column',
         bgcolor: pageBg,
+        fontFamily: FIGMA_FONT,
         boxSizing: 'border-box',
       }}
     >
-      {/* ── Header ── */}
+      {/* Header — Figma 160 */}
       <Box
         sx={{
-          px: is960 ? 2 : 3,
-          py: is960 ? 1.5 : 2,
+          height: p(160),
+          flexShrink: 0,
+          bgcolor: '#FFFFFF',
+          borderBottom: `1px solid #E2E2E3`,
+          position: 'relative',
           display: 'flex',
           alignItems: 'center',
-          gap: is960 ? 1.5 : 2,
-          borderBottom: '1px solid rgba(0,0,0,0.06)',
-          bgcolor: 'white',
-          flexShrink: 0,
+          px: `${p(60)}px`,
+          gap: `${p(30)}px`,
         }}
       >
-        {/* Back / Done */}
         <ButtonBase
           onClick={isEditMode ? exitEditMode : () => navigate('/library')}
+          aria-label={isEditMode ? 'Done' : 'Back'}
           sx={{
-            height: sz.iconBtn,
-            px: isEditMode ? 1.5 : 0,
-            minWidth: sz.iconBtn,
-            borderRadius: isEditMode ? '12px' : '50%',
-            bgcolor: isEditMode ? `${teal}18` : 'rgba(0,0,0,0.04)',
-            color: isEditMode ? teal : '#374151',
+            width: isEditMode ? 'auto' : p(80),
+            minWidth: p(80),
+            height: p(80),
+            px: isEditMode ? `${p(28)}px` : 0,
+            borderRadius: `${p(100)}px`,
+            bgcolor: '#FFFFFF',
+            border: `1px solid ${line}`,
+            color: ink,
             flexShrink: 0,
-            fontWeight: 800,
-            fontSize: is960 ? '0.82rem' : '0.88rem',
-            gap: 0.5,
-            '&:active': { transform: 'scale(0.94)' },
+            fontFamily: FIGMA_FONT,
+            fontWeight: 700,
+            fontSize: p(28),
+            touchAction: 'manipulation',
+            WebkitTapHighlightColor: 'transparent',
+            '&:active': { transform: 'scale(0.95)' },
+            '&:focus-visible': { outline: `3px solid ${ink}`, outlineOffset: 3 },
           }}
         >
-          {isEditMode ? (
-            'Done'
-          ) : (
-            <ChevronLeftIcon sx={{ fontSize: is960 ? 24 : 26 }} />
-          )}
+          {isEditMode ? 'Done' : <ChevronLeftIcon sx={{ fontSize: p(40) }} />}
         </ButtonBase>
 
-        {/* Search (hidden in edit mode) */}
         {!isEditMode ? (
           <Box
             sx={{
               flex: 1,
-              display: 'flex',
-              justifyContent: 'center',
               minWidth: 0,
+              height: p(80),
+              bgcolor: soft,
+              border: `1px solid ${line}`,
+              borderRadius: `${p(28)}px`,
+              display: 'flex',
+              alignItems: 'center',
+              px: `${p(30)}px`,
+              gap: `${p(16)}px`,
+              backdropFilter: 'blur(2px)',
             }}
           >
-            <Box sx={{ width: '100%', maxWidth: is960 ? 380 : 500, position: 'relative' }}>
-              <SearchIcon
-                sx={{
-                  position: 'absolute',
-                  left: is960 ? 14 : 16,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: '#9CA3AF',
-                  fontSize: is960 ? 18 : 20,
-                  pointerEvents: 'none',
-                }}
-              />
-              <InputBase
-                placeholder="Search books, courses..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                sx={{
-                  width: '100%',
-                  height: is960 ? 44 : 48,
-                  bgcolor: '#F5F5F0',
-                  borderRadius: is960 ? '14px' : '16px',
-                  pl: is960 ? 5 : 5.5,
-                  pr: 2,
-                  fontSize: is960 ? '0.88rem' : '0.95rem',
-                  fontWeight: 500,
-                  color: '#1E293B',
-                  '& input::placeholder': { color: '#9CA3AF' },
-                  '&:focus-within': { boxShadow: `0 0 0 2px ${teal}38` },
-                }}
-              />
-            </Box>
+            <SearchIcon sx={{ fontSize: p(32), color: place, flexShrink: 0 }} />
+            <InputBase
+              placeholder="Search for books, courses..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              sx={{
+                flex: 1,
+                fontFamily: FIGMA_FONT,
+                fontSize: p(28),
+                fontWeight: 400,
+                color: ink,
+                '& input::placeholder': { color: place, opacity: 1 },
+              }}
+            />
           </Box>
         ) : (
           <Box sx={{ flex: 1 }} />
         )}
 
-        {/* Controls back to header right */}
         {!isEditMode ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0 }}>
-            <ButtonBase
-              onClick={() => setIsEditMode(true)}
-              sx={{
-                height: sz.iconBtn,
-                px: is960 ? 1.5 : 2,
-                borderRadius: is960 ? '12px' : '14px',
-                bgcolor: '#F5F5F0',
-                color: '#374151',
-                fontSize: is960 ? '0.82rem' : '0.88rem',
-                fontWeight: 800,
-                '&:active': { transform: 'scale(0.94)' },
-              }}
-            >
-              Edit
-            </ButtonBase>
-          </Box>
+          <ButtonBase
+            onClick={() => setIsEditMode(true)}
+            sx={{
+              width: p(233),
+              height: p(80),
+              flexShrink: 0,
+              bgcolor: soft,
+              border: `1px solid ${line}`,
+              borderRadius: `${p(50)}px`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: `${p(12)}px`,
+              fontFamily: FIGMA_FONT,
+              fontWeight: 700,
+              fontSize: p(32),
+              color: ink,
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+              '&:active': { transform: 'scale(0.97)' },
+              '&:focus-visible': { outline: `3px solid ${ink}`, outlineOffset: 3 },
+            }}
+          >
+            <FormatListBulletedIcon sx={{ fontSize: p(38), color: ink }} />
+            Manage
+          </ButtonBase>
         ) : (
-          <Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', gap: `${p(16)}px`, flexShrink: 0 }}>
             <ButtonBase
               onClick={toggleSelectAll}
               sx={{
-                height: sz.iconBtn,
-                px: is960 ? 1.5 : 2,
-                borderRadius: is960 ? '12px' : '14px',
-                bgcolor: selectedBookIds.length > 0 ? `${teal}20` : '#F5F5F0',
-                color: selectedBookIds.length > 0 ? teal : '#374151',
-                fontSize: is960 ? '0.78rem' : '0.84rem',
-                fontWeight: 800,
-                gap: 0.75,
+                height: p(80),
+                px: `${p(28)}px`,
+                borderRadius: `${p(28)}px`,
+                bgcolor: soft,
+                border: `1px solid ${line}`,
+                color: ink,
+                fontFamily: FIGMA_FONT,
+                fontWeight: 700,
+                fontSize: p(28),
+                gap: `${p(10)}px`,
                 display: 'flex',
                 alignItems: 'center',
                 whiteSpace: 'nowrap',
-                '&:active': { transform: 'scale(0.95)' },
               }}
             >
-              <CheckCircleIcon sx={{ fontSize: is960 ? 16 : 18 }} />
+              <CheckCircleIcon sx={{ fontSize: p(32) }} />
               {selectedBookIds.length === filteredBooks.length && filteredBooks.length > 0
                 ? 'Clear'
                 : 'Select All'}
@@ -547,413 +571,435 @@ export default function LibraryBookSelectionPage() {
               <ButtonBase
                 onClick={openDeleteConfirm}
                 sx={{
-                  height: sz.iconBtn,
-                  px: is960 ? 1.5 : 2,
-                  borderRadius: is960 ? '12px' : '14px',
+                  height: p(80),
+                  px: `${p(28)}px`,
+                  borderRadius: `${p(28)}px`,
                   bgcolor: '#FEF2F2',
+                  border: '1px solid #FECACA',
                   color: '#EF4444',
-                  fontSize: is960 ? '0.78rem' : '0.84rem',
-                  fontWeight: 800,
-                  gap: 0.75,
+                  fontFamily: FIGMA_FONT,
+                  fontWeight: 700,
+                  fontSize: p(28),
+                  gap: `${p(10)}px`,
                   display: 'flex',
                   alignItems: 'center',
                   whiteSpace: 'nowrap',
-                  '&:active': { transform: 'scale(0.95)' },
                 }}
               >
-                <DeleteOutlineIcon sx={{ fontSize: is960 ? 16 : 18 }} />
-                {selectedBookIds.length > 0 ? `Delete Selected (${selectedBookIds.length})` : 'Delete All'}
+                <DeleteOutlineIcon sx={{ fontSize: p(32) }} />
+                {selectedBookIds.length > 0
+                  ? `Delete (${selectedBookIds.length})`
+                  : 'Delete All'}
               </ButtonBase>
             )}
           </Box>
         )}
-
       </Box>
 
-      {/* ── Main Content ── */}
-      <Box sx={{ flex: 1, overflowY: 'auto', p: is960 ? 2 : 3, minHeight: 0 }}>
-
-        {/* Continue Reading (hidden in edit mode) */}
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          px: `${p(60)}px`,
+          pt: `${p(40)}px`,
+          pb: `${p(40)}px`,
+          '&::-webkit-scrollbar': { width: 6 },
+          '&::-webkit-scrollbar-thumb': { bgcolor: '#D1D5DB', borderRadius: 3 },
+        }}
+      >
+        {/* Continue reading */}
         {!isEditMode && !searchQuery && activeCategory === 'All' && continueReadingBooks.length > 0 && (
-          <Box sx={{ mb: is960 ? 3 : 4 }}>
+          <Box sx={{ mb: `${p(40)}px` }}>
             <Typography
               sx={{
-                fontWeight: 800,
-                fontSize: is960 ? '1rem' : '1.15rem',
-                color: '#1E293B',
-                mb: is960 ? 1.5 : 2,
-                letterSpacing: '-0.01em',
+                fontFamily: FIGMA_FONT,
+                fontWeight: 700,
+                fontSize: p(32),
+                lineHeight: `${p(51)}px`,
+                color: ink,
+                mb: `${p(24)}px`,
               }}
             >
-              Continue Reading
+              Continue reading
             </Typography>
             <Box
               sx={{
-                display: 'flex',
-                gap: is960 ? 1.5 : 2,
-                overflowX: 'auto',
-                pb: 1,
-                '&::-webkit-scrollbar': { display: 'none' },
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                gap: `${p(40)}px`,
               }}
             >
-              {continueReadingBooks.map((book) => (
-                <Box
+              {continueReadingBooks.slice(0, 3).map((book) => (
+                <ButtonBase
                   key={book.id}
-                  onClick={() => navigate(`/library/read/${book.id}`)}
+                  onClick={() => openBook(book)}
                   sx={{
-                    flexShrink: 0,
-                    width: is960 ? 270 : 320,
-                    bgcolor: 'white',
-                    borderRadius: is960 ? '16px' : '18px',
-                    p: is960 ? 1.5 : 2,
+                    width: '100%',
+                    height: p(300),
+                    bgcolor: '#FFFFFF',
+                    border: `1px solid ${line}`,
+                    borderRadius: `${p(40)}px`,
                     display: 'flex',
-                    gap: is960 ? 1.5 : 2,
-                    border: '1px solid rgba(0,0,0,0.06)',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                    cursor: 'pointer',
-                    '&:active': { transform: 'scale(0.98)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' },
+                    alignItems: 'stretch',
+                    textAlign: 'left',
+                    boxSizing: 'border-box',
+                    p: `${p(30)}px`,
+                    gap: `${p(30)}px`,
+                    touchAction: 'manipulation',
+                    WebkitTapHighlightColor: 'transparent',
+                    '&:active': { transform: 'scale(0.99)' },
+                    '&:focus-visible': { outline: `3px solid ${teal}`, outlineOffset: 3 },
                   }}
                 >
                   <Box
                     sx={{
-                      width: is960 ? 64 : 76,
-                      height: is960 ? 88 : 104,
-                      borderRadius: sz.coverRadius,
+                      width: p(172),
+                      height: p(240),
+                      borderRadius: `${p(26)}px`,
                       overflow: 'hidden',
                       flexShrink: 0,
-                      bgcolor: '#E5E7EB',
+                      bgcolor: soft,
                     }}
                   >
-                    <Box
-                      component="img"
-                      src={book.coverUrl}
-                      alt={book.title}
-                      onError={(e: SyntheticEvent<HTMLImageElement>) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = buildFallbackCover(book.title);
-                      }}
-                      sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
+                    {coverImg(book)}
                   </Box>
                   <Box
-                    sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}
+                    sx={{
+                      flex: 1,
+                      minWidth: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      py: `${p(0)}px`,
+                    }}
                   >
                     <Box>
                       <Typography
-                        sx={{ fontWeight: 800, fontSize: is960 ? '0.88rem' : '0.95rem', color: '#1E293B', lineHeight: 1.3 }}
+                        sx={{
+                          fontFamily: FIGMA_FONT,
+                          fontWeight: 700,
+                          fontSize: p(32),
+                          lineHeight: `${p(51)}px`,
+                          color: ink,
+                        }}
                       >
                         {book.title}
                       </Typography>
-                      {book.subtitle && (
-                        <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.8rem', color: '#64748B', fontWeight: 600 }}>
-                          {book.subtitle}
-                        </Typography>
-                      )}
+                      <Typography
+                        sx={{
+                          fontFamily: FIGMA_FONT,
+                          fontWeight: 400,
+                          fontSize: p(24),
+                          lineHeight: `${p(38)}px`,
+                          color: mute,
+                          mt: `${p(8)}px`,
+                        }}
+                      >
+                        {bookCaption(book)}
+                      </Typography>
                     </Box>
                     <Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                        <Typography sx={{ fontSize: is960 ? '0.64rem' : '0.7rem', color: '#9CA3AF', fontWeight: 700 }}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          mb: `${p(10)}px`,
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontFamily: FIGMA_FONT,
+                            fontSize: p(24),
+                            color: mute,
+                            fontWeight: 400,
+                          }}
+                        >
                           {book.currentPage} / {book.totalPages} Pages
                         </Typography>
-                        <Typography sx={{ fontSize: is960 ? '0.64rem' : '0.7rem', color: teal, fontWeight: 800 }}>
+                        <Typography
+                          sx={{
+                            fontFamily: FIGMA_FONT,
+                            fontSize: p(24),
+                            color: teal,
+                            fontWeight: 400,
+                          }}
+                        >
                           {book.progress}%
                         </Typography>
                       </Box>
-                      <Box sx={{ height: 3, bgcolor: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
-                        <Box sx={{ height: '100%', bgcolor: teal, width: `${book.progress}%` }} />
+                      <Box
+                        sx={{
+                          height: p(8),
+                          bgcolor: 'rgba(0,0,0,0.1)',
+                          borderRadius: `${p(68)}px`,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            height: '100%',
+                            width: `${book.progress}%`,
+                            bgcolor: teal,
+                            borderRadius: `${p(68)}px`,
+                          }}
+                        />
                       </Box>
                     </Box>
                   </Box>
-                </Box>
+                </ButtonBase>
               ))}
             </Box>
           </Box>
         )}
 
-        {/* Category row */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: is960 ? 2 : 2.5 }}>
+        {/* Filters + view toggle */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: `${p(24)}px`,
+            mb: `${p(40)}px`,
+          }}
+        >
           <Box
             sx={{
               display: 'flex',
-              gap: 1,
-              flex: 1,
+              alignItems: 'center',
+              height: p(90),
+              bgcolor: soft,
+              border: `1px solid ${line}`,
+              borderRadius: `${p(28)}px`,
+              px: `${p(10)}px`,
+              gap: 0,
               overflowX: 'auto',
+              maxWidth: '100%',
+              backdropFilter: 'blur(2px)',
               '&::-webkit-scrollbar': { display: 'none' },
             }}
           >
-            {categories.map((cat) => (
-              <ButtonBase
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                sx={{
-                  px: `${sz.tabPx}px`,
-                  height: `${sz.tabH}px`,
-                  minHeight: `${sz.tabH}px`,
-                  borderRadius: is960 ? '14px' : '16px',
-                  fontSize: is960 ? '0.8rem' : '0.88rem',
-                  fontWeight: 800,
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                  bgcolor: activeCategory === cat ? teal : '#F0F0EB',
-                  color: activeCategory === cat ? 'white' : '#64748B',
-                  boxShadow: activeCategory === cat ? `0 4px 12px ${teal}35` : 'none',
-                  transition: 'all 0.18s',
-                  '&:active': { transform: 'scale(0.96)' },
-                }}
-              >
-                {cat}
-              </ButtonBase>
-            ))}
+            {categories.map((cat) => {
+              const active = activeCategory === cat;
+              return (
+                <ButtonBase
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  sx={{
+                    height: p(70),
+                    px: `${p(48)}px`,
+                    borderRadius: `${p(26)}px`,
+                    bgcolor: active ? '#FFFFFF' : 'transparent',
+                    color: active ? ink : mute,
+                    fontFamily: FIGMA_FONT,
+                    fontWeight: active ? 700 : 400,
+                    fontSize: p(28),
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                    backdropFilter: 'blur(2px)',
+                    '&:active': { transform: 'scale(0.97)' },
+                  }}
+                >
+                  {cat}
+                </ButtonBase>
+              );
+            })}
           </Box>
-          <Box sx={{ flexShrink: 0 }}>
-            {renderViewToggle()}
+
+          <Box
+            sx={{
+              height: p(90),
+              width: p(180),
+              flexShrink: 0,
+              bgcolor: soft,
+              border: `1px solid ${line}`,
+              borderRadius: `${p(28)}px`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: `${p(20)}px`,
+              px: `${p(10)}px`,
+            }}
+          >
+            {(['grid', 'list'] as const).map((mode) => {
+              const active = viewMode === mode;
+              return (
+                <ButtonBase
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  sx={{
+                    width: p(70),
+                    height: p(70),
+                    borderRadius: `${p(23)}px`,
+                    bgcolor: active ? '#FFFFFF' : 'transparent',
+                    color: active ? teal : place,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {mode === 'grid' ? (
+                    <GridViewIcon sx={{ fontSize: p(35) }} />
+                  ) : (
+                    <ViewListIcon sx={{ fontSize: p(35) }} />
+                  )}
+                </ButtonBase>
+              );
+            })}
           </Box>
         </Box>
 
-        {/* ── Grid View ── */}
+        {/* Grid */}
         {viewMode === 'grid' && (
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: is960
-                ? 'repeat(auto-fill, minmax(130px, 1fr))'
-                : 'repeat(auto-fill, minmax(160px, 1fr))',
-              gap: is960 ? 2 : 2.5,
+              gridTemplateColumns: `repeat(auto-fill, minmax(${p(314)}px, 1fr))`,
+              gap: `${p(58)}px ${p(57)}px`,
             }}
           >
             {filteredBooks.map((book) => {
               const isManaged = managedBookId === book.id;
-              const showMgmtOverlay = isManaged;
               const isSelected = selectedBookIds.includes(book.id);
-
               return (
-                <Box
-                  key={book.id}
-                  onClick={isEditMode ? () => toggleSelectBook(book.id) : undefined}
-                  onTouchStart={!isEditMode ? () => handleLongPressStart(book.id) : undefined}
-                  onTouchEnd={!isEditMode ? handleLongPressEnd : undefined}
-                  onTouchMove={!isEditMode ? handleLongPressEnd : undefined}
-                  sx={{ cursor: 'pointer' }}
-                >
+                <Box key={book.id} sx={{ width: '100%', maxWidth: p(314) }}>
                   <Box
+                    onClick={isEditMode ? () => toggleSelectBook(book.id) : undefined}
+                    onTouchStart={!isEditMode ? () => handleLongPressStart(book.id) : undefined}
+                    onTouchEnd={!isEditMode ? handleLongPressEnd : undefined}
+                    onTouchMove={!isEditMode ? handleLongPressEnd : undefined}
                     sx={{
                       position: 'relative',
-                      aspectRatio: '3/4',
-                      borderRadius: is960 ? '14px' : '16px',
+                      width: '100%',
+                      aspectRatio: '314 / 440',
+                      borderRadius: `${p(30)}px`,
                       overflow: 'hidden',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.10)',
-                      border: '2px solid white',
-                      bgcolor: '#E5E7EB',
-                      mb: 1,
-                      transition: 'box-shadow 0.18s',
+                      bgcolor: '#FFFFFF',
+                      border: `1px solid ${line}`,
                       outline: isEditMode && isSelected ? `2px solid ${teal}` : 'none',
-                      '&:active': { boxShadow: '0 2px 6px rgba(0,0,0,0.08)' },
+                      cursor: 'pointer',
                     }}
                   >
-                    <Box
-                      component="img"
-                      src={book.coverUrl}
-                      alt={book.title}
-                      onError={(e: SyntheticEvent<HTMLImageElement>) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = buildFallbackCover(book.title);
-                      }}
-                      sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
+                    {coverImg(book)}
 
-                    {/* HSK badge — top-left */}
-                    {book.hskLevel && !showMgmtOverlay && (
+                    {!isManaged && !isEditMode && book.progress > 0 && (
                       <Box
                         sx={{
                           position: 'absolute',
-                          top: 8,
-                          left: 8,
-                          px: 1,
-                          height: is960 ? 22 : 24,
-                          bgcolor: 'white',
-                          borderRadius: '6px',
+                          top: p(26),
+                          right: 0,
+                          width: p(80),
+                          height: p(40),
+                          bgcolor: 'rgba(0,0,0,0.4)',
+                          borderRadius: `${p(16)}px 0 0 ${p(16)}px`,
                           display: 'flex',
                           alignItems: 'center',
-                          fontWeight: 900,
-                          fontSize: is960 ? '0.65rem' : '0.72rem',
-                          color: teal,
-                          boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
-                          zIndex: 1,
-                        }}
-                      >
-                        HSK {book.hskLevel}
-                      </Box>
-                    )}
-
-                    {/* Top-right: reading progress only */}
-                    {!showMgmtOverlay && !isEditMode && (
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          top: 8,
-                          right: 8,
-                          px: 1,
-                          height: is960 ? 22 : 24,
-                          bgcolor: 'rgba(0,0,0,0.55)',
-                          backdropFilter: 'blur(6px)',
-                          borderRadius: '6px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          fontSize: is960 ? '0.62rem' : '0.68rem',
-                          fontWeight: 800,
-                          color: 'white',
-                          zIndex: 1,
+                          justifyContent: 'center',
+                          fontFamily: FIGMA_FONT,
+                          fontSize: p(24),
+                          color: '#FFF',
+                          fontWeight: 400,
                         }}
                       >
                         {book.progress}%
                       </Box>
                     )}
 
-                    {/* Bottom CTA: download OR open (mutually exclusive) */}
-                    {!showMgmtOverlay && !isEditMode && (
+                    {!isManaged && !isEditMode && (
                       <Box
                         sx={{
                           position: 'absolute',
-                          bottom: 0,
                           left: 0,
                           right: 0,
-                          p: is960 ? 1 : 1.25,
-                          background: 'linear-gradient(to top, rgba(0,0,0,0.50) 0%, transparent 100%)',
+                          bottom: 0,
+                          height: p(146),
+                          background:
+                            'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 100%)',
                           display: 'flex',
-                        }}
-                      >
-                        {book.isDownloaded ? (
-                          <ButtonBase
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/library/read/${book.id}`);
-                            }}
-                            sx={{
-                              flex: 1,
-                              height: is960 ? 34 : 38,
-                              borderRadius: is960 ? '10px' : '12px',
-                              bgcolor: 'rgba(255,255,255,0.90)',
-                              color: '#1E293B',
-                              fontSize: is960 ? '0.75rem' : '0.82rem',
-                              fontWeight: 800,
-                              backdropFilter: 'blur(8px)',
-                              '&:active': { bgcolor: 'white', transform: 'scale(0.97)' },
-                            }}
-                          >
-                            Open
-                          </ButtonBase>
-                        ) : (
-                          <ButtonBase
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (book.downloadProgress === undefined) {
-                                downloadBook(book.id);
-                              }
-                            }}
-                            sx={{
-                              flex: 1,
-                              height: is960 ? 34 : 38,
-                              borderRadius: is960 ? '10px' : '12px',
-                              bgcolor: 'rgba(20,184,166,0.92)',
-                              color: 'white',
-                              fontSize: is960 ? '0.72rem' : '0.8rem',
-                              fontWeight: 800,
-                              letterSpacing: '0.01em',
-                              backdropFilter: 'blur(8px)',
-                              opacity: book.downloadProgress !== undefined ? 0.9 : 1,
-                              '&:active': { transform: 'scale(0.97)' },
-                            }}
-                          >
-                            {book.downloadProgress !== undefined
-                              ? `Downloading ${book.downloadProgress}%`
-                              : 'Download'}
-                          </ButtonBase>
-                        )}
-                      </Box>
-                    )}
-
-                    {/* Edit mode: selection checkmark only */}
-                    {isEditMode && (
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          top: 8,
-                          right: 8,
-                          width: is960 ? 28 : 32,
-                          height: is960 ? 28 : 32,
-                          borderRadius: '50%',
-                          bgcolor: isSelected ? teal : 'rgba(255,255,255,0.92)',
-                          border: isSelected ? 'none' : '1px solid rgba(0,0,0,0.14)',
-                          display: 'flex',
-                          alignItems: 'center',
+                          alignItems: 'flex-end',
                           justifyContent: 'center',
-                          zIndex: 12,
+                          pb: `${p(24)}px`,
                         }}
                       >
-                        {isSelected && (
-                          <CheckCircleIcon sx={{ fontSize: is960 ? 20 : 22, color: 'white' }} />
-                        )}
+                        {renderGridCta(book)}
                       </Box>
                     )}
 
-                    {/* Edit mode: download status tag (bottom-right) */}
                     {isEditMode && (
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          right: 8,
-                          bottom: 8,
-                          px: 1,
-                          height: is960 ? 20 : 22,
-                          borderRadius: '999px',
-                          bgcolor: book.isDownloaded ? 'rgba(20,184,166,0.92)' : 'rgba(71,85,105,0.88)',
-                          color: 'white',
-                          fontSize: is960 ? '0.58rem' : '0.62rem',
-                          fontWeight: 800,
-                          display: 'flex',
-                          alignItems: 'center',
-                          letterSpacing: '0.01em',
-                          zIndex: 12,
-                        }}
-                      >
-                        {book.isDownloaded ? 'Downloaded' : 'Not downloaded'}
-                      </Box>
+                      <>
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: p(16),
+                            right: p(16),
+                            width: p(44),
+                            height: p(44),
+                            borderRadius: '50%',
+                            bgcolor: isSelected ? teal : 'rgba(255,255,255,0.92)',
+                            border: isSelected ? 'none' : `1px solid ${line}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 2,
+                          }}
+                        >
+                          {isSelected && (
+                            <CheckCircleIcon sx={{ fontSize: p(32), color: '#FFF' }} />
+                          )}
+                        </Box>
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            right: p(16),
+                            bottom: p(16),
+                            px: `${p(16)}px`,
+                            height: p(40),
+                            borderRadius: `${p(20)}px`,
+                            bgcolor: book.isDownloaded ? teal : 'rgba(0,0,0,0.55)',
+                            color: '#FFF',
+                            fontFamily: FIGMA_FONT,
+                            fontSize: p(22),
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            zIndex: 2,
+                          }}
+                        >
+                          {book.isDownloaded ? 'Downloaded' : 'Not downloaded'}
+                        </Box>
+                      </>
                     )}
 
-                    {/* Management overlay (long-press only) */}
-                    {showMgmtOverlay && (
+                    {isManaged && (
                       <Box
                         sx={{
                           position: 'absolute',
                           inset: 0,
-                          bgcolor: 'rgba(0,0,0,0.60)',
-                          backdropFilter: 'blur(3px)',
+                          bgcolor: 'rgba(0,0,0,0.6)',
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          gap: 1.5,
-                          zIndex: 10,
+                          gap: `${p(20)}px`,
+                          zIndex: 3,
                         }}
                       >
                         <ButtonBase
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (!isEditMode) setManagedBookId(null);
-                            navigate(`/library/read/${book.id}`);
+                            setManagedBookId(null);
+                            openBook(book);
                           }}
                           sx={{
-                            width: sz.iconBtn,
-                            height: sz.iconBtn,
-                            borderRadius: sz.cardRadius,
-                            bgcolor: 'rgba(255,255,255,0.88)',
-                            color: '#1E293B',
-                            '&:active': { transform: 'scale(0.93)' },
+                            width: p(80),
+                            height: p(80),
+                            borderRadius: `${p(20)}px`,
+                            bgcolor: 'rgba(255,255,255,0.9)',
+                            color: ink,
                           }}
                         >
-                          <MenuBookIcon sx={{ fontSize: is960 ? 20 : 22 }} />
+                          <MenuBookIcon sx={{ fontSize: p(36) }} />
                         </ButtonBase>
-
                         {book.isDownloaded ? (
                           <ButtonBase
                             onClick={(e) => {
@@ -962,15 +1008,14 @@ export default function LibraryBookSelectionPage() {
                               setManagedBookId(null);
                             }}
                             sx={{
-                              width: sz.iconBtn,
-                              height: sz.iconBtn,
-                              borderRadius: sz.cardRadius,
-                              bgcolor: 'rgba(239,68,68,0.88)',
-                              color: 'white',
-                              '&:active': { transform: 'scale(0.93)' },
+                              width: p(80),
+                              height: p(80),
+                              borderRadius: `${p(20)}px`,
+                              bgcolor: 'rgba(239,68,68,0.9)',
+                              color: '#FFF',
                             }}
                           >
-                            <DeleteOutlineIcon sx={{ fontSize: is960 ? 20 : 22 }} />
+                            <DeleteOutlineIcon sx={{ fontSize: p(36) }} />
                           </ButtonBase>
                         ) : (
                           <ButtonBase
@@ -980,54 +1025,71 @@ export default function LibraryBookSelectionPage() {
                               setManagedBookId(null);
                             }}
                             sx={{
-                              width: sz.iconBtn,
-                              height: sz.iconBtn,
-                              borderRadius: sz.cardRadius,
-                              bgcolor: `${teal}DD`,
-                              color: 'white',
-                              '&:active': { transform: 'scale(0.93)' },
+                              width: p(80),
+                              height: p(80),
+                              borderRadius: `${p(20)}px`,
+                              bgcolor: teal,
+                              color: '#FFF',
                             }}
                           >
-                            <DownloadIcon sx={{ fontSize: is960 ? 20 : 22 }} />
+                            <DownloadIcon sx={{ fontSize: p(36) }} />
                           </ButtonBase>
                         )}
-
                         <ButtonBase
-                          onClick={(e) => { e.stopPropagation(); setManagedBookId(null); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setManagedBookId(null);
+                          }}
                           sx={{
-                            width: is960 ? 30 : 34,
-                            height: is960 ? 30 : 34,
+                            width: p(56),
+                            height: p(56),
                             borderRadius: '50%',
-                            bgcolor: 'rgba(255,255,255,0.16)',
-                            color: 'white',
-                            '&:active': { transform: 'scale(0.93)' },
+                            bgcolor: 'rgba(255,255,255,0.2)',
+                            color: '#FFF',
                           }}
                         >
-                          <CloseIcon sx={{ fontSize: is960 ? 15 : 17 }} />
+                          <CloseIcon sx={{ fontSize: p(28) }} />
                         </ButtonBase>
                       </Box>
                     )}
                   </Box>
 
-                  <Typography
-                    sx={{ fontWeight: 800, fontSize: is960 ? '0.8rem' : '0.88rem', color: '#1E293B', mb: 0.25, lineHeight: 1.3 }}
-                  >
-                    {book.title}
-                  </Typography>
-                  {book.subtitle && (
-                    <Typography sx={{ fontSize: is960 ? '0.66rem' : '0.72rem', color: '#64748B', fontWeight: 600 }}>
-                      {book.subtitle}
+                  <Box sx={{ mt: `${p(20)}px` }}>
+                    <Typography
+                      sx={{
+                        fontFamily: FIGMA_FONT,
+                        fontWeight: 700,
+                        fontSize: p(32),
+                        lineHeight: `${p(51)}px`,
+                        color: ink,
+                      }}
+                    >
+                      {book.title}
                     </Typography>
-                  )}
+                    {(book.subtitle || book.author) && (
+                      <Typography
+                        sx={{
+                          fontFamily: FIGMA_FONT,
+                          fontWeight: 400,
+                          fontSize: p(24),
+                          lineHeight: `${p(38)}px`,
+                          color: mute,
+                          mt: `${p(8)}px`,
+                        }}
+                      >
+                        {[book.subtitle, book.author].filter(Boolean).join(' ')}
+                      </Typography>
+                    )}
+                  </Box>
                 </Box>
               );
             })}
           </Box>
         )}
 
-        {/* ── List View ── */}
+        {/* List */}
         {viewMode === 'list' && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 1.5 : 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: `${p(30)}px` }}>
             {filteredBooks.map((book) => (
               <Box
                 key={book.id}
@@ -1036,131 +1098,102 @@ export default function LibraryBookSelectionPage() {
                     toggleSelectBook(book.id);
                     return;
                   }
-                  navigate(`/library/read/${book.id}`);
+                  openBook(book);
                 }}
                 sx={{
                   position: 'relative',
+                  width: '100%',
+                  height: p(254),
                   display: 'flex',
                   alignItems: 'center',
-                  gap: is960 ? 1.5 : 2,
-                  p: is960 ? 1.5 : 2,
-                  bgcolor: 'white',
-                  borderRadius: is960 ? '16px' : '18px',
-                  border: '1px solid rgba(0,0,0,0.06)',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+                  gap: `${p(60)}px`,
+                  px: `${p(60)}px`,
+                  boxSizing: 'border-box',
+                  bgcolor: '#FFFFFF',
+                  border: `1px solid ${line}`,
+                  borderRadius: `${p(40)}px`,
+                  textAlign: 'left',
                   cursor: 'pointer',
-                  outline: isEditMode && selectedBookIds.includes(book.id) ? `2px solid ${teal}` : 'none',
-                  '&:active': { transform: 'scale(0.99)', boxShadow: 'none' },
+                  outline:
+                    isEditMode && selectedBookIds.includes(book.id) ? `2px solid ${teal}` : 'none',
+                  '&:active': { transform: 'scale(0.995)' },
                 }}
               >
-                {/* Cover */}
                 <Box
                   sx={{
-                    width: is960 ? 64 : 76,
-                    height: is960 ? 88 : 104,
-                    borderRadius: sz.coverRadius,
+                    width: p(138),
+                    height: p(194),
+                    borderRadius: `${p(20)}px`,
                     overflow: 'hidden',
                     flexShrink: 0,
-                    bgcolor: '#E5E7EB',
+                    bgcolor: soft,
                   }}
                 >
-                  <Box
-                    component="img"
-                    src={book.coverUrl}
-                    alt={book.title}
-                    onError={(e: SyntheticEvent<HTMLImageElement>) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = buildFallbackCover(book.title);
+                  {coverImg(book)}
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    sx={{
+                      fontFamily: FIGMA_FONT,
+                      fontWeight: 700,
+                      fontSize: p(32),
+                      lineHeight: `${p(51)}px`,
+                      color: ink,
                     }}
-                    sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                </Box>
-
-                {/* Info */}
-                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
-                  <Box>
-                    <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.92rem' : '1rem', color: '#1E293B' }}>
-                      {book.title}
-                    </Typography>
-                    {book.subtitle && (
-                      <Typography sx={{ fontSize: is960 ? '0.76rem' : '0.84rem', color: '#64748B', fontWeight: 600 }}>
-                        {book.subtitle}
-                      </Typography>
-                    )}
-                    <Typography sx={{ fontSize: is960 ? '0.7rem' : '0.78rem', color: '#9CA3AF', mt: 0.5 }}>
-                      {book.author}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ maxWidth: 260, mt: 1 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <Typography sx={{ fontSize: is960 ? '0.65rem' : '0.7rem', color: '#9CA3AF', fontWeight: 700 }}>
-                        {book.currentPage} / {book.totalPages} Pages
-                      </Typography>
-                      <Typography sx={{ fontSize: is960 ? '0.65rem' : '0.7rem', color: teal, fontWeight: 800 }}>
-                        {book.progress}%
-                      </Typography>
-                    </Box>
-                    <Box sx={{ height: 3, bgcolor: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
-                      <Box sx={{ height: '100%', bgcolor: teal, width: `${book.progress}%` }} />
-                    </Box>
-                  </Box>
-                </Box>
-
-                {/* Actions — list normal mode only */}
-                {!isEditMode && (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-                    <ButtonBase
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (book.isDownloaded) {
-                          navigate(`/library/read/${book.id}`);
-                          return;
-                        }
-                        if (book.downloadProgress === undefined) {
-                          downloadBook(book.id);
-                        }
-                      }}
+                  >
+                    {book.title}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: FIGMA_FONT,
+                      fontSize: p(24),
+                      lineHeight: `${p(38)}px`,
+                      color: mute,
+                      mt: `${p(8)}px`,
+                    }}
+                  >
+                    {bookCaption(book)}
+                  </Typography>
+                  {book.progress > 0 && (
+                    <Typography
                       sx={{
-                        width: is960 ? 132 : 149,
-                        height: is960 ? 38 : 42,
-                        borderRadius: is960 ? '12px' : '14px',
-                        bgcolor: book.isDownloaded ? teal : 'rgba(20,184,166,0.92)',
-                        color: 'white',
-                        fontSize: is960 ? '0.72rem' : '0.82rem',
-                        fontWeight: 800,
-                        letterSpacing: '0.01em',
-                        opacity: !book.isDownloaded && book.downloadProgress !== undefined ? 0.9 : 1,
-                        '&:active': { transform: 'scale(0.95)' },
+                        fontFamily: FIGMA_FONT,
+                        fontSize: p(24),
+                        lineHeight: `${p(38)}px`,
+                        color: mute,
+                        mt: `${p(21)}px`,
                       }}
                     >
-                      {book.isDownloaded
-                        ? 'Open'
-                        : book.downloadProgress !== undefined
-                          ? `Downloading ${book.downloadProgress}%`
-                          : 'Download'}
-                    </ButtonBase>
+                      {book.currentPage} / {book.totalPages} Pages
+                    </Typography>
+                  )}
+                </Box>
+                {!isEditMode && (
+                  <Box
+                    onClick={(e) => e.stopPropagation()}
+                    sx={{ flexShrink: 0 }}
+                  >
+                    {renderGridCta(book, 'row')}
                   </Box>
                 )}
-
-                {/* Edit mode selection indicator: top-right 32x32 circle */}
                 {isEditMode && (
                   <Box
                     sx={{
                       position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      width: is960 ? 28 : 32,
-                      height: is960 ? 28 : 32,
+                      top: p(24),
+                      right: p(24),
+                      width: p(44),
+                      height: p(44),
                       borderRadius: '50%',
-                      bgcolor: selectedBookIds.includes(book.id) ? teal : 'rgba(255,255,255,0.92)',
-                      border: selectedBookIds.includes(book.id) ? 'none' : '1px solid rgba(0,0,0,0.14)',
+                      bgcolor: selectedBookIds.includes(book.id) ? teal : '#FFF',
+                      border: selectedBookIds.includes(book.id) ? 'none' : `1px solid ${line}`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
                     {selectedBookIds.includes(book.id) && (
-                      <CheckCircleIcon sx={{ fontSize: is960 ? 20 : 22, color: 'white' }} />
+                      <CheckCircleIcon sx={{ fontSize: p(32), color: '#FFF' }} />
                     )}
                   </Box>
                 )}
@@ -1169,7 +1202,6 @@ export default function LibraryBookSelectionPage() {
           </Box>
         )}
 
-        {/* Empty State */}
         {filteredBooks.length === 0 && (
           <Box
             sx={{
@@ -1177,28 +1209,36 @@ export default function LibraryBookSelectionPage() {
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              py: is960 ? 6 : 8,
+              py: `${p(120)}px`,
               textAlign: 'center',
             }}
           >
             <Box
               sx={{
-                width: is960 ? 68 : 80,
-                height: is960 ? 68 : 80,
+                width: p(120),
+                height: p(120),
                 borderRadius: '50%',
-                bgcolor: '#F0F0EB',
+                bgcolor: soft,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                mb: 2,
+                mb: `${p(24)}px`,
               }}
             >
-              <MenuBookIcon sx={{ fontSize: is960 ? 32 : 38, color: '#9CA3AF' }} />
+              <MenuBookIcon sx={{ fontSize: p(56), color: place }} />
             </Box>
-            <Typography sx={{ fontWeight: 800, fontSize: is960 ? '1rem' : '1.1rem', color: '#64748B', mb: 0.5 }}>
+            <Typography
+              sx={{
+                fontFamily: FIGMA_FONT,
+                fontWeight: 700,
+                fontSize: p(32),
+                color: mute,
+                mb: `${p(8)}px`,
+              }}
+            >
               No books found
             </Typography>
-            <Typography sx={{ fontSize: is960 ? '0.8rem' : '0.88rem', color: '#9CA3AF' }}>
+            <Typography sx={{ fontFamily: FIGMA_FONT, fontSize: p(24), color: place }}>
               Try different keywords
             </Typography>
           </Box>
@@ -1210,16 +1250,19 @@ export default function LibraryBookSelectionPage() {
         onClose={closeDeleteConfirm}
         PaperProps={{
           sx: {
-            borderRadius: is960 ? '16px' : '18px',
-            width: is960 ? 320 : 360,
+            borderRadius: `${p(28)}px`,
+            width: p(560),
+            fontFamily: FIGMA_FONT,
           },
         }}
       >
-        <DialogTitle sx={{ fontWeight: 800, fontSize: is960 ? '1rem' : '1.1rem', color: '#1E293B' }}>
+        <DialogTitle
+          sx={{ fontFamily: FIGMA_FONT, fontWeight: 700, fontSize: p(32), color: ink }}
+        >
           Confirm Delete
         </DialogTitle>
         <DialogContent sx={{ pt: 0.5 }}>
-          <Typography sx={{ color: '#64748B', fontSize: is960 ? '0.82rem' : '0.9rem' }}>
+          <Typography sx={{ fontFamily: FIGMA_FONT, color: mute, fontSize: p(28) }}>
             {deleteConfirmMode === 'selected'
               ? `Delete ${selectedBookIds.length} selected book${selectedBookIds.length > 1 ? 's' : ''} from downloads?`
               : 'Delete all downloaded books?'}
@@ -1229,13 +1272,14 @@ export default function LibraryBookSelectionPage() {
           <ButtonBase
             onClick={closeDeleteConfirm}
             sx={{
-              height: is960 ? 40 : 42,
-              px: 2,
-              borderRadius: '12px',
-              bgcolor: '#F1F5F9',
-              color: '#475569',
+              height: p(72),
+              px: `${p(28)}px`,
+              borderRadius: `${p(20)}px`,
+              bgcolor: soft,
+              color: mute,
+              fontFamily: FIGMA_FONT,
               fontWeight: 700,
-              fontSize: is960 ? '0.8rem' : '0.86rem',
+              fontSize: p(28),
             }}
           >
             Cancel
@@ -1243,13 +1287,14 @@ export default function LibraryBookSelectionPage() {
           <ButtonBase
             onClick={confirmDelete}
             sx={{
-              height: is960 ? 40 : 42,
-              px: 2,
-              borderRadius: '12px',
+              height: p(72),
+              px: `${p(28)}px`,
+              borderRadius: `${p(20)}px`,
               bgcolor: '#EF4444',
-              color: 'white',
+              color: '#FFF',
+              fontFamily: FIGMA_FONT,
               fontWeight: 700,
-              fontSize: is960 ? '0.8rem' : '0.86rem',
+              fontSize: p(28),
             }}
           >
             Delete
@@ -1259,3 +1304,4 @@ export default function LibraryBookSelectionPage() {
     </Box>
   );
 }
+

@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PinyinRubyText from '../components/PinyinRubyText';
+import { figmaPx, FIGMA_FONT } from '../utils/figmaScale';
+import { APP_FONT_FAMILY } from '../theme/appFont';
+
+/** 与壳层 VITE_SCREEN_SIZE 同源，禁止用 vw 定稿尺寸（壳有 scale，vw 会塌） */
+const CAMERA_SCREEN = (import.meta.env.VITE_SCREEN_SIZE as string) || '2000x1200';
+const camPx = (n: number) => figmaPx(n, CAMERA_SCREEN);
+/** Figma「翻译1拍摄1」画布 2508 → 产品 1920 基准 */
+const CAM_FIGMA_W = 2508;
+const camFigma = (n: number) => camPx((n * 1920) / CAM_FIGMA_W);
 
 // ============================================================
 // TYPES
@@ -151,8 +160,8 @@ const SpeakerIcon = () => (
   </svg>
 );
 
-const BackIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+const BackIcon = ({ size = 24 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
     <path d="M19 12H5M12 19l-7-7 7-7"/>
   </svg>
 );
@@ -175,35 +184,27 @@ const FingerIcon = () => (
   </svg>
 );
 
-const FingerTapFeatureIcon = () => (
-  <div className="relative w-8 h-8">
-    <svg className="absolute inset-0 w-8 h-8 text-white drop-shadow-lg" viewBox="0 0 32 32" fill="none">
-      <path
-        d="M13.8 25.2 11.2 9.6c-.18-1.1.98-1.93 1.95-1.4l13.3 7.3c1 .55.93 2.02-.12 2.48l-5.08 2.2-2.3 5.04c-.48 1.04-1.98.96-2.48-.07l-1.05-2.16-1.62 2.2Z"
-        fill="url(#fingerTapGradient)"
-        stroke="white"
-        strokeWidth="1.4"
-        strokeLinejoin="round"
-      />
-      <path d="M20.5 20.5 27 27" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-      <circle cx="8" cy="7" r="1.7" fill="white" opacity="0.92" />
-      <path d="M5 15h4M15 4l-2.5 3M3.5 10l3 1.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" opacity="0.9" />
-      <defs>
-        <linearGradient id="fingerTapGradient" x1="10.8" y1="7.9" x2="24.6" y2="25.8" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#FFFFFF" />
-          <stop offset="1" stopColor="#A7F3D0" />
-        </linearGradient>
-      </defs>
-    </svg>
-    <div className="absolute -right-1 -top-1 rounded-md bg-white/90 px-1 text-[8px] font-black tracking-[-0.04em] text-emerald-700 shadow-lg">
-      AR
-    </div>
-    <div className="absolute -bottom-1 left-0 h-1 w-7 rounded-full bg-emerald-200/70 blur-[2px]" />
-  </div>
+/** Group 1410141318 箭头：稿上 52.27 @2508 → 40 @1920 */
+const PointReadArrow = ({ size }: { size: number }) => (
+  <svg
+    viewBox="0 0 48 48"
+    width={size}
+    height={size}
+    aria-hidden
+    fill="none"
+  >
+    <path
+      d="M6 24h26M24 12l14 12-14 12"
+      stroke="#fff"
+      strokeWidth="3.2"
+      strokeLinecap="square"
+      strokeLinejoin="miter"
+    />
+  </svg>
 );
 
-const HistoryIcon = () => (
-  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+const HistoryIcon = ({ size = 24 }: { size?: number }) => (
+  <svg width={size} height={size} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
@@ -216,11 +217,15 @@ interface VisionCoreProps {
   onScan: (imageData: string) => void;
 }
 
-const FrameResizeIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+const FrameResizeIcon = ({ size = 24 }: { size?: number }) => (
+  <svg width={size} height={size} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
     <path strokeLinecap="round" d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
   </svg>
 );
+
+const VIEWFINDER_ROUND_BTN = camFigma(104.54);
+const VIEWFINDER_ROUND_ICON = camFigma(28.75);
+const VIEWFINDER_ROUND_INSET = camFigma(52.27);
 
 interface FrameRect {
   width: number;
@@ -339,71 +344,81 @@ const VisionCore: React.FC<VisionCoreProps> = ({ isScanning, onScan }) => {
     setIsDragging(true);
   };
 
-  // Draw a mock camera view with animated elements
+  // Figma 取景 mock：课本页「今天天气」+ 拼音（稿图「把中间的文字换成今天天气很好」）
   const drawMockCamera = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     canvas.width = 1280;
     canvas.height = 720;
 
-    // Animated gradient background
-    const animate = () => {
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      const time = Date.now() / 3000;
-      gradient.addColorStop(0, `hsl(${200 + Math.sin(time) * 20}, 70%, 20%)`);
-      gradient.addColorStop(0.5, `hsl(${220 + Math.cos(time) * 20}, 60%, 15%)`);
-      gradient.addColorStop(1, `hsl(${180 + Math.sin(time * 0.7) * 30}, 65%, 18%)`);
-      
-      ctx.fillStyle = gradient;
+    const cells: Array<{ han: string; py: string }> = [
+      { han: '大', py: 'dà' },
+      { han: '地', py: 'dì' },
+      { han: '今', py: 'jīn' },
+      { han: '天', py: 'tiān' },
+      { han: '天', py: 'tiān' },
+      { han: '气', py: 'qì' },
+      { han: '你', py: 'nǐ' },
+      { han: '好', py: 'hǎo' },
+    ];
+
+    const draw = () => {
+      ctx.fillStyle = '#090F20';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw a clean book page: white paper, black Kai-style Chinese text.
-      const pageX = 250;
-      const pageY = 170;
-      const pageW = 780;
-      const pageH = 390;
+      const pageX = 40;
+      const pageY = 20;
+      const pageW = canvas.width - 80;
+      const pageH = canvas.height - 40;
+
       ctx.save();
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.32)';
-      ctx.shadowBlur = 28;
-      ctx.shadowOffsetY = 18;
-      ctx.fillStyle = '#FFFDF7';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+      ctx.shadowBlur = 40;
+      ctx.shadowOffsetY = 12;
+      ctx.fillStyle = '#F3F4F0';
       ctx.fillRect(pageX, pageY, pageW, pageH);
       ctx.restore();
 
-      ctx.strokeStyle = 'rgba(15, 23, 42, 0.12)';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(pageX, pageY, pageW, pageH);
+      const cols = 4;
+      const rows = 2;
+      const gridPadX = 72;
+      const gridPadY = 100;
+      const cellW = (pageW - gridPadX * 2) / cols;
+      const cellH = (pageH - gridPadY * 2) / rows;
 
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.08)';
-      for (let i = 0; i < 5; i += 1) {
-        ctx.fillRect(pageX + 88, pageY + 112 + i * 48, pageW - 176, 1.5);
-      }
+      ctx.strokeStyle = 'rgba(45, 52, 54, 0.18)';
+      ctx.lineWidth = 1.5;
+      for (let r = 0; r < rows; r += 1) {
+        for (let c = 0; c < cols; c += 1) {
+          const x = pageX + gridPadX + c * cellW;
+          const y = pageY + gridPadY + r * cellH;
+          ctx.strokeRect(x + 8, y + 8, cellW - 16, cellH - 16);
+          ctx.beginPath();
+          ctx.moveTo(x + 8, y + cellH / 2);
+          ctx.lineTo(x + cellW - 8, y + cellH / 2);
+          ctx.moveTo(x + cellW / 2, y + 8);
+          ctx.lineTo(x + cellW / 2, y + cellH - 8);
+          ctx.stroke();
 
-      ctx.fillStyle = '#111827';
-      ctx.font = 'bold 92px "KaiTi", "STKaiti", "SimKai", "Noto Serif SC", serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('我爱学中文', canvas.width / 2, canvas.height / 2 - 18);
-      
-      ctx.font = '28px "Google Sans", "Roboto", sans-serif';
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.42)';
-      ctx.fillText('wǒ ài xué zhōng wén', canvas.width / 2, canvas.height / 2 + 54);
-
-      // Subtle scan lines effect
-      for (let i = 0; i < canvas.height; i += 4) {
-        ctx.fillStyle = `rgba(16, 185, 129, ${0.02 * Math.sin(time + i * 0.1)})`;
-        ctx.fillRect(0, i, canvas.width, 2);
-      }
-
-      if (!isScanning) {
-        requestAnimationFrame(animate);
+          const item = cells[r * cols + c];
+          if (!item) continue;
+          ctx.fillStyle = 'rgba(8, 9, 6, 0.75)';
+          ctx.font = '28px "Google Sans Flex", "Noto Sans SC", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(item.py, x + cellW / 2, y + 36);
+          ctx.fillStyle = '#080906';
+          ctx.font = 'bold 72px "Source Han Sans CN", "Noto Sans SC", sans-serif';
+          ctx.fillText(item.han, x + cellW / 2, y + cellH / 2 + 18);
+        }
       }
     };
 
-    animate();
+    draw();
   };
 
   const captureFrame = () => {
@@ -498,48 +513,65 @@ const VisionCore: React.FC<VisionCoreProps> = ({ isScanning, onScan }) => {
         </div>
       )}
 
-      {/* Focus button — top-right, same level as back button */}
+      {/* Focus button — 与返回同一套 80 圆钮，禁止 % 高宽（会拉扁） */}
       {isReady && (
         <button
           type="button"
           onClick={() => setIsFocusAdjusting((prev) => !prev)}
           title="Adjust focus frame size"
           aria-label="Adjust focus frame size"
-          className={`absolute top-6 right-6 z-50 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
+          className={`absolute z-50 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
             isFocusAdjusting
               ? 'bg-emerald-500/25 border border-emerald-400/50 text-emerald-200 shadow-lg shadow-emerald-500/15'
-              : 'bg-black/40 backdrop-blur-xl border border-white/10 text-white/90 hover:bg-black/60 hover:scale-110'
+              : 'bg-black/40 backdrop-blur-xl border border-white/10 text-white/90 hover:bg-black/60'
           } shadow-2xl`}
+          style={{
+            top: VIEWFINDER_ROUND_INSET,
+            right: VIEWFINDER_ROUND_INSET,
+            width: VIEWFINDER_ROUND_BTN,
+            height: VIEWFINDER_ROUND_BTN,
+          }}
         >
-          <FrameResizeIcon className="w-5 h-5" />
+          <FrameResizeIcon size={VIEWFINDER_ROUND_ICON} />
         </button>
       )}
 
-      {/* Shutter button — horizontally centered on canvas */}
+      {/* Shutter — Figma 169.88 外圈 / 117.61 内圆 @2508 → 130 / 90 @1920 */}
       {isReady && (
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30">
-          <button 
-            onClick={captureFrame} 
-            disabled={isScanning} 
-            className={`group relative flex items-center justify-center w-20 h-20 rounded-full transition-all duration-300 ${
-              isScanning 
-                ? 'bg-emerald-500/85 scale-95' 
-                : 'bg-white/95 hover:bg-white hover:scale-105 active:scale-95'
-            } shadow-2xl shadow-black/35`}
+        <div
+          className="absolute left-1/2 -translate-x-1/2 z-30"
+          style={{ bottom: camFigma(116) }}
+        >
+          <button
+            type="button"
+            onClick={captureFrame}
+            disabled={isScanning}
+            aria-label="Capture"
+            className={`relative flex items-center justify-center rounded-full transition-transform duration-200 ${
+              isScanning ? 'scale-95 opacity-90' : 'hover:scale-105 active:scale-95'
+            }`}
+            style={{
+              width: camFigma(169.88),
+              height: camFigma(169.88),
+              aspectRatio: '1 / 1',
+            }}
           >
-            <div className={`absolute inset-0 rounded-full border-4 border-white/20 ${isScanning ? 'animate-ping opacity-20' : ''}`} />
-            <div className={`w-16 h-16 rounded-full border-4 flex items-center justify-center transition-all ${
-              isScanning ? 'border-white/55' : 'border-slate-900'
-            }`}>
-              {isScanning ? (
-                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"/>
-              ) : (
-                <svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-900">
-                  <circle cx="12" cy="12" r="3"/>
-                  <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-                </svg>
-              )}
-            </div>
+            <span
+              className="absolute inset-0 rounded-full pointer-events-none"
+              style={{ border: `${camFigma(13.068)}px solid #FFFFFF` }}
+              aria-hidden
+            />
+            <span
+              className={`rounded-full transition-colors pointer-events-none ${
+                isScanning ? 'bg-emerald-400' : 'bg-white'
+              }`}
+              style={{ width: camFigma(117.61), height: camFigma(117.61) }}
+            />
+            {isScanning && (
+              <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span className="w-6 h-6 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+              </span>
+            )}
           </button>
         </div>
       )}
@@ -565,26 +597,64 @@ interface OCRResultViewProps {
 }
 
 const OCRResultView: React.FC<OCRResultViewProps> = ({ result }) => {
+  // Figma 拍摄有结果：原文（拼音注音+汉字）· 翻译
+  const hasWords = Array.isArray(result.words) && result.words.length > 0;
+
   return (
-    <div className="space-y-4 animate-fadeIn">
-      {/* Original + ruby pinyin (GB/T 16159 word segmentation) */}
-      <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl p-5 border border-slate-700/50">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-2 h-2 rounded-full bg-emerald-500"/>
-          <span className="text-xs text-slate-500 uppercase tracking-wider font-medium">Original</span>
+    <div className="space-y-8 animate-fadeIn" style={{ fontFamily: APP_FONT_FAMILY }}>
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-2.5 h-2.5 rounded-full bg-[#00B4A0]" />
+          <span
+            className="font-medium text-white/90"
+            style={{ fontSize: 'clamp(16px, 1.8vw, 28px)' }}
+          >
+            原文
+          </span>
         </div>
-        <PinyinRubyText
-          original={result.original}
-          words={result.words}
-        />
+        {hasWords ? (
+          <PinyinRubyText
+            original={result.original}
+            words={result.words}
+            hanziClassName="font-medium text-white leading-none"
+            pinyinClassName="text-[#00B4A0] font-medium tracking-wide leading-none mb-1.5 whitespace-nowrap"
+          />
+        ) : (
+          <>
+            {result.pinyin ? (
+              <p
+                className="text-[#00B4A0] font-medium mb-2 leading-relaxed"
+                style={{ fontSize: 'clamp(16px, 1.8vw, 28px)' }}
+              >
+                {result.pinyin}
+              </p>
+            ) : null}
+            <p
+              className="text-white font-medium leading-relaxed"
+              style={{ fontSize: 'clamp(18px, 2vw, 32px)' }}
+            >
+              {result.original}
+            </p>
+          </>
+        )}
       </div>
 
-      {/* Translation Display - 显示用户母语 */}
-      <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/30">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="text-xs text-slate-500 uppercase tracking-wider font-medium">Translation</span>
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-2.5 h-2.5 rounded-full bg-[#00B4A0]" />
+          <span
+            className="font-medium text-white/90"
+            style={{ fontSize: 'clamp(16px, 1.8vw, 28px)' }}
+          >
+            翻译
+          </span>
         </div>
-        <p className="text-base text-slate-200">{result.translation}</p>
+        <p
+          className="text-white/90 font-medium leading-relaxed"
+          style={{ fontSize: 'clamp(16px, 1.8vw, 28px)' }}
+        >
+          {result.translation}
+        </p>
       </div>
     </div>
   );
@@ -600,14 +670,14 @@ interface VoiceTranslationProps {
 const VoiceTranslation: React.FC<VoiceTranslationProps> = ({ onResult }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [timer, setTimer] = useState(0);
-  const [waveHeights, setWaveHeights] = useState(Array(20).fill(16));
+  const [waveHeights, setWaveHeights] = useState(Array(36).fill(10));
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
     if (isRecording) {
-      interval = setInterval(() => setTimer(t => t + 1), 1000);
+      interval = setInterval(() => setTimer((t) => t + 1), 1000);
     } else {
       setTimer(0);
     }
@@ -618,10 +688,10 @@ const VoiceTranslation: React.FC<VoiceTranslationProps> = ({ onResult }) => {
     let animationInterval: ReturnType<typeof setInterval>;
     if (isRecording) {
       animationInterval = setInterval(() => {
-        setWaveHeights(Array(20).fill(0).map(() => Math.random() * 48 + 16));
-      }, 150);
+        setWaveHeights(Array(36).fill(0).map(() => Math.random() * 36 + 8));
+      }, 120);
     } else {
-      setWaveHeights(Array(20).fill(16));
+      setWaveHeights(Array(36).fill(0).map((_, i) => 8 + Math.sin(i * 0.35) * 4));
     }
     return () => clearInterval(animationInterval);
   }, [isRecording]);
@@ -632,88 +702,131 @@ const VoiceTranslation: React.FC<VoiceTranslationProps> = ({ onResult }) => {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  return (
-    <div className="flex flex-col items-center justify-center py-8 space-y-6 animate-fadeIn">
-      {/* Waveform visualization */}
-      <div className="flex items-center gap-1 h-14">
-        {waveHeights.map((height, i) => (
-          <div
-            key={i}
-            className={`w-1.5 rounded-full transition-all duration-150 ${
-              isRecording ? 'bg-emerald-400' : 'bg-slate-700'
-            }`}
-            style={{
-              height: `${height}px`,
-              animationDelay: `${i * 50}ms`
-            }}
-          />
-        ))}
-      </div>
+  const toggleRecord = async () => {
+    if (loading) return;
+    if (isRecording) {
+      setIsRecording(false);
+      setLoading(true);
+      try {
+        await new Promise((r) => setTimeout(r, 1200));
+        const mockResult = await mockTranslate('你好，今天天气很好');
+        setResult(mockResult);
+        addToHistory({
+          type: 'voice',
+          original: mockResult.original,
+          pinyin: mockResult.pinyin,
+          translation: mockResult.translation,
+          words: mockResult.words,
+        });
+        onResult?.(mockResult);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setResult(null);
+      setIsRecording(true);
+    }
+  };
 
-      <div className="text-center space-y-1.5">
-        <p className={`text-xl font-mono transition-colors ${isRecording ? 'text-red-400' : loading ? 'text-emerald-400' : 'text-slate-500'}`}>
+  // Figma 翻译2语音1：计时 80 · 转写框 · Tap to Speak 36 · 麦键 168
+  return (
+    <div
+      className="flex flex-col h-full min-h-0 animate-fadeIn box-border"
+      style={{
+        paddingLeft: camPx(60),
+        paddingRight: camPx(60),
+        paddingTop: camPx(40),
+        paddingBottom: camPx(40),
+        fontFamily: FIGMA_FONT,
+      }}
+    >
+      <div className="flex flex-col items-center shrink-0">
+        <p
+          className="font-bold tracking-wide"
+          style={{
+            fontSize: camPx(80),
+            lineHeight: 1,
+            color: isRecording ? '#F87171' : loading ? '#00B4A0' : '#BBBBBB',
+          }}
+        >
           {formatTime(timer)}
         </p>
-        <p className="text-slate-500 text-sm">
-          {loading ? 'Translating...' : isRecording ? 'Recording. Tap again to stop.' : 'Tap to start voice input'}
-        </p>
+        <div
+          className="flex items-end justify-center"
+          style={{ height: camPx(80), marginTop: camPx(16), width: camPx(411), gap: camPx(3) }}
+        >
+          {waveHeights.map((height, i) => (
+            <div
+              key={i}
+              className="flex-1 rounded-full bg-white/70"
+              style={{
+                maxWidth: camPx(6),
+                height: Math.max(camPx(8), height * (camPx(48) / 48)),
+                opacity: isRecording ? 1 : 0.55,
+              }}
+            />
+          ))}
+        </div>
       </div>
 
-      {result && (
-        <div className="pt-4 w-full animate-fadeIn">
-          <OCRResultView result={result} />
-        </div>
-      )}
-
-      <button
-        onClick={async () => {
-          if (isRecording) {
-            // 停止录音，模拟翻译
-            setIsRecording(false);
-            setLoading(true);
-            try {
-              // 模拟语音识别和翻译
-              await new Promise(r => setTimeout(r, 1500));
-              const mockResult = await mockTranslate("你好，今天天气很好");
-              setResult(mockResult);
-              // 保存到历史记录
-              addToHistory({
-                type: 'voice',
-                original: mockResult.original,
-                pinyin: mockResult.pinyin,
-                translation: mockResult.translation,
-                words: mockResult.words,
-              });
-              if (onResult) onResult(mockResult);
-            } catch (err) {
-              console.error(err);
-            } finally {
-              setLoading(false);
-            }
-          } else {
-            setIsRecording(true);
-          }
+      <div
+        className="flex-1 min-h-0 overflow-y-auto custom-scrollbar"
+        style={{
+          marginTop: camPx(24),
+          marginBottom: camPx(24),
+          borderRadius: camPx(50),
+          background: 'rgba(255,255,255,0.1)',
+          padding: `${camPx(28)} ${camPx(40)}`,
+          maxHeight: camPx(476),
         }}
-        disabled={loading}
-        className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 relative ${
-          isRecording 
-            ? 'bg-red-500 shadow-[0_0_30px_rgba(239,68,68,0.4)] scale-105 animate-pulse' 
-            : 'bg-gradient-to-br from-emerald-400 to-emerald-600 hover:scale-105 shadow-lg shadow-emerald-500/30'
-        } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
-        <div className={`absolute inset-0 rounded-full border-4 border-white/20 ${isRecording ? 'animate-ping opacity-20' : ''}`} />
-        <svg className="w-9 h-9 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          {isRecording ? (
-            <rect x="6" y="6" width="12" height="12" rx="2"/>
-          ) : (
-            <>
-              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-              <line x1="12" x2="12" y1="19" y2="22"/>
-            </>
-          )}
-        </svg>
-      </button>
+        {loading ? (
+          <p className="text-white/50 text-center" style={{ fontSize: camPx(28), paddingTop: camPx(40) }}>
+            Translating...
+          </p>
+        ) : result ? (
+          <OCRResultView result={result} />
+        ) : null}
+      </div>
+
+      <div className="shrink-0 flex flex-col items-center" style={{ gap: camPx(20) }}>
+        <p className="text-white text-center" style={{ fontSize: camPx(36) }}>
+          {loading ? 'Please wait…' : isRecording ? 'Tap to Stop' : 'Tap to Speak'}
+        </p>
+        <button
+          type="button"
+          onClick={toggleRecord}
+          disabled={loading}
+          aria-label={isRecording ? 'Stop recording' : 'Start recording'}
+          className={`relative flex items-center justify-center rounded-full transition-transform active:scale-95 ${
+            isRecording ? 'bg-red-400' : 'bg-[#D9D9D9]'
+          } ${loading ? 'opacity-50' : ''}`}
+          style={{ width: camPx(168), height: camPx(168) }}
+        >
+          <svg
+            className={isRecording ? 'text-white' : 'text-slate-900'}
+            style={{ width: camPx(70), height: camPx(70) }}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            {isRecording ? (
+              <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" />
+            ) : (
+              <>
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" fill="currentColor" stroke="none" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" x2="12" y1="19" y2="22" />
+              </>
+            )}
+          </svg>
+        </button>
+      </div>
     </div>
   );
 };
@@ -729,14 +842,15 @@ const TextTranslation: React.FC<TextTranslationProps> = ({ onResult }) => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const MAX = 500;
+  const canTranslate = Boolean(input.trim()) && !loading;
 
   const handleTranslate = async () => {
-    if (!input.trim() || loading) return;
+    if (!canTranslate) return;
     setLoading(true);
     try {
-      const res = await mockTranslate(input);
+      const res = await mockTranslate(input.slice(0, MAX));
       setResult(res);
-      // 保存到历史记录
       addToHistory({
         type: 'text',
         original: res.original,
@@ -744,7 +858,7 @@ const TextTranslation: React.FC<TextTranslationProps> = ({ onResult }) => {
         translation: res.translation,
         words: res.words,
       });
-      if (onResult) onResult(res);
+      onResult?.(res);
     } catch (err) {
       console.error(err);
     } finally {
@@ -752,50 +866,154 @@ const TextTranslation: React.FC<TextTranslationProps> = ({ onResult }) => {
     }
   };
 
+  // Figma 翻译3文本1：双栏 880×840 · gap 40 · inset 60 · 标签钮 300×90 @ y1050
+  const paneR = camPx(50);
+  const tagW = camPx(170);
+  const tagH = camPx(60);
+  const bodyFs = camPx(32);
+  const noteFs = camPx(24);
+  const panePadX = camPx(40);
+  const panePadTop = camPx(70);
+
+  const langTag = (label: string) => (
+    <div
+      className="absolute top-0 right-0 z-10 flex items-center justify-center text-white font-medium"
+      style={{
+        width: tagW,
+        height: tagH,
+        background: '#00B4A0',
+        borderBottomLeftRadius: camPx(28),
+        fontSize: bodyFs,
+        fontFamily: FIGMA_FONT,
+      }}
+    >
+      {label}
+    </div>
+  );
+
   return (
-    <div className="space-y-4 animate-fadeIn">
-      <div className="relative">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Enter Chinese or English to translate..."
-          className="w-full h-32 px-4 py-3 bg-slate-800/60 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 resize-none focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all text-base"
-        />
-        <span className="absolute bottom-3 right-3 text-xs text-slate-600">
-          {input.length}/500
-        </span>
+    <div
+      className="flex flex-col h-full min-h-0 animate-fadeIn box-border"
+      style={{
+        paddingLeft: camPx(60),
+        paddingRight: camPx(60),
+        paddingTop: camPx(40),
+        paddingBottom: camPx(60),
+        fontFamily: FIGMA_FONT,
+      }}
+    >
+      <div
+        className="flex min-h-0 flex-1"
+        style={{ gap: camPx(40), maxHeight: camPx(840) }}
+      >
+        {/* English / input */}
+        <div
+          className="relative flex-1 min-w-0 overflow-hidden flex flex-col"
+          style={{
+            background: 'rgba(255,255,255,0.1)',
+            borderRadius: paneR,
+          }}
+        >
+          {langTag('English')}
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value.slice(0, MAX))}
+            placeholder="Enter Chinese or English..."
+            className="flex-1 w-full bg-transparent text-white placeholder:text-[#636E72] resize-none focus:outline-none"
+            style={{
+              fontSize: bodyFs,
+              lineHeight: 1.6,
+              paddingLeft: panePadX,
+              paddingRight: panePadX,
+              paddingTop: panePadTop,
+              paddingBottom: camPx(56),
+            }}
+          />
+          <span
+            className="absolute text-[#636E72]"
+            style={{
+              right: camPx(34),
+              bottom: camPx(40),
+              fontSize: noteFs,
+              lineHeight: 1.6,
+            }}
+          >
+            {input.length}/{MAX}
+          </span>
+        </div>
+
+        {/* 中文 / result */}
+        <div
+          className="relative flex-1 min-w-0 overflow-hidden flex flex-col"
+          style={{
+            background: 'rgba(255,255,255,0.1)',
+            borderRadius: paneR,
+          }}
+        >
+          {langTag('中文')}
+          <div
+            className="flex-1 overflow-y-auto custom-scrollbar"
+            style={{
+              paddingLeft: panePadX,
+              paddingRight: panePadX,
+              paddingTop: panePadTop,
+              paddingBottom: camPx(40),
+            }}
+          >
+            {loading ? (
+              <p className="text-white/40" style={{ fontSize: bodyFs, lineHeight: 1.6 }}>
+                Translating...
+              </p>
+            ) : result ? (
+              <div className="space-y-3">
+                {result.pinyin ? (
+                  <p className="text-[#00B4A0]" style={{ fontSize: noteFs, lineHeight: 1.6 }}>
+                    {result.pinyin}
+                  </p>
+                ) : null}
+                <p className="text-white" style={{ fontSize: bodyFs, lineHeight: 1.6 }}>
+                  {/[\u4e00-\u9fa5]/.test(input) ? result.translation : result.original}
+                </p>
+                {/[\u4e00-\u9fa5]/.test(input) ? null : (
+                  <p className="text-white/70" style={{ fontSize: bodyFs, lineHeight: 1.6 }}>
+                    {result.translation}
+                  </p>
+                )}
+              </div>
+            ) : null}
+          </div>
+        </div>
       </div>
 
-      <button
-        onClick={handleTranslate}
-        disabled={!input.trim() || loading}
-        className={`w-full py-3 rounded-xl font-medium text-base transition-all flex items-center justify-center gap-2 ${
-          input.trim() && !loading
-            ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-400 hover:to-teal-400 shadow-lg shadow-emerald-500/20 active:scale-98'
-            : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-        }`}
+      <div
+        className="shrink-0 flex justify-center"
+        style={{ paddingTop: camPx(50) }}
       >
-        {loading ? (
-          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-        ) : (
-          <>
-            <TranslateIcon />
-            Translate
-          </>
-        )}
-      </button>
-
-      {result && (
-        <div className="pt-3 animate-fadeIn">
-          <OCRResultView result={result} />
-        </div>
-      )}
+        <button
+          type="button"
+          onClick={handleTranslate}
+          disabled={!canTranslate}
+          className="font-bold text-white transition-opacity active:scale-95"
+          style={{
+            width: camPx(300),
+            height: camPx(90),
+            fontSize: camPx(36),
+            lineHeight: `${camPx(54)}px`,
+            background: '#00B4A0',
+            opacity: canTranslate ? 1 : 0.4,
+            borderRadius: camPx(100),
+            fontFamily: FIGMA_FONT,
+          }}
+        >
+          {loading ? '…' : 'Translate'}
+        </button>
+      </div>
     </div>
   );
 };
 
 // ============================================================
-// FINGERTAP MODE COMPONENT (Mock AR)
+// FINGERTAP MODE — Point-Read 硬件引导 / AR mock
 // ============================================================
 interface FingerTapModeProps {
   onExit: () => void;
@@ -803,13 +1021,22 @@ interface FingerTapModeProps {
 
 const FingerTapMode: React.FC<FingerTapModeProps> = ({ onExit }) => {
   const [showGuide, setShowGuide] = useState(true);
-  const [demoStep, setDemoStep] = useState<'mirror' | 'finger' | 'reading'>('mirror');
-  const [detectedItems, setDetectedItems] = useState<Array<{ x: number; y: number; text: string; pinyin: string; trans: string }>>([]);
+  const [demoStep, setDemoStep] = useState(0);
+  const [detectedItems, setDetectedItems] = useState<
+    Array<{ x: number; y: number; text: string; pinyin: string; trans: string }>
+  >([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const roundBtn = camFigma(104.54);
+  const sideInset = camFigma(78.41);
+  const demoSteps = [
+    { label: 'Mirror', tip: 'Align the 45° mirror' },
+    { label: 'Point', tip: 'Point at a word' },
+    { label: 'Read', tip: 'Hear it · see meaning' },
+  ];
 
   useEffect(() => {
     if (!showGuide) {
-      // Simulate AR detection after guide
       const timer = setTimeout(() => {
         setDetectedItems([
           { x: 45, y: 40, text: '学习', pinyin: 'xué xí', trans: 'To Study' },
@@ -817,25 +1044,20 @@ const FingerTapMode: React.FC<FingerTapModeProps> = ({ onExit }) => {
         ]);
       }, 2000);
 
-      // Draw mock AR camera view
       const canvas = canvasRef.current;
       if (canvas) {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           canvas.width = 1920;
           canvas.height = 1080;
-          
           const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-          gradient.addColorStop(0, '#1e293b');
-          gradient.addColorStop(1, '#0f172a');
+          gradient.addColorStop(0, '#0B1220');
+          gradient.addColorStop(1, '#090F20');
           ctx.fillStyle = gradient;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-          // Draw mock book page
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
           ctx.fillRect(400, 300, 1120, 480);
-          
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
           ctx.font = 'bold 120px "Noto Sans SC", sans-serif';
           ctx.textAlign = 'center';
           ctx.fillText('学习汉语', canvas.width / 2, canvas.height / 2);
@@ -846,143 +1068,201 @@ const FingerTapMode: React.FC<FingerTapModeProps> = ({ onExit }) => {
     }
   }, [showGuide]);
 
-  const demoClips = [
-    {
-      id: 'mirror' as const,
-      label: 'Mirror setup',
-      title: 'Mirror aligned',
-      subtitle: 'Position the 45° mirror so the camera can see the desk.',
-      accent: 'emerald',
-    },
-    {
-      id: 'finger' as const,
-      label: 'Finger tracking',
-      title: 'Finger detected',
-      subtitle: 'The camera tracks where the fingertip lands on the page.',
-      accent: 'cyan',
-    },
-    {
-      id: 'reading' as const,
-      label: 'AR reading',
-      title: 'Instant reading',
-      subtitle: 'Tap a word to hear pronunciation and see meaning instantly.',
-      accent: 'violet',
-    },
-  ];
-  const activeDemo = demoClips.find((clip) => clip.id === demoStep) ?? demoClips[0];
+  const exitBtn = (
+    <button
+      type="button"
+      onClick={onExit}
+      className="rounded-full flex items-center justify-center text-white transition-all shrink-0"
+      style={{
+        width: roundBtn,
+        height: roundBtn,
+        background: 'rgba(255,255,255,0.1)',
+      }}
+      title="Exit"
+      aria-label="Exit"
+    >
+      <BackIcon size={camPx(22)} />
+    </button>
+  );
 
-  // Guide Screen
   if (showGuide) {
     return (
-      <div className="absolute inset-0 z-[60] bg-[#07111f] flex items-center justify-center p-8 overflow-hidden">
-        <div className="absolute -top-32 -right-20 w-[520px] h-[520px] bg-emerald-400/15 rounded-full blur-[110px]" />
-        <div className="absolute -bottom-40 -left-24 w-[480px] h-[480px] bg-cyan-500/10 rounded-full blur-[120px]" />
-        <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-[0.92fr_1.08fr] gap-8 items-center animate-fadeIn">
-          <div className="relative rounded-[2rem] border border-white/10 bg-white/[0.055] p-7 shadow-2xl shadow-black/30 backdrop-blur-2xl">
-            <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/60 to-transparent" />
-            <div className="space-y-5">
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.9)]" />
-                Hardware Tutorial
-              </div>
-              <div>
-                <h1 className="text-4xl lg:text-5xl font-black text-white leading-[0.98] tracking-[-0.04em]">
-                  Fingertap<br />Reading
-                </h1>
-                <p className="mt-4 text-base text-slate-300 leading-relaxed">
-                  Use the 45° mirror to let the camera read the desktop area, then point at words in a book to hear pronunciation and see instant translation.
-                </p>
-              </div>
-            </div>
+      <div
+        className="absolute inset-0 z-[60] flex flex-col overflow-hidden"
+        style={{ background: '#090F20', fontFamily: FIGMA_FONT }}
+      >
+        <div
+          className="shrink-0 flex items-center"
+          style={{
+            height: camPx(120),
+            paddingLeft: sideInset,
+            paddingRight: sideInset,
+          }}
+        >
+          {exitBtn}
+          <div className="flex-1 flex items-center justify-center">
+            <h1
+              className="m-0 font-bold text-white"
+              style={{ fontSize: camPx(40), lineHeight: `${camPx(48)}px` }}
+            >
+              Point-Read
+            </h1>
+          </div>
+          <div style={{ width: roundBtn }} aria-hidden />
+        </div>
 
-            <div className="mt-7 space-y-3">
-              <div className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-slate-950/45 p-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-400 text-lg font-black text-slate-950 shadow-lg shadow-emerald-500/20">1</div>
-                <div>
-                  <p className="text-sm font-black text-white">Position the mirror</p>
-                  <p className="mt-0.5 text-xs leading-snug text-slate-400">Place the FingerTap mirror in front of the camera at the marked angle.</p>
-                </div>
-              </div>
-              <div className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-slate-950/45 p-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-300 text-lg font-black text-slate-950 shadow-lg shadow-cyan-500/20">2</div>
-                <div>
-                  <p className="text-sm font-black text-white">Tap to read</p>
-                  <p className="mt-0.5 text-xs leading-snug text-slate-400">Point at any word on the page to trigger AR reading support.</p>
-                </div>
-              </div>
-            </div>
+        <div
+          className="flex-1 min-h-0 grid animate-fadeIn"
+          style={{
+            gridTemplateColumns: 'minmax(0, 0.9fr) minmax(0, 1.1fr)',
+            gap: camPx(36),
+            padding: `0 ${sideInset}px ${camPx(40)}px`,
+          }}
+        >
+          <div
+            className="min-h-0 flex flex-col justify-center"
+            style={{
+              borderRadius: camPx(40),
+              padding: camPx(40),
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.12)',
+            }}
+          >
+            <h2
+              className="m-0 text-white font-bold"
+              style={{ fontSize: camPx(48), lineHeight: 1.15, letterSpacing: '-0.03em' }}
+            >
+              Set up once
+            </h2>
+            <p
+              className="m-0 text-white/55"
+              style={{ marginTop: camPx(16), fontSize: camPx(28), lineHeight: 1.4, maxWidth: '28ch' }}
+            >
+              Mirror on the desk. Point at a word. Hear and see it.
+            </p>
 
-            <div className="mt-7 grid grid-cols-[1fr_auto] gap-3">
-              <button onClick={() => setShowGuide(false)} className="rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-950 shadow-2xl shadow-white/10 transition-all hover:scale-[1.02] active:scale-95">
-                Start Fingertap Reading
-              </button>
-              <button onClick={onExit} className="rounded-2xl border border-white/10 px-4 py-4 text-sm font-black text-slate-400 transition-colors hover:text-white">
-                Exit
-              </button>
-            </div>
+            <ol
+              className="m-0 p-0 list-none"
+              style={{ marginTop: camPx(36), display: 'flex', flexDirection: 'column', gap: camPx(16) }}
+            >
+              {['Clip the 45° mirror', 'Open a book under the camera', 'Point to read'].map(
+                (line, i) => (
+                  <li
+                    key={line}
+                    className="flex items-center text-white"
+                    style={{ gap: camPx(16), fontSize: camPx(28), fontWeight: 500 }}
+                  >
+                    <span
+                      className="shrink-0 flex items-center justify-center font-bold"
+                      style={{
+                        width: camPx(48),
+                        height: camPx(48),
+                        borderRadius: camPx(14),
+                        background: 'rgba(0,180,160,0.2)',
+                        color: '#00B4A0',
+                        fontSize: camPx(24),
+                      }}
+                    >
+                      {i + 1}
+                    </span>
+                    {line}
+                  </li>
+                ),
+              )}
+            </ol>
+
+            <button
+              type="button"
+              onClick={() => setShowGuide(false)}
+              className="w-full text-white font-semibold transition-all active:scale-[0.98]"
+              style={{
+                marginTop: camPx(40),
+                minHeight: camPx(80),
+                borderRadius: camPx(40),
+                fontSize: camPx(32),
+                background: 'linear-gradient(135deg, #00B4A0, #26D6C3)',
+                fontFamily: FIGMA_FONT,
+              }}
+            >
+              Start
+            </button>
           </div>
 
-          <div className="relative">
-            <div className="relative aspect-video overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900 shadow-2xl shadow-emerald-950/30">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(52,211,153,0.28),transparent_34%),linear-gradient(135deg,#111827_0%,#0f172a_55%,#042f2e_100%)]" />
-              <div className="absolute left-6 top-5 flex items-center gap-2 rounded-full bg-black/35 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200 backdrop-blur-md">
-                <span className="h-2 w-2 rounded-full bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.9)]" />
-                Demo Video · {activeDemo.label}
+          <div className="min-h-0 flex flex-col" style={{ gap: camPx(16) }}>
+            <div
+              className="relative flex-1 min-h-0 overflow-hidden"
+              style={{
+                borderRadius: camPx(40),
+                background: 'linear-gradient(160deg, #111827 0%, #0B1220 55%, #062a28 100%)',
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}
+            >
+              <div
+                className="absolute inset-x-[12%] bottom-[18%] h-[38%] rounded-2xl border border-white/15 bg-white/[0.08]"
+                style={{ transform: 'rotate(-2deg)' }}
+              />
+              <div
+                className="absolute left-[22%] top-[30%] h-[18%] w-[28%] rounded-xl border border-[#00B4A0]/40 bg-[#00B4A0]/15"
+                style={{ transform: 'rotate(16deg)' }}
+              />
+              <div
+                className="absolute right-[22%] top-[36%] w-[4.5%] h-[22%] origin-bottom rounded-full"
+                style={{
+                  transform: 'rotate(-28deg)',
+                  background: 'linear-gradient(180deg, #FFE8D6, #FFB07A)',
+                  opacity: demoStep === 1 ? 1 : 0.55,
+                }}
+              />
+              <div
+                className="absolute left-1/2 top-[48%] -translate-x-1/2 rounded-2xl border border-white/20 bg-[#090F20]/90 text-white text-center"
+                style={{
+                  padding: `${camPx(14)}px ${camPx(22)}px`,
+                  opacity: demoStep === 2 ? 1 : 0.35,
+                  transform: `translateX(-50%) scale(${demoStep === 2 ? 1 : 0.96})`,
+                }}
+              >
+                <p className="m-0 font-bold" style={{ fontSize: camPx(28) }}>
+                  你好
+                </p>
+                <p className="m-0 text-[#00B4A0]" style={{ marginTop: camPx(4), fontSize: camPx(20) }}>
+                  nǐ hǎo · hello
+                </p>
               </div>
 
-              <div className="absolute inset-x-10 bottom-8 h-36 rounded-2xl border border-white/15 bg-white/12 shadow-2xl shadow-black/25 backdrop-blur-sm rotate-[-2deg]" />
-              <div className={`absolute left-[24%] top-[32%] h-24 w-40 rounded-xl border rotate-[18deg] shadow-[0_0_30px_rgba(52,211,153,0.18)] transition-all ${
-                demoStep === 'mirror'
-                  ? 'border-emerald-300/70 bg-emerald-300/20 scale-105'
-                  : 'border-emerald-300/25 bg-emerald-300/10'
-              }`}>
-                <div className="absolute inset-x-4 top-7 h-1 rounded-full bg-white/35" />
-                <div className="absolute inset-x-5 top-12 h-1 rounded-full bg-white/25" />
-                <div className="absolute inset-x-7 top-17 h-1 rounded-full bg-white/20" />
+              <div
+                className="absolute inset-x-0 bottom-0 text-center text-white/70"
+                style={{
+                  padding: camPx(24),
+                  fontSize: camPx(24),
+                  background: 'linear-gradient(transparent, rgba(9,15,32,0.85))',
+                }}
+              >
+                {demoSteps[demoStep].tip}
               </div>
-              <div className={`absolute right-[19%] top-[38%] h-28 w-9 origin-bottom rotate-[-30deg] rounded-full bg-gradient-to-b from-orange-100 to-orange-300 shadow-2xl shadow-black/25 transition-all ${
-                demoStep === 'finger' ? 'scale-110 shadow-cyan-300/30' : ''
-              }`}>
-                <div className="absolute -top-2 left-1/2 h-5 w-5 -translate-x-1/2 rounded-full bg-orange-100" />
-              </div>
-              <div className={`absolute left-[48%] top-[53%] h-12 w-32 rounded-full border blur-[1px] transition-all ${
-                demoStep === 'finger'
-                  ? 'border-cyan-300/70 bg-cyan-300/20 scale-110'
-                  : 'border-emerald-300/50 bg-emerald-300/15'
-              }`} />
-              <div className={`absolute left-[45%] top-[51%] rounded-xl border px-3 py-2 text-xs font-black text-white shadow-xl backdrop-blur transition-all ${
-                demoStep === 'reading'
-                  ? 'border-violet-300/70 bg-violet-950/85 scale-110'
-                  : 'border-emerald-300/50 bg-slate-950/75'
-              }`}>
-                你好 · nǐ hǎo
-                <p className="mt-0.5 text-[10px] font-semibold text-emerald-300">hello</p>
-              </div>
-
-              <div className="absolute bottom-5 left-6 right-6 rounded-2xl border border-white/10 bg-black/35 p-4 backdrop-blur-md">
-                <p className="text-sm font-black text-white">{activeDemo.title}</p>
-                <p className="mt-1 text-xs leading-snug text-slate-300">{activeDemo.subtitle}</p>
-              </div>
-
-              <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_0%,rgba(255,255,255,0.04)_50%,transparent_100%)] bg-[length:100%_8px] opacity-40" />
-              <button onClick={() => setShowGuide(false)} className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/20 text-white shadow-2xl backdrop-blur-md transition-all hover:scale-110 active:scale-95" aria-label="Play demo and start">
-                <svg className="ml-1 h-7 w-7" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </button>
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-              {demoClips.map((clip) => (
+
+            <div className="grid grid-cols-3 shrink-0" style={{ gap: camPx(12) }}>
+              {demoSteps.map((step, i) => (
                 <button
-                  key={clip.id}
-                  onClick={() => setDemoStep(clip.id)}
-                  className={`rounded-2xl border px-3 py-2 text-[10px] font-bold uppercase tracking-[0.08em] transition-all active:scale-95 ${
-                    demoStep === clip.id
-                      ? 'border-emerald-300/55 bg-emerald-300/15 text-white shadow-lg shadow-emerald-950/30'
-                      : 'border-white/10 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08] hover:text-white'
-                  }`}
+                  key={step.label}
+                  type="button"
+                  onClick={() => setDemoStep(i)}
+                  className="font-medium transition-all active:scale-[0.97]"
+                  style={{
+                    minHeight: camPx(64),
+                    borderRadius: camPx(20),
+                    fontSize: camPx(24),
+                    fontFamily: FIGMA_FONT,
+                    border:
+                      demoStep === i
+                        ? '1px solid rgba(0,180,160,0.55)'
+                        : '1px solid rgba(255,255,255,0.1)',
+                    background:
+                      demoStep === i ? 'rgba(0,180,160,0.18)' : 'rgba(255,255,255,0.05)',
+                    color: demoStep === i ? '#FFFFFF' : 'rgba(255,255,255,0.55)',
+                  }}
                 >
-                  {clip.title}
+                  {step.label}
                 </button>
               ))}
             </div>
@@ -992,34 +1272,59 @@ const FingerTapMode: React.FC<FingerTapModeProps> = ({ onExit }) => {
     );
   }
 
-  // AR Mode View
   return (
-    <div className="relative w-full h-full bg-black overflow-hidden animate-fadeIn">
-      <canvas ref={canvasRef} className="w-full h-full object-cover opacity-70 grayscale-[0.2]" />
-      
-      {/* AR Overlays */}
+    <div
+      className="relative w-full h-full overflow-hidden animate-fadeIn"
+      style={{ background: '#090F20', fontFamily: FIGMA_FONT }}
+    >
+      <canvas ref={canvasRef} className="w-full h-full object-cover opacity-75" />
+
+      <div
+        className="absolute z-20"
+        style={{ top: camPx(28), left: sideInset }}
+      >
+        {exitBtn}
+      </div>
+
+      <div className="absolute top-8 right-8 flex items-center gap-2 px-4 py-2 rounded-full bg-[#00B4A0]/15 border border-[#00B4A0]/40">
+        <div className="w-2 h-2 rounded-full bg-[#00B4A0] animate-pulse" />
+        <span
+          className="font-semibold text-[#00B4A0] uppercase"
+          style={{ fontSize: camPx(18), letterSpacing: '0.08em' }}
+        >
+          Live
+        </span>
+      </div>
+
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-8 right-8 flex flex-col items-end gap-2">
-          <div className="flex items-center gap-2 px-4 py-2 bg-red-500/20 border border-red-500/50 rounded-full">
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Live Tracking</span>
-          </div>
-        </div>
         {detectedItems.map((item, i) => (
-          <div key={i} className="absolute animate-fadeIn" style={{ left: `${item.x}%`, top: `${item.y}%`, transform: 'translate(-50%, -120%)' }}>
-            <div className="bg-white/95 backdrop-blur-2xl p-5 rounded-3xl shadow-2xl min-w-[180px] border border-emerald-500/30">
-              <h4 className="text-3xl font-black text-slate-900 tracking-tight">{item.text}</h4>
-              <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2">{item.pinyin}</p>
-              <div className="h-px bg-slate-200/60 my-2" />
-              <p className="text-sm font-black text-slate-700 leading-tight">{item.trans}</p>
+          <div
+            key={i}
+            className="absolute animate-fadeIn"
+            style={{ left: `${item.x}%`, top: `${item.y}%`, transform: 'translate(-50%, -120%)' }}
+          >
+            <div
+              className="bg-white/95 shadow-xl"
+              style={{
+                padding: camPx(20),
+                borderRadius: camPx(24),
+                minWidth: camPx(160),
+                border: '1px solid rgba(0,180,160,0.35)',
+              }}
+            >
+              <p className="m-0 font-bold text-slate-900" style={{ fontSize: camPx(36) }}>
+                {item.text}
+              </p>
+              <p className="m-0 font-medium text-[#00B4A0]" style={{ fontSize: camPx(18) }}>
+                {item.pinyin}
+              </p>
+              <p className="m-0 text-slate-600" style={{ marginTop: camPx(8), fontSize: camPx(22) }}>
+                {item.trans}
+              </p>
             </div>
           </div>
         ))}
       </div>
-
-      <button onClick={onExit} className="absolute bottom-12 left-1/2 -translate-x-1/2 px-12 py-5 bg-white/10 backdrop-blur-3xl border border-white/20 text-white font-black text-xl rounded-full hover:bg-white/20 hover:scale-105 transition-all active:scale-95 shadow-2xl">
-        Exit Fingertap Reading
-      </button>
     </div>
   );
 };
@@ -1027,6 +1332,32 @@ const FingerTapMode: React.FC<FingerTapModeProps> = ({ onExit }) => {
 // ============================================================
 // WELCOME STATE COMPONENT
 // ============================================================
+// Figma 拍摄空态：淡相机图标 + AR Smart Pointer Mode
+const CameraRailEmpty: React.FC = () => (
+  <div
+    className="flex flex-col items-center justify-center flex-1 min-h-[40%] animate-fadeIn"
+    style={{ fontFamily: FIGMA_FONT, paddingTop: camFigma(40), paddingBottom: camFigma(40), gap: camFigma(26.14) }}
+  >
+    <div
+      style={{ width: camFigma(130.68), height: camFigma(130.68), color: '#2D3436', opacity: 0.35 }}
+    >
+      <CameraIcon className="w-full h-full" />
+    </div>
+    <p
+      className="font-normal text-center"
+      style={{
+        fontSize: camFigma(36),
+        lineHeight: `${camFigma(58)}px`,
+        color: '#636E72',
+        paddingLeft: camFigma(24),
+        paddingRight: camFigma(24),
+      }}
+    >
+      AR Smart Pointer Mode
+    </p>
+  </div>
+);
+
 interface WelcomeStateProps {
   icon: React.ReactNode;
   text: string;
@@ -1042,25 +1373,50 @@ const WelcomeState: React.FC<WelcomeStateProps> = ({ icon, text }) => (
 // ============================================================
 // HISTORY MANAGEMENT VIEW COMPONENT (历史记录管理页面)
 // ============================================================
+const ManageIcon = ({ size = camFigma(36) }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="4" y="4" width="16" height="4" rx="1" />
+    <rect x="4" y="10" width="16" height="4" rx="1" />
+    <rect x="4" y="16" width="16" height="4" rx="1" />
+  </svg>
+);
+
 interface HistoryManagementViewProps {
   onSelectHistory?: (history: TranslationHistory) => void;
+  onBack?: () => void;
+  manageMode?: boolean;
+  onToggleManage?: () => void;
 }
 
-const HistoryManagementView: React.FC<HistoryManagementViewProps> = ({ onSelectHistory }) => {
+const HistoryManagementView: React.FC<HistoryManagementViewProps> = ({
+  onSelectHistory,
+  manageMode = false,
+  onToggleManage,
+}) => {
   const [history, setHistory] = useState<TranslationHistory[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [filterType, setFilterType] = useState<'all' | 'ocr' | 'voice' | 'text'>('all');
 
+  const sideInset = camFigma(78.41);
+  const filterH = camFigma(104.54);
+  const filterPad = camFigma(10.45);
+  const filterSegH = camFigma(83.64);
+  const filterRadius = camFigma(52.272);
+  const segRadius = camFigma(39.2);
+  const cardRadius = camFigma(39.2);
+  const cardPad = camFigma(36);
+  const listGap = camFigma(26.14);
+  const metaSize = camFigma(28);
+  const titleSize = camFigma(40);
+  const bodySize = camFigma(32);
+  const deleteBtn = camFigma(64);
+
   useEffect(() => {
-    const allHistory = getHistory();
-    setHistory(allHistory);
+    setHistory(getHistory());
   }, [refreshKey]);
 
-  // 监听storage变化以刷新历史记录
   useEffect(() => {
-    const handleStorageChange = () => {
-      setRefreshKey(prev => prev + 1);
-    };
+    const handleStorageChange = () => setRefreshKey((prev) => prev + 1);
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('historyUpdated', handleStorageChange);
     return () => {
@@ -1076,7 +1432,6 @@ const HistoryManagementView: React.FC<HistoryManagementViewProps> = ({ onSelectH
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
-
     if (minutes < 1) return 'Just now';
     if (minutes < 60) return `${minutes} min ago`;
     if (hours < 24) return `${hours} hr ago`;
@@ -1086,127 +1441,222 @@ const HistoryManagementView: React.FC<HistoryManagementViewProps> = ({ onSelectH
 
   const getTypeLabel = (type: string) => {
     switch (type) {
-      case 'ocr': return 'Camera';
-      case 'voice': return 'Voice';
-      case 'text': return 'Text';
-      default: return type;
+      case 'ocr':
+        return 'Capture';
+      case 'voice':
+        return 'Voice';
+      case 'text':
+        return 'Text';
+      default:
+        return type;
     }
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'ocr': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-      case 'voice': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'text': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
-      default: return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
-    }
-  };
+  const filters = [
+    { id: 'all' as const, label: 'All' },
+    { id: 'ocr' as const, label: 'Capture' },
+    { id: 'voice' as const, label: 'Voice' },
+    { id: 'text' as const, label: 'Text' },
+  ];
 
-  const handleClear = () => {
+  const filteredHistory =
+    filterType === 'all' ? history : history.filter((item) => item.type === filterType);
+
+  const clearAll = () => {
     if (window.confirm('Clear all history items?')) {
       clearHistory();
       setHistory([]);
-      setRefreshKey(prev => prev + 1);
+      onToggleManage?.();
     }
   };
 
-  const filteredHistory = filterType === 'all' 
-    ? history 
-    : history.filter(item => item.type === filterType);
-
-  if (history.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 space-y-3 animate-fadeIn">
-        <div className="opacity-20 scale-75">
-          <HistoryIcon />
-        </div>
-        <p className="text-sm font-medium tracking-wide text-center px-4 text-slate-500">No history yet</p>
-      </div>
-    );
-  }
-
+  // 与 TranslationHub 同源 camFigma：壳层有 scale，禁止用 vw/clamp 定稿
   return (
-    <div className="space-y-4 animate-fadeIn">
-      {/* Header with Filter and Clear */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-bold text-slate-300">History ({filteredHistory.length})</h3>
-          {/* Filter Buttons */}
-          <div className="flex gap-1 bg-slate-800/40 p-1 rounded-lg">
-            {(['all', 'ocr', 'voice', 'text'] as const).map((type) => (
-              <button
-                key={type}
-                onClick={() => setFilterType(type)}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
-                  filterType === type
-                    ? 'bg-white text-slate-900'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                {type === 'all' ? 'All' : getTypeLabel(type)}
-              </button>
-            ))}
-          </div>
-        </div>
-        <button
-          onClick={handleClear}
-          className="text-xs text-slate-500 hover:text-red-400 transition-colors px-2 py-1 rounded"
+    <div className="flex flex-col h-full min-h-0 animate-fadeIn" style={{ fontFamily: FIGMA_FONT }}>
+      <div
+        className="shrink-0 flex justify-center"
+        style={{ paddingLeft: sideInset, paddingRight: sideInset }}
+      >
+        <div
+          className="flex items-center w-full"
+          style={{
+            height: filterH,
+            borderRadius: filterRadius,
+            padding: filterPad,
+            boxSizing: 'border-box',
+            background: 'rgba(255,255,255,0.06)',
+            backdropFilter: 'blur(2.6px)',
+            WebkitBackdropFilter: 'blur(2.6px)',
+            border: '2px solid rgba(255,255,255,0.35)',
+          }}
         >
-          Clear
-        </button>
+          {filters.map((f) => {
+            const on = filterType === f.id;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setFilterType(f.id)}
+                className="flex-1 flex items-center justify-center transition-all"
+                style={{
+                  height: filterSegH,
+                  borderRadius: segRadius,
+                  background: on ? '#FFFFFF' : 'transparent',
+                  color: on ? '#0B1220' : 'rgba(255,255,255,0.72)',
+                  fontSize: camFigma(32),
+                  fontWeight: on ? 600 : 500,
+                  fontFamily: FIGMA_FONT,
+                }}
+              >
+                {f.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* History List */}
-      <div className="space-y-2 max-h-[calc(100vh-250px)] overflow-y-auto custom-scrollbar">
-        {filteredHistory.length === 0 ? (
-          <div className="text-center py-8 text-slate-500 text-sm">
-            No {filterType === 'all' ? '' : getTypeLabel(filterType).toLowerCase()} history
-          </div>
-        ) : (
-          filteredHistory.map((item) => (
-            <div
-              key={item.id}
-              className="group relative bg-slate-800/40 hover:bg-slate-800/60 rounded-xl p-3 border border-slate-700/30 transition-all hover:border-slate-600/50"
+      {history.length === 0 || filteredHistory.length === 0 ? (
+        <div
+          className="flex-1 flex flex-col items-center justify-center"
+          style={{ paddingBottom: camFigma(80) }}
+        >
+          <img
+            src="/shell/camera-history-empty.png"
+            alt=""
+            className="object-contain opacity-90"
+            style={{ width: camFigma(360), height: 'auto' }}
+          />
+          <p
+            className="font-bold text-white/60"
+            style={{
+              marginTop: camFigma(32),
+              fontSize: camFigma(40),
+              lineHeight: `${camFigma(52)}px`,
+              fontFamily: FIGMA_FONT,
+            }}
+          >
+            No Content
+          </p>
+          {manageMode && history.length > 0 ? (
+            <button
+              type="button"
+              onClick={clearAll}
+              className="text-red-400 underline"
+              style={{
+                marginTop: camFigma(40),
+                fontSize: camFigma(28),
+                fontFamily: FIGMA_FONT,
+              }}
             >
-              {/* 删除按钮 - 悬停时显示 */}
+              Clear all
+            </button>
+          ) : null}
+        </div>
+      ) : (
+        <div
+          className="flex-1 min-h-0 overflow-y-auto custom-scrollbar"
+          style={{
+            paddingLeft: sideInset,
+            paddingRight: sideInset,
+            paddingTop: camFigma(40),
+            paddingBottom: camFigma(64),
+            display: 'flex',
+            flexDirection: 'column',
+            gap: listGap,
+          }}
+        >
+          {manageMode ? (
+            <div className="flex justify-end" style={{ marginBottom: camFigma(8) }}>
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (window.confirm('Delete this history item?')) {
-                    deleteHistoryItem(item.id);
-                    setRefreshKey(prev => prev + 1);
-                  }
-                }}
-                className="absolute top-2 right-2 w-6 h-6 rounded-full bg-red-500/20 hover:bg-red-500/40 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10"
-                title="Delete"
+                type="button"
+                onClick={clearAll}
+                className="text-red-400"
+                style={{ fontSize: camFigma(28), fontFamily: FIGMA_FONT, fontWeight: 500 }}
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-              
-              {/* 点击区域 */}
-              <button
-                onClick={() => onSelectHistory && onSelectHistory(item)}
-                className="w-full text-left pr-8 active:scale-[0.98] transition-transform"
-                title="View full result"
-              >
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${getTypeColor(item.type)}`}>
-                    {getTypeLabel(item.type)}
-                  </span>
-                  <span className="text-[10px] text-slate-500 font-medium">{formatTime(item.timestamp)}</span>
-                </div>
-                <p className="text-sm font-bold text-white mb-1 line-clamp-2 group-hover:text-emerald-400 transition-colors">{item.original}</p>
-                {item.pinyin && (
-                  <p className="text-xs text-emerald-400 font-mono mb-1">{item.pinyin}</p>
-                )}
-                <p className="text-xs text-slate-400 line-clamp-1">{item.translation}</p>
+                Clear all
               </button>
             </div>
-          ))
-        )}
-      </div>
+          ) : null}
+          {filteredHistory.map((item) => (
+            <div
+              key={item.id}
+              className="relative"
+              style={{
+                borderRadius: cardRadius,
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                padding: cardPad,
+              }}
+            >
+              {manageMode ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    deleteHistoryItem(item.id);
+                    setRefreshKey((p) => p + 1);
+                  }}
+                  className="absolute flex items-center justify-center rounded-full bg-red-500/25 text-red-300"
+                  style={{
+                    top: camFigma(24),
+                    right: camFigma(24),
+                    width: deleteBtn,
+                    height: deleteBtn,
+                    fontSize: camFigma(36),
+                    lineHeight: 1,
+                  }}
+                  aria-label="Delete"
+                >
+                  ×
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => onSelectHistory?.(item)}
+                className="w-full text-left active:scale-[0.99] transition-transform"
+                style={{
+                  paddingRight: manageMode ? deleteBtn + camFigma(16) : 0,
+                  fontFamily: FIGMA_FONT,
+                }}
+              >
+                <div
+                  className="flex items-center justify-between"
+                  style={{ gap: camFigma(20), marginBottom: camFigma(16) }}
+                >
+                  <span
+                    className="text-[#00B4A0] font-medium"
+                    style={{ fontSize: metaSize, lineHeight: `${camFigma(36)}px` }}
+                  >
+                    {getTypeLabel(item.type)}
+                  </span>
+                  <span
+                    className="text-white/40"
+                    style={{ fontSize: metaSize, lineHeight: `${camFigma(36)}px` }}
+                  >
+                    {formatTime(item.timestamp)}
+                  </span>
+                </div>
+                <p
+                  className="text-white font-medium line-clamp-2"
+                  style={{ fontSize: titleSize, lineHeight: `${camFigma(52)}px`, margin: 0 }}
+                >
+                  {item.original}
+                </p>
+                <p
+                  className="text-white/50 line-clamp-1"
+                  style={{
+                    fontSize: bodySize,
+                    lineHeight: `${camFigma(42)}px`,
+                    margin: 0,
+                    marginTop: camFigma(12),
+                  }}
+                >
+                  {item.translation}
+                </p>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -1225,108 +1675,336 @@ interface TranslationHubProps {
 }
 
 const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChange, ocrResult, error, isFullScreen = false, onHistorySelect, onExit }) => {
+  const [historyManage, setHistoryManage] = useState(false);
+  const iconPx = isFullScreen ? camPx(60) : camFigma(78.41);
   const modes = [
-    { id: 'ocr', label: 'Camera', icon: <CameraIcon /> },
-    { id: 'voice', label: 'Voice', icon: <MicIcon /> },
-    { id: 'text', label: 'Text', icon: <TextIcon /> },
-    { id: 'history', label: 'History', icon: <HistoryIcon /> },
+    { id: 'ocr', label: 'Camera', icon: <CameraIcon className="" /> },
+    { id: 'voice', label: 'Voice', icon: <MicIcon className="" /> },
+    { id: 'text', label: 'Text', icon: <TextIcon className="" /> },
   ];
+  const isHistory = activeMode === 'history';
+  const showVoiceTextChrome = isFullScreen && !isHistory;
+  // Figma 全屏顶栏：返回/History 80 · 三 Tab · 左右 inset
+  const chromeH = camPx(120);
+  const roundBtn = camFigma(104.54);
+  const sideInset = camFigma(78.41);
+  const tabH = camFigma(117.61);
+  const tabPadY = camFigma((117.61 - 91.48) / 2);
+  const tabRadius = camFigma(156.816);
+  const segH = camFigma(91.48);
+  const segRadius = camFigma(52.272);
+
+  const modeTabs = (
+    <div
+      className="flex items-center"
+      style={{
+        height: tabH,
+        borderRadius: tabRadius,
+        padding: `${tabPadY}px ${camFigma(13)}px`,
+        gap: 0,
+        width: '100%',
+        boxSizing: 'border-box',
+        background: 'rgba(255,255,255,0.06)',
+        backdropFilter: 'blur(2.6px)',
+        WebkitBackdropFilter: 'blur(2.6px)',
+      }}
+    >
+      {modes.map((m) => {
+        const on = activeMode === m.id;
+        return (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => onModeChange(m.id)}
+            aria-label={m.label}
+            className="flex-1 h-full flex items-center justify-center transition-all"
+            style={{
+              height: segH,
+              borderRadius: segRadius,
+              background: on ? '#FFFFFF' : 'transparent',
+              color: on ? '#0B1220' : '#777777',
+            }}
+          >
+            <span style={{ width: iconPx, height: iconPx, display: 'inline-flex' }}>
+              {React.cloneElement(m.icon as React.ReactElement<{ className?: string }>, {
+                className: 'w-full h-full',
+              })}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const historyBtn = (
+    <button
+      type="button"
+      onClick={() => onModeChange('history')}
+      aria-label="History"
+      className={`rounded-full border flex items-center justify-center transition-all shrink-0 ${
+        activeMode === 'history'
+          ? 'bg-white text-slate-900 border-white'
+          : 'bg-white/10 text-white/85 border-white/15 hover:bg-white/20'
+      }`}
+      style={{ width: roundBtn, height: roundBtn }}
+    >
+      <HistoryIcon size={camFigma(60.11)} />
+    </button>
+  );
+
+  const backBtn = (onClick: () => void, title: string) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-full flex items-center justify-center text-white transition-all z-50 shrink-0"
+      style={{
+        width: roundBtn,
+        height: roundBtn,
+        background: 'rgba(255,255,255,0.1)',
+      }}
+      title={title}
+    >
+      <BackIcon size={camPx(22)} />
+    </button>
+  );
 
   return (
-    <div className="flex flex-col h-full overflow-hidden relative">
-      {/* Exit Button - 全屏模式下显示（语音和文本模式） */}
-      {isFullScreen && onExit && (
-        <button
-          onClick={onExit}
-          className="absolute top-6 left-6 z-50 w-12 h-12 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/90 hover:bg-black/60 hover:scale-110 transition-all shadow-2xl"
-          title="Back to home"
-        >
-          <BackIcon />
-        </button>
+    <div
+      className="flex flex-col h-full overflow-hidden relative"
+      style={{ fontFamily: FIGMA_FONT }}
+    >
+      {/* Camera 分栏：History 右上 + Point-Read + 三 Tab */}
+      {!isFullScreen && (
+        <>
+          <div
+            className="absolute z-20"
+            style={{ top: camFigma(52.27), right: camFigma(52.27) }}
+          >
+            {historyBtn}
+          </div>
+          <div style={{ padding: `${camFigma(209.09)}px ${sideInset}px ${camFigma(39)}px` }}>
+            <button
+              type="button"
+              onClick={() => onModeChange('fingertap')}
+              className="w-full relative overflow-hidden text-left transition-all active:scale-[0.98]"
+              style={{
+                height: camFigma(250.91),
+                borderRadius: camFigma(70),
+                padding: `${camFigma(28.75)}px ${camFigma(52.27)}px`,
+                boxSizing: 'border-box',
+              }}
+            >
+              {/* Group 1410141318：紫色 Point-Read 卡（色块水平翻转，文案不翻） */}
+              <div
+                aria-hidden
+                className="absolute inset-0"
+                style={{
+                  borderRadius: 'inherit',
+                  background:
+                    'linear-gradient(148.83deg, #9858FF 7.44%, #33007D 53.27%, #230050 92.56%)',
+                  transform: 'scaleX(-1)',
+                  pointerEvents: 'none',
+                }}
+              />
+              <div
+                aria-hidden
+                className="absolute"
+                style={{
+                  width: camFigma(1015),
+                  height: camFigma(214),
+                  left: camFigma(344),
+                  top: camFigma(-161),
+                  background: 'rgba(254, 220, 94, 0.85)',
+                  filter: `blur(${camFigma(104.25)}px)`,
+                  borderRadius: camFigma(152),
+                  transform: 'scaleX(-1)',
+                  pointerEvents: 'none',
+                }}
+              />
+              <div
+                aria-hidden
+                className="absolute"
+                style={{
+                  width: camFigma(1082),
+                  height: camFigma(227),
+                  left: camFigma(-350),
+                  top: camFigma(228),
+                  background: 'rgba(149, 92, 218, 0.7)',
+                  filter: `blur(${camFigma(102.05)}px)`,
+                  borderRadius: camFigma(152),
+                  transform: 'scaleX(-1)',
+                  pointerEvents: 'none',
+                }}
+              />
+              <div className="relative z-10 flex items-center justify-between h-full">
+                <div className="min-w-0 flex flex-col items-start p-0">
+                  <p
+                    style={{
+                      margin: 0,
+                      width: '100%',
+                      fontFamily: FIGMA_FONT,
+                      fontWeight: 400,
+                      fontSize: camFigma(32),
+                      lineHeight: `${camFigma(51)}px`,
+                      color: '#FFFFFF',
+                      opacity: 0.6,
+                    }}
+                  >
+                    NEW FEATURE
+                  </p>
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontFamily: FIGMA_FONT,
+                      fontWeight: 700,
+                      fontSize: camFigma(56),
+                      lineHeight: `${camFigma(90)}px`,
+                      color: '#FFFFFF',
+                    }}
+                  >
+                    AI Point-Read
+                  </h3>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontFamily: FIGMA_FONT,
+                      fontWeight: 500,
+                      fontSize: camFigma(36),
+                      lineHeight: `${camFigma(45)}px`,
+                      color: '#FFFFFF',
+                      opacity: 0.6,
+                    }}
+                  >
+                    AR Smart Pointer Mode
+                  </p>
+                </div>
+                <div
+                  className="shrink-0 flex items-center justify-center"
+                  style={{
+                    width: camFigma(104.54),
+                    height: camFigma(104.54),
+                    borderRadius: camFigma(26.136),
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    backdropFilter: 'blur(2.6px)',
+                    WebkitBackdropFilter: 'blur(2.6px)',
+                  }}
+                >
+                  <PointReadArrow size={camFigma(52.27)} />
+                </div>
+              </div>
+            </button>
+          </div>
+          <div style={{ padding: `0 ${sideInset}px ${camFigma(32)}px` }}>{modeTabs}</div>
+        </>
       )}
 
-      {/* Top Special Entry: FingerTap Reading (只在非全屏时显示) */}
-      {!isFullScreen && (
-        <div className="p-6 pb-3">
+      {/* Voice / Text 全屏顶栏：返回 / Tab / History 同一行垂直居中 */}
+      {showVoiceTextChrome && (
+        <div
+          className="shrink-0 flex items-center"
+          style={{
+            height: chromeH,
+            paddingLeft: sideInset,
+            paddingRight: sideInset,
+            gap: camPx(24),
+          }}
+        >
+          <div className="shrink-0" style={{ width: roundBtn, height: roundBtn }}>
+            {onExit ? backBtn(onExit, 'Back to home') : null}
+          </div>
+          <div className="flex-1 min-w-0 flex items-center justify-center">
+            {modeTabs}
+          </div>
+          <div className="shrink-0">{historyBtn}</div>
+        </div>
+      )}
+
+      {/* History 全屏顶栏：与 Voice/Text 共用 chromeH，flex 垂直居中，勿用 absolute 顶死 */}
+      {isHistory && (
+        <div
+          className="shrink-0 flex items-center"
+          style={{
+            height: chromeH,
+            paddingLeft: sideInset,
+            paddingRight: sideInset,
+            gap: camPx(24),
+          }}
+        >
+          <div className="shrink-0" style={{ width: roundBtn, height: roundBtn }}>
+            {backBtn(() => {
+              setHistoryManage(false);
+              onModeChange('ocr');
+            }, 'Back to Camera')}
+          </div>
+          <div className="flex-1 min-w-0 flex items-center justify-center">
+            <h2
+              className="font-bold text-white m-0"
+              style={{
+                fontSize: camPx(40),
+                lineHeight: `${camPx(48)}px`,
+                fontFamily: FIGMA_FONT,
+              }}
+            >
+              History
+            </h2>
+          </div>
           <button
-            onClick={() => onModeChange('fingertap')}
-            className="w-full relative group overflow-hidden rounded-2xl border border-emerald-300/20 bg-[linear-gradient(135deg,rgba(5,150,105,0.95),rgba(13,148,136,0.92)_48%,rgba(15,23,42,0.95))] p-4 text-left transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-emerald-500/20 active:scale-95"
+            type="button"
+            onClick={() => setHistoryManage((v) => !v)}
+            className={`shrink-0 flex items-center text-white ${
+              historyManage ? 'ring-2 ring-[#00B4A0]' : ''
+            }`}
+            style={{
+              height: roundBtn,
+              paddingLeft: camPx(28),
+              paddingRight: camPx(28),
+              gap: camPx(10),
+              fontSize: camPx(28),
+              fontWeight: 500,
+              fontFamily: FIGMA_FONT,
+              borderRadius: camPx(82),
+              background: 'rgba(255,255,255,0.1)',
+              boxSizing: 'border-box',
+            }}
           >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-12 translate-x-12 blur-2xl group-hover:bg-white/20 transition-all" />
-            <div className="absolute bottom-0 left-0 h-px w-full bg-gradient-to-r from-transparent via-emerald-200/50 to-transparent" />
-            <div className="relative z-10 flex items-center gap-3">
-              <div className="w-14 h-14 rounded-2xl bg-white/12 flex items-center justify-center backdrop-blur-md border border-white/20 shadow-inner shadow-white/10 group-hover:bg-white/15 group-hover:border-white/30 transition-all shrink-0">
-                <FingerTapFeatureIcon />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/25 bg-white/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.16em] text-emerald-100">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-200 shadow-[0_0_8px_rgba(167,243,208,0.85)]" />
-                  Hardware Tutorial
-                </div>
-                <h3 className="mt-1.5 text-lg font-black text-white italic leading-tight">Fingertap Reading</h3>
-                <p className="text-emerald-50/75 text-xs leading-snug">Mirror setup · AR guided fingertip reading</p>
-              </div>
-              <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-[10px] font-black text-white/85 sm:flex">
-                AR
-              </div>
-            </div>
+            <ManageIcon size={camPx(28)} />
+            Manage
           </button>
         </div>
       )}
 
-      {/* Main Tabs */}
-      <div className={`px-6 ${isFullScreen ? 'pt-6' : 'pb-3'}`}>
-        <div className="flex gap-2 bg-slate-800/40 p-1.5 rounded-2xl border border-white/5">
-          {modes.map((m) => (
-            <button
-              key={m.id}
-              onClick={() => onModeChange(m.id)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                activeMode === m.id
-                  ? 'bg-white text-slate-900'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-              }`}
-            >
-              {m.icon}
-              <span className="sr-only">{m.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Content Area */}
-      <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
-        {error && (
+      <div
+        className={`flex-1 min-h-0 flex flex-col ${
+          isFullScreen ? '' : 'overflow-y-auto custom-scrollbar'
+        }`}
+        style={isFullScreen ? undefined : { padding: `0 ${sideInset}px ${camFigma(50)}px` }}
+      >
+        {error && !isFullScreen && (
           <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-red-400 text-sm mb-4 animate-fadeIn flex items-center gap-2">
             <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
             {error}
           </div>
         )}
 
-        <div className="space-y-6">
-          {activeMode === 'ocr' && (
-            ocrResult ? (
-              <OCRResultView result={ocrResult} />
-            ) : (
-              <WelcomeState icon={<CameraIcon className="w-14 h-14"/>} text="Scan a book or document to begin" />
-            )
-          )}
-          {activeMode === 'voice' && (
-            <VoiceTranslation onResult={onHistorySelect ? (result) => {
-              // 语音翻译结果已保存，这里可以触发刷新历史记录
-            } : undefined} />
-          )}
-          {activeMode === 'text' && (
-            <TextTranslation onResult={onHistorySelect ? (result) => {
-              // 文本翻译结果已保存，这里可以触发刷新历史记录
-            } : undefined} />
-          )}
-          {activeMode === 'history' && (
-            <HistoryManagementView onSelectHistory={onHistorySelect} />
-          )}
-        </div>
+        {activeMode === 'ocr' &&
+          (ocrResult ? <OCRResultView result={ocrResult} /> : <CameraRailEmpty />)}
+        {activeMode === 'voice' && (
+          <VoiceTranslation onResult={onHistorySelect ? () => {} : undefined} />
+        )}
+        {activeMode === 'text' && (
+          <TextTranslation onResult={onHistorySelect ? () => {} : undefined} />
+        )}
+        {activeMode === 'history' && (
+          <HistoryManagementView
+            onSelectHistory={onHistorySelect}
+            manageMode={historyManage}
+            onToggleManage={() => setHistoryManage(false)}
+          />
+        )}
       </div>
     </div>
   );
@@ -1378,7 +2056,8 @@ export default function CameraPage() {
 
   const handleModeChange = (newMode: string) => {
     setMode(newMode);
-    if (newMode === 'text' || newMode === 'voice') {
+    // Voice / Text / History = 全屏；Camera = 分栏
+    if (newMode === 'text' || newMode === 'voice' || newMode === 'history') {
       setIsFullScreen(true);
     } else {
       setIsFullScreen(false);
@@ -1386,7 +2065,6 @@ export default function CameraPage() {
   };
 
   const handleHistorySelect = (history: TranslationHistory) => {
-    // 将历史记录转换为结果格式并显示
     const historyResult = {
       original: history.original,
       pinyin: history.pinyin || '',
@@ -1394,34 +2072,35 @@ export default function CameraPage() {
       words: history.words || [],
     };
     setResult(historyResult);
-    // 切换到对应的模式
     setMode(history.type);
-    setIsFullScreen(false);
-    // 清除错误信息
+    setIsFullScreen(history.type === 'voice' || history.type === 'text');
     setError(null);
-    // 滚动到顶部以显示结果
-    setTimeout(() => {
-      const contentArea = document.querySelector('.custom-scrollbar');
-      if (contentArea) {
-        contentArea.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    }, 100);
   };
 
+  // Figma「翻译1拍摄1」@2508：左取景 1620.43 / 右栏 888.62
+  const LEFT_PCT = `${(1620.43 / CAM_FIGMA_W) * 100}%`
+  const RIGHT_PCT = `${(888.62 / CAM_FIGMA_W) * 100}%`
+
   return (
-    <div className="flex flex-row h-full w-full bg-slate-950 overflow-hidden font-sans">
-      {/* Flash Effect */}
+    <div className="flex flex-row h-full w-full bg-[#090F20] overflow-hidden font-sans">
       {showFlash && <div className="absolute inset-0 bg-white z-[100] animate-pulse pointer-events-none" />}
 
-      {/* Main Layout Container */}
       <div className={`flex transition-all duration-700 ease-in-out h-full w-full ${mode === 'fingertap' ? 'translate-x-0' : ''}`}>
         
-        {/* Left/Main Area - Camera (隐藏在全屏模式) */}
-        <div className={`h-full relative transition-all duration-700 ${
-          mode === 'fingertap' ? 'w-full' : 
-          isFullScreen ? 'w-0 opacity-0 overflow-hidden' : 
-          'w-[60%] border-r border-white/5'
-        }`}>
+        {/* Left viewfinder — Figma 1620.43/2508 */}
+        <div
+          className={`h-full relative transition-all duration-700 ${
+            mode === 'fingertap' ? 'w-full' :
+            isFullScreen ? 'w-0 opacity-0 overflow-hidden pointer-events-none' :
+            ''
+          }`}
+          aria-hidden={isFullScreen && mode !== 'fingertap'}
+          style={
+            mode === 'fingertap' || isFullScreen
+              ? undefined
+              : { width: LEFT_PCT, flexShrink: 0 }
+          }
+        >
           {mode === 'fingertap' ? (
             <FingerTapMode onExit={() => setMode('ocr')} />
           ) : (
@@ -1430,10 +2109,17 @@ export default function CameraPage() {
 
               <button
                 onClick={handleExitToHome}
-                className="absolute top-6 left-6 z-50 w-12 h-12 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/90 hover:bg-black/60 hover:scale-110 transition-all shadow-2xl"
+                className="absolute z-50 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all"
+                style={{
+                  top: VIEWFINDER_ROUND_INSET,
+                  left: VIEWFINDER_ROUND_INSET,
+                  width: VIEWFINDER_ROUND_BTN,
+                  height: VIEWFINDER_ROUND_BTN,
+                  background: 'rgba(255,255,255,0.1)',
+                }}
                 title="Back to home"
               >
-                <BackIcon />
+                <BackIcon size={VIEWFINDER_ROUND_ICON} />
               </button>
 
               {isScanning && (
@@ -1449,12 +2135,25 @@ export default function CameraPage() {
           )}
         </div>
 
-        {/* Right Panel - Translation Hub (全屏模式时占满整个屏幕) */}
-        <div className={`h-full flex flex-col bg-slate-900/50 backdrop-blur-lg transition-all duration-700 ${
-          mode === 'fingertap' ? 'w-0 opacity-0 overflow-hidden' : 
-          isFullScreen ? 'w-full' : 
-          'w-[40%]'
-        }`}>
+        {/* Right rail — Figma 888.62/2508 满高实底 #090F20 */}
+        <div
+          className={`h-full flex flex-col transition-all duration-700 ${
+            mode === 'fingertap' ? 'w-0 opacity-0 overflow-hidden' :
+            isFullScreen ? 'w-full' :
+            ''
+          }`}
+          style={
+            mode === 'fingertap'
+              ? undefined
+              : isFullScreen
+                ? { background: '#090F20' }
+                : {
+                    width: RIGHT_PCT,
+                    flexShrink: 0,
+                    background: '#090F20',
+                  }
+          }
+        >
           <TranslationHub 
             activeMode={mode} 
             onModeChange={handleModeChange} 

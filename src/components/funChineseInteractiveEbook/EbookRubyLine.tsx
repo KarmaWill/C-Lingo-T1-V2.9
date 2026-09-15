@@ -4,6 +4,7 @@ import {
   buildRubySegmentsFromText,
   type RubySegment,
 } from '../../utils/pinyinRuby';
+import { APP_FONT_FAMILY } from '../../theme/appFont';
 
 export interface EbookRubySegment {
   text: string;
@@ -89,7 +90,7 @@ export default function EbookRubyLine({
             <ruby style={{ fontFamily: 'KaiTi, STKaiti, serif' }}>
               {segment.text}
               {showPinyin ? (
-                <rt style={{ fontFamily: 'OPPO Sans, sans-serif' }}>{segment.pinyin}</rt>
+                <rt style={{ fontFamily: APP_FONT_FAMILY }}>{segment.pinyin}</rt>
               ) : null}
             </ruby>
           </span>

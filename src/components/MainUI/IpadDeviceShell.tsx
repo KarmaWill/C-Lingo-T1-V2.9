@@ -5,7 +5,7 @@ import VolumeOffIcon from '@mui/icons-material/VolumeOff'
 import DeviceSplashScreen from './DeviceSplashScreen'
 import DeviceCoverLogo from './DeviceCoverLogo'
 
-type SizeTier = '960' | 'default' | '2000' | '1920'
+export type SizeTier = '960' | 'default' | '2000' | '1920'
 
 interface IpadDeviceShellProps {
   width: number
@@ -25,6 +25,18 @@ const BEZEL_BY_TIER: Record<SizeTier, number> = {
   '1920': 18,
 }
 
+/** 壳在屏外；内屏保持 width×height，和 T1 LCD 一致。 */
+export function getDeviceShellBezel(sizeTier: SizeTier): number {
+  return BEZEL_BY_TIER[sizeTier]
+}
+
+export function getDeviceShellBezelForSize(screenSize: string): number {
+  if (screenSize === '960x540') return BEZEL_BY_TIER['960']
+  if (screenSize === '2000x1200') return BEZEL_BY_TIER['2000']
+  if (screenSize === '1920x1125') return BEZEL_BY_TIER['1920']
+  return BEZEL_BY_TIER.default
+}
+
 const RADIUS_BY_TIER: Record<SizeTier, string> = {
   '960': '20px',
   default: '26px',
@@ -35,7 +47,7 @@ const RADIUS_BY_TIER: Record<SizeTier, string> = {
 const INNER_RADIUS_BY_TIER: Record<SizeTier, string> = {
   '960': '14px',
   default: '18px',
-  '2000': '22px',
+  '2000': '0px',
   '1920': '24px',
 }
 
@@ -251,7 +263,7 @@ export default function IpadDeviceShell({
         flexShrink: 0,
         transform,
         transformOrigin,
-        boxSizing: 'border-box',
+        boxSizing: 'content-box',
         borderRadius: RADIUS_BY_TIER[sizeTier],
         p: `${bezel}px`,
         bgcolor: '#050505',
@@ -299,10 +311,12 @@ export default function IpadDeviceShell({
       </Box>
 
       <Box
+        id="ipad-screen"
         sx={{
           position: 'relative',
-          width: '100%',
-          height: '100%',
+          width,
+          height,
+          flexShrink: 0,
           borderRadius: INNER_RADIUS_BY_TIER[sizeTier],
           overflow: 'hidden',
           bgcolor: screenBg,

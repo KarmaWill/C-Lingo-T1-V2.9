@@ -9,12 +9,13 @@
     "hubTitle": "AI Class Studio",
     "tracks": {
       "c-lingo": "C-Lingo Chinese",
-      "hsk-standard": "HSK Standard",
+      "hsk-standard": "Burnside High School",
       "business-chinese": "Bahasa Cina Perniagaan"
     },
     "badge": {
       "onlineOnly": "Dalam talian sahaja",
       "officialExam": "Peperiksaan rasmi",
+      "schoolEdition": "Edisi sekolah",
       "premium": "Premium"
     }
   },
@@ -42,6 +43,8 @@
     "moduleMastery": "Penguasaan Modul",
     "startSession": "Mula Sesi",
     "about": "Perihal",
+    "businessDialogue": "Dialog Perniagaan",
+    "businessDialogueHint": "商务中文模拟对话",
     "scenarioDialogue1": "Senario",
     "scenarioDialogue2": "Dialog",
     "documentTools1": "Dokumen",
@@ -58,11 +61,14 @@
     }
   },
   "hsk": {
-    "eyebrow": "KURSUS HSK STANDARD",
-    "heroTitle": "HSK 1 | Topik 1: Sapaan & Perkenalan",
+    "eyebrow": "BURNSIDE CHINESE",
+    "heroTitle": "Topik 1 | Aktiviti 1: Sapaan dan Perkenalan",
     "words": "Perkataan",
     "patterns": "Corak",
-    "topicMastery": "Penguasaan Topik HSK",
+    "topicMastery": "Penguasaan Topik",
+    "topicN": "Topik {{n}}",
+    "activityN": "Aktiviti {{n}}",
+    "seminar": "Seminar",
     "speakingPro1": "AI Bertutur",
     "speakingPro2": "Pro",
     "writingTraining1": "Penulisan",
