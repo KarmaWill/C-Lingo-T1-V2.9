@@ -38,59 +38,7 @@ interface Book {
   downloadProgress?: number;
 }
 
-type Category = 'All' | 'Happy Chinese' | 'HSK' | 'Culture' | 'Practice';
-
-const buildCourseCover = (level: string, title: string, startColor: string, endColor: string) =>
-  `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="560" viewBox="0 0 400 560">
-      <defs>
-        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="${startColor}"/>
-          <stop offset="100%" stop-color="${endColor}"/>
-        </linearGradient>
-        <radialGradient id="glow" cx="70%" cy="20%" r="65%">
-          <stop offset="0%" stop-color="rgba(255,255,255,0.55)"/>
-          <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
-        </radialGradient>
-      </defs>
-      <rect width="400" height="560" rx="28" fill="url(#bg)"/>
-      <rect width="400" height="560" rx="28" fill="url(#glow)"/>
-      <circle cx="316" cy="78" r="52" fill="rgba(255,255,255,0.22)"/>
-      <circle cx="84" cy="456" r="72" fill="rgba(15,23,42,0.12)"/>
-      <rect x="36" y="44" width="328" height="472" rx="24" fill="rgba(255,255,255,0.13)" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
-      <text x="56" y="112" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="white" letter-spacing="2">CHINESE</text>
-      <text x="56" y="174" font-family="Arial, sans-serif" font-size="70" font-weight="900" fill="white">${level}</text>
-      <text x="56" y="224" font-family="Arial, sans-serif" font-size="28" font-weight="800" fill="rgba(255,255,255,0.92)">${title}</text>
-      <text x="56" y="266" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="rgba(255,255,255,0.78)">Standard Course</text>
-      <path d="M82 358 C128 322, 176 320, 222 356 S310 392, 344 346" fill="none" stroke="rgba(255,255,255,0.78)" stroke-width="14" stroke-linecap="round"/>
-      <path d="M86 410 H314" stroke="rgba(255,255,255,0.45)" stroke-width="4" stroke-linecap="round"/>
-      <path d="M112 438 H288" stroke="rgba(255,255,255,0.32)" stroke-width="4" stroke-linecap="round"/>
-    </svg>`
-  )}`;
-
-const buildSeriesCover = (label: string, title: string, subtitle: string, startColor: string, endColor: string) =>
-  `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="560" viewBox="0 0 400 560">
-      <defs>
-        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="${startColor}"/>
-          <stop offset="100%" stop-color="${endColor}"/>
-        </linearGradient>
-      </defs>
-      <rect width="400" height="560" rx="28" fill="url(#bg)"/>
-      <circle cx="318" cy="94" r="70" fill="rgba(255,255,255,0.18)"/>
-      <circle cx="70" cy="432" r="92" fill="rgba(15,23,42,0.12)"/>
-      <rect x="38" y="42" width="324" height="476" rx="24" fill="rgba(255,255,255,0.13)" stroke="rgba(255,255,255,0.34)" stroke-width="2"/>
-      <text x="58" y="108" font-family="Arial, sans-serif" font-size="22" font-weight="900" fill="rgba(255,255,255,0.78)" letter-spacing="2">${label}</text>
-      <text x="58" y="184" font-family="Arial, sans-serif" font-size="52" font-weight="900" fill="white">${title}</text>
-      <text x="58" y="226" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="rgba(255,255,255,0.88)">${subtitle}</text>
-      <rect x="58" y="286" width="116" height="116" rx="26" fill="rgba(255,255,255,0.88)"/>
-      <text x="116" y="360" text-anchor="middle" font-family="Arial, sans-serif" font-size="54" font-weight="900" fill="${endColor}">中</text>
-      <path d="M210 310 C244 286, 282 286, 316 310" fill="none" stroke="rgba(255,255,255,0.78)" stroke-width="10" stroke-linecap="round"/>
-      <path d="M202 356 H326" stroke="rgba(255,255,255,0.48)" stroke-width="5" stroke-linecap="round"/>
-      <path d="M202 386 H286" stroke="rgba(255,255,255,0.34)" stroke-width="5" stroke-linecap="round"/>
-    </svg>`
-  )}`;
+type Category = 'All' | 'Happy Chinese' | 'HSK 2.0' | 'HSK 3.0';
 
 const INITIAL_BOOKS: Book[] = [
   {
@@ -128,7 +76,7 @@ const INITIAL_BOOKS: Book[] = [
     progress: 85,
     totalPages: 150,
     currentPage: 128,
-    category: 'HSK',
+    category: 'HSK 2.0',
     hskLevel: 1,
     isDownloaded: true,
   },
@@ -137,38 +85,39 @@ const INITIAL_BOOKS: Book[] = [
     title: 'HSK 2 Standard Course',
     subtitle: 'Textbook',
     author: 'Confucius Institute',
-    coverUrl: buildCourseCover('HSK 2', 'Textbook', '#2563EB', '#06B6D4'),
+    coverUrl: '/images/hsk-2-standard-course-cover.jpg',
     progress: 0,
     totalPages: 180,
     currentPage: 0,
-    category: 'HSK',
+    category: 'HSK 2.0',
     hskLevel: 2,
     isDownloaded: false,
     downloadProgress: 45,
   },
   {
     id: 'culture-1',
-    title: 'Chinese Festivals',
-    subtitle: 'Culture Series',
-    author: 'Wang Ming',
-    coverUrl: buildSeriesCover('CULTURE', 'Festivals', 'Culture Series', '#DC2626', '#F97316'),
+    title: 'New HSK Course 1',
+    subtitle: 'Volume 1',
+    author: 'Foreign Language Teaching and Research Press',
+    coverUrl: '/images/chinese-festivals-cover.jpg',
     progress: 50,
     totalPages: 100,
     currentPage: 50,
-    category: 'Culture',
+    category: 'HSK 3.0',
+    hskLevel: 1,
     isDownloaded: false,
   },
   {
     id: 'exercise-1',
-    title: 'Grammar Master',
-    subtitle: 'HSK 1-2',
-    author: 'Zhang San',
-    coverUrl: buildSeriesCover('PRACTICE', 'Grammar', 'HSK 1-2', '#334155', '#0F172A'),
+    title: 'New HSK Course 2',
+    subtitle: 'Volume 2',
+    author: 'Foreign Language Teaching and Research Press',
+    coverUrl: '/images/grammar-master-cover.jpg',
     progress: 15,
     totalPages: 80,
     currentPage: 12,
-    category: 'Practice',
-    hskLevel: 1,
+    category: 'HSK 3.0',
+    hskLevel: 2,
     isDownloaded: true,
   },
 ];
@@ -213,8 +162,7 @@ export default function LibraryBookSelectionPage() {
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const downloadTimersRef = useRef<Record<string, ReturnType<typeof setInterval>>>({});
 
-  const categories: Category[] = ['All', 'Happy Chinese', 'HSK', 'Culture', 'Practice'];
-  const categoryLabel = (cat: Category) => (cat === 'Practice' ? 'Exercises' : cat);
+  const categories: Category[] = ['All', 'Happy Chinese', 'HSK 2.0', 'HSK 3.0'];
 
   const filteredBooks = useMemo(() => {
     const q = searchQuery.toLowerCase();
@@ -852,7 +800,7 @@ export default function LibraryBookSelectionPage() {
                     '&:active': { transform: 'scale(0.97)' },
                   }}
                 >
-                  {categoryLabel(cat)}
+                  {cat}
                 </ButtonBase>
               );
             })}

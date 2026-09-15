@@ -7,6 +7,9 @@ import { APP_FONT_FAMILY } from '../theme/appFont';
 /** 与壳层 VITE_SCREEN_SIZE 同源，禁止用 vw 定稿尺寸（壳有 scale，vw 会塌） */
 const CAMERA_SCREEN = (import.meta.env.VITE_SCREEN_SIZE as string) || '2000x1200';
 const camPx = (n: number) => figmaPx(n, CAMERA_SCREEN);
+/** Figma「翻译1拍摄1」画布 2508 → 产品 1920 基准 */
+const CAM_FIGMA_W = 2508;
+const camFigma = (n: number) => camPx((n * 1920) / CAM_FIGMA_W);
 
 // ============================================================
 // TYPES
@@ -220,9 +223,9 @@ const FrameResizeIcon = ({ size = 24 }: { size?: number }) => (
   </svg>
 );
 
-const VIEWFINDER_ROUND_BTN = camPx(80);
-const VIEWFINDER_ROUND_ICON = camPx(32);
-const VIEWFINDER_ROUND_INSET = camPx(28);
+const VIEWFINDER_ROUND_BTN = camFigma(104.54);
+const VIEWFINDER_ROUND_ICON = camFigma(28.75);
+const VIEWFINDER_ROUND_INSET = camFigma(52.27);
 
 interface FrameRect {
   width: number;
@@ -341,71 +344,81 @@ const VisionCore: React.FC<VisionCoreProps> = ({ isScanning, onScan }) => {
     setIsDragging(true);
   };
 
-  // Draw a mock camera view with animated elements
+  // Figma 取景 mock：课本页「今天天气」+ 拼音（稿图「把中间的文字换成今天天气很好」）
   const drawMockCamera = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     canvas.width = 1280;
     canvas.height = 720;
 
-    // Animated gradient background
-    const animate = () => {
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      const time = Date.now() / 3000;
-      gradient.addColorStop(0, `hsl(${200 + Math.sin(time) * 20}, 70%, 20%)`);
-      gradient.addColorStop(0.5, `hsl(${220 + Math.cos(time) * 20}, 60%, 15%)`);
-      gradient.addColorStop(1, `hsl(${180 + Math.sin(time * 0.7) * 30}, 65%, 18%)`);
-      
-      ctx.fillStyle = gradient;
+    const cells: Array<{ han: string; py: string }> = [
+      { han: '大', py: 'dà' },
+      { han: '地', py: 'dì' },
+      { han: '今', py: 'jīn' },
+      { han: '天', py: 'tiān' },
+      { han: '天', py: 'tiān' },
+      { han: '气', py: 'qì' },
+      { han: '你', py: 'nǐ' },
+      { han: '好', py: 'hǎo' },
+    ];
+
+    const draw = () => {
+      ctx.fillStyle = '#090F20';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw a clean book page: white paper, black Kai-style Chinese text.
-      const pageX = 250;
-      const pageY = 170;
-      const pageW = 780;
-      const pageH = 390;
+      const pageX = 40;
+      const pageY = 20;
+      const pageW = canvas.width - 80;
+      const pageH = canvas.height - 40;
+
       ctx.save();
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.32)';
-      ctx.shadowBlur = 28;
-      ctx.shadowOffsetY = 18;
-      ctx.fillStyle = '#FFFDF7';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+      ctx.shadowBlur = 40;
+      ctx.shadowOffsetY = 12;
+      ctx.fillStyle = '#F3F4F0';
       ctx.fillRect(pageX, pageY, pageW, pageH);
       ctx.restore();
 
-      ctx.strokeStyle = 'rgba(15, 23, 42, 0.12)';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(pageX, pageY, pageW, pageH);
+      const cols = 4;
+      const rows = 2;
+      const gridPadX = 72;
+      const gridPadY = 100;
+      const cellW = (pageW - gridPadX * 2) / cols;
+      const cellH = (pageH - gridPadY * 2) / rows;
 
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.08)';
-      for (let i = 0; i < 5; i += 1) {
-        ctx.fillRect(pageX + 88, pageY + 112 + i * 48, pageW - 176, 1.5);
-      }
+      ctx.strokeStyle = 'rgba(45, 52, 54, 0.18)';
+      ctx.lineWidth = 1.5;
+      for (let r = 0; r < rows; r += 1) {
+        for (let c = 0; c < cols; c += 1) {
+          const x = pageX + gridPadX + c * cellW;
+          const y = pageY + gridPadY + r * cellH;
+          ctx.strokeRect(x + 8, y + 8, cellW - 16, cellH - 16);
+          ctx.beginPath();
+          ctx.moveTo(x + 8, y + cellH / 2);
+          ctx.lineTo(x + cellW - 8, y + cellH / 2);
+          ctx.moveTo(x + cellW / 2, y + 8);
+          ctx.lineTo(x + cellW / 2, y + cellH - 8);
+          ctx.stroke();
 
-      ctx.fillStyle = '#111827';
-      ctx.font = 'bold 92px "KaiTi", "STKaiti", "SimKai", "Noto Serif SC", serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('我爱学中文', canvas.width / 2, canvas.height / 2 - 18);
-      
-      ctx.font = '28px "Google Sans Flex Variable", "Noto Sans SC", sans-serif';
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.42)';
-      ctx.fillText('wǒ ài xué zhōng wén', canvas.width / 2, canvas.height / 2 + 54);
-
-      // Subtle scan lines effect
-      for (let i = 0; i < canvas.height; i += 4) {
-        ctx.fillStyle = `rgba(16, 185, 129, ${0.02 * Math.sin(time + i * 0.1)})`;
-        ctx.fillRect(0, i, canvas.width, 2);
-      }
-
-      if (!isScanning) {
-        requestAnimationFrame(animate);
+          const item = cells[r * cols + c];
+          if (!item) continue;
+          ctx.fillStyle = 'rgba(8, 9, 6, 0.75)';
+          ctx.font = '28px "Google Sans Flex", "Noto Sans SC", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(item.py, x + cellW / 2, y + 36);
+          ctx.fillStyle = '#080906';
+          ctx.font = 'bold 72px "Source Han Sans CN", "Noto Sans SC", sans-serif';
+          ctx.fillText(item.han, x + cellW / 2, y + cellH / 2 + 18);
+        }
       }
     };
 
-    animate();
+    draw();
   };
 
   const captureFrame = () => {
@@ -523,11 +536,11 @@ const VisionCore: React.FC<VisionCoreProps> = ({ isScanning, onScan }) => {
         </button>
       )}
 
-      {/* Shutter — Figma 130×130；高度禁止用 %（含 clamp 中间值），否则会塌成 0 */}
+      {/* Shutter — Figma 169.88 外圈 / 117.61 内圆 @2508 → 130 / 90 @1920 */}
       {isReady && (
         <div
           className="absolute left-1/2 -translate-x-1/2 z-30"
-          style={{ bottom: 28 }}
+          style={{ bottom: camFigma(116) }}
         >
           <button
             type="button"
@@ -538,20 +551,21 @@ const VisionCore: React.FC<VisionCoreProps> = ({ isScanning, onScan }) => {
               isScanning ? 'scale-95 opacity-90' : 'hover:scale-105 active:scale-95'
             }`}
             style={{
-              width: 'min(130px, 18vw)',
-              height: 'min(130px, 18vw)',
+              width: camFigma(169.88),
+              height: camFigma(169.88),
               aspectRatio: '1 / 1',
             }}
           >
             <span
-              className="absolute inset-0 rounded-full border-2 border-white/90 pointer-events-none"
+              className="absolute inset-0 rounded-full pointer-events-none"
+              style={{ border: `${camFigma(13.068)}px solid #FFFFFF` }}
               aria-hidden
             />
             <span
               className={`rounded-full transition-colors pointer-events-none ${
                 isScanning ? 'bg-emerald-400' : 'bg-white'
               }`}
-              style={{ width: '78%', height: '78%' }}
+              style={{ width: camFigma(117.61), height: camFigma(117.61) }}
             />
             {isScanning && (
               <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -999,7 +1013,7 @@ const TextTranslation: React.FC<TextTranslationProps> = ({ onResult }) => {
 };
 
 // ============================================================
-// FINGERTAP MODE COMPONENT (Mock AR)
+// FINGERTAP MODE — Point-Read 硬件引导 / AR mock
 // ============================================================
 interface FingerTapModeProps {
   onExit: () => void;
@@ -1007,13 +1021,22 @@ interface FingerTapModeProps {
 
 const FingerTapMode: React.FC<FingerTapModeProps> = ({ onExit }) => {
   const [showGuide, setShowGuide] = useState(true);
-  const [demoStep, setDemoStep] = useState<'mirror' | 'finger' | 'reading'>('mirror');
-  const [detectedItems, setDetectedItems] = useState<Array<{ x: number; y: number; text: string; pinyin: string; trans: string }>>([]);
+  const [demoStep, setDemoStep] = useState(0);
+  const [detectedItems, setDetectedItems] = useState<
+    Array<{ x: number; y: number; text: string; pinyin: string; trans: string }>
+  >([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const roundBtn = camFigma(104.54);
+  const sideInset = camFigma(78.41);
+  const demoSteps = [
+    { label: 'Mirror', tip: 'Align the 45° mirror' },
+    { label: 'Point', tip: 'Point at a word' },
+    { label: 'Read', tip: 'Hear it · see meaning' },
+  ];
 
   useEffect(() => {
     if (!showGuide) {
-      // Simulate AR detection after guide
       const timer = setTimeout(() => {
         setDetectedItems([
           { x: 45, y: 40, text: '学习', pinyin: 'xué xí', trans: 'To Study' },
@@ -1021,25 +1044,20 @@ const FingerTapMode: React.FC<FingerTapModeProps> = ({ onExit }) => {
         ]);
       }, 2000);
 
-      // Draw mock AR camera view
       const canvas = canvasRef.current;
       if (canvas) {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           canvas.width = 1920;
           canvas.height = 1080;
-          
           const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-          gradient.addColorStop(0, '#1e293b');
-          gradient.addColorStop(1, '#0f172a');
+          gradient.addColorStop(0, '#0B1220');
+          gradient.addColorStop(1, '#090F20');
           ctx.fillStyle = gradient;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-          // Draw mock book page
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
           ctx.fillRect(400, 300, 1120, 480);
-          
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
           ctx.font = 'bold 120px "Noto Sans SC", sans-serif';
           ctx.textAlign = 'center';
           ctx.fillText('学习汉语', canvas.width / 2, canvas.height / 2);
@@ -1050,251 +1068,201 @@ const FingerTapMode: React.FC<FingerTapModeProps> = ({ onExit }) => {
     }
   }, [showGuide]);
 
-  const demoClips = [
-    {
-      id: 'mirror' as const,
-      label: 'Mirror setup',
-      title: 'Mirror aligned',
-      subtitle: 'Position the 45° mirror so the camera can see the desk.',
-      accent: 'emerald',
-    },
-    {
-      id: 'finger' as const,
-      label: 'Finger tracking',
-      title: 'Finger detected',
-      subtitle: 'The camera tracks where the fingertip lands on the page.',
-      accent: 'cyan',
-    },
-    {
-      id: 'reading' as const,
-      label: 'AR reading',
-      title: 'Instant reading',
-      subtitle: 'Tap a word to hear pronunciation and see meaning instantly.',
-      accent: 'violet',
-    },
-  ];
-  const activeDemo = demoClips.find((clip) => clip.id === demoStep) ?? demoClips[0];
+  const exitBtn = (
+    <button
+      type="button"
+      onClick={onExit}
+      className="rounded-full flex items-center justify-center text-white transition-all shrink-0"
+      style={{
+        width: roundBtn,
+        height: roundBtn,
+        background: 'rgba(255,255,255,0.1)',
+      }}
+      title="Exit"
+      aria-label="Exit"
+    >
+      <BackIcon size={camPx(22)} />
+    </button>
+  );
 
-  // Guide Screen — 铺满取景区，不用 lg/vw（壳 scale 后会缩成半屏）
   if (showGuide) {
     return (
       <div
-        className="absolute inset-0 z-[60] bg-[#07111f] flex items-center justify-center overflow-hidden"
-        style={{ padding: camPx(36), fontFamily: FIGMA_FONT }}
+        className="absolute inset-0 z-[60] flex flex-col overflow-hidden"
+        style={{ background: '#090F20', fontFamily: FIGMA_FONT }}
       >
-        <div className="absolute -top-32 -right-20 w-[520px] h-[520px] bg-emerald-400/15 rounded-full blur-[110px]" />
-        <div className="absolute -bottom-40 -left-24 w-[480px] h-[480px] bg-cyan-500/10 rounded-full blur-[120px]" />
         <div
-          className="w-full h-full grid items-center animate-fadeIn min-h-0"
+          className="shrink-0 flex items-center"
           style={{
-            gridTemplateColumns: 'minmax(0, 0.92fr) minmax(0, 1.08fr)',
-            gap: camPx(40),
+            height: camPx(120),
+            paddingLeft: sideInset,
+            paddingRight: sideInset,
+          }}
+        >
+          {exitBtn}
+          <div className="flex-1 flex items-center justify-center">
+            <h1
+              className="m-0 font-bold text-white"
+              style={{ fontSize: camPx(40), lineHeight: `${camPx(48)}px` }}
+            >
+              Point-Read
+            </h1>
+          </div>
+          <div style={{ width: roundBtn }} aria-hidden />
+        </div>
+
+        <div
+          className="flex-1 min-h-0 grid animate-fadeIn"
+          style={{
+            gridTemplateColumns: 'minmax(0, 0.9fr) minmax(0, 1.1fr)',
+            gap: camPx(36),
+            padding: `0 ${sideInset}px ${camPx(40)}px`,
           }}
         >
           <div
-            className="relative h-full min-h-0 border border-white/10 bg-white/[0.055] shadow-2xl shadow-black/30 backdrop-blur-2xl flex flex-col justify-center"
+            className="min-h-0 flex flex-col justify-center"
             style={{
               borderRadius: camPx(40),
               padding: camPx(40),
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.12)',
             }}
           >
-            <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/60 to-transparent" />
-            <div>
-              <div
-                className="inline-flex items-center rounded-full border border-emerald-300/20 bg-emerald-400/10 font-black uppercase text-emerald-300"
-                style={{
-                  gap: camPx(10),
-                  padding: `${camPx(10)}px ${camPx(18)}px`,
-                  fontSize: camPx(16),
-                  letterSpacing: '0.18em',
-                }}
-              >
-                <span className="rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.9)]" style={{ width: camPx(10), height: camPx(10) }} />
-                Hardware Tutorial
-              </div>
-              <h1
-                className="font-black text-white"
-                style={{
-                  marginTop: camPx(20),
-                  fontSize: camPx(64),
-                  lineHeight: 1,
-                  letterSpacing: '-0.04em',
-                }}
-              >
-                Fingertap
-                <br />
-                Reading
-              </h1>
-              <p
-                className="text-slate-300"
-                style={{
-                  marginTop: camPx(18),
-                  fontSize: camPx(26),
-                  lineHeight: 1.45,
-                  fontWeight: 500,
-                }}
-              >
-                Use the 45° mirror to let the camera read the desktop area, then point at words in a book to hear pronunciation and see instant translation.
-              </p>
-            </div>
+            <h2
+              className="m-0 text-white font-bold"
+              style={{ fontSize: camPx(48), lineHeight: 1.15, letterSpacing: '-0.03em' }}
+            >
+              Set up once
+            </h2>
+            <p
+              className="m-0 text-white/55"
+              style={{ marginTop: camPx(16), fontSize: camPx(28), lineHeight: 1.4, maxWidth: '28ch' }}
+            >
+              Mirror on the desk. Point at a word. Hear and see it.
+            </p>
 
-            <div style={{ marginTop: camPx(28), display: 'flex', flexDirection: 'column', gap: camPx(14) }}>
-              <div
-                className="flex items-center border border-white/10 bg-slate-950/45"
-                style={{ gap: camPx(18), borderRadius: camPx(22), padding: camPx(18) }}
-              >
-                <div
-                  className="shrink-0 flex items-center justify-center bg-emerald-400 font-black text-slate-950 shadow-lg shadow-emerald-500/20"
-                  style={{ width: camPx(56), height: camPx(56), borderRadius: camPx(16), fontSize: camPx(26) }}
-                >
-                  1
-                </div>
-                <div>
-                  <p className="font-black text-white" style={{ fontSize: camPx(24), lineHeight: 1.25 }}>Position the mirror</p>
-                  <p className="text-slate-400" style={{ marginTop: camPx(4), fontSize: camPx(18), lineHeight: 1.35 }}>
-                    Place the FingerTap mirror in front of the camera at the marked angle.
-                  </p>
-                </div>
-              </div>
-              <div
-                className="flex items-center border border-white/10 bg-slate-950/45"
-                style={{ gap: camPx(18), borderRadius: camPx(22), padding: camPx(18) }}
-              >
-                <div
-                  className="shrink-0 flex items-center justify-center bg-cyan-300 font-black text-slate-950 shadow-lg shadow-cyan-500/20"
-                  style={{ width: camPx(56), height: camPx(56), borderRadius: camPx(16), fontSize: camPx(26) }}
-                >
-                  2
-                </div>
-                <div>
-                  <p className="font-black text-white" style={{ fontSize: camPx(24), lineHeight: 1.25 }}>Tap to read</p>
-                  <p className="text-slate-400" style={{ marginTop: camPx(4), fontSize: camPx(18), lineHeight: 1.35 }}>
-                    Point at any word on the page to trigger AR reading support.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <ol
+              className="m-0 p-0 list-none"
+              style={{ marginTop: camPx(36), display: 'flex', flexDirection: 'column', gap: camPx(16) }}
+            >
+              {['Clip the 45° mirror', 'Open a book under the camera', 'Point to read'].map(
+                (line, i) => (
+                  <li
+                    key={line}
+                    className="flex items-center text-white"
+                    style={{ gap: camPx(16), fontSize: camPx(28), fontWeight: 500 }}
+                  >
+                    <span
+                      className="shrink-0 flex items-center justify-center font-bold"
+                      style={{
+                        width: camPx(48),
+                        height: camPx(48),
+                        borderRadius: camPx(14),
+                        background: 'rgba(0,180,160,0.2)',
+                        color: '#00B4A0',
+                        fontSize: camPx(24),
+                      }}
+                    >
+                      {i + 1}
+                    </span>
+                    {line}
+                  </li>
+                ),
+              )}
+            </ol>
 
-            <div className="grid grid-cols-[1fr_auto]" style={{ marginTop: camPx(28), gap: camPx(14) }}>
-              <button
-                onClick={() => setShowGuide(false)}
-                className="bg-white font-black text-slate-950 shadow-2xl shadow-white/10 transition-all hover:scale-[1.02] active:scale-95"
-                style={{
-                  borderRadius: camPx(22),
-                  padding: `${camPx(22)}px ${camPx(28)}px`,
-                  fontSize: camPx(24),
-                  minHeight: camPx(72),
-                }}
-              >
-                Start Fingertap Reading
-              </button>
-              <button
-                onClick={onExit}
-                className="border border-white/10 font-black text-slate-400 transition-colors hover:text-white"
-                style={{
-                  borderRadius: camPx(22),
-                  padding: `${camPx(22)}px ${camPx(28)}px`,
-                  fontSize: camPx(24),
-                  minHeight: camPx(72),
-                }}
-              >
-                Exit
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowGuide(false)}
+              className="w-full text-white font-semibold transition-all active:scale-[0.98]"
+              style={{
+                marginTop: camPx(40),
+                minHeight: camPx(80),
+                borderRadius: camPx(40),
+                fontSize: camPx(32),
+                background: 'linear-gradient(135deg, #00B4A0, #26D6C3)',
+                fontFamily: FIGMA_FONT,
+              }}
+            >
+              Start
+            </button>
           </div>
 
-          <div className="relative h-full min-h-0 flex flex-col">
+          <div className="min-h-0 flex flex-col" style={{ gap: camPx(16) }}>
             <div
-              className="relative flex-1 min-h-0 overflow-hidden border border-white/10 bg-slate-900 shadow-2xl shadow-emerald-950/30"
-              style={{ borderRadius: camPx(40) }}
+              className="relative flex-1 min-h-0 overflow-hidden"
+              style={{
+                borderRadius: camPx(40),
+                background: 'linear-gradient(160deg, #111827 0%, #0B1220 55%, #062a28 100%)',
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}
             >
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(52,211,153,0.28),transparent_34%),linear-gradient(135deg,#111827_0%,#0f172a_55%,#042f2e_100%)]" />
               <div
-                className="absolute flex items-center rounded-full bg-black/35 font-black uppercase text-emerald-200 backdrop-blur-md"
+                className="absolute inset-x-[12%] bottom-[18%] h-[38%] rounded-2xl border border-white/15 bg-white/[0.08]"
+                style={{ transform: 'rotate(-2deg)' }}
+              />
+              <div
+                className="absolute left-[22%] top-[30%] h-[18%] w-[28%] rounded-xl border border-[#00B4A0]/40 bg-[#00B4A0]/15"
+                style={{ transform: 'rotate(16deg)' }}
+              />
+              <div
+                className="absolute right-[22%] top-[36%] w-[4.5%] h-[22%] origin-bottom rounded-full"
                 style={{
-                  left: camPx(24),
-                  top: camPx(20),
-                  gap: camPx(10),
-                  padding: `${camPx(10)}px ${camPx(16)}px`,
-                  fontSize: camPx(16),
-                  letterSpacing: '0.16em',
+                  transform: 'rotate(-28deg)',
+                  background: 'linear-gradient(180deg, #FFE8D6, #FFB07A)',
+                  opacity: demoStep === 1 ? 1 : 0.55,
+                }}
+              />
+              <div
+                className="absolute left-1/2 top-[48%] -translate-x-1/2 rounded-2xl border border-white/20 bg-[#090F20]/90 text-white text-center"
+                style={{
+                  padding: `${camPx(14)}px ${camPx(22)}px`,
+                  opacity: demoStep === 2 ? 1 : 0.35,
+                  transform: `translateX(-50%) scale(${demoStep === 2 ? 1 : 0.96})`,
                 }}
               >
-                <span className="rounded-full bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.9)]" style={{ width: camPx(10), height: camPx(10) }} />
-                Demo Video · {activeDemo.label}
-              </div>
-
-              <div className="absolute inset-x-10 bottom-8 h-36 rounded-2xl border border-white/15 bg-white/12 shadow-2xl shadow-black/25 backdrop-blur-sm rotate-[-2deg]" />
-              <div className={`absolute left-[24%] top-[32%] h-24 w-40 rounded-xl border rotate-[18deg] shadow-[0_0_30px_rgba(52,211,153,0.18)] transition-all ${
-                demoStep === 'mirror'
-                  ? 'border-emerald-300/70 bg-emerald-300/20 scale-105'
-                  : 'border-emerald-300/25 bg-emerald-300/10'
-              }`}>
-                <div className="absolute inset-x-4 top-7 h-1 rounded-full bg-white/35" />
-                <div className="absolute inset-x-5 top-12 h-1 rounded-full bg-white/25" />
-                <div className="absolute inset-x-7 top-17 h-1 rounded-full bg-white/20" />
-              </div>
-              <div className={`absolute right-[19%] top-[38%] h-28 w-9 origin-bottom rotate-[-30deg] rounded-full bg-gradient-to-b from-orange-100 to-orange-300 shadow-2xl shadow-black/25 transition-all ${
-                demoStep === 'finger' ? 'scale-110 shadow-cyan-300/30' : ''
-              }`}>
-                <div className="absolute -top-2 left-1/2 h-5 w-5 -translate-x-1/2 rounded-full bg-orange-100" />
-              </div>
-              <div className={`absolute left-[48%] top-[53%] h-12 w-32 rounded-full border blur-[1px] transition-all ${
-                demoStep === 'finger'
-                  ? 'border-cyan-300/70 bg-cyan-300/20 scale-110'
-                  : 'border-emerald-300/50 bg-emerald-300/15'
-              }`} />
-              <div
-                className={`absolute left-[45%] top-[51%] rounded-xl border font-black text-white shadow-xl backdrop-blur transition-all ${
-                  demoStep === 'reading'
-                    ? 'border-violet-300/70 bg-violet-950/85 scale-110'
-                    : 'border-emerald-300/50 bg-slate-950/75'
-                }`}
-                style={{ padding: `${camPx(12)}px ${camPx(16)}px`, fontSize: camPx(22) }}
-              >
-                你好 · nǐ hǎo
-                <p className="font-semibold text-emerald-300" style={{ marginTop: camPx(4), fontSize: camPx(16) }}>hello</p>
+                <p className="m-0 font-bold" style={{ fontSize: camPx(28) }}>
+                  你好
+                </p>
+                <p className="m-0 text-[#00B4A0]" style={{ marginTop: camPx(4), fontSize: camPx(20) }}>
+                  nǐ hǎo · hello
+                </p>
               </div>
 
               <div
-                className="absolute rounded-2xl border border-white/10 bg-black/35 backdrop-blur-md"
-                style={{ left: camPx(24), right: camPx(24), bottom: camPx(20), padding: camPx(18) }}
+                className="absolute inset-x-0 bottom-0 text-center text-white/70"
+                style={{
+                  padding: camPx(24),
+                  fontSize: camPx(24),
+                  background: 'linear-gradient(transparent, rgba(9,15,32,0.85))',
+                }}
               >
-                <p className="font-black text-white" style={{ fontSize: camPx(24) }}>{activeDemo.title}</p>
-                <p className="leading-snug text-slate-300" style={{ marginTop: camPx(6), fontSize: camPx(18) }}>{activeDemo.subtitle}</p>
+                {demoSteps[demoStep].tip}
               </div>
-
-              <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_0%,rgba(255,255,255,0.04)_50%,transparent_100%)] bg-[length:100%_8px] opacity-40" />
-              <button
-                onClick={() => setShowGuide(false)}
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center rounded-full border border-white/30 bg-white/20 text-white shadow-2xl backdrop-blur-md transition-all hover:scale-110 active:scale-95"
-                style={{ width: camPx(96), height: camPx(96) }}
-                aria-label="Play demo and start"
-              >
-                <svg style={{ marginLeft: camPx(6), width: camPx(40), height: camPx(40) }} viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </button>
             </div>
-            <div className="grid grid-cols-3 text-center" style={{ marginTop: camPx(16), gap: camPx(12) }}>
-              {demoClips.map((clip) => (
+
+            <div className="grid grid-cols-3 shrink-0" style={{ gap: camPx(12) }}>
+              {demoSteps.map((step, i) => (
                 <button
-                  key={clip.id}
-                  onClick={() => setDemoStep(clip.id)}
-                  className={`border font-bold uppercase transition-all active:scale-95 ${
-                    demoStep === clip.id
-                      ? 'border-emerald-300/55 bg-emerald-300/15 text-white shadow-lg shadow-emerald-950/30'
-                      : 'border-white/10 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08] hover:text-white'
-                  }`}
+                  key={step.label}
+                  type="button"
+                  onClick={() => setDemoStep(i)}
+                  className="font-medium transition-all active:scale-[0.97]"
                   style={{
-                    borderRadius: camPx(18),
-                    padding: `${camPx(14)}px ${camPx(12)}px`,
-                    fontSize: camPx(16),
-                    letterSpacing: '0.06em',
-                    minHeight: camPx(56),
+                    minHeight: camPx(64),
+                    borderRadius: camPx(20),
+                    fontSize: camPx(24),
+                    fontFamily: FIGMA_FONT,
+                    border:
+                      demoStep === i
+                        ? '1px solid rgba(0,180,160,0.55)'
+                        : '1px solid rgba(255,255,255,0.1)',
+                    background:
+                      demoStep === i ? 'rgba(0,180,160,0.18)' : 'rgba(255,255,255,0.05)',
+                    color: demoStep === i ? '#FFFFFF' : 'rgba(255,255,255,0.55)',
                   }}
                 >
-                  {clip.title}
+                  {step.label}
                 </button>
               ))}
             </div>
@@ -1304,34 +1272,59 @@ const FingerTapMode: React.FC<FingerTapModeProps> = ({ onExit }) => {
     );
   }
 
-  // AR Mode View
   return (
-    <div className="relative w-full h-full bg-black overflow-hidden animate-fadeIn">
-      <canvas ref={canvasRef} className="w-full h-full object-cover opacity-70 grayscale-[0.2]" />
-      
-      {/* AR Overlays */}
+    <div
+      className="relative w-full h-full overflow-hidden animate-fadeIn"
+      style={{ background: '#090F20', fontFamily: FIGMA_FONT }}
+    >
+      <canvas ref={canvasRef} className="w-full h-full object-cover opacity-75" />
+
+      <div
+        className="absolute z-20"
+        style={{ top: camPx(28), left: sideInset }}
+      >
+        {exitBtn}
+      </div>
+
+      <div className="absolute top-8 right-8 flex items-center gap-2 px-4 py-2 rounded-full bg-[#00B4A0]/15 border border-[#00B4A0]/40">
+        <div className="w-2 h-2 rounded-full bg-[#00B4A0] animate-pulse" />
+        <span
+          className="font-semibold text-[#00B4A0] uppercase"
+          style={{ fontSize: camPx(18), letterSpacing: '0.08em' }}
+        >
+          Live
+        </span>
+      </div>
+
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-8 right-8 flex flex-col items-end gap-2">
-          <div className="flex items-center gap-2 px-4 py-2 bg-red-500/20 border border-red-500/50 rounded-full">
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Live Tracking</span>
-          </div>
-        </div>
         {detectedItems.map((item, i) => (
-          <div key={i} className="absolute animate-fadeIn" style={{ left: `${item.x}%`, top: `${item.y}%`, transform: 'translate(-50%, -120%)' }}>
-            <div className="bg-white/95 backdrop-blur-2xl p-5 rounded-3xl shadow-2xl min-w-[180px] border border-emerald-500/30">
-              <h4 className="text-3xl font-black text-slate-900 tracking-tight">{item.text}</h4>
-              <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2">{item.pinyin}</p>
-              <div className="h-px bg-slate-200/60 my-2" />
-              <p className="text-sm font-black text-slate-700 leading-tight">{item.trans}</p>
+          <div
+            key={i}
+            className="absolute animate-fadeIn"
+            style={{ left: `${item.x}%`, top: `${item.y}%`, transform: 'translate(-50%, -120%)' }}
+          >
+            <div
+              className="bg-white/95 shadow-xl"
+              style={{
+                padding: camPx(20),
+                borderRadius: camPx(24),
+                minWidth: camPx(160),
+                border: '1px solid rgba(0,180,160,0.35)',
+              }}
+            >
+              <p className="m-0 font-bold text-slate-900" style={{ fontSize: camPx(36) }}>
+                {item.text}
+              </p>
+              <p className="m-0 font-medium text-[#00B4A0]" style={{ fontSize: camPx(18) }}>
+                {item.pinyin}
+              </p>
+              <p className="m-0 text-slate-600" style={{ marginTop: camPx(8), fontSize: camPx(22) }}>
+                {item.trans}
+              </p>
             </div>
           </div>
         ))}
       </div>
-
-      <button onClick={onExit} className="absolute bottom-12 left-1/2 -translate-x-1/2 px-12 py-5 bg-white/10 backdrop-blur-3xl border border-white/20 text-white font-black text-xl rounded-full hover:bg-white/20 hover:scale-105 transition-all active:scale-95 shadow-2xl">
-        Exit Fingertap Reading
-      </button>
     </div>
   );
 };
@@ -1343,17 +1336,22 @@ const FingerTapMode: React.FC<FingerTapModeProps> = ({ onExit }) => {
 const CameraRailEmpty: React.FC = () => (
   <div
     className="flex flex-col items-center justify-center flex-1 min-h-[40%] animate-fadeIn"
-    style={{ fontFamily: FIGMA_FONT, paddingTop: camPx(40), paddingBottom: camPx(40) }}
+    style={{ fontFamily: FIGMA_FONT, paddingTop: camFigma(40), paddingBottom: camFigma(40), gap: camFigma(26.14) }}
   >
     <div
-      className="opacity-[0.18] text-white"
-      style={{ width: camPx(120), height: camPx(120), marginBottom: camPx(20) }}
+      style={{ width: camFigma(130.68), height: camFigma(130.68), color: '#2D3436', opacity: 0.35 }}
     >
       <CameraIcon className="w-full h-full" />
     </div>
     <p
-      className="text-white/45 font-medium text-center"
-      style={{ fontSize: camPx(32), lineHeight: `${camPx(44)}px`, paddingLeft: camPx(24), paddingRight: camPx(24) }}
+      className="font-normal text-center"
+      style={{
+        fontSize: camFigma(36),
+        lineHeight: `${camFigma(58)}px`,
+        color: '#636E72',
+        paddingLeft: camFigma(24),
+        paddingRight: camFigma(24),
+      }}
     >
       AR Smart Pointer Mode
     </p>
@@ -1375,8 +1373,8 @@ const WelcomeState: React.FC<WelcomeStateProps> = ({ icon, text }) => (
 // ============================================================
 // HISTORY MANAGEMENT VIEW COMPONENT (历史记录管理页面)
 // ============================================================
-const ManageIcon = () => (
-  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+const ManageIcon = ({ size = camFigma(36) }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <rect x="4" y="4" width="16" height="4" rx="1" />
     <rect x="4" y="10" width="16" height="4" rx="1" />
     <rect x="4" y="16" width="16" height="4" rx="1" />
@@ -1398,6 +1396,20 @@ const HistoryManagementView: React.FC<HistoryManagementViewProps> = ({
   const [history, setHistory] = useState<TranslationHistory[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [filterType, setFilterType] = useState<'all' | 'ocr' | 'voice' | 'text'>('all');
+
+  const sideInset = camFigma(78.41);
+  const filterH = camFigma(104.54);
+  const filterPad = camFigma(10.45);
+  const filterSegH = camFigma(83.64);
+  const filterRadius = camFigma(52.272);
+  const segRadius = camFigma(39.2);
+  const cardRadius = camFigma(39.2);
+  const cardPad = camFigma(36);
+  const listGap = camFigma(26.14);
+  const metaSize = camFigma(28);
+  const titleSize = camFigma(40);
+  const bodySize = camFigma(32);
+  const deleteBtn = camFigma(64);
 
   useEffect(() => {
     setHistory(getHistory());
@@ -1450,81 +1462,116 @@ const HistoryManagementView: React.FC<HistoryManagementViewProps> = ({
   const filteredHistory =
     filterType === 'all' ? history : history.filter((item) => item.type === filterType);
 
-  // Figma 翻译4历史记录：筛选 + 空态 No Content / 列表
+  const clearAll = () => {
+    if (window.confirm('Clear all history items?')) {
+      clearHistory();
+      setHistory([]);
+      onToggleManage?.();
+    }
+  };
+
+  // 与 TranslationHub 同源 camFigma：壳层有 scale，禁止用 vw/clamp 定稿
   return (
-    <div className="flex flex-col h-full min-h-0 animate-fadeIn">
-      <div className="shrink-0 flex justify-center px-[3%]">
+    <div className="flex flex-col h-full min-h-0 animate-fadeIn" style={{ fontFamily: FIGMA_FONT }}>
+      <div
+        className="shrink-0 flex justify-center"
+        style={{ paddingLeft: sideInset, paddingRight: sideInset }}
+      >
         <div
-          className="flex items-center bg-white/[0.06] border-2 border-white/40"
+          className="flex items-center w-full"
           style={{
-            height: 'clamp(52px, 4.7vw, 90px)',
-            borderRadius: 'clamp(16px, 1.6vw, 30px)',
-            padding: 'clamp(4px, 0.5vw, 10px)',
-            width: 'min(740px, 72%)',
+            height: filterH,
+            borderRadius: filterRadius,
+            padding: filterPad,
+            boxSizing: 'border-box',
+            background: 'rgba(255,255,255,0.06)',
+            backdropFilter: 'blur(2.6px)',
+            WebkitBackdropFilter: 'blur(2.6px)',
+            border: '2px solid rgba(255,255,255,0.35)',
           }}
         >
-          {filters.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => setFilterType(f.id)}
-              className={`flex-1 h-full rounded-[clamp(12px,1.4vw,26px)] transition-all ${
-                filterType === f.id ? 'bg-white text-[#2d3436]' : 'text-white hover:bg-white/10'
-              }`}
-              style={{ fontSize: 'clamp(14px, 1.45vw, 28px)' }}
-            >
-              {f.label}
-            </button>
-          ))}
+          {filters.map((f) => {
+            const on = filterType === f.id;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setFilterType(f.id)}
+                className="flex-1 flex items-center justify-center transition-all"
+                style={{
+                  height: filterSegH,
+                  borderRadius: segRadius,
+                  background: on ? '#FFFFFF' : 'transparent',
+                  color: on ? '#0B1220' : 'rgba(255,255,255,0.72)',
+                  fontSize: camFigma(32),
+                  fontWeight: on ? 600 : 500,
+                  fontFamily: FIGMA_FONT,
+                }}
+              >
+                {f.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {history.length === 0 || filteredHistory.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center pb-8">
+        <div
+          className="flex-1 flex flex-col items-center justify-center"
+          style={{ paddingBottom: camFigma(80) }}
+        >
           <img
             src="/shell/camera-history-empty.png"
             alt=""
             className="object-contain opacity-90"
-            style={{ width: 'min(280px, 36vw)', height: 'auto' }}
+            style={{ width: camFigma(360), height: 'auto' }}
           />
           <p
-            className="mt-4 font-bold text-white/60"
-            style={{ fontSize: 'clamp(20px, 2.1vw, 40px)' }}
+            className="font-bold text-white/60"
+            style={{
+              marginTop: camFigma(32),
+              fontSize: camFigma(40),
+              lineHeight: `${camFigma(52)}px`,
+              fontFamily: FIGMA_FONT,
+            }}
           >
             No Content
           </p>
           {manageMode && history.length > 0 ? (
             <button
               type="button"
-              onClick={() => {
-                if (window.confirm('Clear all history items?')) {
-                  clearHistory();
-                  setHistory([]);
-                  onToggleManage?.();
-                }
+              onClick={clearAll}
+              className="text-red-400 underline"
+              style={{
+                marginTop: camFigma(40),
+                fontSize: camFigma(28),
+                fontFamily: FIGMA_FONT,
               }}
-              className="mt-6 text-red-400 underline"
-              style={{ fontSize: 'clamp(14px, 1.4vw, 22px)' }}
             >
               Clear all
             </button>
           ) : null}
         </div>
       ) : (
-        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-[8%] pt-6 pb-8 space-y-3">
+        <div
+          className="flex-1 min-h-0 overflow-y-auto custom-scrollbar"
+          style={{
+            paddingLeft: sideInset,
+            paddingRight: sideInset,
+            paddingTop: camFigma(40),
+            paddingBottom: camFigma(64),
+            display: 'flex',
+            flexDirection: 'column',
+            gap: listGap,
+          }}
+        >
           {manageMode ? (
-            <div className="flex justify-end mb-2">
+            <div className="flex justify-end" style={{ marginBottom: camFigma(8) }}>
               <button
                 type="button"
-                onClick={() => {
-                  if (window.confirm('Clear all history items?')) {
-                    clearHistory();
-                    setHistory([]);
-                    onToggleManage?.();
-                  }
-                }}
+                onClick={clearAll}
                 className="text-red-400"
-                style={{ fontSize: 'clamp(14px, 1.3vw, 20px)' }}
+                style={{ fontSize: camFigma(28), fontFamily: FIGMA_FONT, fontWeight: 500 }}
               >
                 Clear all
               </button>
@@ -1533,7 +1580,13 @@ const HistoryManagementView: React.FC<HistoryManagementViewProps> = ({
           {filteredHistory.map((item) => (
             <div
               key={item.id}
-              className="relative rounded-[clamp(16px,1.6vw,28px)] bg-white/10 border border-white/10 p-4"
+              className="relative"
+              style={{
+                borderRadius: cardRadius,
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                padding: cardPad,
+              }}
             >
               {manageMode ? (
                 <button
@@ -1542,7 +1595,15 @@ const HistoryManagementView: React.FC<HistoryManagementViewProps> = ({
                     deleteHistoryItem(item.id);
                     setRefreshKey((p) => p + 1);
                   }}
-                  className="absolute top-3 right-3 w-9 h-9 rounded-full bg-red-500/25 text-red-300 flex items-center justify-center"
+                  className="absolute flex items-center justify-center rounded-full bg-red-500/25 text-red-300"
+                  style={{
+                    top: camFigma(24),
+                    right: camFigma(24),
+                    width: deleteBtn,
+                    height: deleteBtn,
+                    fontSize: camFigma(36),
+                    lineHeight: 1,
+                  }}
                   aria-label="Delete"
                 >
                   ×
@@ -1551,20 +1612,44 @@ const HistoryManagementView: React.FC<HistoryManagementViewProps> = ({
               <button
                 type="button"
                 onClick={() => onSelectHistory?.(item)}
-                className="w-full text-left pr-10 active:scale-[0.99] transition-transform"
+                className="w-full text-left active:scale-[0.99] transition-transform"
+                style={{
+                  paddingRight: manageMode ? deleteBtn + camFigma(16) : 0,
+                  fontFamily: FIGMA_FONT,
+                }}
               >
-                <div className="flex items-center justify-between gap-3 mb-2">
-                  <span className="text-[#00B4A0] font-medium" style={{ fontSize: 'clamp(12px, 1.2vw, 18px)' }}>
+                <div
+                  className="flex items-center justify-between"
+                  style={{ gap: camFigma(20), marginBottom: camFigma(16) }}
+                >
+                  <span
+                    className="text-[#00B4A0] font-medium"
+                    style={{ fontSize: metaSize, lineHeight: `${camFigma(36)}px` }}
+                  >
                     {getTypeLabel(item.type)}
                   </span>
-                  <span className="text-white/40" style={{ fontSize: 'clamp(12px, 1.2vw, 18px)' }}>
+                  <span
+                    className="text-white/40"
+                    style={{ fontSize: metaSize, lineHeight: `${camFigma(36)}px` }}
+                  >
                     {formatTime(item.timestamp)}
                   </span>
                 </div>
-                <p className="text-white font-medium line-clamp-2" style={{ fontSize: 'clamp(16px, 1.6vw, 28px)' }}>
+                <p
+                  className="text-white font-medium line-clamp-2"
+                  style={{ fontSize: titleSize, lineHeight: `${camFigma(52)}px`, margin: 0 }}
+                >
                   {item.original}
                 </p>
-                <p className="text-white/50 line-clamp-1 mt-1" style={{ fontSize: 'clamp(13px, 1.3vw, 22px)' }}>
+                <p
+                  className="text-white/50 line-clamp-1"
+                  style={{
+                    fontSize: bodySize,
+                    lineHeight: `${camFigma(42)}px`,
+                    margin: 0,
+                    marginTop: camFigma(12),
+                  }}
+                >
                   {item.translation}
                 </p>
               </button>
@@ -1591,7 +1676,7 @@ interface TranslationHubProps {
 
 const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChange, ocrResult, error, isFullScreen = false, onHistorySelect, onExit }) => {
   const [historyManage, setHistoryManage] = useState(false);
-  const iconPx = isFullScreen ? camPx(60) : camPx(40);
+  const iconPx = isFullScreen ? camPx(60) : camFigma(78.41);
   const modes = [
     { id: 'ocr', label: 'Camera', icon: <CameraIcon className="" /> },
     { id: 'voice', label: 'Voice', icon: <MicIcon className="" /> },
@@ -1599,15 +1684,15 @@ const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChang
   ];
   const isHistory = activeMode === 'history';
   const showVoiceTextChrome = isFullScreen && !isHistory;
-  // Figma 全屏顶栏：返回/History 80 · 三 Tab 1128×90 · 左右 inset 60 · 顶区高 ~120
+  // Figma 全屏顶栏：返回/History 80 · 三 Tab · 左右 inset
   const chromeH = camPx(120);
-  const roundBtn = camPx(80);
-  const sideInset = camPx(60);
-  const tabW = camPx(1128);
-  const tabH = camPx(90);
-  const tabPad = camPx(10);
-  const tabRadius = camPx(120);
-  const segRadius = camPx(40);
+  const roundBtn = camFigma(104.54);
+  const sideInset = camFigma(78.41);
+  const tabH = camFigma(117.61);
+  const tabPadY = camFigma((117.61 - 91.48) / 2);
+  const tabRadius = camFigma(156.816);
+  const segH = camFigma(91.48);
+  const segRadius = camFigma(52.272);
 
   const modeTabs = (
     <div
@@ -1615,37 +1700,39 @@ const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChang
       style={{
         height: tabH,
         borderRadius: tabRadius,
-        padding: tabPad,
-        gap: camPx(8),
-        width: isFullScreen ? tabW : '100%',
-        maxWidth: isFullScreen ? '100%' : undefined,
+        padding: `${tabPadY}px ${camFigma(13)}px`,
+        gap: 0,
+        width: '100%',
         boxSizing: 'border-box',
         background: 'rgba(255,255,255,0.06)',
-        border: `${camPx(2)}px solid rgba(255,255,255,0.4)`,
-        backdropFilter: 'blur(2px)',
-        WebkitBackdropFilter: 'blur(2px)',
+        backdropFilter: 'blur(2.6px)',
+        WebkitBackdropFilter: 'blur(2.6px)',
       }}
     >
-      {modes.map((m) => (
-        <button
-          key={m.id}
-          type="button"
-          onClick={() => onModeChange(m.id)}
-          aria-label={m.label}
-          className={`flex-1 h-full flex items-center justify-center transition-all ${
-            activeMode === m.id
-              ? 'bg-white text-slate-900 shadow-sm'
-              : 'text-white/70 hover:text-white hover:bg-white/5'
-          }`}
-          style={{ borderRadius: segRadius }}
-        >
-          <span style={{ width: iconPx, height: iconPx, display: 'inline-flex' }}>
-            {React.cloneElement(m.icon as React.ReactElement<{ className?: string }>, {
-              className: 'w-full h-full',
-            })}
-          </span>
-        </button>
-      ))}
+      {modes.map((m) => {
+        const on = activeMode === m.id;
+        return (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => onModeChange(m.id)}
+            aria-label={m.label}
+            className="flex-1 h-full flex items-center justify-center transition-all"
+            style={{
+              height: segH,
+              borderRadius: segRadius,
+              background: on ? '#FFFFFF' : 'transparent',
+              color: on ? '#0B1220' : '#777777',
+            }}
+          >
+            <span style={{ width: iconPx, height: iconPx, display: 'inline-flex' }}>
+              {React.cloneElement(m.icon as React.ReactElement<{ className?: string }>, {
+                className: 'w-full h-full',
+              })}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 
@@ -1661,7 +1748,7 @@ const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChang
       }`}
       style={{ width: roundBtn, height: roundBtn }}
     >
-      <HistoryIcon size={camPx(46)} />
+      <HistoryIcon size={camFigma(60.11)} />
     </button>
   );
 
@@ -1691,23 +1778,23 @@ const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChang
         <>
           <div
             className="absolute z-20"
-            style={{ top: camPx(30), right: camPx(30) }}
+            style={{ top: camFigma(52.27), right: camFigma(52.27) }}
           >
             {historyBtn}
           </div>
-          <div style={{ padding: `${camPx(160)}px ${camPx(60)}px ${camPx(30)}px` }}>
+          <div style={{ padding: `${camFigma(209.09)}px ${sideInset}px ${camFigma(39)}px` }}>
             <button
               type="button"
               onClick={() => onModeChange('fingertap')}
               className="w-full relative overflow-hidden text-left transition-all active:scale-[0.98]"
               style={{
-                height: camPx(192),
-                borderRadius: camPx(54),
-                padding: `${camPx(22)}px ${camPx(40)}px`,
+                height: camFigma(250.91),
+                borderRadius: camFigma(70),
+                padding: `${camFigma(28.75)}px ${camFigma(52.27)}px`,
                 boxSizing: 'border-box',
               }}
             >
-              {/* Group 1410141318：色块水平翻转，文案和图标不翻 */}
+              {/* Group 1410141318：紫色 Point-Read 卡（色块水平翻转，文案不翻） */}
               <div
                 aria-hidden
                 className="absolute inset-0"
@@ -1723,13 +1810,13 @@ const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChang
                 aria-hidden
                 className="absolute"
                 style={{
-                  width: camPx(777),
-                  height: camPx(164),
-                  left: camPx(263),
-                  top: camPx(-123),
+                  width: camFigma(1015),
+                  height: camFigma(214),
+                  left: camFigma(344),
+                  top: camFigma(-161),
                   background: 'rgba(254, 220, 94, 0.85)',
-                  filter: `blur(${camPx(80)}px)`,
-                  borderRadius: camPx(116),
+                  filter: `blur(${camFigma(104.25)}px)`,
+                  borderRadius: camFigma(152),
                   transform: 'scaleX(-1)',
                   pointerEvents: 'none',
                 }}
@@ -1738,13 +1825,13 @@ const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChang
                 aria-hidden
                 className="absolute"
                 style={{
-                  width: camPx(828),
-                  height: camPx(174),
-                  left: camPx(-268),
-                  top: camPx(174),
+                  width: camFigma(1082),
+                  height: camFigma(227),
+                  left: camFigma(-350),
+                  top: camFigma(228),
                   background: 'rgba(149, 92, 218, 0.7)',
-                  filter: `blur(${camPx(78)}px)`,
-                  borderRadius: camPx(116),
+                  filter: `blur(${camFigma(102.05)}px)`,
+                  borderRadius: camFigma(152),
                   transform: 'scaleX(-1)',
                   pointerEvents: 'none',
                 }}
@@ -1757,8 +1844,8 @@ const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChang
                       width: '100%',
                       fontFamily: FIGMA_FONT,
                       fontWeight: 400,
-                      fontSize: camPx(24),
-                      lineHeight: `${camPx(38)}px`,
+                      fontSize: camFigma(32),
+                      lineHeight: `${camFigma(51)}px`,
                       color: '#FFFFFF',
                       opacity: 0.6,
                     }}
@@ -1770,8 +1857,8 @@ const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChang
                       margin: 0,
                       fontFamily: FIGMA_FONT,
                       fontWeight: 700,
-                      fontSize: camPx(40),
-                      lineHeight: `${camPx(64)}px`,
+                      fontSize: camFigma(56),
+                      lineHeight: `${camFigma(90)}px`,
                       color: '#FFFFFF',
                     }}
                   >
@@ -1782,8 +1869,8 @@ const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChang
                       margin: 0,
                       fontFamily: FIGMA_FONT,
                       fontWeight: 500,
-                      fontSize: camPx(28),
-                      lineHeight: `${camPx(41)}px`,
+                      fontSize: camFigma(36),
+                      lineHeight: `${camFigma(45)}px`,
                       color: '#FFFFFF',
                       opacity: 0.6,
                     }}
@@ -1794,20 +1881,20 @@ const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChang
                 <div
                   className="shrink-0 flex items-center justify-center"
                   style={{
-                    width: camPx(80),
-                    height: camPx(80),
-                    borderRadius: camPx(20),
+                    width: camFigma(104.54),
+                    height: camFigma(104.54),
+                    borderRadius: camFigma(26.136),
                     background: 'rgba(255, 255, 255, 0.2)',
                     backdropFilter: 'blur(2.6px)',
                     WebkitBackdropFilter: 'blur(2.6px)',
                   }}
                 >
-                  <PointReadArrow size={camPx(40)} />
+                  <PointReadArrow size={camFigma(52.27)} />
                 </div>
               </div>
             </button>
           </div>
-          <div style={{ padding: `0 ${camPx(60)}px ${camPx(24)}px` }}>{modeTabs}</div>
+          <div style={{ padding: `0 ${sideInset}px ${camFigma(32)}px` }}>{modeTabs}</div>
         </>
       )}
 
@@ -1832,37 +1919,55 @@ const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChang
         </div>
       )}
 
-      {/* History 全屏顶栏 */}
+      {/* History 全屏顶栏：与 Voice/Text 共用 chromeH，flex 垂直居中，勿用 absolute 顶死 */}
       {isHistory && (
         <div
-          className="shrink-0 relative flex items-center justify-center"
-          style={{ height: chromeH, paddingLeft: sideInset, paddingRight: sideInset }}
+          className="shrink-0 flex items-center"
+          style={{
+            height: chromeH,
+            paddingLeft: sideInset,
+            paddingRight: sideInset,
+            gap: camPx(24),
+          }}
         >
-          <div className="absolute top-1/2 -translate-y-1/2" style={{ left: sideInset }}>
+          <div className="shrink-0" style={{ width: roundBtn, height: roundBtn }}>
             {backBtn(() => {
               setHistoryManage(false);
               onModeChange('ocr');
             }, 'Back to Camera')}
           </div>
-          <h2 className="font-bold text-white" style={{ fontSize: camPx(40) }}>
-            History
-          </h2>
+          <div className="flex-1 min-w-0 flex items-center justify-center">
+            <h2
+              className="font-bold text-white m-0"
+              style={{
+                fontSize: camPx(40),
+                lineHeight: `${camPx(48)}px`,
+                fontFamily: FIGMA_FONT,
+              }}
+            >
+              History
+            </h2>
+          </div>
           <button
             type="button"
             onClick={() => setHistoryManage((v) => !v)}
-            className={`absolute top-1/2 -translate-y-1/2 flex items-center gap-2 rounded-full bg-white/10 text-white ${
+            className={`shrink-0 flex items-center text-white ${
               historyManage ? 'ring-2 ring-[#00B4A0]' : ''
             }`}
             style={{
-              right: sideInset,
-              height: camPx(72),
-              paddingLeft: camPx(30),
-              paddingRight: camPx(30),
-              fontSize: camPx(30),
+              height: roundBtn,
+              paddingLeft: camPx(28),
+              paddingRight: camPx(28),
+              gap: camPx(10),
+              fontSize: camPx(28),
+              fontWeight: 500,
+              fontFamily: FIGMA_FONT,
               borderRadius: camPx(82),
+              background: 'rgba(255,255,255,0.1)',
+              boxSizing: 'border-box',
             }}
           >
-            <ManageIcon />
+            <ManageIcon size={camPx(28)} />
             Manage
           </button>
         </div>
@@ -1872,7 +1977,7 @@ const TranslationHub: React.FC<TranslationHubProps> = ({ activeMode, onModeChang
         className={`flex-1 min-h-0 flex flex-col ${
           isFullScreen ? '' : 'overflow-y-auto custom-scrollbar'
         }`}
-        style={isFullScreen ? undefined : { padding: `0 ${camPx(60)}px ${camPx(48)}px` }}
+        style={isFullScreen ? undefined : { padding: `0 ${sideInset}px ${camFigma(50)}px` }}
       >
         {error && !isFullScreen && (
           <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-red-400 text-sm mb-4 animate-fadeIn flex items-center gap-2">
@@ -1972,17 +2077,17 @@ export default function CameraPage() {
     setError(null);
   };
 
-  // Figma 拍摄「翻译1拍摄2」：左取景区 1240 / 右侧栏 680（1920 画布）
-  const LEFT_PCT = `${(1240 / 1920) * 100}%`
-  const RIGHT_PCT = `${(680 / 1920) * 100}%`
+  // Figma「翻译1拍摄1」@2508：左取景 1620.43 / 右栏 888.62
+  const LEFT_PCT = `${(1620.43 / CAM_FIGMA_W) * 100}%`
+  const RIGHT_PCT = `${(888.62 / CAM_FIGMA_W) * 100}%`
 
   return (
-    <div className="flex flex-row h-full w-full bg-[#0B1220] overflow-hidden font-sans">
+    <div className="flex flex-row h-full w-full bg-[#090F20] overflow-hidden font-sans">
       {showFlash && <div className="absolute inset-0 bg-white z-[100] animate-pulse pointer-events-none" />}
 
       <div className={`flex transition-all duration-700 ease-in-out h-full w-full ${mode === 'fingertap' ? 'translate-x-0' : ''}`}>
         
-        {/* Left viewfinder — Figma 1240/1920 */}
+        {/* Left viewfinder — Figma 1620.43/2508 */}
         <div
           className={`h-full relative transition-all duration-700 ${
             mode === 'fingertap' ? 'w-full' :
@@ -2004,12 +2109,13 @@ export default function CameraPage() {
 
               <button
                 onClick={handleExitToHome}
-                className="absolute z-50 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/90 hover:bg-black/60 transition-all shadow-2xl"
+                className="absolute z-50 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all"
                 style={{
                   top: VIEWFINDER_ROUND_INSET,
                   left: VIEWFINDER_ROUND_INSET,
                   width: VIEWFINDER_ROUND_BTN,
                   height: VIEWFINDER_ROUND_BTN,
+                  background: 'rgba(255,255,255,0.1)',
                 }}
                 title="Back to home"
               >
@@ -2029,7 +2135,7 @@ export default function CameraPage() {
           )}
         </div>
 
-        {/* Right rail — Figma 680/1920 满高实底 */}
+        {/* Right rail — Figma 888.62/2508 满高实底 #090F20 */}
         <div
           className={`h-full flex flex-col transition-all duration-700 ${
             mode === 'fingertap' ? 'w-0 opacity-0 overflow-hidden' :
@@ -2040,11 +2146,11 @@ export default function CameraPage() {
             mode === 'fingertap'
               ? undefined
               : isFullScreen
-                ? { background: '#050810' }
+                ? { background: '#090F20' }
                 : {
                     width: RIGHT_PCT,
                     flexShrink: 0,
-                    background: '#0E1A2B',
+                    background: '#090F20',
                   }
           }
         >

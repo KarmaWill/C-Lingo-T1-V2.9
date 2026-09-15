@@ -537,14 +537,14 @@ function TextbookToolCard({
         '&:active': { transform: 'scale(0.98)' },
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
-        <Box
-          component="img"
-          src={iconSrc}
-          alt=""
-          sx={{ width: iconSize, height: iconSize, flexShrink: 0 }}
-        />
-        <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '11px' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '11px', minWidth: 0, flex: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+          <Box
+            component="img"
+            src={iconSrc}
+            alt=""
+            sx={{ width: iconSize, height: iconSize, flexShrink: 0, display: 'block' }}
+          />
           <Typography
             sx={{
               color: '#fff',
@@ -557,19 +557,20 @@ function TextbookToolCard({
           >
             {label}
           </Typography>
-          <Typography
-            sx={{
-              color: 'rgba(255,255,255,0.6)',
-              fontWeight: 500,
-              fontSize: 28,
-              lineHeight: '34px',
-              fontFamily: FIGMA_FONT,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {subtitle}
-          </Typography>
         </Box>
+        <Typography
+          sx={{
+            color: 'rgba(255,255,255,0.6)',
+            fontWeight: 500,
+            fontSize: 28,
+            lineHeight: '34px',
+            fontFamily: FIGMA_FONT,
+            whiteSpace: 'nowrap',
+            pl: `${iconSize + 8}px`,
+          }}
+        >
+          {subtitle}
+        </Typography>
       </Box>
       <Box
         sx={{

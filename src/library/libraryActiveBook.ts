@@ -34,6 +34,7 @@ export function toActiveLibraryBook(book: LibraryBookInput): LibraryActiveBook {
   if (book.id === 'hsk1') badge = ['HSK1', 'Volume 1']
   else if (book.id === 'hsk2') badge = ['HSK2', 'Volume 1']
   else if (book.category === 'Happy Chinese') badge = ['Happy Chinese', book.subtitle || 'Volume 1']
+  else if (book.category === 'HSK 3.0') badge = ['HSK 3.0', book.subtitle || 'Volume 1']
   else badge = [book.title, book.subtitle || '']
   return {
     id: book.id,
