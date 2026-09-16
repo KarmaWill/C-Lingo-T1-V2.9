@@ -174,7 +174,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isFunChineseCardCollectionPage ||
     isFunChineseIntensivePage ||
     isFunChineseLessonPage ||
-    isCultureMapPage ||
     isCharacterWritingPage ||
     isHSKStandardSubPage ||
     isBusinessChineseSubPage)

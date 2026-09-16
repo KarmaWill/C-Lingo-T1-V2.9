@@ -63,19 +63,60 @@ export const EXPLORE_MAIN1 = {
   right: 494,
   gap: 31,
   cardRadius: 54,
+  /** System settings 卡 · 布局宽用 1920 换算；画板用稿面 645×1006 整卡 contain */
   settingsW: 494,
-  settingsH: 749,
-  settingsRadius: 46,
-  clockRadius: 38,
+  settingsH: 770,
+  settingsBoardW: 645,
+  settingsBoardH: 1006,
+  settingsRadius: 60,
+  settingsPadX: 32,
+  settingsPadTop: 48,
+  settingsPadBottom: 32,
+  settingsTitle: 48,
+  settingsTitleLh: 77,
+  settingsTitleMb: 40,
+  settingsRow: 36,
+  settingsRowLh: 58,
+  settingsSub: 28,
+  settingsSubLh: 45,
+  settingsGap: 50,
+  settingsBtnFont: 32,
+  settingsBtnH: 85,
+  settingsEyeH: 80,
+  settingsUpdatesH: 213,
+  settingsToggleW: 90,
+  settingsToggleH: 45,
+  settingsToggleThumb: 54,
+  settingsContentW: 580,
+  /** Rectangle 34629571 · 时钟卡（1920 出数） */
+  clockRadius: 50,
+  clockFigmaW: 704,
+  clockTime: 150,
+  clockTimeLh: 188,
+  clockDate: 32,
+  clockDateLh: 40,
+  clockTool: 126,
+  clockToolGap: 22,
+  videoRadius: 50,
   icon: 115,
   iconRadius: 31,
-  goBar: 142,
-  goBarRadius: 15,
-  goThumb: 96,
-  goThumbRadius: 14,
-  goPill: 61,
-  goFont: 28,
+  /** Frame 1410141141 · Go to Settings */
+  goBar: 186,
+  goBarRadius: 20,
+  goBarW: 584,
+  goThumb: 125,
+  goThumbRadius: 18,
+  goPill: 80,
+  goPillW: 350,
+  goFont: 36,
 } as const
+
+/** Explore 左下 promo · C-Lingo AIOS 官方片 https://youtu.be/SoaFC_sGvDU */
+export const EXPLORE_PROMO_YOUTUBE_ID = 'SoaFC_sGvDU'
+export const EXPLORE_PROMO_YOUTUBE_URL = `https://youtu.be/${EXPLORE_PROMO_YOUTUBE_ID}`
+export const EXPLORE_PROMO_POSTER = `https://i.ytimg.com/vi/${EXPLORE_PROMO_YOUTUBE_ID}/hqdefault.jpg`
+export const EXPLORE_PROMO_POSTER_MAX = `https://i.ytimg.com/vi/${EXPLORE_PROMO_YOUTUBE_ID}/maxresdefault.jpg`
+export const EXPLORE_PROMO_TITLE = 'C-Lingo AIOS AI Chinese Learning Tablet'
 
 /** 主界面1 Frame 1410141869 · HSK Preparation 2508 → 1920 */
 export const HSK_PREP_MAIN1 = {

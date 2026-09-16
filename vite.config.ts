@@ -47,38 +47,36 @@ function lanUrlHintPlugin(port: number): Plugin {
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Read screen size from environment variable
-  const screenSize = process.env.VITE_SCREEN_SIZE || '2000x1200';
-  
-  // T1 product canvas is 2000×1200 on port 3001
-  let port = 3001;
-  if (screenSize === '2000x1200') {
-    port = 3001;
-  } else if (screenSize === '1024x768') {
-    port = 3005;
-  } else if (screenSize === '960x540') {
-    port = 3002;
-  } else if (screenSize === '1920x1125') {
-    port = 3003;
-  } else if (screenSize === '1920x1080') {
-    port = 3002;
+  const screenSize = process.env.VITE_SCREEN_SIZE || '2000x1200'
+
+  // One dedicated port per canvas — never steal another size's slot
+  const portBySize: Record<string, number> = {
+    '2000x1200': 3001,
+    '960x540': 3002,
+    '1920x1125': 3003,
+    '1024x768': 3005,
+    '1920x1080': 3006,
   }
+  const port = portBySize[screenSize] ?? 3001
 
   return {
-  plugins: [react(), tailwindcss(), lanUrlHintPlugin(port)],
-  server: {
-      port: port,
+    plugins: [react(), tailwindcss(), lanUrlHintPlugin(port)],
+    server: {
+      port,
+      strictPort: true,
       // 监听所有网卡，同一局域网内手机/平板可用本机 IP 访问
       host: true,
-    open: true
-  },
-  preview: {
+      open: true,
+    },
+    preview: {
       port: 4173,
       host: true,
-  },
-  build: {
-    outDir: 'dist',
-    sourcemap: true
+      strictPort: true,
+    },
+    build: {
+      outDir: 'dist',
+      sourcemap: true,
+    },
   }
-  };
 })
 

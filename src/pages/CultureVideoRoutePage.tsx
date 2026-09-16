@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import CultureVideoStage from '../components/Lesson/CultureVideoStage'
 import { CURRENT_LESSON } from '../mock/lessonData'
 
-/** Full-screen culture video mock from unit hub — no MainLayout chrome. */
+/** Full-screen culture / Explore promo video — no MainLayout chrome. */
 export default function CultureVideoRoutePage() {
   const navigate = useNavigate()
   return (

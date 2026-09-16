@@ -15,6 +15,7 @@ import ExploreOutlinedIcon from '@mui/icons-material/ExploreOutlined';
 import MicOutlinedIcon from '@mui/icons-material/MicOutlined';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 import TranslateIcon from '@mui/icons-material/Translate';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -25,22 +26,23 @@ import HeadphonesIcon from '@mui/icons-material/Headphones';
 import RadioIcon from '@mui/icons-material/Radio';
 import type { SvgIconComponent } from '@mui/icons-material';
 import { getInstalledExtraApps, removeInstalledExtraApp, MAX_EXTRA_APPS, type CatalogApp } from '../data/appsCatalog';
-import { CatalogAppGlyph } from '../components/apps/catalogAppIcons';
+import { CatalogAppGlyph, catalogAppUsesFullBleedIcon } from '../components/apps/catalogAppIcons';
 import { getPendingAppUpdatesCount } from '../data/appUpdatesCatalog';
 import {
   GOOGLE_SYSTEM_TOOLS,
   getDaysUntil,
   loadCountdownTarget,
   loadInstalledUtilityToolIds,
-  MAX_UTILITY_TOOLS,
   removeInstalledUtilityTool,
   saveCountdownTarget,
+  saveInstalledUtilityToolIds,
   toggleInstalledUtilityTool,
   type SystemTool,
 } from '../data/systemToolsCatalog';
 import {
   BUILTIN_UTILITY_ITEMS,
   loadBuiltinUtilityIds,
+  MAX_UTILITY_BAR_SLOTS,
   removeBuiltinUtility,
   toggleBuiltinUtility,
   type BuiltinUtilityId,
@@ -53,11 +55,13 @@ import {
 } from '../data/exploreAppsConfig';
 import { useLongPress } from '../utils/useLongPress';
 import HubLangProfile from '../components/home/HubLangProfile';
-import HubContainBoard from '../components/home/HubContainBoard';
 import { StudioHomeFrame } from '../components/home/StudioHomeHeader';
 import HubPagerDots from '../components/home/HubPagerDots';
+import HubContainBoard from '../components/home/HubContainBoard';
 import {
   EXPLORE_MAIN1,
+  EXPLORE_PROMO_POSTER,
+  EXPLORE_PROMO_POSTER_MAX,
   HUB_CANVAS_CLINGO,
   HUB_FRAME_PAD_TOP,
   HUB_FRAME_PAD_X,
@@ -108,16 +112,26 @@ function UtilityBarIconButton({
   const longPress = useLongPress(onEnterEditMode);
 
   return (
-    <Box sx={{ position: 'relative', flexShrink: 0 }}>
+    <Box sx={{ position: 'relative', flexShrink: 0, width: 'fit-content' }}>
       <ButtonBase
         {...longPress}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          onEnterEditMode();
+        }}
         onClick={() => {
           if (longPress.consumeLongPress()) return;
           if (showDelete) return;
           onClick();
         }}
         aria-label={label}
-        sx={{ ...iconSx, ...(showDelete ? { opacity: 0.88, transform: 'scale(0.96)' } : {}) }}
+        sx={{
+          ...iconSx,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          ...(showDelete ? { opacity: 0.88, transform: 'scale(0.96)' } : {}),
+        }}
       >
         {children}
       </ButtonBase>
@@ -130,8 +144,8 @@ function UtilityBarIconButton({
           aria-label={`Remove ${label}`}
           sx={{
             position: 'absolute',
-            top: -6,
-            right: -6,
+            top: -4,
+            right: -4,
             width: 22,
             height: 22,
             minWidth: 22,
@@ -180,7 +194,7 @@ function UtilityToolButton({
       onRemove={onRemove}
       onClick={onLaunch}
     >
-      <Icon sx={{ fontSize: is960 ? 22 : 24 }} />
+      <Icon sx={{ fontSize: is960 ? 22 : 28 }} />
     </UtilityBarIconButton>
   );
 }
@@ -208,12 +222,14 @@ function ExtraAppTile({
   onRemove: () => void;
   onLaunch: () => void;
 }) {
+  const fullBleed = catalogAppUsesFullBleedIcon(app.id);
   return (
     <ExploreAppIcon
       screenSize={screenSize}
       label={app.label}
-      bg={app.bg}
+      bg={fullBleed ? '#FFFFFF' : app.bg}
       glyph={<CatalogAppGlyph id={app.id} />}
+      iconFlush={fullBleed}
       showDelete={isDeleteMode}
       onEnterEditMode={onEnterEditMode}
       onRemove={onRemove}
@@ -371,6 +387,7 @@ function ExploreAppIcon({
   showDelete = false,
   onEnterEditMode,
   onRemove,
+  iconFlush = false,
 }: {
   screenSize: string;
   label?: string;
@@ -382,6 +399,8 @@ function ExploreAppIcon({
   showDelete?: boolean;
   onEnterEditMode?: () => void;
   onRemove?: () => void;
+  /** 整图 PNG（Gmail / YouTube 弥散标）铺满圆角方格 */
+  iconFlush?: boolean;
 }) {
   const p = (n: number) => figmaPx(n, screenSize);
   const longPress = useLongPress(() => {
@@ -423,7 +442,7 @@ function ExploreAppIcon({
             maxWidth: p(EXPLORE_MAIN1.icon),
             borderRadius: `${p(EXPLORE_MAIN1.iconRadius)}px`,
             bgcolor: addSlot ? '#FFFFFF' : bg,
-            border: '2px solid #E0E0DF',
+            border: iconFlush ? '1px solid rgba(213,213,213,0.55)' : '2px solid #E0E0DF',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -431,6 +450,7 @@ function ExploreAppIcon({
             boxSizing: 'border-box',
             opacity: showDelete ? 0.88 : 1,
             transform: showDelete ? 'scale(0.96)' : 'none',
+            boxShadow: iconFlush ? '0 6px 18px rgba(213,213,213,0.45)' : 'none',
           }}
         >
           {addSlot ? (
@@ -521,7 +541,14 @@ export default function AppsPage() {
   const [countdownTarget, setCountdownTarget] = useState(() => loadCountdownTarget());
   const [pomodoroSecondsLeft, setPomodoroSecondsLeft] = useState(POMODORO_SECONDS);
   const [pomodoroRunning, setPomodoroRunning] = useState(false);
-  const [utilityToolIds, setUtilityToolIds] = useState(() => loadInstalledUtilityToolIds());
+  const [utilityToolIds, setUtilityToolIds] = useState(() => {
+    const builtins = loadBuiltinUtilityIds();
+    const customs = loadInstalledUtilityToolIds();
+    const room = Math.max(0, MAX_UTILITY_BAR_SLOTS - builtins.length);
+    const trimmed = customs.slice(0, room);
+    if (trimmed.length !== customs.length) saveInstalledUtilityToolIds(trimmed);
+    return trimmed;
+  });
   const [builtinUtilityIds, setBuiltinUtilityIds] = useState(() => loadBuiltinUtilityIds());
   const [extraApps, setExtraApps] = useState(() => getInstalledExtraApps());
   const [exploreBuiltinIds, setExploreBuiltinIds] = useState(() => loadExploreBuiltinIds());
@@ -573,6 +600,9 @@ export default function AppsPage() {
     .map((id) => GOOGLE_SYSTEM_TOOLS.find((tool) => tool.id === id))
     .filter((tool): tool is SystemTool => Boolean(tool));
 
+  const utilitySlotCount = builtinUtilityIds.length + utilityToolIds.length;
+  const canAddUtilitySlot = utilitySlotCount < MAX_UTILITY_BAR_SLOTS;
+
   const formatDate = (date: Date) => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -598,12 +628,13 @@ export default function AppsPage() {
   };
 
   const handleToggleUtilityTool = (toolId: string) => {
-    const result = toggleInstalledUtilityTool(toolId);
-    setUtilityToolIds(result.ids);
+    const result = toggleInstalledUtilityTool(toolId, utilitySlotCount);
     if (!result.ok) {
-      setToastMessage(`Utility bar supports up to ${MAX_UTILITY_TOOLS} custom tools. Remove one first.`);
+      setToastMessage(`Utility bar supports up to ${MAX_UTILITY_BAR_SLOTS} tools. Remove one first.`);
       setShowToast(true);
+      return;
     }
+    setUtilityToolIds(result.ids);
   };
 
   const handleRemoveUtilityTool = (toolId: string) => {
@@ -615,7 +646,13 @@ export default function AppsPage() {
   };
 
   const handleToggleBuiltinUtility = (id: BuiltinUtilityId) => {
-    setBuiltinUtilityIds(toggleBuiltinUtility(id).ids);
+    const result = toggleBuiltinUtility(id, utilitySlotCount);
+    if (!result.ok) {
+      setToastMessage(`Utility bar supports up to ${MAX_UTILITY_BAR_SLOTS} tools. Remove one first.`);
+      setShowToast(true);
+      return;
+    }
+    setBuiltinUtilityIds(result.ids);
   };
 
   const handleRemoveExtraApp = (appId: string) => {
@@ -650,27 +687,128 @@ export default function AppsPage() {
 
   const dateInfo = formatDate(currentTime);
   const timeString = currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  /** 时钟卡 / 视频位 / System settings 同宽 */
+  const sideRailW = p(EXPLORE_MAIN1.settingsW);
+  /** 稿上时钟卡约 704 宽；落入 settingsW 栏时等比缩放出数 */
+  const clockScale = EXPLORE_MAIN1.settingsW / EXPLORE_MAIN1.clockFigmaW;
+  const cp = (n: number) => p(n * clockScale);
+  const toolSize = cp(EXPLORE_MAIN1.clockTool);
 
   const utilityIconSx = {
-    width: p(78),
-    height: p(78),
-    borderRadius: `${p(24)}px`,
+    width: toolSize,
+    height: toolSize,
+    borderRadius: `${cp(22)}px`,
     bgcolor: '#EBEBEB',
-    color: '#334155',
+    color: '#263244',
     '&:active': { bgcolor: '#E0E0DF' },
     transition: 'background 0.15s',
   } as const;
 
   const utilityAddSx = {
-    width: p(78),
-    height: p(78),
-    borderRadius: `${p(24)}px`,
+    width: toolSize,
+    height: toolSize,
+    borderRadius: `${cp(22)}px`,
     border: '3px dashed #D9E1EA',
     bgcolor: '#FFFFFF',
     color: '#91A4BE',
     '&:active': { bgcolor: '#F8F8F8' },
     transition: 'background 0.15s',
   } as const;
+
+  const utilitySlotNodes: ReactNode[] = [];
+  if (builtinUtilityIds.includes('alarm')) {
+    utilitySlotNodes.push(
+      <UtilityBarIconButton
+        key="alarm"
+        label="Alarm"
+        iconSx={utilityIconSx}
+        is960={is960}
+        showDelete={utilityEditMode}
+        onEnterEditMode={() => setUtilityEditMode(true)}
+        onRemove={() => handleRemoveBuiltinUtility('alarm')}
+        onClick={() => handleUtilityTool('alarm')}
+      >
+        <AccessAlarmOutlinedIcon sx={{ fontSize: toolSize * 0.42 }} />
+      </UtilityBarIconButton>,
+    );
+  }
+  if (builtinUtilityIds.includes('calendar')) {
+    utilitySlotNodes.push(
+      <UtilityBarIconButton
+        key="calendar"
+        label="Calendar"
+        iconSx={utilityIconSx}
+        is960={is960}
+        showDelete={utilityEditMode}
+        onEnterEditMode={() => setUtilityEditMode(true)}
+        onRemove={() => handleRemoveBuiltinUtility('calendar')}
+        onClick={() => handleUtilityTool('calendar')}
+      >
+        <CalendarMonthOutlinedIcon sx={{ fontSize: toolSize * 0.42 }} />
+      </UtilityBarIconButton>,
+    );
+  }
+  if (builtinUtilityIds.includes('daycountdown')) {
+    utilitySlotNodes.push(
+      <UtilityBarIconButton
+        key="daycountdown"
+        label="Day countdown"
+        iconSx={utilityIconSx}
+        is960={is960}
+        showDelete={utilityEditMode}
+        onEnterEditMode={() => setUtilityEditMode(true)}
+        onRemove={() => handleRemoveBuiltinUtility('daycountdown')}
+        onClick={() => handleUtilityTool('daycountdown')}
+      >
+        <TodayOutlinedIcon sx={{ fontSize: toolSize * 0.42 }} />
+      </UtilityBarIconButton>,
+    );
+  }
+  if (builtinUtilityIds.includes('pomodoro')) {
+    utilitySlotNodes.push(
+      <UtilityBarIconButton
+        key="pomodoro"
+        label="Pomodoro"
+        iconSx={{ ...utilityIconSx, color: '#EF4444' }}
+        is960={is960}
+        showDelete={utilityEditMode}
+        onEnterEditMode={() => setUtilityEditMode(true)}
+        onRemove={() => handleRemoveBuiltinUtility('pomodoro')}
+        onClick={() => handleUtilityTool('pomodoro')}
+      >
+        <HourglassEmptyOutlinedIcon sx={{ fontSize: toolSize * 0.42 }} />
+      </UtilityBarIconButton>,
+    );
+  }
+  installedUtilityTools.forEach((tool) => {
+    utilitySlotNodes.push(
+      <UtilityToolButton
+        key={tool.id}
+        tool={tool}
+        iconSx={utilityIconSx}
+        is960={is960}
+        showDelete={utilityEditMode}
+        onEnterEditMode={() => setUtilityEditMode(true)}
+        onRemove={() => handleRemoveUtilityTool(tool.id)}
+        onLaunch={() => handleUtilityToolLaunch(tool)}
+      />,
+    );
+  });
+  if (canAddUtilitySlot) {
+    utilitySlotNodes.push(
+      <ButtonBase
+        key="add-utility"
+        onClick={() => {
+          setUtilityEditMode(false);
+          setShowUtilityToolsCatalog(true);
+        }}
+        aria-label="Add system tools"
+        sx={utilityAddSx}
+      >
+        <AddIcon sx={{ fontSize: toolSize * 0.48 }} />
+      </ButtonBase>,
+    );
+  }
 
   return (
     <>
@@ -682,7 +820,7 @@ export default function AppsPage() {
           minHeight: 0,
           overflow: 'hidden',
           display: 'grid',
-          gridTemplateColumns: `${p(EXPLORE_MAIN1.left)}fr ${p(EXPLORE_MAIN1.right)}fr`,
+          gridTemplateColumns: `minmax(0, 1fr) ${sideRailW}px`,
           gap: `${p(EXPLORE_MAIN1.gap)}px`,
           alignItems: 'stretch',
         }}
@@ -692,174 +830,135 @@ export default function AppsPage() {
                   minWidth: 0,
                   minHeight: 0,
                   height: '100%',
-                  bgcolor: HUB_SURFACE,
-                  borderRadius: `${p(EXPLORE_MAIN1.cardRadius)}px`,
-                  p: `${p(28)}px`,
-                  boxShadow: HUB_SURFACE_SHADOW,
                   display: 'grid',
-                  gridTemplateColumns: 'minmax(0, 0.72fr) minmax(0, 1fr)',
-                  gap: `${p(24)}px`,
+                  gridTemplateColumns: `${sideRailW}px minmax(0, 1fr)`,
+                  /* 时钟卡与视频位等高，圆角共用 clockRadius */
+                  gridTemplateRows: 'minmax(0, 1fr) minmax(0, 1fr)',
+                  gap: `${p(20)}px`,
                   overflow: 'hidden',
                 }}
               >
+                {/* 左上 · Rectangle 34629571 时钟卡（Figma 出数等比缩进 sideRail） */}
                 <Box
                   sx={{
+                    gridColumn: 1,
+                    gridRow: 1,
+                    position: 'relative',
                     minWidth: 0,
                     minHeight: 0,
                     bgcolor: '#F8F8F8',
                     borderRadius: `${p(EXPLORE_MAIN1.clockRadius)}px`,
-                    px: `${p(28)}px`,
-                    pt: `${p(22)}px`,
-                    pb: `${p(22)}px`,
+                    boxShadow: HUB_SURFACE_SHADOW,
+                    px: `${cp(40)}px`,
+                    pt: `${cp(36)}px`,
+                    pb: `${cp(32)}px`,
                     display: 'flex',
                     flexDirection: 'column',
                     overflow: 'hidden',
+                    boxSizing: 'border-box',
                   }}
                 >
-                  <Typography
-                    sx={{
-                      fontSize: p(100),
-                      fontWeight: 700,
-                      color: '#263244',
-                      fontFamily: FIGMA_FONT,
-                      lineHeight: 1,
-                      letterSpacing: '-0.03em',
-                      flexShrink: 0,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {timeString}
-                  </Typography>
-                  <Typography
-                    sx={{
-                      mt: `${p(10)}px`,
-                      fontSize: p(36),
-                      fontWeight: 700,
-                      color: '#263244',
-                      fontFamily: FIGMA_FONT,
-                      lineHeight: `${p(46)}px`,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {dateInfo.month} {dateInfo.day} · {dateInfo.weekday}
-                  </Typography>
                   <Box
                     sx={{
-                      mt: `${p(28)}px`,
                       display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: `${p(14)}px`,
+                      alignItems: 'flex-start',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography
+                        sx={{
+                          fontSize: cp(EXPLORE_MAIN1.clockTime),
+                          fontWeight: 700,
+                          color: '#263244',
+                          fontFamily: FIGMA_FONT,
+                          lineHeight: `${cp(EXPLORE_MAIN1.clockTimeLh)}px`,
+                          letterSpacing: '-0.03em',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {timeString}
+                      </Typography>
+                      <Box
+                        sx={{
+                          mt: `${cp(12)}px`,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          px: `${p(20)}px`,
+                          py: `${p(10)}px`,
+                          borderRadius: 999,
+                          bgcolor: '#EBEBEB',
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontSize: p(EXPLORE_MAIN1.clockDate),
+                            fontWeight: 700,
+                            color: '#263244',
+                            fontFamily: FIGMA_FONT,
+                            lineHeight: `${p(EXPLORE_MAIN1.clockDateLh)}px`,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {dateInfo.month} {dateInfo.day} · {dateInfo.weekday}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ flex: 1, minHeight: cp(20) }} />
+
+                  <Box
+                    sx={{
+                      position: 'relative',
+                      flexShrink: 0,
+                      display: 'flex',
+                      flexWrap: 'nowrap',
+                      gap: `${cp(EXPLORE_MAIN1.clockToolGap)}px`,
                       alignItems: 'center',
-                      minHeight: 0,
-                      overflow: 'auto',
+                      overflow: 'visible',
                     }}
                   >
                     {utilityEditMode && (
                       <ButtonBase
                         onClick={() => setUtilityEditMode(false)}
                         sx={{
-                          minHeight: p(36),
-                          px: `${p(14)}px`,
-                          borderRadius: `${p(12)}px`,
+                          position: 'absolute',
+                          right: 0,
+                          top: cp(-36),
+                          minHeight: cp(30),
+                          px: `${cp(12)}px`,
+                          borderRadius: `${cp(10)}px`,
                           bgcolor: '#111827',
                           color: 'white',
                           fontWeight: 700,
-                          fontSize: p(14),
+                          fontSize: cp(12),
                           fontFamily: FIGMA_FONT,
+                          zIndex: 2,
                         }}
                       >
                         Done
                       </ButtonBase>
                     )}
-                    {builtinUtilityIds.includes('alarm') && (
-                      <UtilityBarIconButton
-                        label="Alarm"
-                        iconSx={utilityIconSx}
-                        is960={is960}
-                        showDelete={utilityEditMode}
-                        onEnterEditMode={() => setUtilityEditMode(true)}
-                        onRemove={() => handleRemoveBuiltinUtility('alarm')}
-                        onClick={() => handleUtilityTool('alarm')}
-                      >
-                        <AccessAlarmOutlinedIcon sx={{ fontSize: p(32) }} />
-                      </UtilityBarIconButton>
-                    )}
-                    {builtinUtilityIds.includes('calendar') && (
-                      <UtilityBarIconButton
-                        label="Calendar"
-                        iconSx={utilityIconSx}
-                        is960={is960}
-                        showDelete={utilityEditMode}
-                        onEnterEditMode={() => setUtilityEditMode(true)}
-                        onRemove={() => handleRemoveBuiltinUtility('calendar')}
-                        onClick={() => handleUtilityTool('calendar')}
-                      >
-                        <CalendarMonthOutlinedIcon sx={{ fontSize: p(32) }} />
-                      </UtilityBarIconButton>
-                    )}
-                    {builtinUtilityIds.includes('daycountdown') && (
-                      <UtilityBarIconButton
-                        label="Day countdown"
-                        iconSx={utilityIconSx}
-                        is960={is960}
-                        showDelete={utilityEditMode}
-                        onEnterEditMode={() => setUtilityEditMode(true)}
-                        onRemove={() => handleRemoveBuiltinUtility('daycountdown')}
-                        onClick={() => handleUtilityTool('daycountdown')}
-                      >
-                        <TodayOutlinedIcon sx={{ fontSize: p(32) }} />
-                      </UtilityBarIconButton>
-                    )}
-                    {builtinUtilityIds.includes('pomodoro') && (
-                      <UtilityBarIconButton
-                        label="Pomodoro"
-                        iconSx={{ ...utilityIconSx, color: '#EF4444' }}
-                        is960={is960}
-                        showDelete={utilityEditMode}
-                        onEnterEditMode={() => setUtilityEditMode(true)}
-                        onRemove={() => handleRemoveBuiltinUtility('pomodoro')}
-                        onClick={() => handleUtilityTool('pomodoro')}
-                      >
-                        <HourglassEmptyOutlinedIcon sx={{ fontSize: p(32) }} />
-                      </UtilityBarIconButton>
-                    )}
-                    {installedUtilityTools.map((tool) => (
-                      <UtilityToolButton
-                        key={tool.id}
-                        tool={tool}
-                        iconSx={utilityIconSx}
-                        is960={is960}
-                        showDelete={utilityEditMode}
-                        onEnterEditMode={() => setUtilityEditMode(true)}
-                        onRemove={() => handleRemoveUtilityTool(tool.id)}
-                        onLaunch={() => handleUtilityToolLaunch(tool)}
-                      />
-                    ))}
-                    {utilityToolIds.length < MAX_UTILITY_TOOLS && (
-                    <ButtonBase
-                      onClick={() => {
-                        setUtilityEditMode(false);
-                        setShowUtilityToolsCatalog(true);
-                      }}
-                      aria-label="Add system tools"
-                      sx={utilityAddSx}
-                    >
-                      <AddIcon sx={{ fontSize: p(36) }} />
-                    </ButtonBase>
-                    )}
+                    {utilitySlotNodes}
                   </Box>
                 </Box>
 
+                {/* 右上 · App 格一行四枚，行距略松 */}
                 <Box
                   sx={{
+                    gridColumn: 2,
+                    gridRow: '1 / 3',
                     minWidth: 0,
                     minHeight: 0,
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
                     alignContent: 'start',
-                    gap: `${p(16)}px ${p(18)}px`,
+                    columnGap: `${p(12)}px`,
+                    rowGap: `${p(28)}px`,
                     overflow: 'auto',
-                    pt: `${p(16)}px`,
+                    pt: `${p(8)}px`,
+                    pr: `${p(4)}px`,
                   }}
                 >
                   {exploreBuiltinIds.map((id) => {
@@ -924,27 +1023,100 @@ export default function AppsPage() {
                     </ButtonBase>
                   )}
                 </Box>
+
+                {/* 左下 · YouTube promo 封面位 → /culture-video 全屏播放 */}
+                <ButtonBase
+                  onClick={() => navigate('/culture-video', { state: { from: '/apps' } })}
+                  aria-label="Open culture video"
+                  sx={{
+                    gridColumn: 1,
+                    gridRow: 2,
+                    position: 'relative',
+                    minWidth: 0,
+                    minHeight: 0,
+                    height: '100%',
+                    borderRadius: `${p(EXPLORE_MAIN1.clockRadius)}px`,
+                    bgcolor: '#2C3136',
+                    overflow: 'hidden',
+                    display: 'block',
+                    boxShadow: HUB_SURFACE_SHADOW,
+                    '&:active': { opacity: 0.96 },
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={EXPLORE_PROMO_POSTER_MAX}
+                    alt=""
+                    onError={(e) => {
+                      const img = e.currentTarget as HTMLImageElement;
+                      if (img.src !== EXPLORE_PROMO_POSTER) img.src = EXPLORE_PROMO_POSTER;
+                    }}
+                    sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      display: 'block',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      background:
+                        'linear-gradient(180deg, rgba(20,24,28,0.08) 0%, rgba(20,24,28,0.42) 100%)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      left: '50%',
+                      top: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: p(72),
+                      height: p(72),
+                      borderRadius: '50%',
+                      bgcolor: 'rgba(255,255,255,0.22)',
+                      backdropFilter: 'blur(8px)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    <PlayArrowRoundedIcon sx={{ fontSize: p(44), color: '#FFFFFF', ml: '2px' }} />
+                  </Box>
+                </ButtonBase>
               </Box>
               <Box
                 sx={{
-                  minWidth: 0,
+                  width: sideRailW,
+                  minWidth: sideRailW,
+                  maxWidth: sideRailW,
                   minHeight: 0,
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
                 }}
               >
-                <HubContainBoard width={EXPLORE_MAIN1.settingsW} height={EXPLORE_MAIN1.settingsH}>
+                <HubContainBoard
+                  width={EXPLORE_MAIN1.settingsBoardW}
+                  height={EXPLORE_MAIN1.settingsBoardH}
+                  fillHost
+                >
                   <Box
                     sx={{
-                      width: EXPLORE_MAIN1.settingsW,
-                      height: EXPLORE_MAIN1.settingsH,
+                      width: EXPLORE_MAIN1.settingsBoardW,
+                      height: EXPLORE_MAIN1.settingsBoardH,
                       bgcolor: HUB_SURFACE,
                       borderRadius: `${EXPLORE_MAIN1.settingsRadius}px`,
-                      boxShadow: '0px 4px 20px rgba(213, 213, 213, 0.6)',
-                      px: '32px',
-                      pt: '36px',
-                      pb: '28px',
+                      boxShadow: '0px 5px 26px rgba(213, 213, 213, 0.6)',
+                      px: `${EXPLORE_MAIN1.settingsPadX}px`,
+                      pt: `${EXPLORE_MAIN1.settingsPadTop}px`,
+                      pb: `${EXPLORE_MAIN1.settingsPadBottom}px`,
                       display: 'flex',
                       flexDirection: 'column',
                       overflow: 'hidden',
@@ -952,92 +1124,148 @@ export default function AppsPage() {
                       fontFamily: FIGMA_FONT,
                     }}
                   >
-                    <Box
+                    <Typography
                       sx={{
                         flexShrink: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '12px',
-                        mb: '20px',
+                        width: EXPLORE_MAIN1.settingsContentW,
+                        fontWeight: 700,
+                        fontSize: EXPLORE_MAIN1.settingsTitle,
+                        lineHeight: `${EXPLORE_MAIN1.settingsTitleLh}px`,
+                        color: '#2D3436',
+                        fontFamily: FIGMA_FONT,
+                        mb: `${EXPLORE_MAIN1.settingsTitleMb}px`,
                       }}
                     >
-                      <Typography
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: 36,
-                          lineHeight: '46px',
-                          color: '#2D3436',
-                          fontFamily: FIGMA_FONT,
-                        }}
-                      >
-                        System settings
-                      </Typography>
-                      <ButtonBase
-                        onClick={handleContentManagement}
-                        aria-label="Content Management"
-                        sx={{
-                          width: 44,
-                          height: 44,
-                          borderRadius: '50%',
-                          border: '2px solid #E0E0DF',
-                          color: '#C5C9CE',
-                          flexShrink: 0,
-                        }}
-                      >
-                        <AddIcon sx={{ fontSize: 26 }} />
-                      </ButtonBase>
-                    </Box>
-                    <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                      System settings
+                    </Typography>
+
+                    <Box
+                      sx={{
+                        width: EXPLORE_MAIN1.settingsContentW,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: `${EXPLORE_MAIN1.settingsGap}px`,
+                        flexShrink: 0,
+                      }}
+                    >
                       <ButtonBase
                         onClick={handleLanguagePackUpdate}
                         sx={{
                           display: 'flex',
                           width: '100%',
-                          flex: 1,
+                          height: EXPLORE_MAIN1.settingsRowLh,
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          minHeight: 0,
-                          py: '16px',
+                          gap: '3px',
                           borderBottom: '2px solid #E0E0DF',
                           borderRadius: 0,
                           textAlign: 'left',
                           '&:active': { bgcolor: 'rgba(99,110,114,0.06)' },
                         }}
                       >
-                        <Typography sx={{ fontSize: 28, lineHeight: '36px', color: '#636E72', fontWeight: 700, fontFamily: FIGMA_FONT }}>
+                        <Typography
+                          sx={{
+                            fontSize: EXPLORE_MAIN1.settingsRow,
+                            lineHeight: `${EXPLORE_MAIN1.settingsRowLh}px`,
+                            color: '#636E72',
+                            fontWeight: 700,
+                            fontFamily: FIGMA_FONT,
+                          }}
+                        >
                           Language Packs
                         </Typography>
-                        <SettingsChevron size={28} />
+                        <SettingsChevron size={40} />
                       </ButtonBase>
+
+                      <ButtonBase
+                        onClick={handleContentManagement}
+                        sx={{
+                          display: 'flex',
+                          width: '100%',
+                          height: EXPLORE_MAIN1.settingsRowLh,
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '3px',
+                          borderBottom: '2px solid #E0E0DF',
+                          borderRadius: 0,
+                          textAlign: 'left',
+                          '&:active': { bgcolor: 'rgba(99,110,114,0.06)' },
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontSize: EXPLORE_MAIN1.settingsRow,
+                            lineHeight: `${EXPLORE_MAIN1.settingsRowLh}px`,
+                            color: '#636E72',
+                            fontWeight: 700,
+                            fontFamily: FIGMA_FONT,
+                          }}
+                        >
+                          Content Management
+                        </Typography>
+                        <SettingsChevron size={40} />
+                      </ButtonBase>
+
                       <Box
                         sx={{
-                          flex: 1,
+                          width: '100%',
+                          minHeight: EXPLORE_MAIN1.settingsEyeH,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          gap: '16px',
-                          minHeight: 0,
-                          py: '16px',
+                          gap: '3px',
                           borderBottom: '2px solid #E0E0DF',
+                          boxSizing: 'border-box',
+                          py: '4px',
                         }}
                       >
-                        <Box sx={{ minWidth: 0, flex: 1 }}>
-                          <Typography sx={{ fontSize: 28, lineHeight: '36px', color: '#636E72', fontWeight: 700, fontFamily: FIGMA_FONT }}>
+                        <Box
+                          sx={{
+                            minWidth: 0,
+                            flex: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            alignItems: 'flex-start',
+                            gap: '6px',
+                          }}
+                        >
+                          <Typography
+                            sx={{
+                              fontSize: EXPLORE_MAIN1.settingsRow,
+                              lineHeight: `${EXPLORE_MAIN1.settingsRowLh}px`,
+                              color: '#636E72',
+                              fontWeight: 700,
+                              fontFamily: FIGMA_FONT,
+                            }}
+                          >
                             Eye Protection
                           </Typography>
-                          <Typography sx={{ fontSize: 20, lineHeight: '28px', color: '#A7B3B8', fontWeight: 400, fontFamily: FIGMA_FONT }}>
+                          <Typography
+                            sx={{
+                              fontSize: EXPLORE_MAIN1.settingsSub,
+                              lineHeight: `${EXPLORE_MAIN1.settingsSubLh}px`,
+                              color: '#A7B3B8',
+                              fontWeight: 400,
+                              fontFamily: FIGMA_FONT,
+                            }}
+                          >
                             Warm tint - 20-20-20 reminder
                           </Typography>
                         </Box>
                         <ButtonBase
                           onClick={() => setBlueLightFilter((on) => !on)}
-                          aria-label={blueLightFilter ? 'Eye protection on, tap to turn off' : 'Eye protection off, tap to turn on'}
+                          aria-label={
+                            blueLightFilter
+                              ? 'Eye protection on, tap to turn off'
+                              : 'Eye protection off, tap to turn on'
+                          }
                           sx={{
                             flexShrink: 0,
-                            width: 64,
-                            height: 32,
-                            borderRadius: 999,
+                            width: EXPLORE_MAIN1.settingsToggleW,
+                            height: EXPLORE_MAIN1.settingsToggleH,
+                            borderRadius: EXPLORE_MAIN1.settingsToggleH / 2,
                             bgcolor: blueLightFilter ? '#00B4A0' : '#E0E0DF',
                             position: 'relative',
                             overflow: 'visible',
@@ -1047,47 +1275,79 @@ export default function AppsPage() {
                             sx={{
                               position: 'absolute',
                               top: '50%',
-                              ...(blueLightFilter ? { right: -4 } : { left: -4 }),
+                              ...(blueLightFilter ? { right: -3 } : { left: -3 }),
                               transform: 'translateY(-50%)',
-                              width: 36,
-                              height: 36,
+                              width: EXPLORE_MAIN1.settingsToggleThumb,
+                              height: EXPLORE_MAIN1.settingsToggleThumb,
                               borderRadius: '50%',
                               bgcolor: '#FFFFFF',
-                              boxShadow: '0px 1px 2px rgba(0,0,0,0.3), 0px 2px 6px 2px rgba(0,0,0,0.15)',
+                              boxShadow:
+                                '0px 1px 2px rgba(0,0,0,0.3), 0px 2px 6px 2px rgba(0,0,0,0.15)',
                             }}
                           />
                         </ButtonBase>
                       </Box>
+
                       <Box
                         sx={{
-                          flex: 1.15,
+                          width: '100%',
+                          height: EXPLORE_MAIN1.settingsUpdatesH,
                           display: 'flex',
                           flexDirection: 'column',
                           justifyContent: 'center',
+                          alignItems: 'flex-start',
                           gap: '14px',
-                          py: '18px',
+                          boxSizing: 'border-box',
                         }}
                       >
-                        <Box>
-                          <Typography sx={{ fontSize: 28, lineHeight: '36px', color: '#636E72', fontWeight: 700, fontFamily: FIGMA_FONT }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            alignItems: 'flex-start',
+                            gap: '4px',
+                          }}
+                        >
+                          <Typography
+                            sx={{
+                              fontSize: EXPLORE_MAIN1.settingsRow,
+                              lineHeight: `${EXPLORE_MAIN1.settingsRowLh}px`,
+                              color: '#636E72',
+                              fontWeight: 700,
+                              fontFamily: FIGMA_FONT,
+                            }}
+                          >
                             App Updates
                           </Typography>
-                          <Typography sx={{ fontSize: 20, lineHeight: '28px', color: '#A7B3B8', fontWeight: 400, fontFamily: FIGMA_FONT }}>
-                            {pendingUpdates > 0 ? `${pendingUpdates} update${pendingUpdates === 1 ? '' : 's'} available` : 'No current updates'}
+                          <Typography
+                            sx={{
+                              fontSize: EXPLORE_MAIN1.settingsSub,
+                              lineHeight: `${EXPLORE_MAIN1.settingsSubLh}px`,
+                              color: '#A7B3B8',
+                              fontWeight: 400,
+                              fontFamily: FIGMA_FONT,
+                            }}
+                          >
+                            {pendingUpdates > 0
+                              ? `${pendingUpdates} update${pendingUpdates === 1 ? '' : 's'} available`
+                              : 'No current updates'}
                           </Typography>
                         </Box>
                         <ButtonBase
                           onClick={handleOpenNskStore}
                           sx={{
                             width: '100%',
-                            height: 56,
-                            borderRadius: 999,
+                            height: EXPLORE_MAIN1.settingsBtnH,
+                            px: '54px',
+                            borderRadius: 100,
                             bgcolor: '#F3F4F6',
                             color: '#2D3436',
                             fontWeight: 700,
-                            fontSize: 20,
+                            fontSize: EXPLORE_MAIN1.settingsBtnFont,
+                            lineHeight: `${Math.round(EXPLORE_MAIN1.settingsBtnFont * 1.6)}px`,
                             fontFamily: FIGMA_FONT,
-                            letterSpacing: '0.04em',
+                            textAlign: 'center',
                             '&:active': { bgcolor: '#E8EAED' },
                           }}
                         >
@@ -1095,58 +1355,112 @@ export default function AppsPage() {
                         </ButtonBase>
                       </Box>
                     </Box>
+
+                    <Box sx={{ flex: 1, minHeight: 24 }} />
+
                     <ButtonBase
                       onClick={() => navigate('/android/settings', { state: { from: '/apps' } })}
                       sx={{
                         flexShrink: 0,
-                        mt: '20px',
-                        width: '100%',
+                        position: 'relative',
+                        width: EXPLORE_MAIN1.goBarW,
                         height: EXPLORE_MAIN1.goBar,
-                        px: '16px',
                         borderRadius: `${EXPLORE_MAIN1.goBarRadius}px`,
-                        bgcolor: '#2D3436',
+                        overflow: 'hidden',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '16px',
-                        overflow: 'hidden',
-                        '&:active': { opacity: 0.92 },
+                        pl: '27px',
+                        pr: '24px',
+                        gap: '24px',
+                        isolation: 'isolate',
+                        background:
+                          'linear-gradient(118deg, #1A1040 0%, #2A2F8F 38%, #3D5BDB 72%, #6B8CFF 100%)',
+                        boxShadow:
+                          '0 12px 28px rgba(46, 49, 146, 0.35), inset 0 1px 0 rgba(255,255,255,0.22)',
+                        '&:active': { opacity: 0.94 },
+                        '&::before': {
+                          content: '""',
+                          position: 'absolute',
+                          inset: '-30%',
+                          background: [
+                            'radial-gradient(42% 58% at 18% 30%, rgba(180,210,255,0.75) 0%, rgba(180,210,255,0) 70%)',
+                            'radial-gradient(48% 62% at 78% 22%, rgba(120,90,255,0.55) 0%, rgba(120,90,255,0) 72%)',
+                            'radial-gradient(55% 70% at 62% 88%, rgba(40,20,120,0.65) 0%, rgba(40,20,120,0) 75%)',
+                            'radial-gradient(36% 48% at 40% 55%, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 68%)',
+                          ].join(', '),
+                          filter: 'blur(18px)',
+                          transform: 'scale(1.05)',
+                          pointerEvents: 'none',
+                          zIndex: 0,
+                        },
+                        '&::after': {
+                          content: '""',
+                          position: 'absolute',
+                          inset: 0,
+                          background:
+                            'linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 42%, rgba(0,0,0,0.18) 100%)',
+                          pointerEvents: 'none',
+                          zIndex: 1,
+                        },
                       }}
                     >
                       <Box
-                        component="img"
-                        src="/images/android-12-icon.png"
-                        alt=""
-                        aria-hidden
                         sx={{
+                          position: 'relative',
+                          zIndex: 2,
                           width: EXPLORE_MAIN1.goThumb,
                           height: EXPLORE_MAIN1.goThumb,
-                          borderRadius: `${EXPLORE_MAIN1.goThumbRadius}px`,
                           flexShrink: 0,
-                          objectFit: 'cover',
-                          display: 'block',
+                          borderRadius: `${EXPLORE_MAIN1.goThumbRadius}px`,
+                          overflow: 'hidden',
+                          boxShadow:
+                            '0 0 28px rgba(140,170,255,0.55), 0 8px 18px rgba(20,24,80,0.35)',
                         }}
-                      />
+                      >
+                        <Box
+                          component="img"
+                          src="/images/android-12-icon.png"
+                          alt=""
+                          aria-hidden
+                          sx={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            display: 'block',
+                            filter: 'saturate(1.08) contrast(1.04)',
+                          }}
+                        />
+                      </Box>
                       <Box
                         sx={{
-                          flex: 1,
-                          minWidth: 0,
+                          position: 'relative',
+                          zIndex: 2,
+                          width: EXPLORE_MAIN1.goPillW,
                           height: EXPLORE_MAIN1.goPill,
-                          borderRadius: 999,
-                          bgcolor: 'rgba(255,255,255,0.1)',
+                          borderRadius: 100,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
+                          px: '24px',
+                          background:
+                            'linear-gradient(180deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.12) 48%, rgba(255,255,255,0.08) 100%)',
+                          backdropFilter: 'blur(22px) saturate(1.45)',
+                          WebkitBackdropFilter: 'blur(22px) saturate(1.45)',
+                          border: '1px solid rgba(255,255,255,0.42)',
+                          boxShadow:
+                            'inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 0 rgba(255,255,255,0.12), 0 8px 22px rgba(0,0,0,0.2)',
                         }}
                       >
                         <Typography
                           sx={{
                             fontWeight: 700,
                             fontSize: EXPLORE_MAIN1.goFont,
-                            lineHeight: 1.2,
+                            lineHeight: `${EXPLORE_MAIN1.settingsRowLh}px`,
                             color: '#FFFFFF',
                             fontFamily: FIGMA_FONT,
                             textAlign: 'center',
                             whiteSpace: 'nowrap',
+                            textShadow: '0 1px 3px rgba(0,0,0,0.28)',
                           }}
                         >
                           Go to Settings
@@ -1446,7 +1760,7 @@ export default function AppsPage() {
                 flexShrink: 0,
               }}
             >
-              Pin up to {MAX_UTILITY_TOOLS} tools · {utilityToolIds.length}/{MAX_UTILITY_TOOLS} used · long-press to remove
+              Pin up to {MAX_UTILITY_BAR_SLOTS} tools · {utilitySlotCount}/{MAX_UTILITY_BAR_SLOTS} used · remove one to add more
             </Typography>
             <Box
               sx={{
@@ -1475,6 +1789,7 @@ export default function AppsPage() {
               </Typography>
               {BUILTIN_UTILITY_ITEMS.map((item) => {
                 const installed = builtinUtilityIds.includes(item.id);
+                const atLimit = !installed && !canAddUtilitySlot;
                 const Icon = BUILTIN_ICONS[item.id];
                 return (
                   <Box
@@ -1487,6 +1802,7 @@ export default function AppsPage() {
                       borderRadius: `${p(24)}px`,
                       border: '2px solid #E0E0DF',
                       bgcolor: '#FFFFFF',
+                      opacity: atLimit ? 0.45 : 1,
                     }}
                   >
                     <Box
@@ -1514,6 +1830,7 @@ export default function AppsPage() {
                     </Box>
                     <ButtonBase
                       onClick={() => handleToggleBuiltinUtility(item.id)}
+                      disabled={atLimit}
                       sx={{
                         minWidth: p(96),
                         minHeight: p(48),
@@ -1552,7 +1869,7 @@ export default function AppsPage() {
               </Typography>
               {GOOGLE_SYSTEM_TOOLS.map((tool) => {
                 const installed = utilityToolIds.includes(tool.id);
-                const atLimit = !installed && utilityToolIds.length >= MAX_UTILITY_TOOLS;
+                const atLimit = !installed && !canAddUtilitySlot;
                 const Icon = UTILITY_TOOL_ICONS[tool.id] ?? SettingsOutlinedIcon;
                 return (
                   <Box
