@@ -1,8 +1,35 @@
 import type { ReactNode } from 'react'
 import { Box } from '@mui/material'
 
+const FULL_BLEED_ICON_SRC: Record<string, string> = {
+  gmail: '/images/app-icon-gmail.png',
+  youtube: '/images/app-icon-youtube.png',
+}
+
+export function catalogAppUsesFullBleedIcon(id: string): boolean {
+  return Boolean(FULL_BLEED_ICON_SRC[id])
+}
+
 /** Simplified brand glyphs for Explore / Android tiles (not official assets). */
 export function CatalogAppGlyph({ id, size = '58%' }: { id: string; size?: string | number }) {
+  const fullBleed = FULL_BLEED_ICON_SRC[id]
+  if (fullBleed) {
+    return (
+      <Box
+        component="img"
+        src={fullBleed}
+        alt=""
+        aria-hidden
+        sx={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          display: 'block',
+        }}
+      />
+    )
+  }
+
   const common = {
     width: size,
     height: size,
@@ -10,21 +37,6 @@ export function CatalogAppGlyph({ id, size = '58%' }: { id: string; size?: strin
   } as const
 
   switch (id) {
-    case 'gmail':
-      return (
-        <Box
-          component="svg"
-          viewBox="0 0 48 48"
-          aria-hidden
-          sx={common}
-        >
-          <path fill="#FFFFFF" d="M8 12.5h32v23a3.5 3.5 0 0 1-3.5 3.5h-25A3.5 3.5 0 0 1 8 35.5v-23z" opacity="0.22" />
-          <path
-            fill="#FFFFFF"
-            d="M8 14.2 24 26.4 40 14.2V12H8v2.2zm0 2.6V35.5A3.5 3.5 0 0 0 11.5 39h2.2V23.1L24 31.2l10.3-8.1V39h2.2a3.5 3.5 0 0 0 3.5-3.5V16.8L24 29 8 16.8z"
-          />
-        </Box>
-      )
     case 'maps':
       return (
         <Box component="svg" viewBox="0 0 48 48" aria-hidden sx={common}>
@@ -44,13 +56,6 @@ export function CatalogAppGlyph({ id, size = '58%' }: { id: string; size?: strin
           <path fill="#34A853" d="M30.8 39.2A18 18 0 0 1 8.4 15h15.6z" />
           <circle cx="24" cy="24" r="7.2" fill="#FFFFFF" />
           <circle cx="24" cy="24" r="5.2" fill="#4285F4" />
-        </Box>
-      )
-    case 'youtube':
-      return (
-        <Box component="svg" viewBox="0 0 48 48" aria-hidden sx={common}>
-          <rect x="6" y="12" width="36" height="24" rx="8" fill="#FFFFFF" />
-          <path fill="#FF0000" d="M20 18.5v11l10-5.5-10-5.5z" />
         </Box>
       )
     case 'drive':

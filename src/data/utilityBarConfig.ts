@@ -1,5 +1,8 @@
 export type BuiltinUtilityId = 'alarm' | 'calendar' | 'daycountdown' | 'pomodoro';
 
+/** Explore 时钟卡工具格：builtin + 自定义合计最多 4，满了必须先删再加 */
+export const MAX_UTILITY_BAR_SLOTS = 4;
+
 export interface BuiltinUtilityItem {
   id: BuiltinUtilityId;
   label: string;
@@ -24,9 +27,11 @@ export function loadBuiltinUtilityIds(): BuiltinUtilityId[] {
     if (!raw) return [...DEFAULT_IDS];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [...DEFAULT_IDS];
-    return parsed.filter((id): id is BuiltinUtilityId =>
-      typeof id === 'string' && id !== 'alarm' && BUILTIN_UTILITY_ITEMS.some((item) => item.id === id)
-    );
+    return parsed
+      .filter((id): id is BuiltinUtilityId =>
+        typeof id === 'string' && id !== 'alarm' && BUILTIN_UTILITY_ITEMS.some((item) => item.id === id)
+      )
+      .slice(0, MAX_UTILITY_BAR_SLOTS);
   } catch {
     return [...DEFAULT_IDS];
   }
@@ -44,14 +49,20 @@ export function removeBuiltinUtility(id: BuiltinUtilityId): BuiltinUtilityId[] {
   return next;
 }
 
-export function toggleBuiltinUtility(id: BuiltinUtilityId): { ids: BuiltinUtilityId[]; ok: boolean } {
+export function toggleBuiltinUtility(
+  id: BuiltinUtilityId,
+  occupiedSlots = loadBuiltinUtilityIds().length,
+): { ids: BuiltinUtilityId[]; ok: boolean } {
   const current = loadBuiltinUtilityIds();
   if (current.includes(id)) {
     const next = current.filter((item) => item !== id);
     saveBuiltinUtilityIds(next);
     return { ids: next, ok: true };
   }
-  const next = [...current, id];
+  if (occupiedSlots >= MAX_UTILITY_BAR_SLOTS) {
+    return { ids: current, ok: false };
+  }
+  const next = [...current, id].slice(0, MAX_UTILITY_BAR_SLOTS);
   saveBuiltinUtilityIds(next);
   return { ids: next, ok: true };
 }

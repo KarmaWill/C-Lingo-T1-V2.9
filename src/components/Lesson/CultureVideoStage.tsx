@@ -136,7 +136,118 @@ interface Props {
   onBack: () => void
 }
 
+function parseYoutubeId(videoUrl: string): string | null {
+  const raw = videoUrl.trim()
+  if (/^[\w-]{11}$/.test(raw)) return raw
+  const match = raw.match(
+    /(?:youtube\.com\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/,
+  )
+  return match?.[1] ?? null
+}
+
 export default function CultureVideoStage({ data, onBack }: Props) {
+  const youtubeId = parseYoutubeId(data.videoUrl)
+  if (youtubeId) {
+    return <YoutubeCulturePlayer youtubeId={youtubeId} title={data.title} onBack={onBack} />
+  }
+  return <MockCulturePlayer data={data} onBack={onBack} />
+}
+
+function YoutubeCulturePlayer({
+  youtubeId,
+  title,
+  onBack,
+}: {
+  youtubeId: string
+  title: string
+  onBack: () => void
+}) {
+  const embedSrc = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`
+
+  return (
+    <Box
+      sx={{
+        height: '100%',
+        position: 'relative',
+        overflow: 'hidden',
+        bgcolor: '#000',
+        userSelect: 'none',
+      }}
+    >
+      <Box
+        component="iframe"
+        key={youtubeId}
+        title={title}
+        src={embedSrc}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowFullScreen
+        referrerPolicy="strict-origin-when-cross-origin"
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          border: 0,
+          display: 'block',
+        }}
+      />
+      <Box
+        sx={{
+          position: 'absolute',
+          left: px(78),
+          top: px(52),
+          zIndex: 5,
+          display: 'flex',
+          alignItems: 'center',
+          gap: `${px(27)}px`,
+          pointerEvents: 'none',
+        }}
+      >
+        <HskPrepBackButton
+          onClick={onBack}
+          sx={{
+            pointerEvents: 'auto',
+            width: px(104),
+            height: px(104),
+            bgcolor: 'rgba(255,255,255,0.2)',
+            border: '1.3px solid #E0E0DF',
+            color: '#FFFFFF',
+            '& .MuiSvgIcon-root': { fontSize: px(52), color: '#FFFFFF' },
+            '&:active': { bgcolor: 'rgba(255,255,255,0.28)' },
+          }}
+        />
+        <Box sx={{ pointerEvents: 'none' }}>
+          <Typography
+            sx={{
+              fontFamily: FIGMA_FONT,
+              fontWeight: 700,
+              fontSize: px(40),
+              lineHeight: `${px(52)}px`,
+              color: '#FFFFFF',
+              textShadow: '0 2px 12px rgba(0,0,0,0.55)',
+            }}
+          >
+            {title}
+          </Typography>
+          <Typography
+            sx={{
+              fontFamily: FIGMA_FONT,
+              fontWeight: 400,
+              fontSize: px(28),
+              lineHeight: `${px(36)}px`,
+              color: '#F8F8FA',
+              textShadow: '0 2px 10px rgba(0,0,0,0.5)',
+            }}
+          >
+            Culture Video
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
+  )
+}
+
+function MockCulturePlayer({ data, onBack }: Props) {
   const [playing, setPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(8 * 60 + 12)
   const [speed, setSpeed] = useState(1)
@@ -147,7 +258,7 @@ export default function CultureVideoStage({ data, onBack }: Props) {
   const [chapterId, setChapterId] = useState(CHAPTERS[1].id)
   const scrubRef = useRef<HTMLDivElement | null>(null)
 
-  const title = 'Chinese Garden & Everyday Life'
+  const title = data.title || 'Chinese Garden & Everyday Life'
   const episode = 'Culture Video · Episode 01'
   const caption = CAPTIONS.default
 

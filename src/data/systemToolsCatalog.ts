@@ -18,7 +18,8 @@ export const GOOGLE_SYSTEM_TOOLS: SystemTool[] = [
 
 export const INSTALLED_UTILITY_TOOLS_KEY = 'apps-utility-tools-installed-v1';
 export const COUNTDOWN_TARGET_KEY = 'apps-day-countdown-target-v1';
-export const MAX_UTILITY_TOOLS = 5;
+/** 自定义工具单独上限；与 builtin 合计仍受 MAX_UTILITY_BAR_SLOTS 约束 */
+export const MAX_UTILITY_TOOLS = 4;
 
 export function loadInstalledUtilityToolIds(): string[] {
   if (typeof window === 'undefined') return [];
@@ -27,20 +28,24 @@ export function loadInstalledUtilityToolIds(): string[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter((id): id is string => typeof id === 'string');
+    return parsed.filter((id): id is string => typeof id === 'string').slice(0, MAX_UTILITY_TOOLS);
   } catch {
     return [];
   }
 }
 
-export function toggleInstalledUtilityTool(toolId: string): { ids: string[]; ok: boolean } {
+export function toggleInstalledUtilityTool(
+  toolId: string,
+  occupiedSlots?: number,
+): { ids: string[]; ok: boolean } {
   const current = loadInstalledUtilityToolIds();
   if (current.includes(toolId)) {
     const next = current.filter((id) => id !== toolId);
     saveInstalledUtilityToolIds(next);
     return { ids: next, ok: true };
   }
-  if (current.length >= MAX_UTILITY_TOOLS) {
+  const used = occupiedSlots ?? current.length;
+  if (used >= MAX_UTILITY_TOOLS || current.length >= MAX_UTILITY_TOOLS) {
     return { ids: current, ok: false };
   }
   const next = [...current, toolId];
@@ -54,9 +59,9 @@ export function removeInstalledUtilityTool(toolId: string): string[] {
   return next;
 }
 
-function saveInstalledUtilityToolIds(ids: string[]) {
+export function saveInstalledUtilityToolIds(ids: string[]) {
   if (typeof window !== 'undefined') {
-    window.localStorage.setItem(INSTALLED_UTILITY_TOOLS_KEY, JSON.stringify(ids));
+    window.localStorage.setItem(INSTALLED_UTILITY_TOOLS_KEY, JSON.stringify(ids.slice(0, MAX_UTILITY_TOOLS)));
   }
 }
 

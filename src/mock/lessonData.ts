@@ -65,9 +65,9 @@ export const CURRENT_LESSON: Lesson = {
   hskLevel: 1,
   cultureVideo: {
     id: 'cult-01',
-    title: 'Chinese Garden & Everyday Life',
-    thumbnailUrl: '/images/chinese-festivals-cover.jpg',
-    videoUrl: 'mock-culture-video',
+    title: 'C-Lingo AIOS AI Chinese Learning Tablet',
+    thumbnailUrl: 'https://i.ytimg.com/vi/SoaFC_sGvDU/hqdefault.jpg',
+    videoUrl: 'https://youtu.be/SoaFC_sGvDU',
     unlockThreshold: 2
   },
   units: [
