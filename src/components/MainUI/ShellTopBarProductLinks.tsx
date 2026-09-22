@@ -12,6 +12,10 @@ interface ShellTopBarProductLinksProps {
     onboarded: boolean
     onToggle: () => void
   }
+  hubPreviewToggle?: {
+    complete: boolean
+    onToggle: () => void
+  }
 }
 
 const LABEL_SX = {
@@ -141,6 +145,7 @@ export default function ShellTopBarProductLinks({
   onOpenScanPen,
   onLight = false,
   studioToggle,
+  hubPreviewToggle,
 }: ShellTopBarProductLinksProps) {
   return (
     <Box
@@ -156,6 +161,36 @@ export default function ShellTopBarProductLinks({
         transform: 'translate(-4px, 6px)',
       }}
     >
+      {hubPreviewToggle ? (
+        <Box
+          component="button"
+          type="button"
+          className="studio-toggle"
+          aria-label={hubPreviewToggle.complete ? 'Show locked hub' : 'Show finished hub'}
+          onClick={hubPreviewToggle.onToggle}
+          sx={{
+            height: 26,
+            minWidth: 106,
+            px: '12px',
+            border: '1px solid',
+            borderColor: onLight ? 'rgb(22 62 104 / 0.16)' : 'rgba(247, 255, 246, 0.22)',
+            borderRadius: '999px',
+            bgcolor: onLight ? 'rgba(255,255,255,0.78)' : 'rgba(0,0,0,0.28)',
+            color: onLight ? 'rgb(22 62 104 / 0.78)' : 'rgba(247, 255, 246, 0.92)',
+            fontSize: '12px',
+            fontWeight: 600,
+            lineHeight: 1,
+            letterSpacing: '0.01em',
+            whiteSpace: 'nowrap',
+            cursor: 'pointer',
+            userSelect: 'none',
+            '&:hover': { opacity: 0.92 },
+            '&:active': { transform: 'scale(0.97)' },
+          }}
+        >
+          {hubPreviewToggle.complete ? 'Locked' : 'All done'}
+        </Box>
+      ) : null}
       {studioToggle ? (
         <ProductLink
           className="studio-toggle"

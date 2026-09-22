@@ -91,11 +91,13 @@ function HskPrepHeader({ screenSize }: { screenSize: string }) {
         <Typography
           component="h1"
           sx={{
-            fontWeight: 700,
+            fontWeight: 500,
             fontSize: p(48),
-            lineHeight: `${p(60)}px`,
+            lineHeight: 1.08,
+            letterSpacing: '-0.02em',
             color: '#2D3436',
             fontFamily: FIGMA_FONT,
+            fontOpticalSizing: 'auto',
             whiteSpace: 'nowrap',
           }}
         >
@@ -123,6 +125,7 @@ function HskPrepHeader({ screenSize }: { screenSize: string }) {
               lineHeight: 1.6,
               color: '#2768FD',
               fontFamily: FIGMA_FONT,
+              fontOpticalSizing: 'auto',
               textTransform: 'uppercase',
               whiteSpace: 'nowrap',
             }}
@@ -237,6 +240,7 @@ function PrepToolCard({
   enterRadius?: number
   onClick: () => void
 }) {
+  const titleGap = HSK_PREP_MAIN1.textLeft - HSK_PREP_MAIN1.iconLeft - HSK_PREP_MAIN1.icon
   return (
     <Box
       sx={{
@@ -251,6 +255,7 @@ function PrepToolCard({
         borderRadius: `${HSK_PREP_MAIN1.cardRadius}px`,
         boxSizing: 'border-box',
         overflow: 'hidden',
+        fontFamily: FIGMA_FONT,
       }}
     >
       <ScoreRibbon
@@ -259,53 +264,66 @@ function PrepToolCard({
         level={estimatePrepLevel(score)}
         onClick={onClick}
       />
+      {/* 图标与标题同一水平线；副文案缩进对齐标题文字 */}
       <Box
         sx={{
           position: 'absolute',
           left: HSK_PREP_MAIN1.iconLeft,
           top: HSK_PREP_MAIN1.iconTop,
-          width: HSK_PREP_MAIN1.icon,
-          height: HSK_PREP_MAIN1.icon,
-          borderRadius: '50%',
-          bgcolor: iconBg,
-          color: accent,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {icon}
-      </Box>
-      <Box
-        sx={{
-          position: 'absolute',
-          left: HSK_PREP_MAIN1.textLeft,
-          top: HSK_PREP_MAIN1.textTop,
           right: HSK_PREP_MAIN1.scoreW + HSK_PREP_MAIN1.scoreRight + 12,
           display: 'flex',
           flexDirection: 'column',
           gap: `${HSK_PREP_MAIN1.textGap}px`,
         }}
       >
-        <Typography
+        <Box
           sx={{
-            fontWeight: 700,
-            fontSize: HSK_PREP_MAIN1.titleSize,
-            lineHeight: '53px',
-            color: '#2D3436',
-            fontFamily: FIGMA_FONT,
-            whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'center',
+            gap: `${titleGap}px`,
+            minWidth: 0,
           }}
         >
-          {title}
-        </Typography>
+          <Box
+            sx={{
+              width: HSK_PREP_MAIN1.icon,
+              height: HSK_PREP_MAIN1.icon,
+              borderRadius: '50%',
+              bgcolor: iconBg,
+              color: accent,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            {icon}
+          </Box>
+          <Typography
+            sx={{
+              fontWeight: 500,
+              fontSize: HSK_PREP_MAIN1.titleSize,
+              lineHeight: 1.15,
+              letterSpacing: '-0.02em',
+              color: '#2D3436',
+              fontFamily: FIGMA_FONT,
+              fontOpticalSizing: 'auto',
+              whiteSpace: 'nowrap',
+              minWidth: 0,
+            }}
+          >
+            {title}
+          </Typography>
+        </Box>
         <Typography
           sx={{
+            pl: `${HSK_PREP_MAIN1.icon + titleGap}px`,
             fontWeight: 400,
             fontSize: HSK_PREP_MAIN1.subtitleSize,
-            lineHeight: '49px',
+            lineHeight: 1.35,
             color: '#636E72',
             fontFamily: FIGMA_FONT,
+            fontOpticalSizing: 'auto',
           }}
         >
           {subtitle}
@@ -328,6 +346,7 @@ function PrepToolCard({
           fontSize: 37,
           lineHeight: '46px',
           fontFamily: FIGMA_FONT,
+          fontOpticalSizing: 'auto',
           touchAction: 'manipulation',
           WebkitTapHighlightColor: 'transparent',
           '&:active': { transform: 'translateX(-50%) scale(0.97)' },
@@ -659,11 +678,13 @@ export default function HSKTestPage() {
                 <Box sx={{ position: 'relative', zIndex: 1, flex: 1, minWidth: 0, minHeight: 0 }}>
                   <Typography
                     sx={{
-                      fontWeight: 700,
+                      fontWeight: 500,
                       fontSize: HSK_PREP_MAIN1.mockTitle,
-                      lineHeight: '61px',
+                      lineHeight: 1.2,
+                      letterSpacing: '-0.02em',
                       color: '#FFFFFF',
                       fontFamily: FIGMA_FONT,
+                      fontOpticalSizing: 'auto',
                     }}
                   >
                     Mock Exam
@@ -677,6 +698,7 @@ export default function HSKTestPage() {
                       lineHeight: '40px',
                       color: '#FFFFFF',
                       fontFamily: FIGMA_FONT,
+                      fontOpticalSizing: 'auto',
                     }}
                   >
                     Targeted practice for HSK topics and grammar points.

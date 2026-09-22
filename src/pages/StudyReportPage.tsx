@@ -1,257 +1,335 @@
-import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { Box, Typography, ButtonBase, Grid } from '@mui/material';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import { CURRENT_LESSON } from '../mock/lessonData';
-import { LearningCard } from '../types/lesson';
-import FeedbackEntryButton from '../components/feedback/FeedbackEntryButton';
+import { useRef, useState, type ReactNode, type RefObject } from 'react'
+import { CharacterWritingPractice } from '../components/Lesson/CharacterWritingPractice'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
+import { Box, ButtonBase, Typography } from '@mui/material'
+import { HskPrepBackButton } from '../components/hsk/HskPrepBackButton'
+import FeedbackEntryButton from '../components/feedback/FeedbackEntryButton'
+import { CURRENT_LESSON } from '../mock/lessonData'
+import { LearningCard } from '../types/lesson'
+import { APP_FONT_FAMILY } from '../theme/appFont'
+import { APP_SCREEN_SIZE, FIGMA_FONT, figmaPx } from '../utils/figmaScale'
 
-const KAI_TI = '"KaiTi", "STKaiti", "BiauKai", "DFKai-SB", "TW-Kai", "SimKai", serif';
+const INK = '#2D3436'
+const HINT = '#A7B3B8'
+const LINE = '#E0E0DF'
+const PINYIN_FONT = '"FZPinYinHandwriting", "Google Sans Flex Variable", "Google Sans Flex", sans-serif'
+const KAI_FONT = '"FZNewKai GB18030L2", "KaiTi", "STKaiti", "BiauKai", "DFKai-SB", "TW-Kai", "SimKai", serif'
 
-/** Prefer English-only gloss; strip leading "中文 / " if mock still has it. */
+type StatKind = 'hanzi' | 'vocab' | 'sentence'
+
 function englishMeaning(meaning: string): string {
-  const parts = meaning.split(/\s*\/\s*/);
-  return (parts[parts.length - 1] || meaning).trim();
+  const parts = meaning.split(/\s*\/\s*/)
+  return (parts[parts.length - 1] || meaning).trim()
 }
 
-function ReportItemCard({
-  item,
-  is960,
-  is1920x1125,
-  wide,
-}: {
-  item: LearningCard;
-  is960: boolean;
-  is1920x1125: boolean;
-  wide?: boolean;
-}) {
+function hanziCount(content: string): number {
+  return [...content.replace(/[。？！.?!,，、\s]/g, '')].length
+}
+
+function vocabCardWidth(content: string, p: (n: number) => number): number {
+  const n = hanziCount(content)
+  if (n <= 2) return p(223)
+  if (n === 3) return p(250)
+  if (n === 4) return p(303)
+  return p(Math.min(394, 40 + n * 70))
+}
+
+function StatDecor({ kind, p }: { kind: StatKind; p: (n: number) => number }) {
+  const palette = {
+    hanzi: { back: '#9DCBFF', front: '#3F98FF' },
+    vocab: { back: '#95E8D3', front: '#34C2B2' },
+    sentence: { back: '#FFC6B1', front: '#FF7645' },
+  }[kind]
+
   return (
     <Box
+      aria-hidden
       sx={{
-        bgcolor: 'white',
-        px: is960 ? 1.5 : is1920x1125 ? 2.25 : 2,
-        py: is960 ? 1.35 : is1920x1125 ? 1.85 : 1.65,
-        borderRadius: is960 ? '14px' : '18px',
-        boxShadow: '0 2px 10px rgba(15,23,42,0.06)',
-        border: '1px solid #EEF2F0',
-        textAlign: 'center',
+        position: 'absolute',
+        right: p(16),
+        top: p(16),
+        width: p(147),
+        height: p(147),
+        pointerEvents: 'none',
+      }}
+    >
+      <Box
+        sx={{
+          position: 'absolute',
+          left: 0,
+          top: p(43),
+          width: p(90),
+          height: p(96),
+          bgcolor: palette.back,
+          borderRadius: `${p(22)}px`,
+        }}
+      />
+      <Box
+        sx={{
+          position: 'absolute',
+          left: p(6),
+          top: 0,
+          width: p(110),
+          height: p(120),
+          bgcolor: palette.front,
+          borderRadius: `${p(28)}px`,
+          transform: 'rotate(-17deg)',
+          display: 'grid',
+          placeItems: 'center',
+          boxShadow: '0 8px 18px rgba(45, 52, 54, 0.08)',
+        }}
+      >
+        {kind === 'hanzi' && (
+          <Box sx={{ position: 'relative', width: p(56), height: p(56) }}>
+            <Box sx={{ position: 'absolute', inset: 0, border: `1.5px dashed rgba(255,255,255,0.5)` }} />
+            <Box sx={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 0, borderLeft: '1.5px dashed rgba(255,255,255,0.5)' }} />
+            <Box sx={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 0, borderTop: '1.5px dashed rgba(255,255,255,0.5)' }} />
+            <Typography
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                display: 'grid',
+                placeItems: 'center',
+                color: '#FFFFFF',
+                fontFamily: KAI_FONT,
+                fontSize: p(28),
+                lineHeight: 1,
+              }}
+            >
+              汉
+            </Typography>
+          </Box>
+        )}
+        {kind === 'vocab' && (
+          <Typography
+            sx={{
+              color: '#FFFFFF',
+              fontFamily: FIGMA_FONT,
+              fontWeight: 700,
+              fontSize: p(48),
+              lineHeight: 1,
+            }}
+          >
+            W
+          </Typography>
+        )}
+        {kind === 'sentence' && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: `${p(10)}px`, alignItems: 'flex-start' }}>
+            <Box sx={{ width: p(48), height: p(8), bgcolor: '#FFFFFF', borderRadius: `${p(4)}px` }} />
+            <Box sx={{ width: p(30), height: p(8), bgcolor: '#FFFFFF', borderRadius: `${p(4)}px` }} />
+          </Box>
+        )}
+      </Box>
+    </Box>
+  )
+}
+
+function TermCard({
+  item,
+  p,
+  width,
+  align = 'center',
+  onClick,
+}: {
+  item: LearningCard
+  p: (n: number) => number
+  width: number | string
+  align?: 'center' | 'left'
+  onClick?: () => void
+}) {
+  const isSentence = align === 'left'
+  const CardRoot = onClick ? ButtonBase : Box
+  return (
+    <CardRoot
+      onClick={onClick}
+      sx={{
+        width,
+        height: isSentence ? p(237) : p(223),
         boxSizing: 'border-box',
-        minWidth: wide ? (is960 ? 140 : 168) : is960 ? 88 : 104,
-        flex: wide ? '1 1 168px' : '0 0 auto',
+        bgcolor: '#FFFFFF',
+        border: `1px solid ${LINE}`,
+        borderRadius: `${p(40)}px`,
+        px: `${p(isSentence ? 40 : 20)}px`,
+        py: `${p(32)}px`,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: isSentence ? 'flex-start' : 'center',
+        justifyContent: 'center',
+        textAlign: align,
+        ...(onClick ? { '&:active': { transform: 'scale(0.985)' } } : {}),
       }}
     >
       <Typography
         sx={{
-          fontSize: is960 ? '0.72rem' : is1920x1125 ? '0.9rem' : '0.8rem',
-          color: '#9CA3AF',
-          fontWeight: 600,
-          letterSpacing: '0.01em',
-          mb: 0.45,
-          lineHeight: 1.2,
+          width: '100%',
+          fontFamily: PINYIN_FONT,
+          fontWeight: 400,
+          fontSize: p(28),
+          lineHeight: 1.6,
+          color: INK,
+          mb: `${p(-8)}px`,
         }}
       >
         {item.pinyin}
       </Typography>
       <Typography
         sx={{
-          fontSize: wide
-            ? is960
-              ? '1.35rem'
-              : is1920x1125
-                ? '1.85rem'
-                : '1.55rem'
-            : is960
-              ? '1.85rem'
-              : is1920x1125
-                ? '2.4rem'
-                : '2.1rem',
-          fontWeight: 700,
-          color: '#1F2937',
-          fontFamily: KAI_TI,
-          lineHeight: 1.25,
-          mb: 0.45,
+          width: '100%',
+          fontFamily: KAI_FONT,
+          fontWeight: 400,
+          fontSize: p(48),
+          lineHeight: 1.6,
+          color: INK,
         }}
       >
         {item.content}
       </Typography>
       <Typography
         sx={{
-          fontSize: is960 ? '0.68rem' : is1920x1125 ? '0.85rem' : '0.75rem',
-          color: '#9CA3AF',
-          fontWeight: 500,
-          lineHeight: 1.3,
+          width: '100%',
+          fontFamily: FIGMA_FONT,
+          fontWeight: 400,
+          fontSize: p(isSentence ? 32 : 28),
+          lineHeight: 1.6,
+          color: HINT,
         }}
       >
         {englishMeaning(item.meaning)}
       </Typography>
-    </Box>
-  );
+    </CardRoot>
+  )
 }
 
-function SentenceCard({
-  item,
-  is960,
-  is1920x1125,
+function SectionBlock({
+  title,
+  sectionRef,
+  children,
 }: {
-  item: LearningCard;
-  is960: boolean;
-  is1920x1125: boolean;
+  title: string
+  sectionRef: RefObject<HTMLDivElement | null>
+  children: ReactNode
 }) {
+  const p = (n: number) => figmaPx(n, APP_SCREEN_SIZE)
   return (
-    <Box
-      sx={{
-        bgcolor: 'white',
-        px: is960 ? 2 : is1920x1125 ? 3 : 2.5,
-        py: is960 ? 1.5 : is1920x1125 ? 2.25 : 1.85,
-        borderRadius: is960 ? '14px' : '18px',
-        boxShadow: '0 2px 10px rgba(15,23,42,0.06)',
-        border: '1px solid #EEF2F0',
-        boxSizing: 'border-box',
-      }}
-    >
+    <Box ref={sectionRef} sx={{ width: '100%' }}>
       <Typography
         sx={{
-          fontSize: is960 ? '0.72rem' : is1920x1125 ? '0.95rem' : '0.82rem',
-          color: '#9CA3AF',
-          fontWeight: 600,
-          mb: 0.65,
-          lineHeight: 1.35,
-        }}
-      >
-        {item.pinyin}
-      </Typography>
-      <Typography
-        sx={{
-          fontSize: is960 ? '1.15rem' : is1920x1125 ? '1.55rem' : '1.35rem',
+          fontFamily: FIGMA_FONT,
           fontWeight: 700,
-          color: '#1F2937',
-          fontFamily: KAI_TI,
-          mb: 0.65,
-          lineHeight: 1.4,
+          fontSize: p(40),
+          lineHeight: 1.6,
+          color: INK,
+          mb: `${p(28)}px`,
         }}
       >
-        {item.content}
+        {title}
       </Typography>
-      <Typography
-        sx={{
-          fontSize: is960 ? '0.78rem' : is1920x1125 ? '1rem' : '0.88rem',
-          color: '#9CA3AF',
-          fontWeight: 500,
-          lineHeight: 1.35,
-        }}
-      >
-        {englishMeaning(item.meaning)}
-      </Typography>
+      {children}
     </Box>
-  );
-}
-
-function SectionTitle({
-  label,
-  is960,
-  is1920x1125,
-}: {
-  label: string;
-  is960: boolean;
-  is1920x1125: boolean;
-}) {
-  return (
-    <Typography
-      sx={{
-        fontSize: is960 ? '1.05rem' : is1920x1125 ? '1.55rem' : '1.35rem',
-        fontWeight: 900,
-        color: '#2D3436',
-        mb: is1920x1125 ? 2 : 1.5,
-        letterSpacing: '-0.01em',
-      }}
-    >
-      {label}
-    </Typography>
-  );
+  )
 }
 
 export default function StudyReportPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [searchParams] = useSearchParams();
-  const hskLevelRaw = searchParams.get('hskLevel');
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [searchParams] = useSearchParams()
+  const p = (n: number) => figmaPx(n, APP_SCREEN_SIZE)
+  const hanziRef = useRef<HTMLDivElement>(null)
+  const vocabRef = useRef<HTMLDivElement>(null)
+  const sentenceRef = useRef<HTMLDivElement>(null)
+  const [writingIndex, setWritingIndex] = useState<number | null>(null)
+
+  const hskLevelRaw = searchParams.get('hskLevel')
   const hskReportLevel =
-    hskLevelRaw != null && /^[1-6]$/.test(hskLevelRaw) ? (Number(hskLevelRaw) as 1 | 2 | 3 | 4 | 5 | 6) : null;
+    hskLevelRaw != null && /^[1-6]$/.test(hskLevelRaw) ? (Number(hskLevelRaw) as 1 | 2 | 3 | 4 | 5 | 6) : null
 
-  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
-  const is960 = screenSize === '960x540';
-  const is1920x1125 = screenSize === '1920x1125';
+  const lesson = (location.state as { lesson?: typeof CURRENT_LESSON } | null)?.lesson || CURRENT_LESSON
 
-  const lesson = (location.state as { lesson?: typeof CURRENT_LESSON } | null)?.lesson || CURRENT_LESSON;
-
-  const allVocab: LearningCard[] = [];
-  const allSentences: LearningCard[] = [];
-  const allHanzi: LearningCard[] = [];
+  const allVocab: LearningCard[] = []
+  const allSentences: LearningCard[] = []
+  const allHanzi: LearningCard[] = []
 
   lesson.units.forEach((unit) => {
     unit.learnings.forEach((learning) => {
-      if (learning.type === 'vocab') allVocab.push(learning);
-      else if (learning.type === 'sentence') allSentences.push(learning);
-      else if (learning.type === 'hanzi') allHanzi.push(learning);
-    });
-  });
+      if (learning.type === 'vocab') allVocab.push(learning)
+      else if (learning.type === 'sentence') allSentences.push(learning)
+      else if (learning.type === 'hanzi') allHanzi.push(learning)
+    })
+  })
+
+  const writingChars = allHanzi
+    .map((item) => {
+      const character = [...item.content].find((ch) => /[\u4e00-\u9fff]/.test(ch)) || item.content.trim()
+      return {
+        character,
+        pinyin: item.pinyin,
+        meaning: englishMeaning(item.meaning),
+      }
+    })
+    .filter((item) => item.character)
 
   const handleBack = () => {
-    const from = (location.state as { from?: string } | null)?.from;
+    const from = (location.state as { from?: string } | null)?.from
     if (from) {
-      navigate(from);
-      return;
+      navigate(from)
+      return
     }
-    navigate(`/lesson/${lesson.id}`);
-  };
+    navigate(`/lesson/${lesson.id}`)
+  }
 
-  const summaryCards = [
+  const scrollTo = (ref: RefObject<HTMLDivElement | null>) => {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const openWriting = (index = 0) => {
+    if (writingChars.length === 0) return
+    setWritingIndex(Math.min(Math.max(0, index), writingChars.length - 1))
+  }
+
+  const stats: Array<{
+    key: StatKind
+    label: string
+    value: number
+    color: string
+    gradient: string
+    target: RefObject<HTMLDivElement | null>
+  }> = [
     {
       key: 'hanzi',
-      label: 'Chinese Characters',
+      label: 'Characters',
       value: allHanzi.length,
-      gradient: 'linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)',
-      labelColor: '#1976D2',
-      valueColor: '#1976D2',
-      iconBg: '#2196F3',
-      shadow: '0 4px 12px rgba(33, 150, 243, 0.15)',
-      icon: (
-        <Typography sx={{ fontSize: is960 ? '1.25rem' : is1920x1125 ? '1.75rem' : '1.5rem', fontWeight: 900, color: 'white', fontFamily: KAI_TI }}>
-          汉
-        </Typography>
-      ),
+      color: '#2188FE',
+      gradient: 'linear-gradient(94.72deg, #EEF6FF 7.09%, #DBECFF 92.81%)',
+      target: hanziRef,
     },
     {
       key: 'vocab',
-      label: 'Vocabularies',
+      label: 'Vocabulary',
       value: allVocab.length,
-      gradient: 'linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)',
-      labelColor: '#388E3C',
-      valueColor: '#388E3C',
-      iconBg: '#4CAF50',
-      shadow: '0 4px 12px rgba(76, 175, 80, 0.15)',
-      icon: (
-        <Typography sx={{ fontSize: is960 ? '1.25rem' : is1920x1125 ? '1.75rem' : '1.5rem', fontWeight: 900, color: 'white', fontFamily: 'monospace' }}>
-          W
-        </Typography>
-      ),
+      color: '#00B4A0',
+      gradient: 'linear-gradient(277.79deg, #DDF9E9 25.56%, #F3FAF6 85.23%)',
+      target: vocabRef,
     },
     {
       key: 'sentence',
       label: 'Sentences',
       value: allSentences.length,
-      gradient: 'linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%)',
-      labelColor: '#F57C00',
-      valueColor: '#F57C00',
-      iconBg: '#FF9800',
-      shadow: '0 4px 12px rgba(255, 152, 0, 0.15)',
-      icon: (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-          <Box sx={{ width: is960 ? 16 : is1920x1125 ? 24 : 20, height: is960 ? 2 : is1920x1125 ? 3 : 2.5, bgcolor: 'white', borderRadius: '1px' }} />
-          <Box sx={{ width: is960 ? 16 : is1920x1125 ? 24 : 20, height: is960 ? 2 : is1920x1125 ? 3 : 2.5, bgcolor: 'white', borderRadius: '1px' }} />
-        </Box>
-      ),
+      color: '#FF6B35',
+      gradient: 'linear-gradient(95.17deg, #FFF3EE 9.38%, #FFE7DD 92.4%)',
+      target: sentenceRef,
     },
-  ];
+  ]
+
+  if (writingIndex != null && writingChars.length > 0) {
+    return (
+      <CharacterWritingPractice
+        characters={writingChars}
+        initialIndex={writingIndex}
+        onClose={() => setWritingIndex(null)}
+        finishLabel="Back to report"
+      />
+    )
+  }
 
   return (
     <Box
@@ -261,149 +339,154 @@ export default function StudyReportPage() {
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: '#F7F9F8',
-        position: 'relative',
+        bgcolor: '#FFFFFF',
+        fontFamily: APP_FONT_FAMILY,
       }}
     >
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          p: is960 ? 2 : 3,
-          borderBottom: is1920x1125 ? 'none' : '2px solid #E0E0E0',
+          position: 'relative',
           flexShrink: 0,
+          height: p(160),
+          bgcolor: '#FFFFFF',
+          borderBottom: '1px solid #E2E2E3',
+          boxSizing: 'border-box',
         }}
       >
-        <ButtonBase
+        <HskPrepBackButton
           onClick={handleBack}
           sx={{
-            bgcolor: 'white',
-            color: '#1F2937',
-            width: is960 ? 40 : 48,
-            height: is960 ? 40 : 48,
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-            '&:active': { transform: 'scale(0.95)', bgcolor: '#F3F4F6' },
+            position: 'absolute',
+            left: p(60),
+            top: p(40),
+            width: p(80),
+            height: p(80),
+          }}
+        />
+        <Typography
+          sx={{
+            position: 'absolute',
+            left: '50%',
+            top: p(48),
+            transform: 'translateX(-50%)',
+            fontFamily: FIGMA_FONT,
+            fontWeight: 700,
+            fontSize: p(40),
+            lineHeight: 1.6,
+            color: INK,
+            whiteSpace: 'nowrap',
           }}
         >
-          <ChevronLeftIcon sx={{ fontSize: is960 ? 20 : 24 }} />
-        </ButtonBase>
-
-        <Typography variant="h5" sx={{ fontWeight: 900, color: '#2D3436', fontSize: is960 ? '1.25rem' : is1920x1125 ? '2rem' : '1.75rem' }}>
           {hskReportLevel != null ? `HSK ${hskReportLevel} · Study Report` : 'Study Report'}
         </Typography>
-
-        <FeedbackEntryButton is960={is960} context={{ screen: 'study_report' }} />
+        <Box sx={{ position: 'absolute', right: p(60), top: p(40) }}>
+          <FeedbackEntryButton context={{ screen: 'study_report' }} />
+        </Box>
       </Box>
 
       <Box
         sx={{
           flex: 1,
+          minHeight: 0,
           overflow: 'auto',
-          p: is960 ? 2 : is1920x1125 ? 4 : 3.5,
+          px: `${p(60)}px`,
+          pt: `${p(40)}px`,
+          pb: `${p(60)}px`,
           boxSizing: 'border-box',
         }}
       >
-        <Grid container spacing={is960 ? 1.5 : 2.5} sx={{ mb: is1920x1125 ? 4 : 3 }}>
-          {summaryCards.map((card) => (
-            <Grid item xs={4} key={card.key}>
-              <Box
-                sx={{
-                  background: card.gradient,
-                  p: is960 ? 1.5 : is1920x1125 ? 2.5 : 2,
-                  borderRadius: is960 ? '16px' : '24px',
-                  boxShadow: card.shadow,
-                  textAlign: 'center',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}
-              >
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: is960 ? 8 : 12,
-                    right: is960 ? 8 : 12,
-                    width: is960 ? 40 : is1920x1125 ? 56 : 48,
-                    height: is960 ? 40 : is1920x1125 ? 56 : 48,
-                    bgcolor: card.iconBg,
-                    borderRadius: is960 ? '8px' : '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(15,23,42,0.12)',
-                  }}
-                >
-                  {card.icon}
-                </Box>
+        <Box sx={{ display: 'flex', gap: `${p(40)}px`, mb: `${p(60)}px` }}>
+          {stats.map((card) => (
+            <ButtonBase
+              key={card.key}
+              onClick={() => {
+                if (card.value <= 0) return
+                if (card.key === 'hanzi') {
+                  openWriting(0)
+                  return
+                }
+                scrollTo(card.target)
+              }}
+              sx={{
+                flex: 1,
+                height: p(160),
+                borderRadius: `${p(40)}px`,
+                background: card.gradient,
+                overflow: 'hidden',
+                position: 'relative',
+                justifyContent: 'flex-start',
+                alignItems: 'center',
+                px: `${p(80)}px`,
+              }}
+            >
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', zIndex: 1 }}>
                 <Typography
                   sx={{
-                    fontSize: is960 ? '0.75rem' : is1920x1125 ? '1rem' : '0.875rem',
-                    color: card.labelColor,
-                    fontWeight: 700,
-                    mb: is960 ? 0.5 : 0.75,
-                    pr: is960 ? 5 : 6,
+                    fontFamily: FIGMA_FONT,
+                    fontWeight: 400,
+                    fontSize: p(28),
+                    lineHeight: 1.6,
+                    color: INK,
+                    mb: `${p(-6)}px`,
                   }}
                 >
                   {card.label}
                 </Typography>
                 <Typography
                   sx={{
-                    fontSize: is960 ? '1.75rem' : is1920x1125 ? '3rem' : '2.5rem',
-                    fontWeight: 900,
-                    color: card.valueColor,
-                    lineHeight: 1.1,
+                    fontFamily: FIGMA_FONT,
+                    fontWeight: 700,
+                    fontSize: p(48),
+                    lineHeight: 1.6,
+                    color: card.color,
                   }}
                 >
                   {card.value}
                 </Typography>
               </Box>
-            </Grid>
+              <StatDecor kind={card.key} p={p} />
+            </ButtonBase>
           ))}
-        </Grid>
+        </Box>
 
-        {allHanzi.length > 0 && (
-          <Box sx={{ mb: is1920x1125 ? 4 : 3 }}>
-            <SectionTitle label="Character List" is960={is960} is1920x1125={is1920x1125} />
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: is960 ? 1.25 : 1.5 }}>
-              {allHanzi.map((hanzi) => (
-                <ReportItemCard key={hanzi.id} item={hanzi} is960={is960} is1920x1125={is1920x1125} />
-              ))}
-            </Box>
-          </Box>
-        )}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: `${p(60)}px` }}>
+          {allHanzi.length > 0 && (
+            <SectionBlock title="Character List" sectionRef={hanziRef}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: `${p(40)}px` }}>
+                {allHanzi.map((hanzi, index) => (
+                  <TermCard
+                    key={hanzi.id}
+                    item={hanzi}
+                    p={p}
+                    width={p(223)}
+                    onClick={() => openWriting(index)}
+                  />
+                ))}
+              </Box>
+            </SectionBlock>
+          )}
 
-        {allVocab.length > 0 && (
-          <Box sx={{ mb: is1920x1125 ? 4 : 3 }}>
-            <SectionTitle label="Vocabulary List" is960={is960} is1920x1125={is1920x1125} />
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: is960 ? 1.25 : 1.5 }}>
-              {allVocab.map((vocab) => (
-                <ReportItemCard
-                  key={vocab.id}
-                  item={vocab}
-                  is960={is960}
-                  is1920x1125={is1920x1125}
-                  wide={vocab.content.length > 2}
-                />
-              ))}
-            </Box>
-          </Box>
-        )}
+          {allVocab.length > 0 && (
+            <SectionBlock title="Vocabulary List" sectionRef={vocabRef}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: `${p(40)}px` }}>
+                {allVocab.map((vocab) => (
+                  <TermCard key={vocab.id} item={vocab} p={p} width={vocabCardWidth(vocab.content, p)} />
+                ))}
+              </Box>
+            </SectionBlock>
+          )}
 
-        {allSentences.length > 0 && (
-          <Box sx={{ mb: 1 }}>
-            <SectionTitle label="Key Sentences" is960={is960} is1920x1125={is1920x1125} />
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: is960 ? 1.25 : 1.5 }}>
-              {allSentences.map((sentence) => (
-                <SentenceCard key={sentence.id} item={sentence} is960={is960} is1920x1125={is1920x1125} />
-              ))}
-            </Box>
-          </Box>
-        )}
+          {allSentences.length > 0 && (
+            <SectionBlock title="Key Sentences" sectionRef={sentenceRef}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: `${p(28)}px` }}>
+                {allSentences.map((sentence) => (
+                  <TermCard key={sentence.id} item={sentence} p={p} width="100%" align="left" />
+                ))}
+              </Box>
+            </SectionBlock>
+          )}
+        </Box>
       </Box>
     </Box>
-  );
+  )
 }

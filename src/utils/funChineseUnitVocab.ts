@@ -1,6 +1,7 @@
 /**
  * Fun Chinese Unit 1 vocabulary for flashcards / LingoFlash deck mapping.
  */
+import { allUnitLessonIds, readHubPreview } from './funChineseHubPreview';
 import { loadCompletedLessonIds } from './funChineseUnitProgress';
 
 export type FunChineseVocabRow = { lessonId: number; zh: string; en: string; py: string };
@@ -33,7 +34,8 @@ export type FunChineseMappedLingoWord = {
  * IDs use prefix `fc-unit1-` so they do not collide with built-in DECK numeric ids.
  */
 export function getFunChineseFlashWordsForHub(): FunChineseMappedLingoWord[] {
-  const completed = loadCompletedLessonIds();
+  const preview = readHubPreview();
+  const completed = preview != null ? allUnitLessonIds() : loadCompletedLessonIds();
   const out: FunChineseMappedLingoWord[] = [];
   FUN_CHINESE_UNIT1_VOCAB.forEach((v, masterIdx) => {
     if (!completed.has(v.lessonId)) return;

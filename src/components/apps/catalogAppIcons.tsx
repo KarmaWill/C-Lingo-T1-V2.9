@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Box } from '@mui/material'
 
 const FULL_BLEED_ICON_SRC: Record<string, string> = {
+  chrome: '/images/app-icon-chrome.png',
   gmail: '/images/app-icon-gmail.png',
   youtube: '/images/app-icon-youtube.png',
 }

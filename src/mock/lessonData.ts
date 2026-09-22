@@ -37,7 +37,11 @@ function getImageUrl(imageDesc: string, index: number): string {
   
   // 否则使用占位图片
   const imageMap: { [key: string]: string } = {
-    '包子': '🍞', '饺子': '🥟', '米饭': '🍚', '面条': '🍜', '面包': '🥖',
+    '包子': '/assets/images/baozi-white.png',
+    '饺子': '/assets/images/dumplings-white.png',
+    '米饭': '/assets/images/rice-bowl-white.png',
+    '面条': '/assets/images/noodles-white.png',
+    '面包': '🥖',
     '水': '💧', '茶': '🍵', '牛奶': '🥛', '水杯': '🥤',
     '猫': '🐱', '狗': '🐶',
     '爸爸': '👨', '妈妈': '👩', '学生': '👨‍🎓',
@@ -48,9 +52,8 @@ function getImageUrl(imageDesc: string, index: number): string {
     if (imageDesc.includes(key)) return emoji;
   }
   
-  // TODO: 当index为5时（大米图片），替换为用户上传的单个米粒图片
-  if (imageDesc.includes('大米') && index === 5) {
-    return '/assets/images/rice-grain.jpg'; // 单个米粒图片
+  if (imageDesc.includes('大米') || imageDesc.includes('米饭')) {
+    return '/assets/images/rice-bowl-white.png'
   }
   
   return `https://picsum.photos/id/${100 + index}/200/200`;
@@ -82,8 +85,7 @@ export const CURRENT_LESSON: Lesson = {
           content: '米饭',
           pinyin: 'mǐfàn',
           meaning: 'Rice',
-          // TODO: 替换为用户上传的蓝色碗装米饭图片
-          imageUrl: '/assets/images/rice-bowl-blue.jpg' // 蓝色碗装米饭图片
+          imageUrl: '/assets/images/rice-bowl-white.png'
         },
         {
           id: 'l1-v2',
@@ -91,7 +93,7 @@ export const CURRENT_LESSON: Lesson = {
           content: '饺子',
           pinyin: 'jiǎozi',
           meaning: 'Dumplings',
-          imageUrl: 'https://picsum.photos/id/1004/300/300'
+          imageUrl: '/assets/images/dumplings-white.png'
         },
         {
           id: 'l1-v3',
@@ -99,7 +101,7 @@ export const CURRENT_LESSON: Lesson = {
           content: '包子',
           pinyin: 'bāozi',
           meaning: 'Steamed bun',
-          imageUrl: 'https://picsum.photos/id/1/300/300'
+          imageUrl: '/assets/images/baozi-white.png'
         },
         {
           id: 'l1-s1',

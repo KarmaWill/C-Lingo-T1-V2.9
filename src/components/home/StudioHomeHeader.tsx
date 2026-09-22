@@ -145,11 +145,13 @@ export default function StudioHomeHeader({
   } as const
 
   const selectTextSx = {
-    fontWeight: 700,
+    fontWeight: 500,
     fontSize: p(32),
     lineHeight: `${p(48)}px`,
+    letterSpacing: '-0.02em',
     color: isBurnside ? BHS.mute : '#777777',
     fontFamily: FIGMA_FONT,
+    fontOpticalSizing: 'auto' as const,
     whiteSpace: 'nowrap' as const,
   }
 
@@ -254,13 +256,15 @@ export default function StudioHomeHeader({
               />
             ) : null}
             <Typography
+              component="h1"
               sx={{
-                fontWeight: 700,
-                fontSize: p(trackId === 'hsk-standard' ? 36 : 44),
+                fontWeight: isBurnside ? 700 : trackId === 'hsk-standard' ? 700 : 500,
+                fontSize: p(isBurnside ? 44 : 48),
                 color: isBurnside ? BHS.ink : '#2D3436',
-                lineHeight: `${p(trackId === 'hsk-standard' ? 46 : 56)}px`,
+                lineHeight: isBurnside ? `${p(56)}px` : 1.08,
                 fontFamily: titleFont,
-                letterSpacing: isBurnside ? '-0.03em' : 0,
+                fontOpticalSizing: 'auto',
+                letterSpacing: isBurnside ? '-0.03em' : '-0.02em',
                 whiteSpace: 'nowrap',
               }}
             >

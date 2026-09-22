@@ -5,8 +5,9 @@ import { Provider } from 'react-redux'
 import { store } from './store/store'
 import App from './App'
 import { getLocaleById, loadStoredLocaleId } from './data/localeConfig'
+import { applyEyeCareBootOverlay } from './data/eyeCareStorage'
 import './i18n'
-import './theme/googleSansFlex.css'
+import '@fontsource-variable/google-sans-flex'
 import '@fontsource/montserrat/latin-600.css'
 import '@fontsource/montserrat/latin-700.css'
 import './index.css'
@@ -14,6 +15,7 @@ import './index.css'
 const initialLocale = getLocaleById(loadStoredLocaleId())
 document.documentElement.lang = initialLocale.htmlLang
 document.documentElement.style.setProperty('--app-font-family', initialLocale.fontFamily)
+applyEyeCareBootOverlay()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

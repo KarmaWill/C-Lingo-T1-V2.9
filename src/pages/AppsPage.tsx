@@ -9,14 +9,9 @@ import HourglassEmptyOutlinedIcon from '@mui/icons-material/HourglassEmptyOutlin
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import CalculateOutlinedIcon from '@mui/icons-material/CalculateOutlined';
-import StickyNote2OutlinedIcon from '@mui/icons-material/StickyNote2Outlined';
 import WbSunnyOutlinedIcon from '@mui/icons-material/WbSunnyOutlined';
-import ExploreOutlinedIcon from '@mui/icons-material/ExploreOutlined';
 import MicOutlinedIcon from '@mui/icons-material/MicOutlined';
-import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
-import TranslateIcon from '@mui/icons-material/Translate';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import StyleIcon from '@mui/icons-material/Style';
@@ -25,9 +20,11 @@ import SmartToyIcon from '@mui/icons-material/SmartToy';
 import HeadphonesIcon from '@mui/icons-material/Headphones';
 import RadioIcon from '@mui/icons-material/Radio';
 import type { SvgIconComponent } from '@mui/icons-material';
-import { getInstalledExtraApps, removeInstalledExtraApp, MAX_EXTRA_APPS, type CatalogApp } from '../data/appsCatalog';
+import { getInstalledExtraApps, removeInstalledExtraApp, MAX_EXTRA_APPS, getInAppBrowserTarget, type CatalogApp } from '../data/appsCatalog';
 import { CatalogAppGlyph, catalogAppUsesFullBleedIcon } from '../components/apps/catalogAppIcons';
+import { ExploreBuiltinGlyph, exploreBuiltinUsesFlushIcon } from '../components/apps/exploreAppIcons';
 import { getPendingAppUpdatesCount } from '../data/appUpdatesCatalog';
+import { loadEyeCare, setEyeCareEnabled, subscribeEyeCare } from '../data/eyeCareStorage';
 import {
   GOOGLE_SYSTEM_TOOLS,
   getDaysUntil,
@@ -74,13 +71,8 @@ const POMODORO_SECONDS = 25 * 60;
 
 const UTILITY_TOOL_ICONS: Record<string, SvgIconComponent> = {
   calculator: CalculateOutlinedIcon,
-  notes: StickyNote2OutlinedIcon,
   weather: WbSunnyOutlinedIcon,
-  compass: ExploreOutlinedIcon,
   recorder: MicOutlinedIcon,
-  files: FolderOutlinedIcon,
-  settings: SettingsOutlinedIcon,
-  translate: TranslateIcon,
 };
 
 const BUILTIN_ICONS: Record<BuiltinUtilityId, SvgIconComponent> = {
@@ -182,7 +174,7 @@ function UtilityToolButton({
   onRemove: () => void;
   onLaunch: () => void;
 }) {
-  const Icon = UTILITY_TOOL_ICONS[tool.id] ?? SettingsOutlinedIcon;
+  const Icon = UTILITY_TOOL_ICONS[tool.id] ?? CalculateOutlinedIcon;
 
   return (
     <UtilityBarIconButton
@@ -532,7 +524,7 @@ function ExploreAppIcon({
 export default function AppsPage() {
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [blueLightFilter, setBlueLightFilter] = useState(false);
+  const [blueLightFilter, setBlueLightFilter] = useState(() => loadEyeCare().enabled);
   const [showClock, setShowClock] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [showDayCountdown, setShowDayCountdown] = useState(false);
@@ -567,6 +559,8 @@ export default function AppsPage() {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => subscribeEyeCare((state) => setBlueLightFilter(state.enabled)), []);
 
   useEffect(() => {
     if (!pomodoroRunning || pomodoroSecondsLeft <= 0) return;
@@ -964,14 +958,16 @@ export default function AppsPage() {
                   {exploreBuiltinIds.map((id) => {
                     const app = EXPLORE_BUILTIN_APPS.find((item) => item.id === id);
                     if (!app) return null;
-                    const Icon = EXPLORE_APP_ICONS[app.id];
+                    const flush = exploreBuiltinUsesFlushIcon(app.id);
                     return (
                       <ExploreAppIcon
                         key={app.id}
                         screenSize={screenSize}
                         label={app.label}
-                        bg={app.bg}
-                        icon={Icon}
+                        bg={flush ? '#FFFFFF' : app.bg}
+                        glyph={flush ? <ExploreBuiltinGlyph id={app.id} /> : undefined}
+                        icon={flush ? undefined : EXPLORE_APP_ICONS[app.id]}
+                        iconFlush={flush}
                         showDelete={appEditMode}
                         onEnterEditMode={() => setAppEditMode(true)}
                         onRemove={() => setExploreBuiltinIds(removeExploreBuiltin(app.id))}
@@ -988,6 +984,10 @@ export default function AppsPage() {
                       onEnterEditMode={() => setAppEditMode(true)}
                       onRemove={() => handleRemoveExtraApp(app.id)}
                       onLaunch={() => {
+                        if (getInAppBrowserTarget(app.id)) {
+                          navigate('/apps/browser', { state: { appId: app.id, from: '/apps' } });
+                          return;
+                        }
                         setToastMessage(`${app.label} is installed on this device.`);
                         setShowToast(true);
                       }}
@@ -1246,16 +1246,21 @@ export default function AppsPage() {
                             sx={{
                               fontSize: EXPLORE_MAIN1.settingsSub,
                               lineHeight: `${EXPLORE_MAIN1.settingsSubLh}px`,
-                              color: '#A7B3B8',
-                              fontWeight: 400,
+                              color: blueLightFilter ? '#00B4A0' : '#A7B3B8',
+                              fontWeight: blueLightFilter ? 600 : 400,
                               fontFamily: FIGMA_FONT,
                             }}
                           >
-                            Warm tint - 20-20-20 reminder
+                            {blueLightFilter
+                              ? 'On · Warm tint inside C-LingoAIOS'
+                              : 'Warm tint · 20-20-20 reminder'}
                           </Typography>
                         </Box>
                         <ButtonBase
-                          onClick={() => setBlueLightFilter((on) => !on)}
+                          onClick={() => {
+                            const next = setEyeCareEnabled(!blueLightFilter)
+                            setBlueLightFilter(next.enabled)
+                          }}
                           aria-label={
                             blueLightFilter
                               ? 'Eye protection on, tap to turn off'
@@ -1291,13 +1296,20 @@ export default function AppsPage() {
                       <Box
                         sx={{
                           width: '100%',
-                          height: EXPLORE_MAIN1.settingsUpdatesH,
+                          minHeight: EXPLORE_MAIN1.settingsUpdatesH,
                           display: 'flex',
                           flexDirection: 'column',
                           justifyContent: 'center',
                           alignItems: 'flex-start',
                           gap: '14px',
                           boxSizing: 'border-box',
+                          px: pendingUpdates > 0 ? '16px' : 0,
+                          py: pendingUpdates > 0 ? '12px' : 0,
+                          borderRadius: pendingUpdates > 0 ? '20px' : 0,
+                          bgcolor: pendingUpdates > 0 ? 'rgba(255, 107, 53, 0.08)' : 'transparent',
+                          border:
+                            pendingUpdates > 0 ? '1px solid rgba(255, 107, 53, 0.28)' : '1px solid transparent',
+                          transition: 'background-color 180ms ease-out, border-color 180ms ease-out',
                         }}
                       >
                         <Box
@@ -1306,7 +1318,8 @@ export default function AppsPage() {
                             flexDirection: 'column',
                             justifyContent: 'center',
                             alignItems: 'flex-start',
-                            gap: '4px',
+                            gap: '6px',
+                            width: '100%',
                           }}
                         >
                           <Typography
@@ -1324,9 +1337,10 @@ export default function AppsPage() {
                             sx={{
                               fontSize: EXPLORE_MAIN1.settingsSub,
                               lineHeight: `${EXPLORE_MAIN1.settingsSubLh}px`,
-                              color: '#A7B3B8',
-                              fontWeight: 400,
+                              color: pendingUpdates > 0 ? '#FF6B35' : '#A7B3B8',
+                              fontWeight: pendingUpdates > 0 ? 700 : 400,
                               fontFamily: FIGMA_FONT,
+                              letterSpacing: pendingUpdates > 0 ? '-0.01em' : 0,
                             }}
                           >
                             {pendingUpdates > 0
@@ -1336,22 +1350,63 @@ export default function AppsPage() {
                         </Box>
                         <ButtonBase
                           onClick={handleOpenNskStore}
+                          aria-label={
+                            pendingUpdates > 0
+                              ? `Update now, ${pendingUpdates} updates available`
+                              : 'Check for updates'
+                          }
                           sx={{
                             width: '100%',
                             height: EXPLORE_MAIN1.settingsBtnH,
-                            px: '54px',
+                            px: pendingUpdates > 0 ? '20px' : '54px',
                             borderRadius: 100,
-                            bgcolor: '#F3F4F6',
-                            color: '#2D3436',
+                            bgcolor: pendingUpdates > 0 ? '#FF6B35' : '#F3F4F6',
+                            color: pendingUpdates > 0 ? '#FFFFFF' : '#2D3436',
                             fontWeight: 700,
                             fontSize: EXPLORE_MAIN1.settingsBtnFont,
                             lineHeight: `${Math.round(EXPLORE_MAIN1.settingsBtnFont * 1.6)}px`,
                             fontFamily: FIGMA_FONT,
-                            textAlign: 'center',
-                            '&:active': { bgcolor: '#E8EAED' },
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: pendingUpdates > 0 ? 'space-between' : 'center',
+                            gap: '12px',
+                            boxShadow:
+                              pendingUpdates > 0 ? '0 4px 14px rgba(255, 107, 53, 0.32)' : 'none',
+                            '&:active': {
+                              bgcolor: pendingUpdates > 0 ? '#E85A28' : '#E8EAED',
+                            },
                           }}
                         >
-                          CHECK FOR UPDATES
+                          {pendingUpdates > 0 ? (
+                            <>
+                              <Box component="span" sx={{ flex: 1, textAlign: 'center', pl: '44px' }}>
+                                UPDATE NOW
+                              </Box>
+                              <Box
+                                component="span"
+                                sx={{
+                                  flexShrink: 0,
+                                  minWidth: 44,
+                                  height: 44,
+                                  px: '12px',
+                                  borderRadius: '999px',
+                                  bgcolor: 'rgba(255,255,255,0.95)',
+                                  color: '#FF6B35',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: 22,
+                                  fontWeight: 800,
+                                  lineHeight: 1,
+                                  fontFamily: FIGMA_FONT,
+                                }}
+                              >
+                                {pendingUpdates}
+                              </Box>
+                            </>
+                          ) : (
+                            'CHECK FOR UPDATES'
+                          )}
                         </ButtonBase>
                       </Box>
                     </Box>
@@ -1760,7 +1815,7 @@ export default function AppsPage() {
                 flexShrink: 0,
               }}
             >
-              Pin up to {MAX_UTILITY_BAR_SLOTS} tools · {utilitySlotCount}/{MAX_UTILITY_BAR_SLOTS} used · remove one to add more
+              Pin up to {MAX_UTILITY_BAR_SLOTS} · {utilitySlotCount} used
             </Typography>
             <Box
               sx={{
@@ -1770,27 +1825,32 @@ export default function AppsPage() {
                 WebkitOverflowScrolling: 'touch',
                 display: 'grid',
                 gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gap: `${p(14)}px ${p(20)}px`,
+                gap: `${p(16)}px ${p(20)}px`,
                 alignContent: 'start',
               }}
             >
-              <Typography
-                sx={{
-                  gridColumn: '1 / -1',
-                  fontSize: p(18),
-                  fontWeight: 700,
-                  color: '#636E72',
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  fontFamily: FIGMA_FONT,
-                }}
-              >
-                Built-in tools
-              </Typography>
-              {BUILTIN_UTILITY_ITEMS.map((item) => {
-                const installed = builtinUtilityIds.includes(item.id);
+              {[
+                ...BUILTIN_UTILITY_ITEMS.map((item) => ({
+                  id: item.id,
+                  label: item.label,
+                  description: item.description,
+                  kind: 'builtin' as const,
+                  Icon: BUILTIN_ICONS[item.id],
+                })),
+                ...GOOGLE_SYSTEM_TOOLS.map((tool) => ({
+                  id: tool.id,
+                  label: tool.label,
+                  description: tool.description,
+                  kind: 'extra' as const,
+                  Icon: UTILITY_TOOL_ICONS[tool.id] ?? CalculateOutlinedIcon,
+                })),
+              ].map((item) => {
+                const installed =
+                  item.kind === 'builtin'
+                    ? builtinUtilityIds.includes(item.id as BuiltinUtilityId)
+                    : utilityToolIds.includes(item.id);
                 const atLimit = !installed && !canAddUtilitySlot;
-                const Icon = BUILTIN_ICONS[item.id];
+                const Icon = item.Icon;
                 return (
                   <Box
                     key={item.id}
@@ -1799,8 +1859,8 @@ export default function AppsPage() {
                       alignItems: 'center',
                       gap: `${p(16)}px`,
                       p: `${p(16)}px`,
-                      borderRadius: `${p(24)}px`,
-                      border: '2px solid #E0E0DF',
+                      borderRadius: `${p(40)}px`,
+                      border: '1.5px solid #E0E0DF',
                       bgcolor: '#FFFFFF',
                       opacity: atLimit ? 0.45 : 1,
                     }}
@@ -1809,9 +1869,9 @@ export default function AppsPage() {
                       sx={{
                         width: p(64),
                         height: p(64),
-                        borderRadius: `${p(18)}px`,
-                        bgcolor: '#F3F4F6',
-                        color: item.color,
+                        borderRadius: `${p(22)}px`,
+                        bgcolor: '#EBEBEB',
+                        color: '#263244',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -1824,12 +1884,13 @@ export default function AppsPage() {
                       <Typography sx={{ fontWeight: 700, fontSize: p(24), color: '#2D3436', fontFamily: FIGMA_FONT, lineHeight: 1.25 }}>
                         {item.label}
                       </Typography>
-                      <Typography sx={{ fontSize: p(18), color: '#A7B3B8', fontFamily: FIGMA_FONT, lineHeight: 1.4 }}>
-                        {item.description}
-                      </Typography>
                     </Box>
                     <ButtonBase
-                      onClick={() => handleToggleBuiltinUtility(item.id)}
+                      onClick={() =>
+                        item.kind === 'builtin'
+                          ? handleToggleBuiltinUtility(item.id as BuiltinUtilityId)
+                          : handleToggleUtilityTool(item.id)
+                      }
                       disabled={atLimit}
                       sx={{
                         minWidth: p(96),
@@ -1841,93 +1902,8 @@ export default function AppsPage() {
                         fontWeight: 700,
                         fontSize: p(18),
                         fontFamily: FIGMA_FONT,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: `${p(6)}px`,
                       }}
                     >
-                      {installed ? <CheckCircleIcon sx={{ fontSize: p(20) }} /> : <AddCircleOutlineIcon sx={{ fontSize: p(20) }} />}
-                      {installed ? 'Added' : 'Add'}
-                    </ButtonBase>
-                  </Box>
-                );
-              })}
-              <Typography
-                sx={{
-                  gridColumn: '1 / -1',
-                  mt: `${p(8)}px`,
-                  fontSize: p(18),
-                  fontWeight: 700,
-                  color: '#636E72',
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  fontFamily: FIGMA_FONT,
-                }}
-              >
-                Extra tools
-              </Typography>
-              {GOOGLE_SYSTEM_TOOLS.map((tool) => {
-                const installed = utilityToolIds.includes(tool.id);
-                const atLimit = !installed && !canAddUtilitySlot;
-                const Icon = UTILITY_TOOL_ICONS[tool.id] ?? SettingsOutlinedIcon;
-                return (
-                  <Box
-                    key={tool.id}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: `${p(16)}px`,
-                      p: `${p(16)}px`,
-                      borderRadius: `${p(24)}px`,
-                      border: '2px solid #E0E0DF',
-                      bgcolor: '#FFFFFF',
-                      opacity: atLimit ? 0.45 : 1,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        width: p(64),
-                        height: p(64),
-                        borderRadius: `${p(18)}px`,
-                        bgcolor: '#F3F4F6',
-                        color: tool.color,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                      }}
-                    >
-                      <Icon sx={{ fontSize: p(30) }} />
-                    </Box>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography sx={{ fontWeight: 700, fontSize: p(24), color: '#2D3436', fontFamily: FIGMA_FONT, lineHeight: 1.25 }}>
-                        {tool.label}
-                      </Typography>
-                      <Typography sx={{ fontSize: p(18), color: '#A7B3B8', fontFamily: FIGMA_FONT, lineHeight: 1.4 }}>
-                        {tool.description}
-                      </Typography>
-                    </Box>
-                    <ButtonBase
-                      onClick={() => handleToggleUtilityTool(tool.id)}
-                      disabled={atLimit}
-                      sx={{
-                        minWidth: p(96),
-                        minHeight: p(48),
-                        px: `${p(16)}px`,
-                        borderRadius: 999,
-                        bgcolor: installed ? '#E8F8F5' : '#F3F4F6',
-                        color: installed ? '#00B4A0' : '#2D3436',
-                        fontWeight: 700,
-                        fontSize: p(18),
-                        fontFamily: FIGMA_FONT,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: `${p(6)}px`,
-                      }}
-                    >
-                      {installed ? <CheckCircleIcon sx={{ fontSize: p(20) }} /> : <AddCircleOutlineIcon sx={{ fontSize: p(20) }} />}
                       {installed ? 'Added' : 'Add'}
                     </ButtonBase>
                   </Box>
@@ -1941,7 +1917,7 @@ export default function AppsPage() {
                 width: '100%',
                 height: p(65),
                 borderRadius: 999,
-                bgcolor: '#2D3436',
+                bgcolor: '#00B4A0',
                 color: '#FFFFFF',
                 fontWeight: 700,
                 fontSize: p(24),

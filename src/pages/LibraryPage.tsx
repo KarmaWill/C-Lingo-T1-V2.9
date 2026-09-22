@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Box, Typography, ButtonBase } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
@@ -9,6 +9,64 @@ import HubContainBoard from '../components/home/HubContainBoard'
 import HubPagerDots from '../components/home/HubPagerDots'
 import { HUB_CANVAS_CLINGO } from '../components/home/hubChrome'
 import { getActiveLibraryBook, isHappyChineseBook } from '../library/libraryActiveBook'
+
+/** Honor LearnHome Phosphor icons（regular / fill currentColor） */
+function GameControllerIcon({ size = 40 }: { size?: number }) {
+  return (
+    <Box
+      component="svg"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 256 256"
+      width={size}
+      height={size}
+      aria-hidden
+      sx={{ display: 'block', flexShrink: 0, color: '#fff' }}
+    >
+      <path
+        fill="currentColor"
+        d="M176,112H152a8,8,0,0,1,0-16h24a8,8,0,0,1,0,16ZM104,96H96V88a8,8,0,0,0-16,0v8H72a8,8,0,0,0,0,16h8v8a8,8,0,0,0,16,0v-8h8a8,8,0,0,0,0-16ZM241.48,200.65a36,36,0,0,1-54.94,4.81c-.12-.12-.24-.24-.35-.37L146.48,160h-37L69.81,205.09l-.35.37A36.08,36.08,0,0,1,44,216,36,36,0,0,1,8.56,173.75a.68.68,0,0,1,0-.14L24.93,89.52A59.88,59.88,0,0,1,83.89,40H172a60.08,60.08,0,0,1,59,49.25c0,.06,0,.12,0,.18l16.37,84.17a.68.68,0,0,1,0,.14A35.74,35.74,0,0,1,241.48,200.65ZM172,144a44,44,0,0,0,0-88H83.89A43.9,43.9,0,0,0,40.68,92.37l0,.13L24.3,176.59A20,20,0,0,0,58,194.3l41.92-47.59a8,8,0,0,1,6-2.71Zm59.7,32.59-8.74-45A60,60,0,0,1,172,160h-4.2L198,194.31a20.09,20.09,0,0,0,17.46,5.39,20,20,0,0,0,16.23-23.11Z"
+      />
+    </Box>
+  )
+}
+
+function BankIcon({ size = 40 }: { size?: number }) {
+  return (
+    <Box
+      component="svg"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 256 256"
+      width={size}
+      height={size}
+      aria-hidden
+      sx={{ display: 'block', flexShrink: 0, color: '#fff' }}
+    >
+      <path
+        fill="currentColor"
+        d="M24,104H48v64H32a8,8,0,0,0,0,16H224a8,8,0,0,0,0-16H208V104h24a8,8,0,0,0,4.19-14.81l-104-64a8,8,0,0,0-8.38,0l-104,64A8,8,0,0,0,24,104Zm40,0H96v64H64Zm80,0v64H112V104Zm48,64H160V104h32ZM128,41.39,203.74,88H52.26ZM248,208a8,8,0,0,1-8,8H16a8,8,0,0,1,0-16H240A8,8,0,0,1,248,208Z"
+      />
+    </Box>
+  )
+}
+
+function StudentIcon({ size = 40 }: { size?: number }) {
+  return (
+    <Box
+      component="svg"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 256 256"
+      width={size}
+      height={size}
+      aria-hidden
+      sx={{ display: 'block', flexShrink: 0, color: '#fff' }}
+    >
+      <path
+        fill="currentColor"
+        d="M226.53,56.41l-96-32a8,8,0,0,0-5.06,0l-96,32A8,8,0,0,0,24,64v80a8,8,0,0,0,16,0V75.1L73.59,86.29a64,64,0,0,0,20.65,88.05c-18,7.06-33.56,19.83-44.94,37.29a8,8,0,1,0,13.4,8.74C77.77,197.25,101.57,184,128,184s50.23,13.25,65.3,36.37a8,8,0,0,0,13.4-8.74c-11.38-17.46-27-30.23-44.94-37.29a64,64,0,0,0,20.65-88l44.12-14.7a8,8,0,0,0,0-15.18ZM176,120A48,48,0,1,1,89.35,91.55l36.12,12a8,8,0,0,0,5.06,0l36.12-12A47.89,47.89,0,0,1,176,120ZM128,87.57,57.3,64,128,40.43,198.7,64Z"
+      />
+    </Box>
+  )
+}
 
 /**
  * Figma 真源：设计稿 · 主界面1 (2725:331)
@@ -28,28 +86,30 @@ const COVER_W = Math.round(COVER_H * COVER_RATIO)
 const COVER_TOP = 22
 const COVER_LEFT = 26
 const PAGE_STEP = 9
-const TOOL_ICON = 48
+const TOOL_ICON = 40
 
 const UNITS = [
   {
     label: 'Unit 1 You and I',
     lessonNo: 'Lesson 1',
     titleZh: '他是谁',
+    /** 对齐 Honor LearnHome `home-goals`：分条展示，不是一段正文 */
     objectives: [
-      'Ask about someone’s name. Talk about someone’s hometown and his/her telephone number.',
+      'Ask about someone’s name.',
+      'Talk about someone’s hometown and his/her telephone number.',
     ],
   },
   {
     label: 'Unit 2 My Family',
     lessonNo: 'Lesson 2',
     titleZh: '这是我的家',
-    objectives: ['Talk about family members', 'Ask how many people are in a family'],
+    objectives: ['Talk about family members.', 'Ask how many people are in a family.'],
   },
   {
     label: 'Unit 3 School Life',
     lessonNo: 'Lesson 3',
     titleZh: '我的学校',
-    objectives: ['Talk about classrooms and classmates', 'Ask where someone studies'],
+    objectives: ['Talk about classrooms and classmates.', 'Ask where someone studies.'],
   },
 ]
 
@@ -70,12 +130,15 @@ export default function LibraryPage() {
       <HubTopBar screenSize={screenSize}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(24)}px`, minWidth: 0 }}>
           <Typography
+            component="h1"
             sx={{
-              fontWeight: 700,
-              fontSize: p(47),
+              fontWeight: 500,
+              fontSize: p(48),
               color: '#2D3436',
-              lineHeight: `${p(60)}px`,
+              lineHeight: 1.08,
+              letterSpacing: '-0.02em',
               fontFamily: FIGMA_FONT,
+              fontOpticalSizing: 'auto',
               whiteSpace: 'nowrap',
             }}
           >
@@ -178,7 +241,16 @@ export default function LibraryPage() {
               />
             </ButtonBase>
             <Box sx={{ flex: 1, minWidth: 0, textAlign: 'center', fontFamily: FIGMA_FONT }}>
-              <Typography sx={{ fontSize: 28, fontWeight: 400, color: '#636E72', lineHeight: '34px' }}>
+              <Typography
+                sx={{
+                  fontSize: 28,
+                  fontWeight: 400,
+                  color: '#636E72',
+                  lineHeight: '34px',
+                  fontFamily: FIGMA_FONT,
+                  fontOpticalSizing: 'auto',
+                }}
+              >
                 Current Unit
               </Typography>
               <Typography
@@ -190,6 +262,8 @@ export default function LibraryPage() {
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
+                  fontFamily: FIGMA_FONT,
+                  fontOpticalSizing: 'auto',
                 }}
               >
                 {unit.label}
@@ -213,9 +287,9 @@ export default function LibraryPage() {
             sx={{
               position: 'absolute',
               left: 46,
-              top: 315,
+              top: 300,
               zIndex: 2,
-              width: 430,
+              width: 520,
               fontFamily: FIGMA_FONT,
             }}
           >
@@ -224,27 +298,38 @@ export default function LibraryPage() {
               sx={{
                 m: 0,
                 color: '#fff',
-                fontSize: 32,
-                fontWeight: 700,
-                lineHeight: '47px',
-                fontFamily: '"Source Han Sans CN", "Noto Sans SC", sans-serif',
-              }}
-            >
-              {unit.lessonNo}:{unit.titleZh}
-            </Typography>
-            <Typography
-              sx={{
-                mt: '12px',
-                color: '#fff',
-                fontSize: 24,
-                fontWeight: 400,
-                lineHeight: '30px',
-                textAlign: 'justify',
+                fontSize: 42,
+                fontWeight: 500,
+                letterSpacing: '-0.02em',
+                lineHeight: 1.2,
                 fontFamily: FIGMA_FONT,
+                fontOpticalSizing: 'auto',
               }}
             >
-              {unit.objectives.join(' ')}
+              {unit.lessonNo}: {unit.titleZh}
             </Typography>
+            <Box
+              component="ul"
+              sx={{
+                mt: '18px',
+                mb: 0,
+                width: '100%',
+                pl: '36px',
+                color: '#fff',
+                fontSize: 28,
+                fontWeight: 400,
+                lineHeight: 1.4,
+                listStyle: 'disc',
+                fontFamily: FIGMA_FONT,
+                fontOpticalSizing: 'auto',
+              }}
+            >
+              {unit.objectives.map((goal) => (
+                <Box component="li" key={goal} sx={{ m: 0, pl: 0 }}>
+                  {goal}
+                </Box>
+              ))}
+            </Box>
           </Box>
 
           <ButtonBase
@@ -282,7 +367,9 @@ export default function LibraryPage() {
                 fontSize: 37,
                 fontWeight: 700,
                 lineHeight: 1,
-                fontFamily: '"Source Han Sans CN", "Noto Sans SC", sans-serif',
+                fontFamily: FIGMA_FONT,
+                fontOpticalSizing: 'auto',
+                letterSpacing: '0.02em',
               }}
             >
               Start
@@ -462,15 +549,15 @@ export default function LibraryPage() {
             <TextbookToolCard
               left={0}
               bgcolor="#00B4A0"
-              iconSrc="/images/hub/fun-chinese.svg?v=cards4"
+              icon={<GameControllerIcon size={TOOL_ICON} />}
               label="Fun Chinese"
-              subtitle="Games & Activities"
+              subtitle="Games and activities"
               onClick={() => navigate('/library/hub/fun-chinese')}
             />
             <TextbookToolCard
               left={638}
               bgcolor="#26D0A0"
-              iconSrc="/images/hub/culture.svg"
+              icon={<BankIcon size={TOOL_ICON} />}
               label="Culture"
               subtitle="Explore traditions"
               onClick={() => navigate('/library/hub/culture')}
@@ -482,7 +569,7 @@ export default function LibraryPage() {
             width={1239}
             radius={70}
             bgcolor="linear-gradient(90deg, #FF8457 19.23%, #FFB499 100%)"
-            iconSrc="/images/hub/fun-chinese.svg?v=cards4"
+            icon={<StudentIcon size={TOOL_ICON} />}
             label="HSK Chinese"
             subtitle="Games & Activities"
             onClick={() => navigate('/library/hub/fun-chinese')}
@@ -499,8 +586,7 @@ function TextbookToolCard({
   width = 599,
   radius = 54,
   bgcolor,
-  iconSrc,
-  iconSize = TOOL_ICON,
+  icon,
   label,
   subtitle,
   onClick,
@@ -509,8 +595,7 @@ function TextbookToolCard({
   width?: number
   radius?: number
   bgcolor: string
-  iconSrc: string
-  iconSize?: number
+  icon: ReactNode
   label: string
   subtitle: string
   onClick: () => void
@@ -537,21 +622,43 @@ function TextbookToolCard({
         '&:active': { transform: 'scale(0.98)' },
       }}
     >
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '11px', minWidth: 0, flex: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+      {/* 对齐 Honor `.home-tile-copy`：标题行含图标，副文案与图标左缘齐平，不缩进 */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            minWidth: 0,
+            fontSize: 43,
+            fontWeight: 500,
+            lineHeight: 1,
+            color: '#fff',
+            fontFamily: FIGMA_FONT,
+            fontOpticalSizing: 'auto',
+            whiteSpace: 'nowrap',
+          }}
+        >
           <Box
-            component="img"
-            src={iconSrc}
-            alt=""
-            sx={{ width: iconSize, height: iconSize, flexShrink: 0, display: 'block' }}
-          />
-          <Typography
             sx={{
-              color: '#fff',
-              fontWeight: 700,
+              display: 'grid',
+              width: TOOL_ICON,
+              height: TOOL_ICON,
+              placeItems: 'center',
+              flexShrink: 0,
+            }}
+          >
+            {icon}
+          </Box>
+          <Typography
+            component="span"
+            sx={{
+              color: 'inherit',
+              fontWeight: 500,
               fontSize: 43,
-              lineHeight: '54px',
+              lineHeight: 1,
               fontFamily: FIGMA_FONT,
+              fontOpticalSizing: 'auto',
               whiteSpace: 'nowrap',
             }}
           >
@@ -559,14 +666,18 @@ function TextbookToolCard({
           </Typography>
         </Box>
         <Typography
+          component="em"
           sx={{
+            display: 'block',
+            mt: '8px',
+            fontStyle: 'normal',
             color: 'rgba(255,255,255,0.6)',
             fontWeight: 500,
             fontSize: 28,
-            lineHeight: '34px',
+            lineHeight: 1.2,
             fontFamily: FIGMA_FONT,
+            fontOpticalSizing: 'auto',
             whiteSpace: 'nowrap',
-            pl: `${iconSize + 8}px`,
           }}
         >
           {subtitle}

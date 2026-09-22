@@ -11,14 +11,13 @@ export interface BuiltinUtilityItem {
 }
 
 export const BUILTIN_UTILITY_ITEMS: BuiltinUtilityItem[] = [
-  { id: 'alarm', label: 'Alarm', description: 'Clock and alarms.', color: '#334155' },
-  { id: 'calendar', label: 'Calendar', description: 'Date and schedule.', color: '#334155' },
-  { id: 'daycountdown', label: 'Day Countdown', description: 'Days until a target date.', color: '#2563EB' },
-  { id: 'pomodoro', label: 'Pomodoro', description: 'Focus timer sessions.', color: '#EF4444' },
+  { id: 'alarm', label: 'Alarm', description: 'Clock and alarms.', color: '#263244' },
+  { id: 'daycountdown', label: 'Day Countdown', description: 'Days until a target date.', color: '#263244' },
+  { id: 'pomodoro', label: 'Pomodoro', description: 'Focus timer sessions.', color: '#263244' },
 ];
 
 const STORAGE_KEY = 'apps-builtin-utilities-v1';
-const DEFAULT_IDS: BuiltinUtilityId[] = ['calendar', 'daycountdown', 'pomodoro'];
+const DEFAULT_IDS: BuiltinUtilityId[] = ['daycountdown', 'pomodoro'];
 
 export function loadBuiltinUtilityIds(): BuiltinUtilityId[] {
   if (typeof window === 'undefined') return [...DEFAULT_IDS];

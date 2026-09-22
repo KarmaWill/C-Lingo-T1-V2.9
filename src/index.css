@@ -13,6 +13,7 @@ html, body {
 
 body {
   font-family: var(--app-font-family, 'Google Sans Flex Variable', 'Noto Sans SC', sans-serif);
+  font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
@@ -26,6 +27,12 @@ body {
   display: flex;
   flex-direction: column;
   background-color: #f8f9fa;
+}
+
+#ipad-screen,
+#main-content-area {
+  font-family: var(--app-font-family, 'Google Sans Flex Variable', 'Noto Sans SC', sans-serif);
+  font-optical-sizing: auto;
 }
 
 /* 平滑滚动 */

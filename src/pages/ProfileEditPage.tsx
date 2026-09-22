@@ -1,35 +1,147 @@
 import { useState, type ChangeEvent } from 'react'
-import { Box, Typography, ButtonBase, Avatar, ToggleButton, ToggleButtonGroup } from '@mui/material'
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import { Avatar, Box, ButtonBase, Typography } from '@mui/material'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import EditIcon from '@mui/icons-material/Edit'
-import PersonIcon from '@mui/icons-material/Person'
-import TabletMacIcon from '@mui/icons-material/TabletMac'
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { useNavigate } from 'react-router-dom'
+import { HskPrepBackButton } from '../components/hsk/HskPrepBackButton'
+import { APP_FONT_FAMILY } from '../theme/appFont'
+import { APP_SCREEN_SIZE, FIGMA_FONT, figmaPx } from '../utils/figmaScale'
 
-const TEAL = '#0D9488'
-const TEAL_NAV_ACTIVE = 'rgba(0,0,0,0.12)'
-const hardRadius = '10px'
+const TEAL = '#00B4A0'
+const INK = '#2D3436'
+const MUTED = '#636E72'
+const HINT = '#A7B3B8'
+const LINE = '#E0E0DF'
+const PAGE_BG = '#F8F9F8'
+const FIELD_BG = '#F8F9F8'
 
 type Gender = 'male' | 'female' | 'unspecified'
 
-/**
- * Full-screen profile edit layout (reference: sidebar + account form).
- */
+function ReportIcon() {
+  const p = (n: number) => figmaPx(n, APP_SCREEN_SIZE)
+  return (
+    <Box
+      sx={{
+        width: p(54),
+        height: p(54),
+        borderRadius: `${p(16)}px`,
+        background: 'linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0.7) 100%)',
+        display: 'grid',
+        placeItems: 'center',
+        flexShrink: 0,
+      }}
+    >
+      <Box
+        sx={{
+          width: p(22),
+          height: p(26),
+          borderRadius: `${p(8)}px ${p(8)}px ${p(4)}px ${p(4)}px`,
+          background: 'linear-gradient(152.45deg, #1BE0CA 15.65%, #00B4A0 104.32%)',
+          position: 'relative',
+        }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            width: p(10),
+            height: p(10),
+            borderRadius: '50%',
+            bgcolor: '#FFFFFF',
+            left: '50%',
+            top: p(4),
+            transform: 'translateX(-50%)',
+          }}
+        />
+      </Box>
+    </Box>
+  )
+}
+
+function DeviceIcon() {
+  const p = (n: number) => figmaPx(n, APP_SCREEN_SIZE)
+  return (
+    <Box
+      sx={{
+        width: p(54),
+        height: p(54),
+        borderRadius: `${p(16)}px`,
+        bgcolor: '#FFFFFF',
+        display: 'grid',
+        placeItems: 'center',
+        flexShrink: 0,
+      }}
+    >
+      <Box sx={{ position: 'relative', width: p(34), height: p(30) }}>
+        <Box
+          sx={{
+            position: 'absolute',
+            left: p(3),
+            bottom: 0,
+            width: p(28),
+            height: p(13),
+            bgcolor: 'rgba(255,110,58,0.4)',
+            borderRadius: `${p(1.5)}px`,
+          }}
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            left: 0,
+            top: p(4),
+            width: p(34),
+            height: p(24),
+            borderRadius: `${p(5)}px`,
+            background: 'linear-gradient(137.92deg, #FF936C 15.82%, #FF6B35 94.99%)',
+          }}
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            left: '50%',
+            top: p(2),
+            width: p(8),
+            height: p(2),
+            borderRadius: `${p(4)}px`,
+            bgcolor: '#FFFFFF',
+            transform: 'translateX(-50%)',
+          }}
+        />
+      </Box>
+    </Box>
+  )
+}
+
+function FieldLabel({ children }: { children: string }) {
+  const p = (n: number) => figmaPx(n, APP_SCREEN_SIZE)
+  return (
+    <Typography
+      sx={{
+        fontFamily: FIGMA_FONT,
+        fontWeight: 700,
+        fontSize: p(24),
+        lineHeight: '36px',
+        color: HINT,
+        mb: `${p(20)}px`,
+      }}
+    >
+      {children}
+    </Typography>
+  )
+}
+
 export default function ProfileEditPage() {
   const navigate = useNavigate()
-  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768'
-  const is960 = screenSize === '960x540'
-
-  const [nickname, setNickname] = useState('Lumi')
+  const p = (n: number) => figmaPx(n, APP_SCREEN_SIZE)
+  const [nickname, setNickname] = useState('Nora')
   const [dob] = useState('2024-3-12')
   const [gender, setGender] = useState<Gender>('female')
   const [email] = useState('1234567891@qq.com')
-  const levelProgress = 42
+  const username = nickname || 'Nora'
+  const age = 16
+  const levelProgress = 83 / 400
 
   const handleSave = () => {
-    navigate(-1)
+    navigate('/profile')
   }
 
   return (
@@ -38,397 +150,408 @@ export default function ProfileEditPage() {
         height: '100%',
         minHeight: 0,
         overflow: 'hidden',
-        bgcolor: '#EEF2F3',
+        bgcolor: PAGE_BG,
         display: 'flex',
-        flexDirection: 'column',
+        fontFamily: APP_FONT_FAMILY,
       }}
     >
       <Box
         sx={{
-          flex: 1,
-          minHeight: 0,
+          width: p(680),
+          flexShrink: 0,
+          height: '100%',
+          bgcolor: TEAL,
+          borderRadius: `0 ${p(80)}px ${p(80)}px 0`,
+          position: 'relative',
           display: 'flex',
-          overflow: 'hidden',
+          flexDirection: 'column',
+          alignItems: 'center',
+          boxSizing: 'border-box',
+          pt: `${p(40)}px`,
+          pb: `${p(80)}px`,
+          px: `${p(100)}px`,
         }}
       >
-        {/* Left — teal sidebar */}
-        <Box
+        <HskPrepBackButton
+          onClick={() => navigate('/profile')}
           sx={{
-            width: is960 ? 200 : 240,
-            flexShrink: 0,
-            bgcolor: TEAL,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'stretch',
-            py: is960 ? 1.75 : 2.25,
-            px: is960 ? 1.5 : 2,
-            borderRadius: { md: '0 20px 20px 0' },
-            boxShadow: '4px 0 24px rgba(13,148,136,0.15)',
-            boxSizing: 'border-box',
+            position: 'absolute',
+            left: p(60),
+            top: p(40),
+            width: p(80),
+            height: p(80),
+            zIndex: 2,
           }}
-        >
-          <ButtonBase
-            onClick={() => navigate(-1)}
+        />
+
+        <Box sx={{ mt: `${p(80)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Avatar
+            src="/images/nora-avatar.png"
+            alt={username}
             sx={{
-              alignSelf: 'flex-start',
-              width: is960 ? 36 : 40,
-              height: is960 ? 36 : 40,
-              borderRadius: '50%',
-              bgcolor: 'white',
-              color: '#64748B',
-              mb: 2,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              '&:active': { transform: 'scale(0.95)' },
+              width: p(300),
+              height: p(300),
+              bgcolor: '#FFF6E7',
+              border: `${p(4)}px solid #FFFFFF`,
+              boxSizing: 'border-box',
+              '& img': { objectFit: 'cover', bgcolor: '#FFF6E7' },
             }}
-            aria-label="Back"
-          >
-            <ChevronLeftIcon sx={{ fontSize: is960 ? 20 : 22 }} />
-          </ButtonBase>
-
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
-            <Avatar
-              src="/images/nora-avatar.png"
-              alt="Lumi"
-              sx={{
-                width: is960 ? 88 : 104,
-                height: is960 ? 88 : 104,
-                bgcolor: 'white',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                border: '4px solid rgba(255,255,255,0.45)',
-                mb: 1.5,
-                '& img': { objectFit: 'contain', bgcolor: '#EAF9F2' },
-              }}
-            />
-
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, justifyContent: 'center', mb: 1 }}>
-              <Typography sx={{ fontSize: is960 ? '1rem' : '1.15rem', fontWeight: 800, color: 'white' }}>{nickname}</Typography>
-              <Box sx={{ p: 0.25, color: 'rgba(255,255,255,0.95)' }} aria-hidden>
-                <EditIcon sx={{ fontSize: is960 ? 16 : 18 }} />
-              </Box>
-            </Box>
-
-            <Box
-              sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 0.5,
-                px: 1.25,
-                py: 0.35,
-                borderRadius: '999px',
-                bgcolor: 'rgba(255,255,255,0.25)',
-                color: 'white',
-                fontWeight: 800,
-                fontSize: is960 ? '0.7rem' : '0.78rem',
-              }}
-            >
-              <HelpOutlineIcon sx={{ fontSize: is960 ? 14 : 16 }} />
-              <span>16</span>
-            </Box>
-          </Box>
-
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, width: '100%', mb: 2 }}>
-            <ButtonBase
-              onClick={() => navigate('/profile', { state: { profileTab: 'report' as const } })}
-              sx={{
-                width: '100%',
-                py: is960 ? 1 : 1.15,
-                px: 1.25,
-                borderRadius: hardRadius,
-                bgcolor: TEAL_NAV_ACTIVE,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.25,
-                justifyContent: 'flex-start',
-                transition: 'background 0.2s',
-                '&:active': { transform: 'scale(0.98)' },
-              }}
-            >
-              <Box
-                sx={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: hardRadius,
-                  bgcolor: 'rgba(255,255,255,0.95)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <PersonIcon sx={{ fontSize: 20, color: TEAL }} />
-              </Box>
-              <Typography sx={{ fontSize: is960 ? '0.8rem' : '0.9rem', fontWeight: 700, color: 'white' }}>
-                Study Report
-              </Typography>
-            </ButtonBase>
-
-            <ButtonBase
-              onClick={() => navigate('/profile', { state: { profileTab: 'device' as const } })}
-              sx={{
-                width: '100%',
-                py: is960 ? 1 : 1.15,
-                px: 1.25,
-                borderRadius: hardRadius,
-                bgcolor: 'transparent',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.25,
-                justifyContent: 'flex-start',
-                transition: 'background 0.2s',
-                '&:active': { transform: 'scale(0.98)' },
-              }}
-            >
-              <Box
-                sx={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: hardRadius,
-                  bgcolor: 'rgba(255,255,255,0.95)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <TabletMacIcon sx={{ fontSize: 20, color: TEAL }} />
-              </Box>
-              <Typography sx={{ fontSize: is960 ? '0.8rem' : '0.9rem', fontWeight: 700, color: 'white' }}>
-                About Device
-              </Typography>
-            </ButtonBase>
-          </Box>
-
-          <Box sx={{ flex: 1, minHeight: 8 }} />
-
+          />
           <Box
             sx={{
-              width: '100%',
-              borderRadius: hardRadius,
-              bgcolor: 'rgba(255,255,255,0.12)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              p: is960 ? 1.25 : 1.5,
-              backdropFilter: 'blur(8px)',
+              mt: `${p(10)}px`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: `${p(10)}px`,
+              height: p(64),
             }}
           >
             <Typography
               sx={{
-                fontSize: is960 ? '0.55rem' : '0.6rem',
-                fontWeight: 800,
-                color: 'rgba(255,255,255,0.75)',
-                letterSpacing: '0.12em',
-                mb: 0.5,
+                fontFamily: FIGMA_FONT,
+                fontWeight: 700,
+                fontSize: p(40),
+                lineHeight: 1.6,
+                color: '#FFFFFF',
               }}
             >
-              CURRENT LEVEL
+              {username}
             </Typography>
-            <Typography sx={{ fontSize: is960 ? '1.15rem' : '1.35rem', fontWeight: 900, color: 'white', mb: 1 }}>
-              HSK 2
-            </Typography>
-            <Box sx={{ height: 6, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.2)', overflow: 'hidden' }}>
-              <Box sx={{ width: `${levelProgress}%`, height: '100%', bgcolor: '#5EEAD4', borderRadius: 3 }} />
+            <Box sx={{ width: p(40), height: p(40), display: 'grid', placeItems: 'center', color: '#FFFFFF' }}>
+              <EditOutlinedIcon sx={{ fontSize: p(26) }} />
             </Box>
+          </Box>
+          <Box
+            sx={{
+              mt: `${p(20)}px`,
+              width: p(100),
+              height: p(50),
+              borderRadius: `${p(10)}px`,
+              bgcolor: '#E9EBEB',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: `${p(9)}px`,
+            }}
+          >
+            <Box
+              sx={{
+                width: p(28),
+                height: p(28),
+                borderRadius: '50%',
+                border: '2px solid #636E72',
+              }}
+            />
+            <Typography
+              sx={{
+                fontFamily: FIGMA_FONT,
+                fontWeight: 700,
+                fontSize: p(28),
+                lineHeight: 1.6,
+                color: MUTED,
+              }}
+            >
+              {age}
+            </Typography>
           </Box>
         </Box>
 
-        {/* Right — profile form */}
         <Box
           sx={{
-            flex: 1,
-            minWidth: 0,
-            overflowY: 'auto',
-            p: is960 ? 2.5 : 3.5,
-            boxSizing: 'border-box',
+            mt: `${p(60)}px`,
+            width: p(480),
+            display: 'flex',
+            flexDirection: 'column',
+            gap: `${p(30)}px`,
           }}
         >
-          <Box sx={{ maxWidth: 720, mx: 'auto' }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'space-between',
-                gap: 2,
-                mb: 3,
-                flexWrap: 'wrap',
-              }}
-            >
-              <Box>
-                <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.35rem' : '1.75rem', color: '#0F172A' }}>Profile</Typography>
-                <Typography sx={{ fontSize: is960 ? '0.85rem' : '0.95rem', color: '#64748B', mt: 0.5 }}>
-                  Manage your profile and account details
-                </Typography>
-              </Box>
-              <ButtonBase
-                onClick={handleSave}
-                sx={{
-                  px: is960 ? 2.5 : 3,
-                  py: is960 ? 1 : 1.125,
-                  minHeight: 48,
-                  borderRadius: '999px',
-                  bgcolor: TEAL,
-                  color: 'white',
-                  fontWeight: 800,
-                  fontSize: is960 ? '0.85rem' : '0.95rem',
-                  boxShadow: '0 4px 14px rgba(13,148,136,0.35)',
-                  '&:active': { bgcolor: '#0f766e' },
-                }}
-              >
-                Save
-              </ButtonBase>
-            </Box>
+          <ButtonBase
+            onClick={() => navigate('/profile', { state: { profileTab: 'report' as const } })}
+            sx={{
+              width: p(480),
+              height: p(100),
+              borderRadius: `${p(20)}px`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+              gap: `${p(28)}px`,
+              px: `${p(24)}px`,
+              '&:active': { transform: 'scale(0.99)' },
+            }}
+          >
+            <ReportIcon />
+            <Typography sx={{ fontFamily: FIGMA_FONT, fontSize: p(32), lineHeight: 1.6, color: '#FFFFFF' }}>
+              Study Report
+            </Typography>
+          </ButtonBase>
+          <ButtonBase
+            onClick={() => navigate('/profile', { state: { profileTab: 'device' as const } })}
+            sx={{
+              width: p(480),
+              height: p(100),
+              borderRadius: `${p(20)}px`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+              gap: `${p(28)}px`,
+              px: `${p(24)}px`,
+              '&:active': { transform: 'scale(0.99)' },
+            }}
+          >
+            <DeviceIcon />
+            <Typography sx={{ fontFamily: FIGMA_FONT, fontSize: p(32), lineHeight: 1.6, color: '#FFFFFF' }}>
+              About Device
+            </Typography>
+          </ButtonBase>
+        </Box>
 
-            <ButtonBase
-              sx={{
-                width: '100%',
-                textAlign: 'left',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 2,
-                bgcolor: 'white',
-                borderRadius: hardRadius,
-                p: is960 ? 1.75 : 2,
-                mb: 2,
-                border: '1px solid rgba(0,0,0,0.06)',
-                boxShadow: '0 4px 20px rgba(15,23,42,0.06)',
-                '&:active': { bgcolor: '#F8FAFC' },
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
-                <Avatar
-                  src="/images/nora-avatar.png"
-                  alt="Lumi"
-                  sx={{
-                    width: is960 ? 56 : 64,
-                    height: is960 ? 56 : 64,
-                    bgcolor: 'white',
-                    border: '2px solid #E2E8F0',
-                    '& img': { objectFit: 'contain', bgcolor: '#EAF9F2' },
-                  }}
-                />
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography sx={{ fontWeight: 800, fontSize: is960 ? '0.95rem' : '1.05rem', color: '#0F172A' }}>
-                    Profile Picture
-                  </Typography>
-                  <Typography sx={{ fontSize: is960 ? '0.75rem' : '0.82rem', color: '#64748B', mt: 0.25 }}>
-                    Update your avatar to personalize your experience.
-                  </Typography>
-                </Box>
-              </Box>
-              <ChevronRightIcon sx={{ color: '#94A3B8', flexShrink: 0 }} />
-            </ButtonBase>
+        <Box sx={{ flex: 1, minHeight: p(24) }} />
 
-            <Box
+        <Box
+          sx={{
+            width: p(480),
+            height: p(186),
+            borderRadius: `${p(24)}px`,
+            bgcolor: '#33C3B3',
+            px: `${p(40)}px`,
+            py: `${p(30)}px`,
+            boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Box>
+            <Typography sx={{ fontFamily: FIGMA_FONT, fontSize: p(24), lineHeight: 1.6, color: '#ADE4DC' }}>
+              CURRENT LEVEL
+            </Typography>
+            <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 700, fontSize: p(32), lineHeight: 1.6, color: '#FFFFFF' }}>
+              HSK 2
+            </Typography>
+          </Box>
+          <Box
+            sx={{
+              width: p(400),
+              height: p(8),
+              borderRadius: `${p(5)}px`,
+              bgcolor: '#84E5D8',
+              overflow: 'hidden',
+            }}
+          >
+            <Box sx={{ width: `${levelProgress * 100}%`, height: '100%', borderRadius: `${p(5)}px`, bgcolor: '#FFFFFF' }} />
+          </Box>
+        </Box>
+      </Box>
+
+      <Box
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          boxSizing: 'border-box',
+          pt: `${p(100)}px`,
+          pb: `${p(80)}px`,
+          px: `${p(80)}px`,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: `${p(24)}px` }}>
+          <Box>
+            <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 700, fontSize: p(48), lineHeight: 1.6, color: INK }}>
+              Profile
+            </Typography>
+            <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 400, fontSize: p(32), lineHeight: 1.6, color: MUTED }}>
+              Manage your profile and account details
+            </Typography>
+          </Box>
+          <ButtonBase
+            onClick={handleSave}
+            sx={{
+              width: p(199),
+              height: p(80),
+              borderRadius: `${p(38)}px`,
+              bgcolor: TEAL,
+              color: '#FFFFFF',
+              fontFamily: FIGMA_FONT,
+              fontWeight: 400,
+              fontSize: p(32),
+              flexShrink: 0,
+              '&:active': { bgcolor: '#009688' },
+            }}
+          >
+            Save
+          </ButtonBase>
+        </Box>
+
+        <ButtonBase
+          sx={{
+            mt: `${p(30)}px`,
+            width: '100%',
+            minHeight: p(200),
+            px: `${p(50)}px`,
+            py: `${p(32)}px`,
+            boxSizing: 'border-box',
+            bgcolor: '#FFFFFF',
+            border: `1.5px solid ${LINE}`,
+            borderRadius: `${p(40)}px`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: `${p(28)}px`,
+            textAlign: 'left',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(28)}px`, minWidth: 0 }}>
+            <Avatar
+              src="/images/nora-avatar.png"
+              alt={username}
               sx={{
-                bgcolor: 'white',
-                borderRadius: hardRadius,
-                border: '1px solid rgba(0,0,0,0.06)',
-                boxShadow: '0 4px 20px rgba(15,23,42,0.06)',
-                p: is960 ? 2 : 2.5,
+                width: p(130),
+                height: p(130),
+                bgcolor: '#FFF6E7',
+                border: `2px solid #F3F4F6`,
+                flexShrink: 0,
+                '& img': { objectFit: 'cover', bgcolor: '#FFF6E7' },
               }}
-            >
-              <Typography sx={{ fontSize: is960 ? '0.65rem' : '0.7rem', fontWeight: 800, color: '#94A3B8', letterSpacing: '0.08em', mb: 1 }}>
-                NICKNAME
+            />
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 700, fontSize: p(32), lineHeight: 1.6, color: INK }}>
+                Profile Picture
               </Typography>
+              <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 400, fontSize: p(24), lineHeight: '36px', color: HINT }}>
+                Update your avatar to personalize your experience
+              </Typography>
+            </Box>
+          </Box>
+          <ChevronRightIcon sx={{ fontSize: p(40), color: HINT, flexShrink: 0 }} />
+        </ButtonBase>
+
+        <Box
+          sx={{
+            mt: `${p(28)}px`,
+            flex: 1,
+            minHeight: 0,
+            bgcolor: '#FFFFFF',
+            border: `1.5px solid ${LINE}`,
+            borderRadius: `${p(40)}px`,
+            px: `${p(50)}px`,
+            py: `${p(40)}px`,
+            boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: `${p(40)}px`,
+            overflow: 'auto',
+          }}
+        >
+          <Box sx={{ display: 'flex', gap: `${p(60)}px` }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <FieldLabel>NICKNAME</FieldLabel>
               <Box
                 component="input"
                 value={nickname}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => setNickname(e.target.value)}
                 sx={{
                   width: '100%',
-                  fontSize: is960 ? '0.95rem' : '1.05rem',
-                  fontWeight: 600,
-                  color: '#0F172A',
+                  height: p(80),
+                  px: `${p(20)}px`,
+                  boxSizing: 'border-box',
                   border: 'none',
-                  borderBottom: '1px solid #E2E8F0',
-                  py: 1,
-                  mb: 3,
                   outline: 'none',
-                  bgcolor: 'transparent',
-                  borderRadius: 0,
-                  '&:focus': { borderBottomColor: TEAL },
+                  bgcolor: FIELD_BG,
+                  borderRadius: `${p(12)}px`,
+                  fontFamily: FIGMA_FONT,
+                  fontSize: p(32),
+                  lineHeight: 1.6,
+                  color: INK,
                 }}
               />
-
-              <Typography sx={{ fontSize: is960 ? '0.65rem' : '0.7rem', fontWeight: 800, color: '#94A3B8', letterSpacing: '0.08em', mb: 1 }}>
-                DATE OF BIRTH
-              </Typography>
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <FieldLabel>Date of Birth</FieldLabel>
               <ButtonBase
                 sx={{
                   width: '100%',
+                  height: p(80),
+                  px: `${p(20)}px`,
+                  boxSizing: 'border-box',
+                  bgcolor: FIELD_BG,
+                  borderRadius: `${p(12)}px`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  py: 1,
-                  mb: 3,
-                  borderBottom: '1px solid #E2E8F0',
-                  borderRadius: 0,
                 }}
               >
-                <Typography sx={{ fontSize: is960 ? '0.95rem' : '1.05rem', fontWeight: 600, color: '#0F172A' }}>{dob}</Typography>
-                <ChevronRightIcon sx={{ color: '#94A3B8' }} />
-              </ButtonBase>
-
-              <Typography sx={{ fontSize: is960 ? '0.65rem' : '0.7rem', fontWeight: 800, color: '#94A3B8', letterSpacing: '0.08em', mb: 1.25 }}>
-                GENDER
-              </Typography>
-              <ToggleButtonGroup
-                exclusive
-                value={gender}
-                onChange={(_, v: Gender | null) => v && setGender(v)}
-                sx={{
-                  width: '100%',
-                  gap: 1,
-                  mb: 3,
-                  flexWrap: 'wrap',
-                  '& .MuiToggleButton-root': {
-                    flex: 1,
-                    minWidth: 100,
-                    border: `1px solid #E2E8F0 !important`,
-                    borderRadius: `${hardRadius} !important`,
-                    py: 1.25,
-                    textTransform: 'none',
-                    fontWeight: 700,
-                    fontSize: is960 ? '0.85rem' : '0.92rem',
-                    color: '#64748B',
-                  },
-                  '& .Mui-selected': {
-                    borderColor: `${TEAL} !important`,
-                    color: `${TEAL} !important`,
-                    bgcolor: 'rgba(13,148,136,0.06) !important',
-                  },
-                }}
-              >
-                <ToggleButton value="male">Male</ToggleButton>
-                <ToggleButton value="female">Female</ToggleButton>
-                <ToggleButton value="unspecified">Prefer not to say</ToggleButton>
-              </ToggleButtonGroup>
-
-              <Typography sx={{ fontSize: is960 ? '0.65rem' : '0.7rem', fontWeight: 800, color: '#94A3B8', letterSpacing: '0.08em', mb: 1 }}>
-                EMAIL
-              </Typography>
-              <ButtonBase
-                sx={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  py: 1,
-                  borderBottom: '1px solid #E2E8F0',
-                  borderRadius: 0,
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontSize: is960 ? '0.95rem' : '1.05rem',
-                    fontWeight: 600,
-                    color: '#0F172A',
-                    textAlign: 'left',
-                    wordBreak: 'break-all',
-                  }}
-                >
-                  {email}
+                <Typography sx={{ fontFamily: FIGMA_FONT, fontSize: p(32), lineHeight: 1.6, color: '#000000' }}>
+                  {dob}
                 </Typography>
-                <ChevronRightIcon sx={{ color: '#94A3B8', flexShrink: 0, ml: 1 }} />
+                <ChevronRightIcon sx={{ fontSize: p(40), color: HINT }} />
               </ButtonBase>
             </Box>
+          </Box>
+
+          <Box>
+            <FieldLabel>GENDER</FieldLabel>
+            <Box
+              sx={{
+                width: '100%',
+                height: p(80),
+                bgcolor: FIELD_BG,
+                borderRadius: `${p(12)}px`,
+                display: 'flex',
+                overflow: 'hidden',
+              }}
+            >
+              {([
+                ['male', 'Male'],
+                ['female', 'Female'],
+                ['unspecified', 'Prefer not to say'],
+              ] as const).map(([value, label]) => {
+                const selected = gender === value
+                return (
+                  <ButtonBase
+                    key={value}
+                    onClick={() => setGender(value)}
+                    sx={{
+                      flex: 1,
+                      height: '100%',
+                      borderRadius: `${p(12)}px`,
+                      border: selected ? `2px solid ${TEAL}` : '2px solid transparent',
+                      bgcolor: selected ? '#F6FCFB' : 'transparent',
+                      color: selected ? TEAL : HINT,
+                      fontFamily: FIGMA_FONT,
+                      fontWeight: 400,
+                      fontSize: p(28),
+                    }}
+                  >
+                    {label}
+                  </ButtonBase>
+                )
+              })}
+            </Box>
+          </Box>
+
+          <Box>
+            <FieldLabel>EMAIL</FieldLabel>
+            <ButtonBase
+              sx={{
+                width: '100%',
+                height: p(80),
+                px: `${p(20)}px`,
+                boxSizing: 'border-box',
+                bgcolor: FIELD_BG,
+                borderRadius: `${p(12)}px`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Typography sx={{ fontFamily: FIGMA_FONT, fontSize: p(32), lineHeight: 1.6, color: INK }}>
+                {email}
+              </Typography>
+              <ChevronRightIcon sx={{ fontSize: p(40), color: HINT }} />
+            </ButtonBase>
           </Box>
         </Box>
       </Box>

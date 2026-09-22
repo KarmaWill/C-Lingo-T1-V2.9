@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Box, Typography, ButtonBase } from '@mui/material';
 import { APP_FONT_FAMILY } from '../theme/appFont';
+import { FIGMA_FONT } from '../utils/figmaScale';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -14,9 +15,9 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CheckIcon from '@mui/icons-material/Check';
 import ClearIcon from '@mui/icons-material/Clear';
 import EditIcon from '@mui/icons-material/Edit';
-import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
-import { markLessonCompleted, UNIT_LESSON_COUNT } from '../utils/funChineseUnitProgress';
-import {
+import { markLessonCompleted, UNIT_LESSON_COUNT, getLessonResourceId } from '../utils/funChineseUnitProgress';
+import { loadLessonContent } from '../data/happyChinese2';
+import { listDemoUnitLessonMeta, mapContentVocab, type UiVocabItem } from '../data/happyChinese2/mapToLessonUi';import {
   getInitialPhase,
   getLessonPeriod,
   getNextPhaseInFlow,
@@ -26,34 +27,19 @@ import {
   markPeriodCompleted,
 } from '../utils/lessonPackageLoader';
 import FeedbackEntryButton from '../components/feedback/FeedbackEntryButton';
+import { HskPrepBackButton } from '../components/hsk/HskPrepBackButton';
+import HubContainBoard from '../components/home/HubContainBoard';
 import {
   buildWritingPracticeHref,
   buildWritingPracticeState,
   readLessonRestoreState,
 } from '../utils/navigateBack';
+import FunChineseKnowledgeCards from '../components/funChinese/FunChineseKnowledgeCards';
+import FunChinesePractice from '../components/funChinese/FunChinesePractice';
 
 type Phase = 'warmup' | 'learn' | 'cards' | 'practice' | 'complete';
 type Language = 'en' | 'vi' | 'th' | 'id';
 type ExerciseType = 'tone' | 'match';
-
-interface VocabItem {
-  id: string;
-  chinese: string;
-  pinyin: string;
-  translations: {
-    en: string;
-    vi: string;
-    th?: string;
-    id?: string;
-  };
-  tones: number[];
-  hskLevel: number;
-  partOfSpeech: string;
-  partOfSpeechTranslations: {
-    en: string;
-    vi: string;
-  };
-}
 
 interface DialogueLine {
   role: 'A' | 'B';
@@ -99,66 +85,75 @@ const LESSON_DATA = {
   },
   knowledgeCards: [
     {
-      type: 'dialogue' as const,
-      title: '打招呼',
-      titleVi: 'Chào hỏi',
-      content: {
-        scene: 'Gặp bạn bè lần đầu hoặc chào buổi sáng',
-        dialogueLines: [
-          {
-            role: 'A',
-            speaker: '小明',
-            chinese: '你好！',
-            pinyin: 'Nǐ hǎo!',
-            translation: { en: 'Hello!', vi: 'Xin chào!' }
-          },
-          {
-            role: 'B',
-            speaker: 'An',
-            chinese: '你好！',
-            pinyin: 'Nǐ hǎo!',
-            translation: { en: 'Hello!', vi: 'Xin chào!' }
-          },
-          {
-            role: 'A',
-            speaker: '小明',
-            chinese: '你好吗？',
-            pinyin: 'Nǐ hǎo ma?',
-            translation: { en: 'How are you?', vi: 'Bạn có khỏe không?' }
-          },
-          {
-            role: 'B',
-            speaker: 'An',
-            chinese: '我很好。谢谢！',
-            pinyin: 'Wǒ hěn hǎo. Xièxie!',
-            translation: { en: 'I am fine. Thank you!', vi: 'Tôi khỏe. Cảm ơn!' }
-          },
-        ]
-      }
-    },
-    {
       type: 'grammar' as const,
       title: '语气助词',
       titleVi: 'Trợ từ ngữ khí',
       content: {
         point: '吗 (ma)',
-        function: 'Biến câu trần thuật thành câu hỏi Yes/No',
-        formula: '[ 陈述句 ] + 吗 → 是/否疑问句',
-      }
+        function:
+          'The particle “吗” turns a statement into a yes/no question. Add it to the end of a sentence to ask.',
+        formula: '[statement] + 吗 → yes/no question',
+      },
     },
     {
       type: 'pattern' as const,
       title: '句型练习',
       titleVi: 'Luyện mẫu câu',
       content: {
-        formula: '[地点] + 有 + [动物] + 吗？',
-        function: '询问拥有',
+        formula: '[place] + 有 + [animal] + 吗？',
+        function: 'Ask about possession',
         examples: [
-          { chinese: '你家有小狗吗？', pinyin: 'Nǐ jiā yǒu xiǎo gǒu ma?', translation: 'Do you have a little dog at your house?' },
-          { chinese: '你家有小狗吗？', pinyin: 'Nǐ jiā yǒu xiǎo gǒu ma?', translation: 'Do you have a little dog at your house?' },
-        ]
-      }
-    }
+          {
+            chinese: '你家有小狗吗？',
+            pinyin: 'Nǐ jiā yǒu xiǎo gǒu ma?',
+            translation: 'Do you have a little dog at your house?',
+          },
+          {
+            chinese: '我很好。',
+            pinyin: 'Wǒ hěn hǎo.',
+            translation: "I'm fine.",
+          },
+        ],
+      },
+    },
+    {
+      type: 'dialogue' as const,
+      title: '打招呼',
+      titleVi: 'Chào hỏi',
+      content: {
+        scene: 'Meeting a friend for the first time, or greeting in the morning',
+        dialogueLines: [
+          {
+            role: 'A',
+            speaker: '小明',
+            chinese: '你好！',
+            pinyin: 'Nǐ hǎo!',
+            translation: { en: 'Hello!', vi: 'Xin chào!' },
+          },
+          {
+            role: 'B',
+            speaker: 'An',
+            chinese: '你好！',
+            pinyin: 'Nǐ hǎo!',
+            translation: { en: 'Hello!', vi: 'Xin chào!' },
+          },
+          {
+            role: 'A',
+            speaker: '小明',
+            chinese: '你好吗？',
+            pinyin: 'Nǐ hǎo ma?',
+            translation: { en: 'How are you?', vi: 'Bạn có khỏe không?' },
+          },
+          {
+            role: 'B',
+            speaker: 'An',
+            chinese: '我很好。谢谢！',
+            pinyin: 'Wǒ hěn hǎo. Xièxie!',
+            translation: { en: "I'm fine. Thank you!", vi: 'Tôi khỏe. Cảm ơn!' },
+          },
+        ],
+      },
+    },
   ] as KnowledgeCard[],
   practice: [
     {
@@ -262,7 +257,7 @@ export default function FunChineseLessonPage() {
   const safeLessonId = Number.isFinite(parsedLessonId) ? parsedLessonId : 1;
   const fromCollection = searchParams.get('from') === 'collection';
   const queryWantsCards = searchParams.get('phase') === 'cards';
-  const parsedPeriod = Number.parseInt(searchParams.get('period') || '0', 10);
+  const queryWantsLearn = searchParams.get('phase') === 'learn';  const parsedPeriod = Number.parseInt(searchParams.get('period') || '0', 10);
   const activePeriod = Number.isFinite(parsedPeriod) && parsedPeriod >= 1 ? parsedPeriod : null;
   const periodConfig = activePeriod ? getLessonPeriod(1, safeLessonId, activePeriod) : null;
   const periodFlow = periodConfig?.flow ?? null;
@@ -279,7 +274,7 @@ export default function FunChineseLessonPage() {
     if (!indices?.length) return all;
     return indices.map((i) => all[i]).filter(Boolean);
   }, [periodFlow]);
-  const vocabEndIndex = getVocabEndIndex(periodFlow, LESSON_DATA.vocabulary.length);
+  const initialVocabEndIndex = getVocabEndIndex(periodFlow, LESSON_DATA.vocabulary.length);
   const vocabStartIndex = getVocabStartIndex(periodFlow);
   const initialCardIndex = Number.isFinite(queryCardIndex)
     ? Math.min(Math.max(queryCardIndex, 0), knowledgeCardsForPeriod.length - 1)
@@ -289,12 +284,13 @@ export default function FunChineseLessonPage() {
   const [currentPhase, setCurrentPhase] = useState<Phase>(() => {
     if (lessonRestore?.phase) return lessonRestore.phase;
     if (queryWantsCards) return 'cards';
+    if (queryWantsLearn) return 'learn';
     if (periodFlow) return getInitialPhase(periodFlow);
     return 'warmup';
   });
   const [vocabIndex, setVocabIndex] = useState(
     lessonRestore && Number.isFinite(lessonRestore.vocabIndex)
-      ? Math.min(Math.max(lessonRestore.vocabIndex, vocabStartIndex), vocabEndIndex)
+      ? Math.min(Math.max(lessonRestore.vocabIndex, vocabStartIndex), initialVocabEndIndex)
       : vocabStartIndex,
   );
   const [cardIndex, setCardIndex] = useState(initialCardIndex);
@@ -304,8 +300,45 @@ export default function FunChineseLessonPage() {
   const [leftSelected, setLeftSelected] = useState<string | null>(null);
   const [rightSelected, setRightSelected] = useState<string | null>(null);
   const [matchedPairs, setMatchedPairs] = useState<string[]>([]);
-  // TODO: 从用户设置或系统语言获取，目前默认越南语
   const [userLanguage] = useState<Language>('vi');
+  const [packetVocab, setPacketVocab] = useState<UiVocabItem[] | null>(null);
+  const [packetTitleZh, setPacketTitleZh] = useState<string | null>(null);
+  const [packetGoalsEn, setPacketGoalsEn] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const meta = listDemoUnitLessonMeta().find((m) => m.id === safeLessonId);
+    const resourceId = meta?.resourceId || getLessonResourceId(safeLessonId);
+    if (meta) {
+      setPacketTitleZh(meta.title);
+      setPacketGoalsEn(meta.goalsEn.filter(Boolean));
+    }
+    if (!resourceId) return;
+    loadLessonContent(resourceId)
+      .then((content) => {
+        if (cancelled) return;
+        const mapped = mapContentVocab(content);
+        setPacketVocab(mapped.length ? mapped : null);
+      })
+      .catch((err) => {
+        console.error('[happy_chinese2] content load failed', err);
+        if (!cancelled) setPacketVocab(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [safeLessonId]);
+
+  const vocabulary = packetVocab?.length ? packetVocab : LESSON_DATA.vocabulary;
+  const lessonTitleZh = packetTitleZh || LESSON_DATA.title;
+  const learningGoals =
+    packetGoalsEn?.length
+      ? packetGoalsEn
+      : [
+          'Greet each other',
+          'Distinguish and pronounce the three final sounds a, o, and e with correct tones',
+        ];
+  const vocabEndIndex = getVocabEndIndex(periodFlow, vocabulary.length);
 
   useEffect(() => {
     if (currentPhase !== 'complete') return;
@@ -328,15 +361,15 @@ export default function FunChineseLessonPage() {
   const getSeenCharacters = (): Set<string> => {
     const seen = new Set<string>();
     for (let i = 0; i < vocabIndex; i++) {
-      const vocab = LESSON_DATA.vocabulary[i];
-      if (vocab.chinese.length === 1) {
+      const vocab = vocabulary[i];
+      if (vocab?.chinese.length === 1) {
         seen.add(vocab.chinese);
       }
     }
     return seen;
   };
 
-  const currentVocab = LESSON_DATA.vocabulary[vocabIndex];
+  const currentVocab = vocabulary[Math.min(vocabIndex, Math.max(vocabulary.length - 1, 0))] || vocabulary[0] || LESSON_DATA.vocabulary[0];
   const seenChars = getSeenCharacters();
   
   // 判断当前词是否为单字且首次出现
@@ -401,522 +434,886 @@ export default function FunChineseLessonPage() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Warmup Phase
+  // Warmup Phase — Figma「课程学习列表1单元学习1」1920×1200
   if (currentPhase === 'warmup') {
+    const goals = learningGoals;
+
     return (
       <Box
         sx={{
           height: '100%',
+          width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          bgcolor: '#FFF7F1',
-          position: 'relative',
+          bgcolor: '#FFFFFF',
           overflow: 'hidden',
         }}
       >
-        <Box
-          sx={{
-            height: is960 ? 66 : 82,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            flexShrink: 0,
-          }}
-        >
-          <ButtonBase
-            onClick={() => navigate(-1)}
-            aria-label="Back"
-            sx={{
-              position: 'absolute',
-              left: is960 ? 22 : 32,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: is960 ? 42 : 54,
-              height: is960 ? 42 : 54,
-              borderRadius: '50%',
-              bgcolor: '#FFFFFF',
-              color: '#111827',
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 8px 22px rgba(15,23,42,0.04)',
-              '&:active': { transform: 'translateY(-50%) scale(0.96)' },
-            }}
-          >
-            <ChevronLeftIcon sx={{ fontSize: is960 ? 26 : 32 }} />
-          </ButtonBase>
-          <Typography sx={{ fontSize: is960 ? '1.24rem' : '1.42rem', fontWeight: 900, color: '#111827', letterSpacing: '-0.03em' }}>
-            Lesson {lessonId}: {LESSON_DATA.title}
-          </Typography>
-          <Box sx={{ position: 'absolute', right: is960 ? 22 : 32, top: '50%', transform: 'translateY(-50%)' }}>
-            <FeedbackEntryButton is960={is960} context={{ screen: 'fun_chinese_lesson', lessonId: String(safeLessonId) }} />
-          </Box>
-        </Box>
-
-        <Box
-          sx={{
-            flex: 1,
-            minHeight: 0,
-            px: is960 ? 3 : 4,
-            pb: is960 ? 2 : 3,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: is960 ? 1.5 : 2,
-          }}
-        >
+        <HubContainBoard width={1920} height={1200}>
           <Box
             sx={{
+              width: 1920,
+              height: 1200,
               bgcolor: '#FFFFFF',
-              borderRadius: is960 ? '10px' : '14px',
-              boxShadow: '0 8px 22px rgba(249,115,22,0.06)',
-              px: is960 ? 3.2 : 4.4,
-              py: is960 ? 1.45 : 2,
-              flexShrink: 0,
-            }}
-          >
-            <Typography sx={{ fontSize: is960 ? '0.96rem' : '1.08rem', color: '#111827', fontWeight: 900, mb: 0.45, fontFamily: APP_FONT_FAMILY }}>
-              Learning Goals
-            </Typography>
-            <Box component="ul" sx={{ m: 0, pl: is960 ? 2 : 2.4, color: '#6B7280', fontSize: is960 ? '0.82rem' : '0.92rem', lineHeight: 1.55, fontWeight: 500, fontFamily: APP_FONT_FAMILY }}>
-              <li>Greet each other</li>
-              <li>Distinguish and pronounce the three final sounds a, o, and e with correct tones</li>
-            </Box>
-          </Box>
-
-          <Box
-            sx={{
-              flex: 1,
-              minHeight: 0,
-              bgcolor: '#FFFFFF',
-              borderRadius: is960 ? '10px' : '14px',
-              boxShadow: '0 8px 22px rgba(249,115,22,0.06)',
-              overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
+              overflow: 'hidden',
+              fontFamily: FIGMA_FONT,
             }}
           >
+            {/* Top bar 160 */}
             <Box
               sx={{
-                height: is960 ? 70 : 88,
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-              alignItems: 'center',
-                px: is960 ? 7 : 10,
-              flexShrink: 0,
+                boxSizing: 'border-box',
+                width: '100%',
+                height: 160,
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                px: '60px',
+                bgcolor: '#FFFFFF',
+                borderBottom: '1px solid #E2E2E3',
+                position: 'relative',
               }}
             >
-              <Typography sx={{ textAlign: 'center', fontSize: is960 ? '0.92rem' : '1rem', color: '#111827', fontWeight: 900, letterSpacing: '0.06em' }}>
-                ENGLISH
+              <HskPrepBackButton onClick={() => navigate(-1)} />
+              <Typography
+                sx={{
+                  position: 'absolute',
+                  left: 140,
+                  right: 140,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  textAlign: 'center',
+                  fontFamily: FIGMA_FONT,
+                  fontWeight: 700,
+                  fontSize: 40,
+                  lineHeight: 1.6,
+                  color: '#2D3436',
+                  pointerEvents: 'none',
+                }}
+              >
+                Lesson {lessonId}: {lessonTitleZh}
               </Typography>
-              <Typography sx={{ textAlign: 'center', fontSize: is960 ? '0.92rem' : '1rem', color: '#111827', fontWeight: 900, letterSpacing: '0.06em' }}>
-                CHINESE
-              </Typography>
+              <Box sx={{ position: 'absolute', right: 60, top: '50%', transform: 'translateY(-50%)' }}>
+                <FeedbackEntryButton is960={is960} context={{ screen: 'fun_chinese_lesson', lessonId: String(safeLessonId) }} />
+              </Box>
             </Box>
+
+            {/* Body 1040 */}
             <Box
               sx={{
                 flex: 1,
                 minHeight: 0,
-                px: is960 ? 7 : 10,
-                overflowY: 'auto',
-                scrollbarWidth: 'none',
-                '&::-webkit-scrollbar': { display: 'none' },
+                boxSizing: 'border-box',
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                px: '60px',
+                py: '40px',
+                gap: '40px',
               }}
             >
-              {LESSON_DATA.vocabulary.map((vocab, idx) => (
-                <Box
-                  key={vocab.id}
+              {/* Learning Goals card */}
+              <Box
+                sx={{
+                  boxSizing: 'border-box',
+                  width: 1800,
+                  flexShrink: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'flex-start',
+                  px: '40px',
+                  py: '20px',
+                  gap: '9px',
+                  bgcolor: '#FFFFFF',
+                  border: '0.8px solid #F3F4F6',
+                  boxShadow: '0px 1px 3px rgba(60, 64, 67, 0.3)',
+                  borderRadius: '24px',
+                }}
+              >
+                <Typography
                   sx={{
-                    minHeight: is960 ? 57 : 74,
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    alignItems: 'center',
-                    borderBottom: idx === LESSON_DATA.vocabulary.length - 1 ? 'none' : '1px solid #E5E7EB',
+                    fontFamily: FIGMA_FONT,
+                    fontWeight: 400,
+                    fontSize: 40,
+                    lineHeight: 1.6,
+                    color: '#2D3436',
                   }}
                 >
-                  <Typography sx={{ textAlign: 'center', fontSize: is960 ? '0.94rem' : '1.06rem', color: '#111827', fontWeight: 500 }}>
-                    {vocab.translations.en}
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: is960 ? 1.2 : 1.45 }}>
-                    <Box sx={{ minWidth: is960 ? 50 : 58, textAlign: 'center' }}>
-                      <Typography sx={{ fontSize: is960 ? '0.58rem' : '0.66rem', color: '#111827', fontWeight: 500, lineHeight: 1, mb: 0.15 }}>
-                        {vocab.pinyin}
-                      </Typography>
-                      <Typography sx={{ fontSize: is960 ? '1.18rem' : '1.42rem', color: '#111827', fontWeight: 500, lineHeight: 1.05 }}>
-                        {vocab.chinese}
-                      </Typography>
-                    </Box>
+                  Learning Goals
+                </Typography>
+                <Box
+                  component="ul"
+                  sx={{
+                    m: 0,
+                    p: 0,
+                    listStyle: 'none',
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                  }}
+                >
+                  {goals.map((goal) => (
                     <Box
+                      component="li"
+                      key={goal}
                       sx={{
-                        px: is960 ? 1 : 1.15,
-                        py: is960 ? 0.28 : 0.35,
-                        borderRadius: '999px',
-                        bgcolor: '#EEFDF9',
-                        color: teal,
-                        fontSize: is960 ? '0.64rem' : '0.72rem',
-                        fontWeight: 750,
-                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'flex-start',
+                        gap: '16px',
                       }}
                     >
-                      HSK {vocab.hskLevel}
+                      <Box
+                        sx={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: '50%',
+                          bgcolor: '#00BC7D',
+                          flexShrink: 0,
+                          mt: '22px',
+                        }}
+                      />
+                      <Typography
+                        sx={{
+                          fontFamily: FIGMA_FONT,
+                          fontWeight: 400,
+                          fontSize: 32,
+                          lineHeight: 1.6,
+                          color: '#2D3436',
+                        }}
+                      >
+                        {goal}
+                      </Typography>
                     </Box>
-                    <ButtonBase
-                      onClick={() => playChineseAudio(vocab.chinese)}
-                      aria-label={`Play pronunciation ${vocab.chinese}`}
+                  ))}
+                </Box>
+              </Box>
+
+              {/* Vocab table card */}
+              <Box
+                sx={{
+                  boxSizing: 'border-box',
+                  width: 1800,
+                  flex: 1,
+                  minHeight: 0,
+                  bgcolor: '#FFFFFF',
+                  border: '0.8px solid #F3F4F6',
+                  boxShadow: '0px 1px 3px rgba(60, 64, 67, 0.3)',
+                  borderRadius: '24px',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  position: 'relative',
+                }}
+              >
+                {/* Header + rows share the same 2-col grid so ENGLISH/CHINESE line up */}
+                <Box
+                  sx={{
+                    boxSizing: 'border-box',
+                    height: 77,
+                    flexShrink: 0,
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 700px',
+                    alignItems: 'center',
+                    columnGap: '80px',
+                    px: '164px',
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontFamily: FIGMA_FONT,
+                      fontWeight: 500,
+                      fontSize: 40,
+                      lineHeight: '28px',
+                      color: '#2D3436',
+                      textAlign: 'left',
+                    }}
+                  >
+                    ENGLISH
+                  </Typography>
+                  <Typography
+                    sx={{
+                      width: 340,
+                      fontFamily: FIGMA_FONT,
+                      fontWeight: 500,
+                      fontSize: 40,
+                      lineHeight: '28px',
+                      color: '#2D3436',
+                      textAlign: 'left',
+                      px: '20px',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    CHINESE
+                  </Typography>
+                </Box>
+
+                <Box
+                  sx={{
+                    flex: 1,
+                    minHeight: 0,
+                    overflowY: 'auto',
+                    scrollbarWidth: 'none',
+                    '&::-webkit-scrollbar': { display: 'none' },
+                  }}
+                >
+                  {vocabulary.map((vocab) => (
+                    <Box
+                      key={vocab.id}
                       sx={{
-                        width: is960 ? 31 : 36,
-                        height: is960 ? 31 : 36,
-                        borderRadius: '50%',
-                        bgcolor: orange,
-                        color: '#FFFFFF',
-                        '&:active': { transform: 'scale(0.96)' },
+                        boxSizing: 'border-box',
+                        width: '100%',
+                        minHeight: 149,
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 700px',
+                        alignItems: 'center',
+                        columnGap: '80px',
+                        px: '164px',
+                        py: '22px',
+                        borderTop: '0.8px solid #F3F4F6',
                       }}
                     >
-                      <VolumeUpIcon sx={{ fontSize: is960 ? 16 : 18 }} />
-                    </ButtonBase>
-                  </Box>
-                </Box>
-              ))}
-            </Box>
-          </Box>
+                      <Typography
+                        sx={{
+                          fontFamily: FIGMA_FONT,
+                          fontWeight: 400,
+                          fontSize: 36,
+                          lineHeight: '32px',
+                          color: '#2D3436',
+                          textAlign: 'left',
+                        }}
+                      >
+                        {vocab.translations.en}
+                      </Typography>
 
-          <Box
-            sx={{
-              height: is960 ? 56 : 66,
-              display: 'flex',
-              alignItems: 'center',
-              gap: is960 ? 1.4 : 2,
-              flexShrink: 0,
-            }}
-          >
-            <Box
-              sx={{
-                flex: 1,
-                height: '100%',
-                bgcolor: '#FFFFFF',
-                borderRadius: is960 ? '10px' : '14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: is960 ? 1.2 : 1.5,
-                px: is960 ? 2 : 3,
-                boxShadow: '0 8px 22px rgba(249,115,22,0.05)',
-              }}
-            >
-              <ThumbUpOutlinedIcon sx={{ fontSize: is960 ? 20 : 24, color: '#111827', flexShrink: 0 }} />
-              <Typography sx={{ fontSize: is960 ? '0.86rem' : '0.98rem', color: '#111827', fontWeight: 500, lineHeight: 1.55, fontFamily: APP_FONT_FAMILY }}>
-                After today, you'll be able to greet new classmates in Chinese
-              </Typography>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          width: 700,
+                          flexShrink: 0,
+                          px: '20px',
+                          boxSizing: 'border-box',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-start',
+                            width: 340,
+                          }}
+                        >
+                          <Typography
+                            sx={{
+                              fontFamily: FIGMA_FONT,
+                              fontWeight: 400,
+                              fontSize: 28,
+                              lineHeight: 1.6,
+                              color: '#2D3436',
+                              textAlign: 'left',
+                              mb: '4px',
+                            }}
+                          >
+                            {vocab.pinyin}
+                          </Typography>
+                          <Typography
+                            sx={{
+                              fontFamily:
+                                '"KaiTi", "STKaiti", "BiauKai", "DFKai-SB", "TW-Kai", "SimKai", serif',
+                              fontWeight: 400,
+                              fontSize: 48,
+                              lineHeight: 1.6,
+                              color: '#2D3436',
+                              textAlign: 'left',
+                            }}
+                          >
+                            {vocab.chinese}
+                          </Typography>
+                        </Box>
+
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: '50px',
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              boxSizing: 'border-box',
+                              width: 93,
+                              height: 55,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              bgcolor: '#F3FAF6',
+                              border: '1px solid #00B4A0',
+                              borderRadius: '12px',
+                            }}
+                          >
+                            <Typography
+                              sx={{
+                                fontFamily: FIGMA_FONT,
+                                fontWeight: 500,
+                                fontSize: 20,
+                                lineHeight: 1.6,
+                                color: '#00B4A0',
+                                textAlign: 'center',
+                              }}
+                            >
+                              HSK {vocab.hskLevel}
+                            </Typography>
+                          </Box>
+                          <ButtonBase
+                            onClick={() => playChineseAudio(vocab.chinese)}
+                            aria-label={`Play pronunciation ${vocab.chinese}`}
+                            sx={{
+                              boxSizing: 'border-box',
+                              width: 86,
+                              height: 55,
+                              borderRadius: '50px',
+                              bgcolor: '#FF6B35',
+                              border: '2px solid #FF6B35',
+                              color: '#FFFFFF',
+                              '&:active': { transform: 'scale(0.96)' },
+                            }}
+                          >
+                            <VolumeUpIcon sx={{ fontSize: 24 }} />
+                          </ButtonBase>
+                        </Box>
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+
+              {/* Start Learning CTA */}
+              <ButtonBase
+                onClick={handleNextPhase}
+                sx={{
+                  boxSizing: 'border-box',
+                  width: 1800,
+                  height: 100,
+                  flexShrink: 0,
+                  bgcolor: '#00B4A0',
+                  borderRadius: '100px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '12px',
+                  '&:active': { transform: 'scale(0.99)' },
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontFamily: FIGMA_FONT,
+                    fontWeight: 700,
+                    fontSize: 32,
+                    lineHeight: 1.6,
+                    color: '#FFFFFF',
+                    textAlign: 'center',
+                  }}
+                >
+                  Start Learning
+                </Typography>
+                <ChevronRightIcon sx={{ fontSize: 40, color: '#FFFFFF' }} />
+              </ButtonBase>
             </Box>
-            <ButtonBase
-              onClick={handleNextPhase}
-              sx={{
-                width: is960 ? 108 : 132,
-                height: '100%',
-                bgcolor: '#263238',
-                color: 'white',
-                borderRadius: is960 ? '10px' : '14px',
-                fontSize: is960 ? '0.86rem' : '0.98rem',
-                fontWeight: 800,
-                fontFamily: APP_FONT_FAMILY,
-                flexShrink: 0,
-                '&:active': { transform: 'scale(0.98)' },
-              }}
-            >
-              Start Learning
-            </ButtonBase>
           </Box>
-        </Box>
+        </HubContainBoard>
       </Box>
     );
   }
 
-  // Learn Phase - Vocabulary Cards
+  // Learn Phase — Figma「课程学习列表1生词学习1」1920×1200
   if (currentPhase === 'learn') {
+    const totalVocab = vocabulary.length;
+    const progressFill = Math.round(((vocabIndex + 1) / totalVocab) * 1620);
+    const posLabel =
+      (currentVocab.partOfSpeechTranslations?.en || currentVocab.partOfSpeech || '')
+        .replace(/^./, (c) => c.toUpperCase());
+    const hanziLen = [...currentVocab.chinese].length;
+    const hanziSize = hanziLen <= 1 ? 250 : hanziLen === 2 ? 150 : hanziLen <= 4 ? 96 : 64;
+    const pinyinSize = hanziLen <= 1 ? 90 : hanziLen === 2 ? 52 : hanziLen <= 4 ? 36 : 28;
+    const dotCompact = totalVocab > 8;
+    const dotActiveW = dotCompact ? 48 : 111;
+    const dotIdle = dotCompact ? 12 : 17;
+    const dotGap = dotCompact ? 10 : 14;
+
     return (
       <Box
         sx={{
           height: '100%',
+          width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          bgcolor: '#FFF7F1',
-          p: is960 ? 2.2 : 3,
+          bgcolor: '#FFFFFF',
           overflow: 'hidden',
         }}
       >
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: is960 ? 48 : 58, flexShrink: 0 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box
-              sx={{
-                width: is960 ? 42 : 48,
-                height: is960 ? 42 : 48,
-                borderRadius: is960 ? '12px' : '14px',
-                bgcolor: orange,
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: is960 ? '1.18rem' : '1.34rem',
-                fontWeight: 900,
-                boxShadow: `0 8px 18px ${orange}2E`,
-              }}
-            >
-              1
-            </Box>
-            <Typography sx={{ fontSize: is960 ? '1.12rem' : '1.32rem', fontWeight: 850, color: '#111827', letterSpacing: '-0.02em', fontFamily: APP_FONT_FAMILY }}>
-              Vocabulary Learning
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography sx={{ fontSize: is960 ? '0.98rem' : '1.08rem', color: '#4B5563', fontWeight: 900 }}>
-              {vocabIndex + 1} / {LESSON_DATA.vocabulary.length}
-            </Typography>
-            <ButtonBase
-              onClick={() => navigate(-1)}
-              sx={{
-                width: is960 ? 38 : 44,
-                height: is960 ? 38 : 44,
-                borderRadius: '50%',
-                bgcolor: '#E5E7EB',
-                color: '#6B7280',
-                '&:active': { transform: 'scale(0.96)' },
-              }}
-            >
-              <CloseIcon sx={{ fontSize: is960 ? 20 : 22 }} />
-            </ButtonBase>
-          </Box>
-        </Box>
-
-        {/* Vocabulary Card */}
-        <Box
-          sx={{
-            flex: 1,
-            minHeight: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
+        <HubContainBoard width={1920} height={1200}>
           <Box
             sx={{
-              width: is960 ? 560 : 720,
-              height: is960 ? 440 : 560,
-              bgcolor: 'white',
-              borderRadius: is960 ? '22px' : '30px',
-              boxShadow: '0 18px 48px rgba(249,115,22,0.06)',
+              position: 'relative',
+              width: 1920,
+              height: 1200,
+              bgcolor: '#FFFFFF',
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              p: is960 ? 2.7 : 3.8,
-              position: 'relative',
               overflow: 'hidden',
+              fontFamily: FIGMA_FONT,
             }}
           >
-            {/* HSK Level and Part of Speech Tags */}
+            {/* Top bar */}
             <Box
               sx={{
-                alignSelf: 'flex-start',
+                boxSizing: 'border-box',
+                width: '100%',
+                height: 160,
+                flexShrink: 0,
                 display: 'flex',
-                gap: 1.2,
+                alignItems: 'center',
+                px: '60px',
+                gap: '50px',
+                bgcolor: '#FFFFFF',
+                borderBottom: '1px solid #E2E2E3',
+              }}
+            >
+              <HskPrepBackButton onClick={handleCloseLesson} />
+              <Box
+                sx={{
+                  flex: 1,
+                  minWidth: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px',
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    width: '100%',
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontFamily: FIGMA_FONT,
+                      fontWeight: 400,
+                      fontSize: 32,
+                      lineHeight: 1.6,
+                      color: '#2D3436',
+                    }}
+                  >
+                    Vocabulary Learning
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: FIGMA_FONT,
+                      fontWeight: 400,
+                      fontSize: 32,
+                      lineHeight: 1.6,
+                      color: '#2D3436',
+                    }}
+                  >
+                    {vocabIndex + 1}/{totalVocab}
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    position: 'relative',
+                    width: '100%',
+                    height: 10,
+                    bgcolor: '#E8E8E8',
+                    borderRadius: '20px',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      width: progressFill,
+                      maxWidth: '100%',
+                      height: 10,
+                      bgcolor: '#00B4A0',
+                      borderRadius: '20px',
+                      transition: 'width 0.25s ease',
+                    }}
+                  />
+                </Box>
+              </Box>
+            </Box>
+
+            {/* Body — Figma Frame 1410141252：余高给卡，底栏不叠 absolute */}
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                boxSizing: 'border-box',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                px: '60px',
+                py: '40px',
+                gap: '40px',
               }}
             >
               <Box
                 sx={{
-                  px: is960 ? 1.5 : 2,
-                  py: is960 ? 0.6 : 0.75,
-                  bgcolor: orange,
-                  color: 'white',
-                  borderRadius: '10px',
-                  fontSize: is960 ? '0.78rem' : '0.88rem',
-                  fontWeight: 800,
+                  boxSizing: 'border-box',
+                  width: 1331,
+                  height: 820,
+                  maxHeight: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  px: '64px',
+                  py: '30px',
+                  bgcolor: '#FFFFFF',
+                  border: '0.8px solid #F3F4F6',
+                  boxShadow:
+                    '0px 20px 25px -5px rgba(229, 231, 235, 0.5), 0px 8px 10px -6px rgba(229, 231, 235, 0.5)',
+                  borderRadius: '40px',
                 }}
               >
-                HSK {currentVocab.hskLevel}
-              </Box>
-              <Box
-                sx={{
-                  px: is960 ? 1.5 : 2,
-                  py: is960 ? 0.6 : 0.75,
-                  bgcolor: `${teal}`,
-                  color: 'white',
-                  borderRadius: '10px',
-                  fontSize: is960 ? '0.78rem' : '0.88rem',
-                  fontWeight: 800,
-                  boxShadow: `0 4px 12px ${teal}50`,
-                }}
-              >
-                {currentVocab.partOfSpeech}
-              </Box>
-            </Box>
-
-            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-              {/* Pinyin */}
-              <Typography
-                sx={{
-                  fontSize: is960 ? '2rem' : '2.6rem',
-                  fontWeight: 400,
-                  fontFamily: APP_FONT_FAMILY,
-                  color: '#111827',
-                  lineHeight: 1,
-                  mb: is960 ? 1 : 1.2,
-                }}
-              >
-                {currentVocab.pinyin}
-              </Typography>
-
-              <Typography
-                sx={{
-                  fontSize: 
-                    currentVocab.chinese.length === 1 
-                      ? is960 ? '7.2rem' : '9.6rem'
-                      : currentVocab.chinese.length === 2
-                      ? is960 ? '5.4rem' : '7.2rem'
-                      : is960 ? '3.8rem' : '5rem',
-                  fontWeight: 400,
-                  fontFamily: '"KaiTi", "STKaiti", "BiauKai", "DFKai-SB", "TW-Kai", "SimKai", serif',
-                  color: '#000000',
-                  lineHeight: 1,
-                  mb: is960 ? 3.2 : 4.2,
-                }}
-              >
-                {currentVocab.chinese}
-              </Typography>
-
-              <Typography
-                sx={{
-                  fontSize: is960 ? '1.35rem' : '1.7rem',
-                  color: '#6B7280',
-                  fontWeight: 400,
-                }}
-              >
-                {currentVocab.translations.en}
-              </Typography>
-            </Box>
-
-            <Box sx={{ width: '92%', height: 1.5, bgcolor: '#E5E7EB', mb: is960 ? 1.4 : 1.8 }} />
-
-            <Box sx={{ display: 'flex', gap: is960 ? 2 : 2.5 }}>
-              {/* Writing Practice Button - Only for single chars first appearance */}
-              {shouldShowWriting && (
-                <ButtonBase
-                  onClick={() => {
-                    const lessonPath = `/library/hub/fun-chinese/lesson/${safeLessonId}${
-                      fromCollection ? '?from=collection' : ''
-                    }`;
-                    navigate(
-                      buildWritingPracticeHref(currentVocab.chinese, {
-                        lessonPath,
-                        vocabIndex,
-                        phase: 'learn',
-                      }),
-                      {
-                        state: buildWritingPracticeState({
-                          lessonPath,
-                          vocabIndex,
-                          phase: 'learn',
-                        }),
-                      },
-                    );
-                  }}
+                <Box
                   sx={{
-                    width: is960 ? 162 : 206,
-                    height: is960 ? 52 : 64,
-                    borderRadius: is960 ? '14px' : '18px',
-                    bgcolor: '#FFFFFF',
-                    color: teal,
+                    width: 1201,
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 1,
-                    fontSize: is960 ? '0.95rem' : '1.12rem',
-                    fontWeight: 800,
-                    border: `2px solid ${teal}30`,
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    flex: 1,
+                    minHeight: 0,
                   }}
                 >
-                  <EditIcon sx={{ fontSize: is960 ? 20 : 24 }} />
-                  Practice Writing
-                </ButtonBase>
-              )}
+                  {/* Tags: POS + HSK */}
+                  <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
+                    <Box
+                      sx={{
+                        boxSizing: 'border-box',
+                        height: 54,
+                        px: '24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: '#D4F3EE',
+                        borderRadius: '12px',
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          fontFamily: FIGMA_FONT,
+                          fontWeight: 500,
+                          fontSize: 28,
+                          lineHeight: 1.6,
+                          color: '#00B4A0',
+                          textAlign: 'center',
+                        }}
+                      >
+                        {posLabel}
+                      </Typography>
+                    </Box>
+                    <Box
+                      sx={{
+                        boxSizing: 'border-box',
+                        height: 54,
+                        px: '40px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: '#F3FAF6',
+                        border: '1px solid #00B4A0',
+                        borderRadius: '12px',
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          fontFamily: FIGMA_FONT,
+                          fontWeight: 500,
+                          fontSize: 28,
+                          lineHeight: 1.6,
+                          color: '#00B4A0',
+                          textAlign: 'center',
+                        }}
+                      >
+                        HSK {currentVocab.hskLevel}
+                      </Typography>
+                    </Box>
+                  </Box>
 
+                  {/* Character block */}
+                  <Box
+                    sx={{
+                      flex: 1,
+                      width: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '30px',
+                      pt: '20px',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        position: 'relative',
+                        width: '100%',
+                        maxWidth: 900,
+                        minHeight: 300,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: `${Math.max(24, Math.round(pinyinSize * 0.28))}px`,
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          fontFamily: FIGMA_FONT,
+                          fontWeight: 400,
+                          fontSize: pinyinSize,
+                          lineHeight: 1.2,
+                          color: '#2D3436',
+                          textAlign: 'center',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {currentVocab.pinyin}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontFamily:
+                            '"KaiTi", "STKaiti", "BiauKai", "DFKai-SB", "TW-Kai", "SimKai", serif',
+                          fontWeight: 400,
+                          fontSize: hanziSize,
+                          lineHeight: 1.15,
+                          color: '#2D3436',
+                          textAlign: 'center',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {currentVocab.chinese}
+                      </Typography>
+                    </Box>
+
+                    <Typography
+                      sx={{
+                        fontFamily: FIGMA_FONT,
+                        fontWeight: 400,
+                        fontSize: 36,
+                        lineHeight: '32px',
+                        color: '#636E72',
+                        textAlign: 'center',
+                        pt: '24px',
+                        borderTop: '1px solid #E5E7EB',
+                        width: 600,
+                        maxWidth: '90%',
+                      }}
+                    >
+                      {currentVocab.translations.en}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Practice Writing + Speaker */}
+                <Box
+                  sx={{
+                    width: 1201,
+                    height: 101,
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '30px',
+                    flexShrink: 0,
+                  }}
+                >
+                  {shouldShowWriting && (
+                    <ButtonBase
+                      onClick={() => {
+                        const lessonPath = `/library/hub/fun-chinese/lesson/${safeLessonId}${
+                          fromCollection ? '?from=collection' : ''
+                        }`;
+                        navigate(
+                          buildWritingPracticeHref(currentVocab.chinese, {
+                            lessonPath,
+                            vocabIndex,
+                            phase: 'learn',
+                          }),
+                          {
+                            state: buildWritingPracticeState({
+                              lessonPath,
+                              vocabIndex,
+                              phase: 'learn',
+                            }),
+                          },
+                        );
+                      }}
+                      sx={{
+                        boxSizing: 'border-box',
+                        flex: 1,
+                        height: 101,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '16px',
+                        bgcolor: 'transparent',
+                        border: '1.6px solid #00B4A0',
+                        borderRadius: '100px',
+                        '&:active': { transform: 'scale(0.99)' },
+                      }}
+                    >
+                      <EditIcon sx={{ fontSize: 30, color: '#00B4A0' }} />
+                      <Typography
+                        sx={{
+                          fontFamily: FIGMA_FONT,
+                          fontWeight: 700,
+                          fontSize: 32,
+                          lineHeight: 1.6,
+                          color: '#00B4A0',
+                          textAlign: 'center',
+                        }}
+                      >
+                        Practice Writing
+                      </Typography>
+                    </ButtonBase>
+                  )}
+                  <ButtonBase
+                    onClick={() => playChineseAudio(currentVocab.chinese)}
+                    aria-label={`Play pronunciation ${currentVocab.chinese}`}
+                    sx={{
+                      boxSizing: 'border-box',
+                      width: 150,
+                      height: 101,
+                      borderRadius: '50px',
+                      bgcolor: '#FF6B35',
+                      border: '2px solid #FF6B35',
+                      color: '#FFFFFF',
+                      flexShrink: 0,
+                      '&:active': { transform: 'scale(0.96)' },
+                    }}
+                  >
+                    <VolumeUpIcon sx={{ fontSize: 36 }} />
+                  </ButtonBase>
+                </Box>
+              </Box>
+            </Box>
+
+            {/* Bottom nav bar — Figma Frame 1410141312 */}
+            <Box
+              sx={{
+                boxSizing: 'border-box',
+                flexShrink: 0,
+                width: '100%',
+                height: 140,
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                px: '60px',
+                bgcolor: '#FFFFFF',
+                borderTop: '2px solid #E2E3E3',
+              }}
+            >
               <ButtonBase
-                onClick={() => playChineseAudio(currentVocab.chinese)}
+                onClick={handlePrevVocab}
+                disabled={vocabIndex === 0}
                 sx={{
-                  width: is960 ? 54 : 66,
-                  height: is960 ? 52 : 64,
-                  borderRadius: is960 ? '14px' : '18px',
-                  bgcolor: `${orange}15`,
-                  color: orange,
-                  border: `1px solid ${orange}30`,
+                  boxSizing: 'border-box',
+                  width: 336,
+                  height: 94,
+                  borderRadius: '100px',
+                  bgcolor: vocabIndex === 0 ? 'transparent' : '#FFFFFF',
+                  border: vocabIndex === 0 ? 'none' : '2.4px solid #A7B3B8',
+                  opacity: vocabIndex === 0 ? 0 : 1,
+                  pointerEvents: vocabIndex === 0 ? 'none' : 'auto',
+                  visibility: vocabIndex === 0 ? 'hidden' : 'visible',
+                  '&:active': { transform: 'scale(0.99)' },
                 }}
               >
-                <VolumeUpIcon sx={{ fontSize: is960 ? 24 : 30 }} />
+                <Typography
+                  sx={{
+                    fontFamily: FIGMA_FONT,
+                    fontWeight: 700,
+                    fontSize: 32,
+                    lineHeight: 1.6,
+                    color: '#636E72',
+                  }}
+                >
+                  Previous
+                </Typography>
+              </ButtonBase>
+
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: `${dotGap}px`,
+                  maxWidth: 900,
+                  overflow: 'hidden',
+                  justifyContent: 'center',
+                }}
+              >
+                {vocabulary.map((_, i) => (
+                  <Box
+                    key={i}
+                    sx={{
+                      width: i === vocabIndex ? dotActiveW : dotIdle,
+                      height: i === vocabIndex ? 18 : dotIdle,
+                      borderRadius: i === vocabIndex ? '9px' : '50%',
+                      bgcolor: i === vocabIndex ? '#00B4A0' : '#D9D9D9',
+                      transition: 'all 0.25s ease',
+                      flexShrink: 0,
+                    }}
+                  />
+                ))}
+              </Box>
+
+              <ButtonBase
+                onClick={handleNextVocab}
+                sx={{
+                  boxSizing: 'border-box',
+                  width: 336,
+                  height: 94,
+                  borderRadius: '100px',
+                  bgcolor: '#00B4A0',
+                  '&:active': { transform: 'scale(0.99)' },
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontFamily: FIGMA_FONT,
+                    fontWeight: 700,
+                    fontSize: 32,
+                    lineHeight: 1.6,
+                    color: '#FFFFFF',
+                  }}
+                >
+                  Next
+                </Typography>
               </ButtonBase>
             </Box>
           </Box>
-        </Box>
-
-        {/* Navigation and Progress Dots */}
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: '1fr auto 1fr',
-            alignItems: 'center',
-            flexShrink: 0,
-            gap: is960 ? 2.5 : 3,
-            height: is960 ? 56 : 72,
-          }}
-        >
-          <ButtonBase
-            onClick={handlePrevVocab}
-            disabled={vocabIndex === 0}
-            sx={{
-              justifySelf: 'start',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.6,
-              color: '#111827',
-              fontSize: is960 ? '0.9rem' : '1.02rem',
-              fontWeight: 650,
-              fontFamily: APP_FONT_FAMILY,
-              opacity: vocabIndex === 0 ? 0.35 : 1,
-              pointerEvents: vocabIndex === 0 ? 'none' : 'auto',
-            }}
-          >
-            <ChevronLeftIcon sx={{ fontSize: is960 ? 24 : 28 }} />
-            Previous
-          </ButtonBase>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: is960 ? 0.75 : 0.9 }}>
-            {LESSON_DATA.vocabulary.map((_, i) => (
-              <Box
-                key={i}
-                sx={{
-                  width: i === vocabIndex ? is960 ? 36 : 40 : is960 ? 7 : 8,
-                  height: is960 ? 7 : 8,
-                  borderRadius: '999px',
-                  bgcolor: i === vocabIndex ? orange : '#E2E8F0',
-                  transition: 'all 0.25s ease',
-                }}
-              />
-            ))}
-          </Box>
-
-          <ButtonBase
-            onClick={handleNextVocab}
-            sx={{
-              justifySelf: 'end',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.6,
-              color: '#111827',
-              fontSize: is960 ? '0.9rem' : '1.02rem',
-              fontWeight: 650,
-              fontFamily: APP_FONT_FAMILY,
-            }}
-          >
-            Next
-            <ChevronRightIcon sx={{ fontSize: is960 ? 24 : 28 }} />
-          </ButtonBase>
-        </Box>
+        </HubContainBoard>
       </Box>
     );
   }
@@ -998,7 +1395,7 @@ export default function FunChineseLessonPage() {
             }}
           >
             <Typography sx={{ fontSize: is960 ? '1.5rem' : '1.8rem', fontWeight: 900, color: orange, lineHeight: 1 }}>
-              {LESSON_DATA.vocabulary.length}
+              {vocabulary.length}
             </Typography>
             <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', color: '#64748B', fontWeight: 700, mt: 0.5, fontFamily: APP_FONT_FAMILY }}>
               Words Mastered
@@ -1107,6 +1504,25 @@ export default function FunChineseLessonPage() {
   // Cards Phase - Knowledge Cards
   if (currentPhase === 'cards') {
     const currentCard = knowledgeCardsForPeriod[cardIndex];
+    if (knowledgeCardsForPeriod.length > 0) {
+      return (
+        <FunChineseKnowledgeCards
+          card={currentCard}
+          index={cardIndex}
+          total={knowledgeCardsForPeriod.length}
+          onBack={handleCloseLesson}
+          onPrevious={() => setCardIndex((index) => Math.max(0, index - 1))}
+          onNext={() => {
+            if (cardIndex < knowledgeCardsForPeriod.length - 1) {
+              setCardIndex((index) => index + 1);
+            } else {
+              handleNextPhase();
+            }
+          }}
+          onSpeak={playChineseAudio}
+        />
+      );
+    }
     const cardTypeTitle =
       currentCard.type === 'dialogue'
         ? 'Dialogue Card'
@@ -1596,6 +2012,17 @@ export default function FunChineseLessonPage() {
 
   // Practice Phase
   if (currentPhase === 'practice') {
+    const practiceResourceId = getLessonResourceId(safeLessonId);
+    if (practiceResourceId) {
+      return (
+        <FunChinesePractice
+          lessonResourceId={practiceResourceId}
+          onBack={handleCloseLesson}
+          onComplete={handleNextPhase}
+          onSpeak={playChineseAudio}
+        />
+      );
+    }
     const currentExercise = practiceExercisesForPeriod[exerciseIndex];
     
     // 检查当前题目是否完成

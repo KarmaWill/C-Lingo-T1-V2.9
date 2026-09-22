@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from 'react'
+import { ReactNode, useState, useEffect, useMemo } from 'react'
 import { Box, ButtonBase } from '@mui/material'
 import { useLocation } from 'react-router-dom'
 import BottomNavigator, { getBottomNavReserve } from './BottomNavigator'
@@ -9,6 +9,12 @@ import ShellTopBarProductLinks from './ShellTopBarProductLinks'
 import IpadDeviceShell, { getDeviceShellBezelForSize } from './IpadDeviceShell'
 import { getChromeThemeFromPath } from '../../data/programTracks'
 import { useOnboarding } from '../../onboarding/OnboardingContext'
+import { loadCompletedLessonIds, UNIT_LESSON_COUNT } from '../../utils/funChineseUnitProgress'
+import {
+  readHubPreview,
+  subscribeHubPreview,
+  writeHubPreview,
+} from '../../utils/funChineseHubPreview'
 
 interface MainLayoutProps {
   children: ReactNode
@@ -26,6 +32,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation()
   const { active: onboardingActive, onboarded, toggleStudioOnboard } = useOnboarding()
   const isWebsiteEmbed = new URLSearchParams(location.search).get('mode') === 'website'
+  const [hubPreview, setHubPreview] = useState(readHubPreview)
 
   const openExternal = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer')
@@ -98,6 +105,15 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isStartingLearningPage = location.pathname === '/starting-learning'
   const isFunChineseTeacherGuidePage = location.pathname === '/library/hub/fun-chinese/teacher-guide'
   const isFunChineseHubPage = location.pathname === '/library/hub/fun-chinese'
+  useEffect(() => {
+    if (!isFunChineseHubPage) return
+    return subscribeHubPreview(() => setHubPreview(readHubPreview()))
+  }, [isFunChineseHubPage])
+  const hubPreviewComplete = useMemo(() => {
+    if (hubPreview === 'complete') return true
+    if (hubPreview === 'locked') return false
+    return loadCompletedLessonIds().size >= UNIT_LESSON_COUNT
+  }, [hubPreview])
   const isFunChineseCardCollectionPage = location.pathname === '/library/hub/fun-chinese/card-collection'
   const isFunChineseIntensivePage = location.pathname === '/library/hub/fun-chinese/intensive'
   const isFunChineseLessonPage = location.pathname.startsWith('/library/hub/fun-chinese/lesson')
@@ -108,6 +124,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isNskAppStorePage = location.pathname === '/nsk-app-store'
   const isJxwAppStorePage = location.pathname === '/jxw-app-store'
   const isAppsCatalogPage = location.pathname === '/apps-catalog'
+  const isInAppBrowserPage = location.pathname === '/apps/browser'
   const isAndroidAppPickerPage = location.pathname === '/android-app-picker'
   const isAndroidHomePage = location.pathname === '/android/home'
   const isAndroidSettingsPage = location.pathname === '/android/settings'
@@ -141,6 +158,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isNskAppStorePage ||
     isJxwAppStorePage ||
     isAppsCatalogPage ||
+    isInAppBrowserPage ||
     isAndroidAppPickerPage ||
     isAndroidHomePage ||
     isAndroidSettingsPage ||
@@ -171,9 +189,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     isHSKOralReviewPage ||
     isGrammarSnapPage ||
     isLibraryBookSelectionPage ||
-    isFunChineseCardCollectionPage ||
     isFunChineseIntensivePage ||
-    isFunChineseLessonPage ||
     isCharacterWritingPage ||
     isHSKStandardSubPage ||
     isBusinessChineseSubPage)
@@ -320,6 +336,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
         studioToggle={
           isHomeStudioBackdrop
             ? { onboarded, onToggle: toggleStudioOnboard }
+            : undefined
+        }
+        hubPreviewToggle={
+          isFunChineseHubPage && !isWebsiteEmbed
+            ? {
+                complete: hubPreviewComplete,
+                onToggle: () => writeHubPreview(hubPreviewComplete ? 'locked' : 'complete'),
+              }
             : undefined
         }
       />

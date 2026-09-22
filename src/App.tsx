@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { LocaleProvider, useLocale } from './context/LocaleContext'
+import EyeCareOverlay from './components/system/EyeCareOverlay'
 import MainLayout from './components/MainUI/MainLayout'
 import { FeedbackProvider } from './components/feedback/FeedbackProvider'
 import HomePage from './pages/HomePage'
@@ -23,6 +24,7 @@ import LibraryBookSelectionPage from './pages/LibraryBookSelectionPage'
 import SpecializedTracksPage from './pages/SpecializedTracksPage'
 import CameraPage from './pages/CameraPage'
 import AppsPage from './pages/AppsPage'
+import InAppBrowserPage from './pages/InAppBrowserPage'
 import ProfilePage from './pages/ProfilePage'
 import ProfileEditPage from './pages/ProfileEditPage'
 import HSKTestPage from './pages/HSKTestPage'
@@ -112,6 +114,25 @@ const baseThemeOptions = {
       styleOverrides: {
         body: {
           fontFamily: 'var(--app-font-family, "Google Sans Flex Variable", "Noto Sans SC", sans-serif)',
+          fontOpticalSizing: 'auto',
+        },
+        '#ipad-screen, #main-content-area': {
+          fontFamily: 'var(--app-font-family, "Google Sans Flex Variable", "Noto Sans SC", sans-serif)',
+          fontOpticalSizing: 'auto',
+        },
+      },
+    },
+    MuiTypography: {
+      styleOverrides: {
+        root: {
+          fontFamily: 'inherit',
+        },
+      },
+    },
+    MuiButtonBase: {
+      styleOverrides: {
+        root: {
+          fontFamily: 'inherit',
         },
       },
     },
@@ -126,6 +147,10 @@ function ThemedApp() {
         ...baseThemeOptions,
         typography: {
           fontFamily: locale.fontFamily,
+          allVariants: {
+            fontFamily: locale.fontFamily,
+            fontOpticalSizing: 'auto',
+          },
         },
       }),
     [locale.fontFamily]
@@ -176,6 +201,7 @@ function ThemedApp() {
               <Route path="/specialized" element={<SpecializedTracksPage />} />
               <Route path="/camera" element={<CameraPage />} />
               <Route path="/apps" element={<AppsPage />} />
+              <Route path="/apps/browser" element={<InAppBrowserPage />} />
               <Route path="/parental-controls" element={<ParentalControlsPage />} />
               <Route path="/nsk-app-store" element={<NskAppStorePage />} />
               <Route path="/jxw-app-store" element={<JxwAppStorePage />} />
@@ -225,6 +251,7 @@ function ThemedApp() {
 function App() {
   return (
     <LocaleProvider>
+      <EyeCareOverlay />
       <ThemedApp />
     </LocaleProvider>
   )

@@ -1,13 +1,140 @@
-import { useState } from 'react'
-import { Box, Typography, IconButton, Button, ButtonBase, Grid, LinearProgress, Paper, TextField } from '@mui/material'
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
-import CheckIcon from '@mui/icons-material/Check'
-import CloseIcon from '@mui/icons-material/Close'
-import MicIcon from '@mui/icons-material/Mic'
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import { useEffect, useMemo, useState } from 'react'
+import { Box, ButtonBase, Typography } from '@mui/material'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import CancelIcon from '@mui/icons-material/Cancel'
 import VolumeUpIcon from '@mui/icons-material/VolumeUp'
-import { Unit, ExerciseType } from '../../types/lesson'
+import { Unit, ExerciseType, type Question } from '../../types/lesson'
 import FeedbackEntryButton from '../feedback/FeedbackEntryButton'
+import { HskPrepBackButton } from '../hsk/HskPrepBackButton'
+import { APP_SCREEN_SIZE, FIGMA_FONT, figmaPx } from '../../utils/figmaScale'
+
+const INK = '#2D3436'
+const MUTED = '#636E72'
+const LINE = '#E0E0DF'
+const TEAL = '#00B4A0'
+const ORANGE = '#FF6B35'
+const SELECT_BLUE = '#2188FE'
+const CORRECT_GREEN = '#13C377'
+const INCORRECT_RED = '#F34D47'
+const OPTION_LABELS = ['A', 'B', 'C', 'D'] as const
+const HAN_RE = /[\u4e00-\u9fff]/
+const EMOJI_RE = /[\u{1F300}-\u{1F9FF}]/u
+const PINYIN_FONT = '"FZPinYinHandwriting", "Google Sans Flex Variable", "Google Sans Flex", sans-serif'
+const KAI_FONT = '"FZNewKai GB18030L2", "KaiTi", "STKaiti", "BiauKai", "DFKai-SB", "TW-Kai", "SimKai", serif'
+
+const OPTION_PINYIN: Record<string, string> = {
+  米: 'mǐ',
+  饭: 'fàn',
+  是: 'shì',
+  谁: 'shéi',
+  水: 'shuǐ',
+  饺: 'jiǎo',
+  茶: 'chá',
+  包: 'bāo',
+  子: 'zi',
+  面: 'miàn',
+  条: 'tiáo',
+  米饭: 'mǐfàn',
+  饺子: 'jiǎozi',
+  包子: 'bāozi',
+  面条: 'miàntiáo',
+  '我吃米饭。': 'wǒ chī mǐfàn',
+  '这是米饭。': 'zhè shì mǐfàn',
+  '我有米饭。': 'wǒ yǒu mǐfàn',
+  '米饭好吃。': 'mǐfàn hǎo chī',
+  '我吃饺子。': 'wǒ chī jiǎozi',
+  '这是饺子。': 'zhè shì jiǎozi',
+  '我吃包子。': 'wǒ chī bāozi',
+  '这是包子。': 'zhè shì bāozi',
+  '我喝水。': 'wǒ hē shuǐ',
+  '我喝茶。': 'wǒ hē chá',
+}
+
+function playPromptAudio(text: string, audioUrl?: string) {
+  if (typeof window === 'undefined') return
+  window.speechSynthesis?.cancel()
+  const usableUrl = audioUrl && !audioUrl.startsWith('mock-') && /^(https?:|\/)/.test(audioUrl)
+  if (usableUrl) {
+    const audio = new Audio(audioUrl)
+    void audio.play().catch(() => speakChinese(text))
+    return
+  }
+  speakChinese(text)
+}
+
+function speakChinese(text: string) {
+  if (typeof window === 'undefined' || !window.speechSynthesis || !text) return
+  const utterance = new SpeechSynthesisUtterance(text)
+  utterance.lang = 'zh-CN'
+  utterance.rate = 0.9
+  window.speechSynthesis.cancel()
+  window.speechSynthesis.speak(utterance)
+}
+
+function resolvePracticeImage(url: string | undefined, option = '') {
+  const source = url || ''
+  if (
+    option === '米饭' ||
+    option === '米' ||
+    source.includes('米饭') ||
+    source.includes('大米') ||
+    source.includes('rice-grain') ||
+    source === '🍚'
+  ) {
+    return '/assets/images/rice-bowl-white.png'
+  }
+  if (option === '饺子' || source.includes('饺子') || source === '🥟') return '/assets/images/dumplings-white.png'
+  if (option === '包子' || source.includes('包子') || source === '🍞') return '/assets/images/baozi-white.png'
+  if (option === '面条' || source.includes('面条') || source === '🍜') return '/assets/images/noodles-white.png'
+  return source
+}
+
+function extractHanzi(raw: string) {
+  const chars = [...raw].filter((ch) => HAN_RE.test(ch)).join('')
+  return chars || raw
+}
+
+function optionPinyin(raw: string) {
+  if (OPTION_PINYIN[raw]) return OPTION_PINYIN[raw]
+  const hanzi = extractHanzi(raw)
+  if (OPTION_PINYIN[hanzi]) return OPTION_PINYIN[hanzi]
+  const leftover = raw.replace(/[\u4e00-\u9fff]/g, ' ').replace(/[.,!?。？！]/g, ' ').trim()
+  return leftover && /[a-züāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/i.test(leftover) ? leftover : ''
+}
+
+function isEmoji(value: string) {
+  return EMOJI_RE.test(value)
+}
+
+function optionTone(opt: string, selected: string | null, checked: boolean, correct: string) {
+  if (checked && opt === correct) return CORRECT_GREEN
+  if (checked && selected === opt && opt !== correct) return INCORRECT_RED
+  if (!checked && selected === opt) return SELECT_BLUE
+  return ''
+}
+
+function typeCopy(question: Question, imageChoice: boolean) {
+  switch (question.type) {
+    case ExerciseType.T00_LISTEN_SELECT_IMAGE:
+      return { title: 'Listening Comprehension', subtitle: 'Listen and select the correct image' }
+    case ExerciseType.T01_PICTURE_FILL_IN:
+      return { title: 'Image Comprehension', subtitle: 'Look at the picture, select the correct character' }
+    case ExerciseType.T02_PICTURE_SELECT_TEXT:
+      return imageChoice
+        ? { title: 'Translation', subtitle: 'Choose the matching picture and character' }
+        : { title: 'Image Comprehension', subtitle: 'Look at the picture, select the correct character' }
+    case ExerciseType.T03_LISTEN_SELECT_SENTENCE:
+      return { title: 'Listening Comprehension', subtitle: 'Listen and select the sentence you heard' }
+    case ExerciseType.T04_WORD_MEANING_SELECT:
+      return { title: 'Image Comprehension', subtitle: 'Choose the correct meaning' }
+    case ExerciseType.T05_GRAMMAR_SELECT:
+      return { title: 'Translation', subtitle: 'Choose the correct Chinese translation' }
+    case ExerciseType.S01_SPEAKING:
+      return { title: 'Oral Practice', subtitle: question.prompt || 'Speak the sentence' }
+    default:
+      return { title: 'Practice', subtitle: question.prompt || '' }
+  }
+}
 
 interface Props {
   unit: Unit
@@ -18,1128 +145,829 @@ interface Props {
 export default function ExerciseStage({ unit, onComplete, onExit }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
-  const [userInput, setUserInput] = useState('') // 用于T01图片填空
   const [isChecked, setIsChecked] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
-  const [isRecording, setIsRecording] = useState(false)
   const [isPlayingAudio, setIsPlayingAudio] = useState(false)
-  const [imageError, setImageError] = useState<{ [key: string]: boolean }>({}) // 跟踪图片加载错误
+  const [leaveOpen, setLeaveOpen] = useState(false)
+  const p = (n: number) => figmaPx(n, APP_SCREEN_SIZE)
 
-  // 获取图片加载失败时的emoji兜底
-  const getImageFallbackEmoji = (imageUrl: string, chineseText?: string): string => {
-    // 检查是否与米饭相关
-    if (imageUrl.includes('rice') || imageUrl.includes('米饭') || chineseText?.includes('米饭') || chineseText?.includes('饭')) {
-      return '🍚'
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
     }
-    // 可以根据需要添加更多映射
-    return '🍚' // 默认使用米饭emoji
-  }
+  }, [currentIndex])
 
-  // Read screen size from environment variable
-  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768'
-  const is960 = screenSize === '960x540'
-  const is1920x1125 = screenSize === '1920x1125'
+  const questions = unit.questions || []
+  const currentQuestion = questions[currentIndex]
 
-  // Safety check: ensure questions exist and currentIndex is valid
-  if (!unit.questions || unit.questions.length === 0) {
-    return (
-      <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'white' }}>
-        <Typography sx={{ color: '#636E72', fontSize: '1rem' }}>No questions available</Typography>
-      </Box>
-    )
-  }
+  const options = useMemo(() => {
+    if (!currentQuestion) return []
+    if (currentQuestion.options?.length) return currentQuestion.options
+    if (currentQuestion.type === ExerciseType.T01_PICTURE_FILL_IN) {
+      const answer = String(currentQuestion.correctAnswer)
+      const fallback = ['米饭', '饺子', '包子', '面条']
+      return [answer, ...fallback.filter((item) => item !== answer)].slice(0, 4)
+    }
+    return []
+  }, [currentQuestion])
 
-  const currentQuestion = unit.questions[currentIndex]
-  const progress = ((currentIndex + 1) / unit.questions.length) * 100
+  const imageChoice =
+    currentQuestion?.type === ExerciseType.T02_PICTURE_SELECT_TEXT &&
+    (currentQuestion.imageUrls?.length || 0) >= 3 &&
+    options.length >= 3
 
-  // Safety check: ensure currentQuestion exists
   if (!currentQuestion) {
     return (
-      <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'white' }}>
-        <Typography sx={{ color: '#636E72', fontSize: '1rem' }}>Question not found</Typography>
+      <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#FFFFFF' }}>
+        <Typography sx={{ color: MUTED, fontFamily: FIGMA_FONT, fontSize: p(28) }}>
+          {questions.length === 0 ? 'No questions available' : 'Question not found'}
+        </Typography>
       </Box>
     )
   }
 
+  const progress = ((currentIndex + 1) / questions.length) * 100
+  const copy = typeCopy(currentQuestion, imageChoice)
+  const correctAnswer = String(currentQuestion.correctAnswer)
+  const canConfirm = Boolean(selectedOption) || currentQuestion.type === ExerciseType.S01_SPEAKING
+
   const handleCheck = () => {
-    let correct = false
-    let userAnswer: string | string[] = ''
-    
-    if (currentQuestion.type === ExerciseType.S01_SPEAKING) {
-      // Rule 6: Speech evaluation occurs at the end of the session, not per sentence.
-      // We simulate immediate success for the flow but the actual scoring happens in the report.
-      correct = true
-      userAnswer = 'simulate_success'
-    } else if (currentQuestion.type === ExerciseType.T01_PICTURE_FILL_IN) {
-      // T01: 图片填空 - 使用用户输入的文本
-      userAnswer = userInput.trim().toLowerCase()
-      correct = userAnswer === String(currentQuestion.correctAnswer).toLowerCase()
-    } else {
-      userAnswer = selectedOption || ''
-      correct = Array.isArray(currentQuestion.correctAnswer)
-        ? currentQuestion.correctAnswer.includes(userAnswer)
-        : userAnswer === currentQuestion.correctAnswer
-    }
-    
-    // Save result to localStorage
-    localStorage.setItem(`question_${currentQuestion.id}_result`, JSON.stringify({
-      userAnswer,
-      isCorrect: correct
-    }))
-    
+    const userAnswer = selectedOption || ''
+    const correct = Array.isArray(currentQuestion.correctAnswer)
+      ? currentQuestion.correctAnswer.includes(userAnswer)
+      : userAnswer === currentQuestion.correctAnswer ||
+        (currentQuestion.type === ExerciseType.S01_SPEAKING)
+    localStorage.setItem(
+      `question_${currentQuestion.id}_result`,
+      JSON.stringify({ userAnswer, isCorrect: correct }),
+    )
     setIsCorrect(correct)
     setIsChecked(true)
   }
 
+  const spokenPrompt =
+    typeof currentQuestion.correctAnswer === 'string'
+      ? currentQuestion.correctAnswer
+      : currentQuestion.chineseText || options[0] || ''
+
   const handlePlayAudio = () => {
-    if (currentQuestion.audioUrl) {
-      setIsPlayingAudio(true)
-      const audio = new Audio(currentQuestion.audioUrl)
-      audio.play()
-      audio.onended = () => setIsPlayingAudio(false)
-      audio.onerror = () => setIsPlayingAudio(false)
-    }
+    setIsPlayingAudio(true)
+    playPromptAudio(spokenPrompt, currentQuestion.audioUrl)
+    window.setTimeout(() => setIsPlayingAudio(false), 1600)
   }
 
   const handleNext = () => {
-    if (currentIndex < unit.questions.length - 1) {
-      setCurrentIndex(prev => prev + 1)
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex((prev) => prev + 1)
       setSelectedOption(null)
-      setUserInput('')
       setIsChecked(false)
       setIsCorrect(false)
       setIsPlayingAudio(false)
-      setImageError({}) // 重置图片错误状态
     } else {
       onComplete()
     }
   }
 
+  const promptImage = resolvePracticeImage(
+    currentQuestion.imageUrls?.[0] || (currentQuestion.imageEmoji ? currentQuestion.imageEmoji : ''),
+    currentQuestion.chineseText || extractHanzi(spokenPrompt),
+  )
+
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'white', overflow: 'hidden', boxSizing: 'border-box' }}>
-      {/* Header */}
-      <Box sx={{ p: is960 ? 2 : (is1920x1125 ? 3 : 2.5), bgcolor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, boxSizing: 'border-box' }}>
-        <ButtonBase
-          onClick={onExit}
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: '#FFFFFF',
+        overflow: 'hidden',
+        position: 'relative',
+        boxSizing: 'border-box',
+        fontFamily: FIGMA_FONT,
+      }}
+    >
+      <Box
+        sx={{
+          boxSizing: 'border-box',
+          flexShrink: 0,
+          height: p(160),
+          bgcolor: '#FFFFFF',
+          borderBottom: '1px solid #E2E2E3',
+          display: 'flex',
+          alignItems: 'center',
+          px: `${p(60)}px`,
+          gap: `${p(100)}px`,
+        }}
+      >
+        <HskPrepBackButton onClick={() => setLeaveOpen(true)} sx={{ width: p(80), height: p(80) }} />
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: `${p(16)}px` }}>
+            <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 400, fontSize: p(32), lineHeight: 1.6, color: INK }}>
+              Reinforcement Practice
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(16)}px` }}>
+              <FeedbackEntryButton context={{ screen: 'lesson_exercise' }} />
+              <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 400, fontSize: p(32), lineHeight: 1.6, color: INK }}>
+                {Math.round(progress)}%
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ width: '100%', height: p(10), bgcolor: '#E8E8E8', borderRadius: '20px', overflow: 'hidden' }}>
+            <Box sx={{ width: `${progress}%`, height: '100%', bgcolor: TEAL, borderRadius: '20px' }} />
+          </Box>
+        </Box>
+      </Box>
+
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          px: `${p(60)}px`,
+          pt: `${p(40)}px`,
+          pb: isChecked ? 0 : `${p(24)}px`,
+          overflow: 'auto',
+        }}
+      >
+        <Box sx={{ textAlign: 'center', mb: `${p(28)}px`, flexShrink: 0 }}>
+          <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 700, fontSize: p(40), lineHeight: 1.6, color: INK }}>
+            {copy.title}
+          </Typography>
+          <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 400, fontSize: p(28), lineHeight: 1.6, color: MUTED }}>
+            {copy.subtitle}
+          </Typography>
+        </Box>
+
+        {currentQuestion.type === ExerciseType.T00_LISTEN_SELECT_IMAGE && (
+          <T00Body
+            p={p}
+            options={options}
+            imageUrls={currentQuestion.imageUrls || []}
+            selectedOption={selectedOption}
+            isChecked={isChecked}
+            correctAnswer={correctAnswer}
+            isPlayingAudio={isPlayingAudio}
+            onPlay={handlePlayAudio}
+            onSelect={setSelectedOption}
+          />
+        )}
+
+        {(currentQuestion.type === ExerciseType.T01_PICTURE_FILL_IN ||
+          (currentQuestion.type === ExerciseType.T02_PICTURE_SELECT_TEXT && !imageChoice)) && (
+          <ChipSelectBody
+            p={p}
+            imageSrc={promptImage}
+            options={options}
+            selectedOption={selectedOption}
+            isChecked={isChecked}
+            correctAnswer={correctAnswer}
+            onSelect={setSelectedOption}
+          />
+        )}
+
+        {imageChoice && (
+          <ImageLabelBody
+            p={p}
+            options={options}
+            imageUrls={currentQuestion.imageUrls || []}
+            selectedOption={selectedOption}
+            isChecked={isChecked}
+            correctAnswer={correctAnswer}
+            prompt={currentQuestion.englishText || currentQuestion.prompt}
+            onSelect={setSelectedOption}
+          />
+        )}
+
+        {currentQuestion.type === ExerciseType.T03_LISTEN_SELECT_SENTENCE && (
+          <SentenceGridBody
+            p={p}
+            options={options}
+            selectedOption={selectedOption}
+            isChecked={isChecked}
+            correctAnswer={correctAnswer}
+            showSpeaker
+            isPlayingAudio={isPlayingAudio}
+            onPlay={handlePlayAudio}
+            onSelect={setSelectedOption}
+          />
+        )}
+
+        {currentQuestion.type === ExerciseType.T04_WORD_MEANING_SELECT && (
+          <MeaningBody
+            p={p}
+            imageSrc={promptImage}
+            word={currentQuestion.chineseText || extractHanzi(spokenPrompt)}
+            pinyin={currentQuestion.pinyin || optionPinyin(currentQuestion.chineseText || spokenPrompt)}
+            options={options}
+            selectedOption={selectedOption}
+            isChecked={isChecked}
+            correctAnswer={correctAnswer}
+            onPlay={() => playPromptAudio(currentQuestion.chineseText || spokenPrompt, currentQuestion.audioUrl)}
+            onSelect={setSelectedOption}
+          />
+        )}
+
+        {currentQuestion.type === ExerciseType.T05_GRAMMAR_SELECT && (
+          <SentenceGridBody
+            p={p}
+            options={options}
+            selectedOption={selectedOption}
+            isChecked={isChecked}
+            correctAnswer={correctAnswer}
+            prompt={currentQuestion.englishText}
+            onSelect={setSelectedOption}
+          />
+        )}
+
+        {currentQuestion.type === ExerciseType.S01_SPEAKING && (
+          <Typography sx={{ fontFamily: KAI_FONT, fontSize: p(48), color: INK, mt: `${p(40)}px` }}>
+            {currentQuestion.chineseText || spokenPrompt}
+          </Typography>
+        )}
+      </Box>
+
+      {!isChecked ? (
+        <Box sx={{ flexShrink: 0, display: 'flex', justifyContent: 'center', pb: `${p(40)}px` }}>
+          <ButtonBase
+            disabled={!canConfirm}
+            onClick={handleCheck}
+            sx={{
+              minWidth: p(240),
+              height: p(90),
+              px: `${p(80)}px`,
+              borderRadius: '100px',
+              bgcolor: TEAL,
+              opacity: canConfirm ? 1 : 0.3,
+              color: '#FFFFFF',
+              fontFamily: FIGMA_FONT,
+              fontWeight: 400,
+              fontSize: p(32),
+              lineHeight: 1.6,
+            }}
+          >
+            Confirm
+          </ButtonBase>
+        </Box>
+      ) : (
+        <Box
           sx={{
-            width: is960 ? 40 : (is1920x1125 ? 48 : 48),
-            height: is960 ? 40 : (is1920x1125 ? 48 : 48),
-            borderRadius: '50%',
-            bgcolor: '#F3F4F6',
+            flexShrink: 0,
+            minHeight: p(280),
+            bgcolor: isCorrect ? '#ECFBF1' : '#FFF3F2',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: `${p(12)}px`,
+            px: `${p(80)}px`,
+            py: `${p(40)}px`,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(16)}px` }}>
+            {isCorrect ? (
+              <CheckCircleIcon sx={{ fontSize: p(38), color: CORRECT_GREEN }} />
+            ) : (
+              <CancelIcon sx={{ fontSize: p(38), color: INCORRECT_RED }} />
+            )}
+            <Typography
+              sx={{
+                fontFamily: FIGMA_FONT,
+                fontWeight: 700,
+                fontSize: p(32),
+                lineHeight: 1.6,
+                color: isCorrect ? CORRECT_GREEN : INCORRECT_RED,
+              }}
+            >
+              {isCorrect ? 'Correct' : 'Incorrect'}
+            </Typography>
+          </Box>
+          {currentQuestion.explanation && (
+            <Typography
+              sx={{
+                fontFamily: FIGMA_FONT,
+                fontWeight: 400,
+                fontSize: p(24),
+                lineHeight: 1.6,
+                color: MUTED,
+                textAlign: 'center',
+                maxWidth: p(1400),
+              }}
+            >
+              {currentQuestion.explanation}
+            </Typography>
+          )}
+          <ButtonBase
+            onClick={handleNext}
+            sx={{
+              minWidth: p(240),
+              height: p(90),
+              px: `${p(80)}px`,
+              mt: `${p(8)}px`,
+              borderRadius: '100px',
+              bgcolor: isCorrect ? CORRECT_GREEN : INCORRECT_RED,
+              color: '#FFFFFF',
+              fontFamily: FIGMA_FONT,
+              fontWeight: 400,
+              fontSize: p(32),
+            }}
+          >
+            Continue
+          </ButtonBase>
+        </Box>
+      )}
+
+      {leaveOpen && (
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            bgcolor: 'rgba(45, 52, 54, 0.45)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            '&:active': { bgcolor: '#E5E7EB', transform: 'scale(0.95)' }
+            zIndex: 20,
           }}
         >
-          <ChevronLeftIcon sx={{ fontSize: is960 ? 20 : (is1920x1125 ? 24 : 24), color: '#1F2937' }} />
-        </ButtonBase>
-        <Box sx={{ flex: 1, mx: is960 ? 2 : (is1920x1125 ? 4 : 3), maxWidth: is960 ? 400 : (is1920x1125 ? 600 : 500) }}>
-          <Typography sx={{ fontWeight: 900, color: '#1F2937', fontSize: is960 ? '0.95rem' : (is1920x1125 ? '1.5rem' : '1.25rem'), mb: is960 ? 0.75 : (is1920x1125 ? 1 : 1) }}>
-            Reinforcement Practice
-          </Typography>
-          <LinearProgress 
-            variant="determinate" 
-            value={progress} 
-            sx={{ 
-              height: is960 ? 6 : (is1920x1125 ? 8 : 8), 
-              borderRadius: '4px', 
-              bgcolor: '#E5E7EB', 
-              '& .MuiLinearProgress-bar': { bgcolor: '#00B4A0', borderRadius: '4px' } 
-            }} 
-          />
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography sx={{ fontWeight: 900, color: '#1F2937', fontSize: is960 ? '0.95rem' : (is1920x1125 ? '1.5rem' : '1.25rem'), minWidth: is960 ? 40 : (is1920x1125 ? 60 : 48), textAlign: 'right' }}>
-            {Math.round(progress)}%
-          </Typography>
-          <FeedbackEntryButton is960={is960} context={{ screen: 'exercise', unitId: unit.id }} />
-        </Box>
-      </Box>
-
-      {/* Content */}
-      <Box sx={{ flex: 1, overflow: 'auto', p: is960 ? 2 : (is1920x1125 ? 4 : 3), display: 'flex', flexDirection: 'column', minHeight: 0, boxSizing: 'border-box' }}>
-        {/* Title Section */}
-        <Box sx={{ textAlign: 'center', mb: is960 ? 2 : (is1920x1125 ? 3 : 2.5), flexShrink: 0 }}>
-          <Typography variant="h5" sx={{ fontWeight: 900, color: '#1F2937', mb: is960 ? 0.75 : (is1920x1125 ? 1 : 1), fontSize: is960 ? '1.25rem' : (is1920x1125 ? '2rem' : '1.75rem') }}>
-            {currentQuestion.type === ExerciseType.T00_LISTEN_SELECT_IMAGE && "Listening Comprehension"}
-            {currentQuestion.type === ExerciseType.T01_PICTURE_FILL_IN && "Picture Fill-in"}
-            {currentQuestion.type === ExerciseType.T02_PICTURE_SELECT_TEXT && "Image Comprehension"}
-            {currentQuestion.type === ExerciseType.T03_LISTEN_SELECT_SENTENCE && "Listen & Select Sentence"}
-            {currentQuestion.type === ExerciseType.T04_WORD_MEANING_SELECT && "Vocabulary Selection"}
-            {currentQuestion.type === ExerciseType.T05_GRAMMAR_SELECT && "Grammar Selection"}
-            {currentQuestion.type === ExerciseType.L01_LISTEN_SELECT && "Visual Recognition"}
-            {currentQuestion.type === ExerciseType.S01_SPEAKING && "Oral Proficiency"}
-            {currentQuestion.type === ExerciseType.L02_LISTEN_TEXT && "Contextual Logic"}
-          </Typography>
-          <Typography sx={{ color: '#636E72', fontWeight: 500, fontSize: is960 ? '0.875rem' : (is1920x1125 ? '1.25rem' : '1rem'), lineHeight: 1.4 }}>
-            {currentQuestion.type === ExerciseType.T00_LISTEN_SELECT_IMAGE ? "Listen and select the correct image" : 
-             currentQuestion.type === ExerciseType.T02_PICTURE_SELECT_TEXT ? "Look at image, select correct character" :
-             currentQuestion.type === ExerciseType.T04_WORD_MEANING_SELECT ? "选择正确的英文翻译" :
-             currentQuestion.type === ExerciseType.T05_GRAMMAR_SELECT ? "选择正确的中文翻译" :
-             (currentQuestion.prompt || '')}
-          </Typography>
-        </Box>
-
-        {/* Options Section */}
-        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0, px: 2, pt: 2, pb: 2, overflow: 'auto' }}>
-          {/* T00: 听音选图 - 有播放按钮，然后显示图片选项 */}
-          {currentQuestion.type === ExerciseType.T00_LISTEN_SELECT_IMAGE && (
-            <Box sx={{ width: '100%', maxWidth: is960 ? 600 : (is1920x1125 ? 1200 : 1000), textAlign: 'center', mx: 'auto', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 0 }}>
-              <ButtonBase
-                onClick={handlePlayAudio}
-                disabled={isPlayingAudio}
-                sx={{
-                  width: is960 ? 64 : (is1920x1125 ? 96 : 80),
-                  height: is960 ? 64 : (is1920x1125 ? 96 : 80),
-                  bgcolor: '#FF6B35',
-                  color: 'white',
-                  mb: is960 ? 2 : (is1920x1125 ? 3 : 2.5),
-                  borderRadius: '50%',
-                  alignSelf: 'center',
-                  boxShadow: '0 4px 12px rgba(255,107,53,0.3)',
-                  '&:active': { transform: 'scale(0.95)', bgcolor: '#E55A2B' },
-                  '&:disabled': { bgcolor: '#9CA3AF', opacity: 0.6 }
-                }}
-              >
-                <VolumeUpIcon sx={{ fontSize: is960 ? 32 : (is1920x1125 ? 48 : 40) }} />
-              </ButtonBase>
-              <Box sx={{ display: 'flex', gap: is960 ? 1.5 : (is1920x1125 ? 2.5 : 2), justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', px: is960 ? 1 : (is1920x1125 ? 2 : 1.5), width: '100%' }}>
-                {currentQuestion.imageUrls?.map((url, idx) => {
-                  const opt = currentQuestion.options?.[idx] || ''
-                  const isSelected = selectedOption === opt
-                  const isAnswer = isChecked && opt === currentQuestion.correctAnswer
-                  const labels = ['A', 'B', 'C', 'D']
-                  if (!opt) return null
-                  return (
-                    <Paper
-                      key={idx}
-                      component="button"
-                      onClick={() => !isChecked && setSelectedOption(opt)}
-                      sx={{
-                        flex: '1 1 0',
-                        minWidth: is960 ? 120 : (is1920x1125 ? 200 : 160),
-                        maxWidth: is960 ? 140 : (is1920x1125 ? 240 : 200),
-                        aspectRatio: '1',
-                        p: 0,
-                        overflow: 'hidden',
-                        borderRadius: is960 ? '12px' : (is1920x1125 ? '16px' : '14px'),
-                        border: (isAnswer || isSelected) ? (is960 ? '3px solid' : (is1920x1125 ? '4px solid' : '3px solid')) : 'none',
-                        borderColor: isAnswer ? '#4CAF50' : (isSelected ? '#00B4A0' : 'transparent'),
-                        cursor: isChecked ? 'default' : 'pointer',
-                        transition: 'all 0.2s',
-                        boxShadow: isSelected ? '0 8px 20px rgba(0,180,160,0.25)' : '0 2px 8px rgba(0,0,0,0.08)',
-                        '&:active': !isChecked ? { transform: 'scale(0.98)' } : {},
-                        bgcolor: 'white',
-                        position: 'relative',
-                        boxSizing: 'border-box'
-                      }}
-                    >
-                      {/* Letter Label - Top Left */}
-                      <Box sx={{ 
-                        position: 'absolute',
-                        top: is960 ? 8 : (is1920x1125 ? 12 : 10),
-                        left: is960 ? 8 : (is1920x1125 ? 12 : 10),
-                        width: is960 ? 32 : (is1920x1125 ? 40 : 36),
-                        height: is960 ? 32 : (is1920x1125 ? 40 : 36),
-                        borderRadius: '50%', 
-                        bgcolor: isAnswer ? '#4CAF50' : (isSelected ? '#00B4A0' : '#F3F4F6'),
-                        color: (isAnswer || isSelected) ? 'white' : '#1F2937',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 900,
-                        fontSize: is960 ? '0.875rem' : (is1920x1125 ? '1.125rem' : '1rem'),
-                        zIndex: 1
-                      }}>
-                        {labels[idx]}
-                      </Box>
-                      {url.match(/[\u{1F300}-\u{1F9FF}]/u) ? (
-                        <Box sx={{ 
-                          fontSize: is960 ? '60px' : (is1920x1125 ? '100px' : '80px'), 
-                          lineHeight: 1, 
-                          p: is960 ? 2 : (is1920x1125 ? 3 : 2.5),
-                          width: '100%',
-                          height: '100%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          {url}
-                        </Box>
-                      ) : (
-                        <Box 
-                          component="img" 
-                          src={url} 
-                          sx={{ 
-                            width: '100%', 
-                            height: '100%', 
-                            objectFit: 'cover',
-                            display: 'block'
-                          }} 
-                        />
-                      )}
-                    </Paper>
-                  )
-                })}
-              </Box>
-            </Box>
-          )}
-
-          {/* T01: 图片填空 - 显示图片emoji，然后有选项选择器 */}
-          {currentQuestion.type === ExerciseType.T01_PICTURE_FILL_IN && (
-            <Box sx={{ width: '100%', maxWidth: 600, textAlign: 'center', mx: 'auto' }}>
-              <Typography sx={{ fontSize: '140px', lineHeight: 1, mb: 4 }}>{currentQuestion.imageEmoji}</Typography>
-              
-              {/* 答案显示区域（类似输入框） */}
-              <Box
-                sx={{
-                  width: '100%',
-                  maxWidth: 500,
-                  minHeight: 80,
-                  mb: 3,
-                  mx: 'auto',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderBottom: '8px solid',
-                  borderColor: userInput ? '#00B4A0' : '#E0E0E0',
-                  borderRadius: 0,
-                  transition: 'all 0.2s',
-                  position: 'relative'
-                }}
-              >
-                {userInput ? (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                    <Typography sx={{ fontSize: '0.875rem', color: '#6B7280', fontWeight: 600, fontFamily: 'monospace' }}>
-                      {userInput === '米' ? 'mǐ' : userInput === '水' ? 'shuǐ' : userInput === '饺' ? 'jiǎo' : userInput === '茶' ? 'chá' : ''}
-                    </Typography>
-                    <Typography sx={{ fontSize: '2rem', fontWeight: 900, color: '#1F2937' }}>{userInput}</Typography>
-                  </Box>
-                ) : (
-                  <Typography sx={{ fontSize: '1.25rem', color: '#9CA3AF', fontWeight: 500 }}>点击下方选项</Typography>
-                )}
-              </Box>
-
-              {/* 选项按钮 */}
-              <Grid container spacing={1.5} sx={{ maxWidth: 500, mx: 'auto' }}>
-                {['米', '水', '饺', '茶'].map((opt, idx) => {
-                  const pinyinMap: { [key: string]: string } = {
-                    '米': 'mǐ',
-                    '水': 'shuǐ',
-                    '饺': 'jiǎo',
-                    '茶': 'chá'
-                  }
-                  const pinyin = pinyinMap[opt]
-                  const isSelected = userInput === opt
-                  const isAnswer = isChecked && opt === currentQuestion.correctAnswer
-                  
-                  return (
-                    <Grid item xs={6} key={idx}>
-                      <Paper
-                        component="button"
-                        onClick={() => {
-                          if (!isChecked) {
-                            setUserInput(opt)
-                          }
-                        }}
-                        sx={{
-                          width: '100%',
-                          p: 1.5,
-                          borderRadius: '12px',
-                          border: '2px solid',
-                          borderColor: isAnswer ? '#4CAF50' : isSelected ? '#00B4A0' : '#E5E7EB',
-                          cursor: isChecked ? 'default' : 'pointer',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 0.5,
-                          boxShadow: isSelected ? '0 6px 16px rgba(0,180,160,0.15)' : '0 2px 6px rgba(0,0,0,0.05)',
-                          bgcolor: isSelected ? '#F0FDFA' : 'white',
-                          transition: 'all 0.2s',
-                          '&:active': !isChecked ? { transform: 'scale(0.95)' } : {}
-                        }}
-                      >
-                        <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: 600, fontFamily: 'monospace' }}>{pinyin}</Typography>
-                        <Typography sx={{ fontWeight: 800, color: '#1F2937', fontSize: '1.5rem', lineHeight: 1 }}>{opt}</Typography>
-                        {isAnswer && (
-                          <Box sx={{ position: 'absolute', top: 6, right: 6 }}>
-                            <CheckIcon sx={{ color: '#4CAF50', fontSize: 20 }} />
-                          </Box>
-                        )}
-                      </Paper>
-                    </Grid>
-                  )
-                })}
-              </Grid>
-            </Box>
-          )}
-
-          {/* T02: 图片选择文字 - 显示中央图片，然后显示4个水平排列的选项 */}
-          {currentQuestion.type === ExerciseType.T02_PICTURE_SELECT_TEXT && (
-            <Box sx={{ width: '100%', maxWidth: is960 ? 600 : (is1920x1125 ? 1200 : 1000), mx: 'auto', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', minHeight: 0, overflowY: 'auto', py: is960 ? 1 : (is1920x1125 ? 2 : 1.5) }}>
-              {/* 中央图片 */}
-              {currentQuestion.imageUrls && currentQuestion.imageUrls[0] && (
-                <Box sx={{ textAlign: 'center', mb: is960 ? 1.5 : (is1920x1125 ? 2 : 1.5), flexShrink: 0 }}>
-                  {currentQuestion.imageUrls[0].match(/[\u{1F300}-\u{1F9FF}]/u) ? (
-                    <Box sx={{ fontSize: is960 ? '80px' : (is1920x1125 ? '120px' : '100px'), lineHeight: 1, display: 'inline-block' }}>
-                      {currentQuestion.imageUrls[0]}
-                    </Box>
-                  ) : imageError[currentQuestion.imageUrls[0]] ? (
-                    // 图片加载失败，显示emoji兜底
-                    <Box sx={{ 
-                      fontSize: is960 ? '80px' : (is1920x1125 ? '120px' : '100px'), 
-                      lineHeight: 1, 
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: is960 ? 150 : (is1920x1125 ? 200 : 180),
-                      height: is960 ? 150 : (is1920x1125 ? 200 : 180),
-                      borderRadius: is960 ? '12px' : (is1920x1125 ? '16px' : '14px'),
-                      bgcolor: '#F9FAFB',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      mx: 'auto'
-                    }}>
-                      {getImageFallbackEmoji(currentQuestion.imageUrls[0], currentQuestion.chineseText)}
-                    </Box>
-                  ) : (
-                    <Box 
-                      component="img" 
-                      src={currentQuestion.imageUrls[0]} 
-                      onError={() => {
-                        setImageError(prev => ({ ...prev, [currentQuestion.imageUrls![0]]: true }))
-                      }}
-                      sx={{ 
-                        width: is960 ? 150 : (is1920x1125 ? 200 : 180), 
-                        height: is960 ? 150 : (is1920x1125 ? 200 : 180), 
-                        objectFit: 'contain',
-                        borderRadius: is960 ? '12px' : (is1920x1125 ? '16px' : '14px'),
-                        mx: 'auto',
-                        display: 'block',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                      }} 
-                    />
-                  )}
-                </Box>
-              )}
-              
-              {/* 选择框 - 选择前显示正确答案，选择后显示选中的选项 */}
-              <Box sx={{ 
-                textAlign: 'center', 
-                mb: is960 ? 1.5 : (is1920x1125 ? 2 : 1.5), 
-                flexShrink: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: is960 ? 0.25 : (is1920x1125 ? 0.5 : 0.375)
-              }}>
-                {(() => {
-                  // 选择前显示正确答案，选择后显示选中的选项
-                  const raw = selectedOption || currentQuestion.correctAnswer
-                  const displayOption: string = Array.isArray(raw) ? (raw[0] ?? '') : raw
-                  
-                  // 解析显示内容的格式
-                  let displayPinyin: string = ''
-                  let displayText: string = ''
-                  
-                  if (displayOption.includes(' ')) {
-                    const parts = displayOption.split(' ')
-                    displayText = parts[0]
-                    displayPinyin = parts[1] || ''
-                  } else {
-                    displayText = displayOption
-                    const pinyinMap: { [key: string]: string } = {
-                      '米': 'mǐ', '饺': 'jiǎo', '水': 'shuǐ', '茶': 'chá',
-                      '这': 'zhè', '是': 'shì', '不': 'bù', '我': 'wǒ',
-                      '叫': 'jiào', '吃': 'chī', '喝': 'hē', '有': 'yǒu',
-                      '饭': 'fàn', '谁': 'shéi'
-                    }
-                    displayPinyin = pinyinMap[displayOption] || displayOption
-                  }
-                  
-                  return (
-                    <Box sx={{
-                      border: '1px solid #E5E7EB',
-                      borderRadius: is960 ? '12px' : (is1920x1125 ? '16px' : '14px'),
-                      bgcolor: 'white',
-                      px: is960 ? 2 : (is1920x1125 ? 3 : 2.5),
-                      py: is960 ? 1 : (is1920x1125 ? 1.5 : 1.25),
-                      display: 'inline-flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: is960 ? 0.25 : (is1920x1125 ? 0.5 : 0.375),
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                      minHeight: is960 ? 60 : (is1920x1125 ? 80 : 70)
-                    }}>
-                      <Typography sx={{ 
-                        fontSize: is960 ? '0.75rem' : (is1920x1125 ? '1rem' : '0.875rem'), 
-                        color: '#636E72', 
-                        fontWeight: 600, 
-                        fontFamily: 'monospace',
-                        lineHeight: 1
-                      }}>
-                        {displayPinyin}
-                      </Typography>
-                      <Typography sx={{ 
-                        fontWeight: 800, 
-                        color: '#1F2937', 
-                        fontSize: is960 ? '1.25rem' : (is1920x1125 ? '1.75rem' : '1.5rem'), 
-                        lineHeight: 1 
-                      }}>
-                        {displayText}
-                      </Typography>
-                    </Box>
-                  )
-                })()}
-              </Box>
-              
-              {/* 提示文字 */}
-              <Typography sx={{ 
-                textAlign: 'center', 
-                color: '#9CA3AF', 
-                fontSize: is960 ? '0.75rem' : (is1920x1125 ? '1rem' : '0.875rem'),
-                fontWeight: 500,
-                mb: is960 ? 1.5 : (is1920x1125 ? 2 : 1.5),
-                flexShrink: 0
-              }}>
-                Tap an option below
-              </Typography>
-              
-              {/* 显示文字选项 - 水平排列，一行4个 */}
-              <Box sx={{ display: 'flex', justifyContent: 'center', gap: is960 ? 1 : (is1920x1125 ? 2 : 1.5), flexWrap: 'wrap', width: '100%', px: is960 ? 1 : (is1920x1125 ? 2 : 1.5) }}>
-                {currentQuestion.options?.map((opt, idx) => {
-                  const isSelected = selectedOption === opt
-                  const isAnswer = isChecked && opt === currentQuestion.correctAnswer
-                  
-                  // 解析选项格式：可能是"包子 bāozi 包子"或单个汉字"米"
-                  let displayPinyin: string = ''
-                  let displayText: string = ''
-                  
-                  if (opt.includes(' ')) {
-                    // 格式：汉字 拼音 汉字，例如"包子 bāozi 包子"
-                    const parts = opt.split(' ')
-                    displayText = parts[0] // 第一个汉字
-                    displayPinyin = parts[1] || '' // 拼音
-                  } else {
-                    // 单个汉字，例如"米"
-                    displayText = opt
-                    // 拼音映射
-                    const pinyinMap: { [key: string]: string } = {
-                      '米': 'mǐ', '饺': 'jiǎo', '水': 'shuǐ', '茶': 'chá',
-                      '这': 'zhè', '是': 'shì', '不': 'bù', '我': 'wǒ',
-                      '叫': 'jiào', '吃': 'chī', '喝': 'hē', '有': 'yǒu',
-                      '饭': 'fàn', '谁': 'shéi'
-                    }
-                    displayPinyin = pinyinMap[opt] || opt
-                  }
-                  
-                  return (
-                    <Paper
-                      key={idx}
-                      component="button"
-                      onClick={() => !isChecked && setSelectedOption(opt)}
-                      sx={{
-                        flex: '1 1 0',
-                        minWidth: is960 ? 100 : (is1920x1125 ? 180 : 140),
-                        maxWidth: is960 ? 120 : (is1920x1125 ? 220 : 180),
-                        p: is960 ? 1.5 : (is1920x1125 ? 2.5 : 2),
-                        borderRadius: is960 ? '12px' : (is1920x1125 ? '16px' : '14px'),
-                        border: '1px solid',
-                        borderColor: isAnswer ? '#4CAF50' : (isSelected ? '#00B4A0' : '#E5E7EB'),
-                        cursor: isChecked ? 'default' : 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: is960 ? 0.5 : (is1920x1125 ? 0.75 : 0.5),
-                        boxShadow: isSelected ? '0 4px 12px rgba(0,180,160,0.15)' : '0 1px 3px rgba(0,0,0,0.08)',
-                        bgcolor: 'white',
-                        transition: 'all 0.2s',
-                        boxSizing: 'border-box',
-                        minHeight: is960 ? 80 : (is1920x1125 ? 120 : 100),
-                        '&:active': !isChecked ? { transform: 'scale(0.98)' } : {}
-                      }}
-                    >
-                      {/* 如果被选中，显示空白；否则显示完整内容 */}
-                      {isSelected ? (
-                        // 空白按钮
-                        <Box sx={{ width: '100%', height: '100%' }} />
-                      ) : (
-                        <>
-                          {/* 拼音 */}
-                          <Typography sx={{ 
-                            fontSize: is960 ? '0.7rem' : (is1920x1125 ? '1rem' : '0.875rem'), 
-                            color: '#636E72', 
-                            fontWeight: 600, 
-                            fontFamily: 'monospace',
-                            lineHeight: 1
-                          }}>
-                            {displayPinyin}
-                          </Typography>
-                          {/* 汉字 */}
-                          <Typography sx={{ 
-                            fontWeight: 800, 
-                            color: '#1F2937', 
-                            fontSize: is960 ? '1.5rem' : (is1920x1125 ? '2.25rem' : '1.875rem'), 
-                            lineHeight: 1 
-                          }}>
-                            {displayText}
-                          </Typography>
-                        </>
-                      )}
-                    </Paper>
-                  )
-                })}
-              </Box>
-            </Box>
-          )}
-
-          {/* T03: 听力选择句子 - 有播放按钮，然后显示文本选项 */}
-          {currentQuestion.type === ExerciseType.T03_LISTEN_SELECT_SENTENCE && (
-            <Box sx={{ width: '100%', maxWidth: 900 }}>
-              <Box sx={{ textAlign: 'center', mb: 4 }}>
-                <IconButton
-                  onClick={handlePlayAudio}
-                  disabled={isPlayingAudio}
-                  sx={{
-                    width: 80,
-                    height: 80,
-                    bgcolor: '#4F46E5',
-                    color: 'white',
-                    mb: 2,
-                    borderRadius: '20px',
-                    '&:active': { transform: 'scale(0.95)' },
-                    '&:disabled': { bgcolor: '#9CA3AF' }
-                  }}
-                >
-                  <VolumeUpIcon sx={{ fontSize: 40 }} />
-                </IconButton>
-                <Typography sx={{ color: '#4F46E5', fontWeight: 700, fontSize: '1rem' }}>听句子</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {currentQuestion.options?.map((opt, idx) => {
-                  const isSelected = selectedOption === opt
-                  const isAnswer = isChecked && opt === currentQuestion.correctAnswer
-                  return (
-                    <Paper
-                      key={idx}
-                      component="button"
-                      onClick={() => !isChecked && setSelectedOption(opt)}
-                      sx={{
-                        width: '100%',
-                        p: 2.5,
-                        borderRadius: '16px',
-                        textAlign: 'left',
-                        border: '3px solid',
-                        borderColor: isAnswer ? '#4CAF50' : isSelected ? '#00B4A0' : '#E5E7EB',
-                        cursor: isChecked ? 'default' : 'pointer',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        boxShadow: isSelected ? '0 8px 20px rgba(0,180,160,0.15)' : '0 2px 8px rgba(0,0,0,0.05)',
-                        bgcolor: 'white',
-                        transition: 'all 0.2s',
-                        '&:active': !isChecked ? { transform: 'scale(0.98)' } : {}
-                      }}
-                    >
-                      <Typography sx={{ fontWeight: 800, color: '#1F2937', fontSize: '1.5rem' }}>{opt}</Typography>
-                      {isAnswer && <CheckIcon sx={{ color: '#4CAF50', fontSize: 32 }} />}
-                    </Paper>
-                  )
-                })}
-              </Box>
-            </Box>
-          )}
-
-          {/* T04: 词意选择 - 显示英文+中文+拼音，然后显示英文选项（一行4个） */}
-          {currentQuestion.type === ExerciseType.T04_WORD_MEANING_SELECT && (
-            <Box sx={{ width: '100%', maxWidth: is960 ? 600 : (is1920x1125 ? 1200 : 1000), mx: 'auto', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', minHeight: 0, overflowY: 'auto', py: is960 ? 1 : (is1920x1125 ? 2 : 1.5) }}>
-              {/* 中央图片 */}
-              {currentQuestion.imageUrls && currentQuestion.imageUrls[0] && (
-                <Box sx={{ textAlign: 'center', mb: is960 ? 2 : (is1920x1125 ? 3 : 2.5), flexShrink: 0 }}>
-                  {currentQuestion.imageUrls[0].match(/[\u{1F300}-\u{1F9FF}]/u) ? (
-                    <Box sx={{ fontSize: is960 ? '100px' : (is1920x1125 ? '150px' : '120px'), lineHeight: 1, display: 'inline-block' }}>
-                      {currentQuestion.imageUrls[0]}
-                    </Box>
-                  ) : imageError[currentQuestion.imageUrls[0]] ? (
-                    // 图片加载失败，显示emoji兜底
-                    <Box sx={{ 
-                      fontSize: is960 ? '100px' : (is1920x1125 ? '150px' : '120px'), 
-                      lineHeight: 1, 
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: is960 ? 150 : (is1920x1125 ? 200 : 180),
-                      height: is960 ? 150 : (is1920x1125 ? 200 : 180),
-                      borderRadius: is960 ? '12px' : (is1920x1125 ? '16px' : '14px'),
-                      bgcolor: '#F9FAFB',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      mx: 'auto'
-                    }}>
-                      {getImageFallbackEmoji(currentQuestion.imageUrls[0], currentQuestion.chineseText)}
-                    </Box>
-                  ) : (
-                    <Box 
-                      component="img" 
-                      src={currentQuestion.imageUrls[0]} 
-                      onError={() => {
-                        setImageError(prev => ({ ...prev, [currentQuestion.imageUrls![0]]: true }))
-                      }}
-                      sx={{ 
-                        width: is960 ? 150 : (is1920x1125 ? 200 : 180), 
-                        height: is960 ? 150 : (is1920x1125 ? 200 : 180), 
-                        objectFit: 'contain',
-                        borderRadius: is960 ? '12px' : (is1920x1125 ? '16px' : '14px'),
-                        mx: 'auto',
-                        display: 'block',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                      }} 
-                    />
-                  )}
-                </Box>
-              )}
-              
-              {/* 拼音、汉字和音频按钮 */}
-              {(currentQuestion.pinyin || currentQuestion.chineseText) && (
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  gap: is960 ? 1.5 : (is1920x1125 ? 2.5 : 2),
-                  mb: is960 ? 2 : (is1920x1125 ? 3 : 2.5),
-                  flexShrink: 0
-                }}>
-                  {/* 音频按钮 */}
-                  <IconButton
-                    onClick={() => {
-                      if (currentQuestion.chineseText) {
-                        const utterance = new SpeechSynthesisUtterance(currentQuestion.chineseText)
-                        utterance.lang = 'zh-CN'
-                        utterance.rate = 0.8
-                        speechSynthesis.speak(utterance)
-                        setIsPlayingAudio(true)
-                        utterance.onend = () => setIsPlayingAudio(false)
-                        utterance.onerror = () => setIsPlayingAudio(false)
-                      }
-                    }}
-                    disabled={isPlayingAudio}
-                    sx={{
-                      width: is960 ? 40 : (is1920x1125 ? 56 : 48),
-                      height: is960 ? 40 : (is1920x1125 ? 56 : 48),
-                      bgcolor: '#FF9800',
-                      color: 'white',
-                      borderRadius: '50%',
-                      flexShrink: 0,
-                      '&:active': { transform: 'scale(0.95)' },
-                      '&:disabled': { bgcolor: '#9CA3AF', opacity: 0.6 }
-                    }}
-                  >
-                    <VolumeUpIcon sx={{ fontSize: is960 ? 20 : (is1920x1125 ? 28 : 24) }} />
-                  </IconButton>
-                  
-                  {/* 拼音和汉字 */}
-                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: is960 ? 0.25 : (is1920x1125 ? 0.5 : 0.375) }}>
-                    {currentQuestion.pinyin && (
-                      <Typography sx={{ 
-                        fontSize: is960 ? '0.875rem' : (is1920x1125 ? '1.25rem' : '1rem'), 
-                        color: '#636E72', 
-                        fontWeight: 600,
-                        fontFamily: 'monospace',
-                        lineHeight: 1
-                      }}>
-                        {currentQuestion.pinyin}
-                      </Typography>
-                    )}
-                    {currentQuestion.chineseText && (
-                      <Typography sx={{ 
-                        fontSize: is960 ? '1.5rem' : (is1920x1125 ? '2rem' : '1.75rem'), 
-                        fontWeight: 800, 
-                        color: '#1F2937',
-                        lineHeight: 1
-                      }}>
-                        {currentQuestion.chineseText}
-                      </Typography>
-                    )}
-                  </Box>
-                </Box>
-              )}
-              
-              {/* 选项 - 水平排列，带A/B/C/D标签 */}
-              <Box sx={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                gap: is960 ? 1 : (is1920x1125 ? 2 : 1.5), 
-                flexWrap: 'wrap', 
-                width: '100%', 
-                px: is960 ? 1 : (is1920x1125 ? 2 : 1.5),
-                flexShrink: 0
-              }}>
-                {currentQuestion.options?.map((opt, idx) => {
-                  const isSelected = selectedOption === opt
-                  const isAnswer = isChecked && opt === currentQuestion.correctAnswer
-                  const labels = ['A', 'B', 'C', 'D']
-                  
-                  return (
-                    <Paper
-                      key={idx}
-                      component="button"
-                      onClick={() => !isChecked && setSelectedOption(opt)}
-                      sx={{
-                        flex: '1 1 0',
-                        minWidth: is960 ? 100 : (is1920x1125 ? 180 : 140),
-                        maxWidth: is960 ? 120 : (is1920x1125 ? 220 : 180),
-                        p: is960 ? 1.5 : (is1920x1125 ? 2.5 : 2),
-                        borderRadius: is960 ? '12px' : (is1920x1125 ? '16px' : '14px'),
-                        border: '1px solid',
-                        borderColor: isAnswer ? '#4CAF50' : (isSelected ? '#00B4A0' : '#E5E7EB'),
-                        cursor: isChecked ? 'default' : 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: is960 ? 0.5 : (is1920x1125 ? 0.75 : 0.5),
-                        boxShadow: isSelected ? '0 4px 12px rgba(0,180,160,0.15)' : '0 1px 3px rgba(0,0,0,0.08)',
-                        bgcolor: 'white',
-                        transition: 'all 0.2s',
-                        boxSizing: 'border-box',
-                        position: 'relative',
-                        minHeight: is960 ? 80 : (is1920x1125 ? 100 : 90),
-                        '&:active': !isChecked ? { transform: 'scale(0.98)' } : {}
-                      }}
-                    >
-                      {/* A/B/C/D 标签 */}
-                      <Box sx={{ 
-                        position: 'absolute', 
-                        top: is960 ? 6 : (is1920x1125 ? 8 : 7), 
-                        left: is960 ? 8 : (is1920x1125 ? 12 : 10), 
-                        width: is960 ? 20 : (is1920x1125 ? 28 : 24), 
-                        height: is960 ? 20 : (is1920x1125 ? 28 : 24), 
-                        borderRadius: '50%', 
-                        bgcolor: isAnswer ? '#4CAF50' : (isSelected ? '#00B4A0' : '#E5E7EB'),
-                        color: isAnswer || isSelected ? 'white' : '#6B7280',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 900,
-                        fontSize: is960 ? '0.65rem' : (is1920x1125 ? '0.875rem' : '0.75rem'),
-                        flexShrink: 0
-                      }}>
-                        {labels[idx]}
-                      </Box>
-                      
-                      {/* 选项文本 */}
-                      <Typography sx={{ 
-                        fontWeight: 600, 
-                        color: '#1F2937', 
-                        fontSize: is960 ? '0.875rem' : (is1920x1125 ? '1.25rem' : '1rem'), 
-                        textAlign: 'center',
-                        mt: is960 ? 1.5 : (is1920x1125 ? 2 : 1.75)
-                      }}>
-                        {opt}
-                      </Typography>
-                      
-                      {/* 正确答案标记 */}
-                      {isAnswer && (
-                        <Box sx={{ position: 'absolute', bottom: is960 ? 6 : (is1920x1125 ? 8 : 7), right: is960 ? 8 : (is1920x1125 ? 12 : 10) }}>
-                          <CheckIcon sx={{ color: '#4CAF50', fontSize: is960 ? 16 : (is1920x1125 ? 20 : 18) }} />
-                        </Box>
-                      )}
-                    </Paper>
-                  )
-                })}
-              </Box>
-            </Box>
-          )}
-
-          {/* T05: 语法选择 - 显示英文句子，然后显示中文选项 */}
-          {currentQuestion.type === ExerciseType.T05_GRAMMAR_SELECT && (
-            <Box sx={{ width: '100%', maxWidth: is960 ? 600 : (is1920x1125 ? 1200 : 1000), mx: 'auto', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', minHeight: 0, overflowY: 'auto', py: is960 ? 1 : (is1920x1125 ? 2 : 1.5) }}>
-              {/* 英文文本 - 橙色大字体 */}
-              {currentQuestion.englishText && (
-                <Box sx={{ textAlign: 'center', mb: is960 ? 2 : (is1920x1125 ? 3 : 2.5), flexShrink: 0 }}>
-                  <Typography sx={{ 
-                    fontSize: is960 ? '1.5rem' : (is1920x1125 ? '2.5rem' : '2rem'), 
-                    fontWeight: 900, 
-                    color: '#FF9800', 
-                    lineHeight: 1.2
-                  }}>
-                    {currentQuestion.englishText}
-                  </Typography>
-                </Box>
-              )}
-              
-              {/* 选项 - 2x2网格布局 */}
-              <Grid container spacing={is960 ? 1.5 : (is1920x1125 ? 2.5 : 2)} sx={{ flexShrink: 0 }}>
-                {currentQuestion.options?.map((opt, idx) => {
-                  const isSelected = selectedOption === opt
-                  const isAnswer = isChecked && opt === currentQuestion.correctAnswer
-                  
-                  // 拼音映射
-                  const pinyinMap: { [key: string]: string } = {
-                    '我': 'wǒ', '吃': 'chī', '米饭': 'mǐfàn', '这是': 'zhè shì', '有': 'yǒu',
-                    '好吃': 'hǎo chī', '。': ''
-                  }
-                  
-                  // 生成拼音
-                  const generatePinyin = (text: string): string => {
-                    // 处理常见句子
-                    if (text.includes('我吃米饭')) return 'Wǒ chī mǐfàn.'
-                    if (text.includes('这是米饭')) return 'Zhè shì mǐfàn.'
-                    if (text.includes('我有米饭')) return 'Wǒ yǒu mǐfàn.'
-                    if (text.includes('米饭好吃')) return 'Mǐfàn hǎo chī.'
-                    
-                    let result = ''
-                    let remainingText = text.replace(/[。，！？]/g, '')
-                    while (remainingText.length > 0) {
-                      let matched = false
-                      for (let len = Math.min(remainingText.length, 4); len > 0; len--) {
-                        const substring = remainingText.substring(0, len)
-                        if (pinyinMap[substring]) {
-                          result += (result ? ' ' : '') + pinyinMap[substring]
-                          remainingText = remainingText.substring(len)
-                          matched = true
-                          break
-                        }
-                      }
-                      if (!matched) {
-                        remainingText = remainingText.substring(1)
-                      }
-                    }
-                    return result || text
-                  }
-                  
-                  const pinyin = generatePinyin(opt)
-                  
-                  return (
-                    <Grid item xs={6} key={idx}>
-                      <Paper
-                        component="button"
-                        onClick={() => !isChecked && setSelectedOption(opt)}
-                        sx={{
-                          width: '100%',
-                          p: is960 ? 1.5 : (is1920x1125 ? 2.5 : 2),
-                          borderRadius: is960 ? '12px' : (is1920x1125 ? '16px' : '14px'),
-                          textAlign: 'left',
-                          border: '1px solid',
-                          borderColor: isAnswer ? '#4CAF50' : (isSelected ? '#00B4A0' : '#E5E7EB'),
-                          cursor: isChecked ? 'default' : 'pointer',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: is960 ? 0.5 : (is1920x1125 ? 0.75 : 0.625),
-                          boxShadow: isSelected ? '0 4px 12px rgba(0,180,160,0.15)' : '0 1px 3px rgba(0,0,0,0.08)',
-                          bgcolor: isSelected ? '#F9FAFB' : 'white',
-                          transition: 'all 0.2s',
-                          position: 'relative',
-                          minHeight: is960 ? 80 : (is1920x1125 ? 120 : 100),
-                          '&:active': !isChecked ? { transform: 'scale(0.98)' } : {}
-                        }}
-                      >
-                        <Typography sx={{ 
-                          fontSize: is960 ? '0.75rem' : (is1920x1125 ? '1rem' : '0.875rem'), 
-                          color: '#6B7280', 
-                          fontWeight: 600, 
-                          fontFamily: 'monospace',
-                          lineHeight: 1
-                        }}>
-                          {pinyin}
-                        </Typography>
-                        <Typography sx={{ 
-                          fontWeight: 800, 
-                          color: '#1F2937', 
-                          fontSize: is960 ? '1rem' : (is1920x1125 ? '1.5rem' : '1.25rem'), 
-                          lineHeight: 1.3 
-                        }}>
-                          {opt}
-                        </Typography>
-                        {isAnswer && (
-                          <Box sx={{ position: 'absolute', top: is960 ? 8 : (is1920x1125 ? 12 : 10), right: is960 ? 8 : (is1920x1125 ? 12 : 10) }}>
-                            <CheckIcon sx={{ color: '#4CAF50', fontSize: is960 ? 20 : (is1920x1125 ? 28 : 24), flexShrink: 0 }} />
-                          </Box>
-                        )}
-                      </Paper>
-                    </Grid>
-                  )
-                })}
-              </Grid>
-            </Box>
-          )}
-
-          {/* 保留原有题型支持 */}
-          {currentQuestion.type === ExerciseType.L01_LISTEN_SELECT && (
-            <Grid container spacing={3} sx={{ maxWidth: 900, width: '100%', px: 2, pt: 1 }}>
-              {currentQuestion.imageUrls?.map((url, idx) => {
-                const opt = currentQuestion.options?.[idx] || ''
-                const isSelected = selectedOption === opt
-                const isAnswer = isChecked && opt === currentQuestion.correctAnswer
-                if (!opt) return null
-                return (
-                  <Grid item xs={6} key={idx}>
-                    <Paper
-                      component="button"
-                      onClick={() => !isChecked && setSelectedOption(opt)}
-                      sx={{
-                        width: '100%', p: 0, overflow: 'hidden', borderRadius: '16px', border: '3px solid',
-                        borderColor: isAnswer ? '#4CAF50' : isSelected ? '#00B4A0' : '#E5E7EB',
-                        cursor: isChecked ? 'default' : 'pointer',
-                        transition: 'all 0.2s',
-                        boxShadow: isSelected ? '0 8px 20px rgba(0,180,160,0.15)' : '0 2px 8px rgba(0,0,0,0.05)',
-                        '&:active': !isChecked ? { transform: 'scale(0.98)' } : {},
-                        bgcolor: 'white'
-                      }}
-                    >
-                      <Box component="img" src={url} sx={{ width: '100%', height: 120, objectFit: 'cover' }} />
-                      <Box sx={{ p: 2, bgcolor: isSelected ? 'rgba(0, 180, 160, 0.05)' : 'white' }}>
-                        <Typography sx={{ fontWeight: 800, color: isSelected ? '#00B4A0' : '#1F2937', fontSize: '1.5rem' }}>{opt}</Typography>
-                      </Box>
-                    </Paper>
-                  </Grid>
-                )
-              })}
-            </Grid>
-          )}
-
-          {currentQuestion.type === ExerciseType.S01_SPEAKING && (
-            <Box sx={{ textAlign: 'center', maxWidth: 600, mx: 'auto' }}>
-              <Paper sx={{ p: 4, borderRadius: '20px', mb: 4, border: '2px solid #E5E7EB', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', bgcolor: 'white' }}>
-                <Typography variant="h3" sx={{ fontWeight: 900, mb: 1.5, color: '#1F2937', fontSize: '2rem' }}>{currentQuestion.pinyin}</Typography>
-                <Typography variant="h6" sx={{ color: '#6B7280', fontWeight: 600, fontSize: '1.125rem' }}>"{currentQuestion.subPrompt}"</Typography>
-              </Paper>
-              <IconButton 
-                onClick={() => setIsRecording(!isRecording)}
-                sx={{ 
-                  width: 100, height: 100, bgcolor: isRecording ? '#EF4444' : '#00B4A0', color: 'white',
-                  '&:active': { bgcolor: isRecording ? '#DC2626' : '#009688', transform: 'scale(0.95)' },
-                  boxShadow: isRecording ? '0 12px 30px rgba(239,68,68,0.3)' : '0 12px 30px rgba(0,180,160,0.3)',
-                  transition: 'all 0.2s'
-                }}
-              >
-                <MicIcon sx={{ fontSize: 48 }} />
-              </IconButton>
-              <Typography sx={{ mt: 1.5, fontWeight: 800, color: isRecording ? '#EF4444' : '#6B7280', textTransform: 'uppercase', fontSize: '0.875rem', letterSpacing: '0.05em' }}>
-                {isRecording ? "Recording..." : "Tap to Record"}
-              </Typography>
-            </Box>
-          )}
-
-          {currentQuestion.type === ExerciseType.L02_LISTEN_TEXT && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 900 }}>
-              {currentQuestion.options?.map((opt, idx) => {
-                const isSelected = selectedOption === opt
-                const isAnswer = isChecked && opt === currentQuestion.correctAnswer
-                return (
-                  <Paper
-                    key={idx}
-                    component="button"
-                    onClick={() => !isChecked && setSelectedOption(opt)}
-                    sx={{
-                      width: '100%', p: 2.5, borderRadius: '16px', textAlign: 'left', border: '3px solid',
-                      borderColor: isAnswer ? '#4CAF50' : isSelected ? '#00B4A0' : '#E5E7EB',
-                      cursor: isChecked ? 'default' : 'pointer',
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      boxShadow: isSelected ? '0 8px 20px rgba(0,180,160,0.15)' : '0 2px 8px rgba(0,0,0,0.05)',
-                      bgcolor: 'white',
-                      transition: 'all 0.2s',
-                      '&:active': !isChecked ? { transform: 'scale(0.98)' } : {}
-                    }}
-                  >
-                    <Typography variant="h6" sx={{ fontWeight: 800, color: '#1F2937', fontSize: '1.5rem' }}>{opt}</Typography>
-                    {isAnswer && <CheckIcon sx={{ color: '#4CAF50', fontSize: 32 }} />}
-                  </Paper>
-                )
-              })}
-            </Box>
-          )}
-        </Box>
-      </Box>
-
-      {/* Footer Actions */}
-      <Box sx={{ p: is960 ? 2 : (is1920x1125 ? 3 : 2.5), bgcolor: isChecked && isCorrect ? '#E8F5E9' : 'white', flexShrink: 0, boxSizing: 'border-box' }}>
-        {isChecked ? (
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: is960 ? 1.5 : (is1920x1125 ? 2.5 : 2), textAlign: 'center' }}>
-            {/* Correct Indicator */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: is960 ? 0.75 : (is1920x1125 ? 1 : 1) }}>
-              {isCorrect ? (
-                <>
-                  <CheckIcon sx={{ fontSize: is960 ? 24 : (is1920x1125 ? 32 : 28), color: '#4CAF50' }} />
-                  <Typography sx={{ fontWeight: 700, color: '#4CAF50', fontSize: is960 ? '1rem' : (is1920x1125 ? '1.5rem' : '1.25rem') }}>
-                    Correct
-                  </Typography>
-                </>
-              ) : (
-                <>
-                  <CloseIcon sx={{ fontSize: is960 ? 24 : (is1920x1125 ? 32 : 28), color: '#EF4444' }} />
-                  <Typography sx={{ fontWeight: 700, color: '#EF4444', fontSize: is960 ? '1rem' : (is1920x1125 ? '1.5rem' : '1.25rem') }}>
-                    Review Goal
-                  </Typography>
-                </>
-              )}
-            </Box>
-            
-            {/* Explanation Text */}
-            {currentQuestion.explanation && (
-              <Typography sx={{ 
-                color: '#1F2937', 
-                fontSize: is960 ? '0.875rem' : (is1920x1125 ? '1.125rem' : '1rem'),
-                fontWeight: 500,
-                lineHeight: 1.5,
-                maxWidth: is960 ? 500 : (is1920x1125 ? 800 : 700),
-                mx: 'auto'
-              }}>
-                {currentQuestion.explanation}
-              </Typography>
-            )}
-            
-            {/* Continue Button */}
-            <Button 
-              variant="contained" 
-              onClick={handleNext} 
-              sx={{ 
-                px: is960 ? 4 : (is1920x1125 ? 6 : 5), 
-                py: is960 ? 1.25 : (is1920x1125 ? 1.5 : 1.5), 
-                borderRadius: is960 ? '16px' : (is1920x1125 ? '20px' : '18px'), 
-                fontWeight: 900, 
-                fontSize: is960 ? '0.875rem' : (is1920x1125 ? '1.125rem' : '1rem'),
-                bgcolor: isCorrect ? '#4CAF50' : '#EF4444', 
-                color: 'white',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                '&:active': { bgcolor: isCorrect ? '#388E3C' : '#DC2626', transform: 'scale(0.95)' },
-                boxShadow: 'none',
-                mt: is960 ? 0.5 : (is1920x1125 ? 1 : 0.75)
-              }}
-            >
-              CONTINUE
-            </Button>
-          </Box>
-        ) : (
-          <Button 
-            fullWidth 
-            variant="contained" 
-            disabled={
-              !selectedOption && 
-              !isRecording && 
-              currentQuestion.type !== ExerciseType.S01_SPEAKING &&
-              (currentQuestion.type !== ExerciseType.T01_PICTURE_FILL_IN || !userInput.trim())
-            }
-            onClick={handleCheck}
-            sx={{ 
-              py: is960 ? 1.5 : (is1920x1125 ? 2 : 1.75), 
-              borderRadius: is960 ? '20px' : (is1920x1125 ? '24px' : '22px'), 
-              fontWeight: 900, 
-              fontSize: is960 ? '0.875rem' : (is1920x1125 ? '1.125rem' : '1rem'), 
-              bgcolor: (selectedOption || isRecording || currentQuestion.type === ExerciseType.S01_SPEAKING || (currentQuestion.type === ExerciseType.T01_PICTURE_FILL_IN && userInput.trim())) ? '#00B4A0' : '#8EDBC8', 
-              color: 'white',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              '&:active': { bgcolor: '#009688', transform: 'scale(0.98)' },
-              '&:disabled': { bgcolor: '#E5E7EB', color: '#9CA3AF' },
-              boxShadow: 'none'
+          <Box
+            sx={{
+              width: p(720),
+              bgcolor: '#FFFFFF',
+              borderRadius: `${p(48)}px`,
+              px: `${p(64)}px`,
+              py: `${p(56)}px`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: `${p(40)}px`,
             }}
           >
-            {currentQuestion.type === ExerciseType.T01_PICTURE_FILL_IN ? 'CONFIRM SELECTION' : 'CONFIRM SELECTION'}
-          </Button>
+            <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 400, fontSize: p(40), lineHeight: 1.6, color: INK, textAlign: 'center' }}>
+              Leave this lesson?
+            </Typography>
+            <Box sx={{ display: 'flex', gap: `${p(32)}px` }}>
+              <ButtonBase
+                onClick={() => setLeaveOpen(false)}
+                sx={{
+                  minWidth: p(200),
+                  height: p(90),
+                  px: `${p(48)}px`,
+                  borderRadius: '100px',
+                  bgcolor: '#F3F4F6',
+                  color: INK,
+                  fontFamily: FIGMA_FONT,
+                  fontSize: p(32),
+                }}
+              >
+                Cancel
+              </ButtonBase>
+              <ButtonBase
+                onClick={onExit}
+                sx={{
+                  minWidth: p(200),
+                  height: p(90),
+                  px: `${p(48)}px`,
+                  borderRadius: '100px',
+                  bgcolor: TEAL,
+                  color: '#FFFFFF',
+                  fontFamily: FIGMA_FONT,
+                  fontSize: p(32),
+                }}
+              >
+                Confirm
+              </ButtonBase>
+            </Box>
+          </Box>
+        </Box>
+      )}
+    </Box>
+  )
+}
+
+function SpeakerButton({
+  p,
+  onClick,
+  disabled,
+}: {
+  p: (n: number) => number
+  onClick: () => void
+  disabled?: boolean
+}) {
+  return (
+    <ButtonBase
+      onClick={onClick}
+      disabled={disabled}
+      aria-label="Play audio"
+      sx={{
+        width: p(120),
+        height: p(80),
+        borderRadius: '50px',
+        bgcolor: ORANGE,
+        color: '#FFFFFF',
+        flexShrink: 0,
+        '&:disabled': { opacity: 0.6 },
+      }}
+    >
+      <VolumeUpIcon sx={{ fontSize: p(44) }} />
+    </ButtonBase>
+  )
+}
+
+function ImageTile({
+  p,
+  src,
+  label,
+  tone,
+  disabled,
+  onClick,
+  caption,
+  captionPinyin,
+}: {
+  p: (n: number) => number
+  src: string
+  label: string
+  tone: string
+  disabled?: boolean
+  onClick: () => void
+  caption?: string
+  captionPinyin?: string
+}) {
+  const localFood = src.startsWith('/assets/images/')
+  return (
+    <ButtonBase
+      disabled={disabled}
+      onClick={onClick}
+      sx={{
+        width: p(310),
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        bgcolor: 'transparent',
+      }}
+    >
+      <Box
+        sx={{
+          width: p(310),
+          height: p(310),
+          borderRadius: `${p(48)}px`,
+          overflow: 'hidden',
+          position: 'relative',
+          boxSizing: 'border-box',
+          border: tone ? `${p(6)}px solid ${tone}` : `1px solid ${LINE}`,
+          bgcolor: '#FFFFFF',
+        }}
+      >
+        {isEmoji(src) ? (
+          <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: p(96) }}>
+            {src}
+          </Box>
+        ) : (
+          <Box
+            component="img"
+            src={src}
+            alt=""
+            sx={{
+              width: '100%',
+              height: '100%',
+              objectFit: localFood ? 'contain' : 'cover',
+              objectPosition: 'center',
+              display: 'block',
+              bgcolor: '#FFFFFF',
+            }}
+          />
         )}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: p(12),
+            left: p(12),
+            width: p(70),
+            height: p(70),
+            borderRadius: '50%',
+            bgcolor: tone || '#FFFFFF',
+            color: tone ? '#FFFFFF' : INK,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontFamily: FIGMA_FONT,
+            fontSize: p(32),
+            boxShadow: tone ? 'none' : '0 2px 8px rgba(45,52,54,0.08)',
+          }}
+        >
+          {label}
+        </Box>
+      </Box>
+      {caption && (
+        <Box sx={{ mt: `${p(16)}px`, textAlign: 'center' }}>
+          {captionPinyin && (
+            <Typography sx={{ fontFamily: PINYIN_FONT, fontSize: p(24), lineHeight: 1.6, color: INK }}>
+              {captionPinyin}
+            </Typography>
+          )}
+          <Typography sx={{ fontFamily: KAI_FONT, fontSize: p(36), lineHeight: 1.4, color: INK }}>
+            {caption}
+          </Typography>
+        </Box>
+      )}
+    </ButtonBase>
+  )
+}
+
+function T00Body({
+  p,
+  options,
+  imageUrls,
+  selectedOption,
+  isChecked,
+  correctAnswer,
+  isPlayingAudio,
+  onPlay,
+  onSelect,
+}: {
+  p: (n: number) => number
+  options: string[]
+  imageUrls: string[]
+  selectedOption: string | null
+  isChecked: boolean
+  correctAnswer: string
+  isPlayingAudio: boolean
+  onPlay: () => void
+  onSelect: (value: string) => void
+}) {
+  return (
+    <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: `${p(48)}px`, flex: 1, justifyContent: 'center' }}>
+      <SpeakerButton p={p} onClick={onPlay} disabled={isPlayingAudio} />
+      <Box sx={{ display: 'flex', justifyContent: 'center', gap: `${p(60)}px`, flexWrap: 'wrap' }}>
+        {options.map((opt, idx) => (
+          <ImageTile
+            key={opt}
+            p={p}
+            src={resolvePracticeImage(imageUrls[idx], opt)}
+            label={OPTION_LABELS[idx] || String(idx + 1)}
+            tone={optionTone(opt, selectedOption, isChecked, correctAnswer)}
+            disabled={isChecked}
+            onClick={() => onSelect(opt)}
+          />
+        ))}
+      </Box>
+    </Box>
+  )
+}
+
+function ChipSelectBody({
+  p,
+  imageSrc,
+  options,
+  selectedOption,
+  isChecked,
+  correctAnswer,
+  onSelect,
+}: {
+  p: (n: number) => number
+  imageSrc: string
+  options: string[]
+  selectedOption: string | null
+  isChecked: boolean
+  correctAnswer: string
+  onSelect: (value: string) => void
+}) {
+  return (
+    <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: `${p(36)}px` }}>
+      {isEmoji(imageSrc) ? (
+        <Typography sx={{ fontSize: p(160), lineHeight: 1 }}>{imageSrc}</Typography>
+      ) : (
+        <Box
+          component="img"
+          src={imageSrc}
+          alt=""
+          sx={{ width: p(360), height: p(270), objectFit: 'contain', bgcolor: '#FFFFFF' }}
+        />
+      )}
+      <Typography sx={{ fontFamily: FIGMA_FONT, fontSize: p(28), color: MUTED }}>
+        {selectedOption ? optionPinyin(selectedOption) || ' ' : 'Tap an option below'}
+      </Typography>
+      <Box sx={{ display: 'flex', gap: `${p(28)}px`, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {options.map((opt) => {
+          const tone = optionTone(opt, selectedOption, isChecked, correctAnswer)
+          return (
+            <ButtonBase
+              key={opt}
+              disabled={isChecked}
+              onClick={() => onSelect(opt)}
+              sx={{
+                minWidth: p(180),
+                height: p(120),
+                px: `${p(28)}px`,
+                borderRadius: '100px',
+                bgcolor: '#F3F4F6',
+                boxSizing: 'border-box',
+                border: tone ? `${p(4)}px solid ${tone}` : '1px solid transparent',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+              }}
+            >
+              <Typography sx={{ fontFamily: PINYIN_FONT, fontSize: p(24), color: MUTED, lineHeight: 1.2 }}>
+                {optionPinyin(opt)}
+              </Typography>
+              <Typography sx={{ fontFamily: KAI_FONT, fontSize: p(40), color: INK, lineHeight: 1.2 }}>
+                {extractHanzi(opt)}
+              </Typography>
+            </ButtonBase>
+          )
+        })}
+      </Box>
+    </Box>
+  )
+}
+
+function ImageLabelBody({
+  p,
+  options,
+  imageUrls,
+  selectedOption,
+  isChecked,
+  correctAnswer,
+  prompt,
+  onSelect,
+}: {
+  p: (n: number) => number
+  options: string[]
+  imageUrls: string[]
+  selectedOption: string | null
+  isChecked: boolean
+  correctAnswer: string
+  prompt?: string
+  onSelect: (value: string) => void
+}) {
+  return (
+    <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: `${p(36)}px` }}>
+      {prompt && (
+        <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 700, fontSize: p(56), lineHeight: 1.4, color: ORANGE }}>
+          {prompt}
+        </Typography>
+      )}
+      <Box sx={{ display: 'flex', justifyContent: 'center', gap: `${p(48)}px`, flexWrap: 'wrap' }}>
+        {options.map((opt, idx) => (
+          <ImageTile
+            key={opt}
+            p={p}
+            src={resolvePracticeImage(imageUrls[idx], extractHanzi(opt))}
+            label={OPTION_LABELS[idx] || String(idx + 1)}
+            tone={optionTone(opt, selectedOption, isChecked, correctAnswer)}
+            disabled={isChecked}
+            onClick={() => onSelect(opt)}
+            caption={extractHanzi(opt)}
+            captionPinyin={optionPinyin(opt)}
+          />
+        ))}
+      </Box>
+    </Box>
+  )
+}
+
+function MeaningBody({
+  p,
+  imageSrc,
+  word,
+  pinyin,
+  options,
+  selectedOption,
+  isChecked,
+  correctAnswer,
+  onPlay,
+  onSelect,
+}: {
+  p: (n: number) => number
+  imageSrc: string
+  word: string
+  pinyin: string
+  options: string[]
+  selectedOption: string | null
+  isChecked: boolean
+  correctAnswer: string
+  onPlay: () => void
+  onSelect: (value: string) => void
+}) {
+  return (
+    <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: `${p(28)}px` }}>
+      {isEmoji(imageSrc) ? (
+        <Typography sx={{ fontSize: p(140), lineHeight: 1 }}>{imageSrc}</Typography>
+      ) : (
+        <Box component="img" src={imageSrc} alt="" sx={{ width: p(320), height: p(240), objectFit: 'contain' }} />
+      )}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: `${p(16)}px` }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography sx={{ fontFamily: PINYIN_FONT, fontSize: p(28), color: INK }}>{pinyin}</Typography>
+          <Typography sx={{ fontFamily: KAI_FONT, fontSize: p(48), color: INK }}>{word}</Typography>
+        </Box>
+        <ButtonBase
+          onClick={onPlay}
+          aria-label={`Play ${word}`}
+          sx={{ width: p(56), height: p(56), borderRadius: '50%', color: ORANGE }}
+        >
+          <VolumeUpIcon sx={{ fontSize: p(36) }} />
+        </ButtonBase>
+      </Box>
+      <Box sx={{ display: 'flex', gap: `${p(24)}px`, flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
+        {options.map((opt) => {
+          const tone = optionTone(opt, selectedOption, isChecked, correctAnswer)
+          return (
+            <ButtonBase
+              key={opt}
+              disabled={isChecked}
+              onClick={() => onSelect(opt)}
+              sx={{
+                flex: '1 1 0',
+                minWidth: p(220),
+                maxWidth: p(400),
+                height: p(100),
+                borderRadius: '100px',
+                bgcolor: '#F3F4F6',
+                border: tone ? `${p(4)}px solid ${tone}` : '1px solid transparent',
+                fontFamily: FIGMA_FONT,
+                fontSize: p(32),
+                color: INK,
+              }}
+            >
+              {opt}
+            </ButtonBase>
+          )
+        })}
+      </Box>
+    </Box>
+  )
+}
+
+function SentenceGridBody({
+  p,
+  options,
+  selectedOption,
+  isChecked,
+  correctAnswer,
+  showSpeaker,
+  isPlayingAudio,
+  prompt,
+  onPlay,
+  onSelect,
+}: {
+  p: (n: number) => number
+  options: string[]
+  selectedOption: string | null
+  isChecked: boolean
+  correctAnswer: string
+  showSpeaker?: boolean
+  isPlayingAudio?: boolean
+  prompt?: string
+  onPlay?: () => void
+  onSelect: (value: string) => void
+}) {
+  return (
+    <Box sx={{ width: '100%', maxWidth: p(1800), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: `${p(32)}px` }}>
+      {showSpeaker && onPlay && <SpeakerButton p={p} onClick={onPlay} disabled={isPlayingAudio} />}
+      {prompt && (
+        <Typography sx={{ fontFamily: FIGMA_FONT, fontWeight: 700, fontSize: p(56), lineHeight: 1.4, color: ORANGE, textAlign: 'center' }}>
+          {prompt}
+        </Typography>
+      )}
+      <Box
+        sx={{
+          width: '100%',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: `${p(28)}px`,
+        }}
+      >
+        {options.map((opt) => {
+          const tone = optionTone(opt, selectedOption, isChecked, correctAnswer)
+          return (
+            <ButtonBase
+              key={opt}
+              disabled={isChecked}
+              onClick={() => onSelect(opt)}
+              sx={{
+                minHeight: p(140),
+                px: `${p(40)}px`,
+                py: `${p(24)}px`,
+                borderRadius: `${p(40)}px`,
+                bgcolor: '#F8F9F8',
+                border: tone ? `${p(4)}px solid ${tone}` : `1px solid ${LINE}`,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                textAlign: 'left',
+              }}
+            >
+              <Typography sx={{ fontFamily: PINYIN_FONT, fontSize: p(24), color: MUTED, lineHeight: 1.4 }}>
+                {optionPinyin(opt)}
+              </Typography>
+              <Typography sx={{ fontFamily: KAI_FONT, fontSize: p(40), color: INK, lineHeight: 1.4 }}>
+                {opt}
+              </Typography>
+            </ButtonBase>
+          )
+        })}
       </Box>
     </Box>
   )

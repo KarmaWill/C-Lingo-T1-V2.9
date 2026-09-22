@@ -6,14 +6,9 @@ export interface SystemTool {
 }
 
 export const GOOGLE_SYSTEM_TOOLS: SystemTool[] = [
-  { id: 'calculator', label: 'Calculator', description: 'Quick calculations.', color: '#4285F4' },
-  { id: 'notes', label: 'Notes', description: 'Capture ideas and lists.', color: '#FBBC04' },
-  { id: 'weather', label: 'Weather', description: 'Local forecast at a glance.', color: '#34A853' },
-  { id: 'compass', label: 'Compass', description: 'Direction and orientation.', color: '#0D9488' },
-  { id: 'recorder', label: 'Recorder', description: 'Voice memos and audio notes.', color: '#EA4335' },
-  { id: 'files', label: 'Files', description: 'Browse device storage.', color: '#64748B' },
-  { id: 'settings', label: 'Settings', description: 'System preferences shortcut.', color: '#475569' },
-  { id: 'translate', label: 'Translate', description: 'Quick phrase translation.', color: '#2563EB' },
+  { id: 'calculator', label: 'Calculator', description: 'Quick calculations.', color: '#263244' },
+  { id: 'weather', label: 'Weather', description: 'Local forecast at a glance.', color: '#263244' },
+  { id: 'recorder', label: 'Recorder', description: 'Voice memos and audio notes.', color: '#263244' },
 ];
 
 export const INSTALLED_UTILITY_TOOLS_KEY = 'apps-utility-tools-installed-v1';

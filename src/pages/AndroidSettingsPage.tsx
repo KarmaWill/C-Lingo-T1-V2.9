@@ -1,16 +1,17 @@
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, Typography, ButtonBase } from '@mui/material';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import WifiIcon from '@mui/icons-material/Wifi';
-import BluetoothIcon from '@mui/icons-material/Bluetooth';
-import Brightness6OutlinedIcon from '@mui/icons-material/Brightness6Outlined';
-import VolumeUpOutlinedIcon from '@mui/icons-material/VolumeUpOutlined';
-import StorageOutlinedIcon from '@mui/icons-material/StorageOutlined';
-import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined';
-import AppsOutlinedIcon from '@mui/icons-material/AppsOutlined';
-import TranslateIcon from '@mui/icons-material/Translate';
-import BatteryFullOutlinedIcon from '@mui/icons-material/BatteryFullOutlined';
-import { resolveBackPath } from '../utils/navigateBack';
+import { useNavigate, useLocation } from 'react-router-dom'
+import { Box, Typography, ButtonBase } from '@mui/material'
+import WifiIcon from '@mui/icons-material/Wifi'
+import BluetoothIcon from '@mui/icons-material/Bluetooth'
+import Brightness6OutlinedIcon from '@mui/icons-material/Brightness6Outlined'
+import VolumeUpOutlinedIcon from '@mui/icons-material/VolumeUpOutlined'
+import StorageOutlinedIcon from '@mui/icons-material/StorageOutlined'
+import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined'
+import AppsOutlinedIcon from '@mui/icons-material/AppsOutlined'
+import TranslateIcon from '@mui/icons-material/Translate'
+import BatteryFullOutlinedIcon from '@mui/icons-material/BatteryFullOutlined'
+import { HskPrepBackButton } from '../components/hsk/HskPrepBackButton'
+import { APP_SCREEN_SIZE, FIGMA_FONT, figmaPx } from '../utils/figmaScale'
+import { resolveBackPath } from '../utils/navigateBack'
 
 const SETTINGS_SECTIONS = [
   {
@@ -37,70 +38,218 @@ const SETTINGS_SECTIONS = [
       { id: 'security', label: 'Security', value: 'Screen lock on', icon: SecurityOutlinedIcon },
     ],
   },
-];
+] as const
 
+/**
+ * Android Settings · DESIGN.md Locked 铬：
+ * APP_SCREEN_SIZE + figmaPx、80 Back、字阶 24/32/40、青绿强调（去 Material 蓝）。
+ */
 export default function AndroidSettingsPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768';
-  const is960 = screenSize === '960x540';
+  const navigate = useNavigate()
+  const location = useLocation()
+  const p = (n: number) => figmaPx(n, APP_SCREEN_SIZE)
 
   return (
-    <Box sx={{ height: '100%', minHeight: 0, overflow: 'hidden', bgcolor: '#F1F3F4', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ flexShrink: 0, px: is960 ? 2 : 3, py: is960 ? 1.25 : 1.75, display: 'flex', alignItems: 'center', gap: 1.5, bgcolor: 'white', borderBottom: '1px solid #E8EAED' }}>
-        <ButtonBase onClick={() => navigate(resolveBackPath(location, { defaultPath: '/android/home' }), { replace: true, state: location.state })} sx={{ minWidth: 44, minHeight: 44, borderRadius: '50%', bgcolor: '#F1F3F4', color: '#3C4043' }}>
-          <ChevronLeftIcon sx={{ fontSize: 26 }} />
-        </ButtonBase>
-        <Typography sx={{ fontWeight: 500, fontSize: is960 ? '1.15rem' : '1.35rem', color: '#202124' }}>Settings</Typography>
+    <Box
+      sx={{
+        height: '100%',
+        minHeight: 0,
+        overflow: 'hidden',
+        bgcolor: '#F6F7F9',
+        display: 'flex',
+        flexDirection: 'column',
+        fontFamily: FIGMA_FONT,
+      }}
+    >
+      <Box
+        sx={{
+          flexShrink: 0,
+          height: p(160),
+          px: `${p(54)}px`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: `${p(24)}px`,
+          bgcolor: '#FFFFFF',
+          borderBottom: '1px solid #E5E7EB',
+          boxSizing: 'border-box',
+        }}
+      >
+        <HskPrepBackButton
+          onClick={() =>
+            navigate(resolveBackPath(location, { defaultPath: '/apps' }), {
+              replace: true,
+              state: location.state,
+            })
+          }
+          sx={{
+            width: p(80),
+            height: p(80),
+            flexShrink: 0,
+            '& .MuiSvgIcon-root': { fontSize: p(40) },
+          }}
+        />
+        <Typography
+          sx={{
+            fontFamily: FIGMA_FONT,
+            fontWeight: 700,
+            fontSize: p(40),
+            lineHeight: `${p(48)}px`,
+            color: '#2D3436',
+          }}
+        >
+          Settings
+        </Typography>
       </Box>
 
-      <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', py: is960 ? 1.5 : 2 }}>
-        <Box sx={{ px: is960 ? 2 : 3, pb: 1.5 }}>
-          <Box sx={{ p: is960 ? 1.75 : 2.25, borderRadius: '24px', bgcolor: 'white', boxShadow: '0 1px 3px rgba(60,64,67,0.12)' }}>
-            <Typography sx={{ fontWeight: 500, fontSize: is960 ? '1.05rem' : '1.2rem', color: '#202124' }}>NSK Tablet</Typography>
-            <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: '#5F6368', mt: 0.5 }}>Android 14 · Build TQ3A.230805.001</Typography>
-          </Box>
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          px: `${p(48)}px`,
+          py: `${p(32)}px`,
+          boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${p(28)}px`,
+        }}
+      >
+        <Box
+          sx={{
+            flexShrink: 0,
+            px: `${p(32)}px`,
+            py: `${p(28)}px`,
+            borderRadius: `${p(24)}px`,
+            bgcolor: '#FFFFFF',
+            border: '1px solid #E0E0DF',
+            boxShadow: '0px 4px 20px rgba(213,213,213,0.35)',
+          }}
+        >
+          <Typography
+            sx={{
+              fontFamily: FIGMA_FONT,
+              fontWeight: 700,
+              fontSize: p(32),
+              lineHeight: `${p(40)}px`,
+              color: '#2D3436',
+            }}
+          >
+            NSK Tablet
+          </Typography>
+          <Typography
+            sx={{
+              mt: `${p(8)}px`,
+              fontFamily: FIGMA_FONT,
+              fontWeight: 400,
+              fontSize: p(24),
+              lineHeight: `${p(30)}px`,
+              color: '#636E72',
+            }}
+          >
+            Android 14 · Build TQ3A.230805.001
+          </Typography>
         </Box>
 
         {SETTINGS_SECTIONS.map((section) => (
-          <Box key={section.title} sx={{ px: is960 ? 2 : 3, mb: is960 ? 1.5 : 2 }}>
-            <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.82rem', fontWeight: 700, color: '#5F6368', mb: 0.75, px: 0.5, letterSpacing: '0.02em' }}>
-              {section.title.toUpperCase()}
+          <Box key={section.title} sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: `${p(12)}px` }}>
+            <Typography
+              sx={{
+                px: `${p(8)}px`,
+                fontFamily: FIGMA_FONT,
+                fontWeight: 700,
+                fontSize: p(22),
+                lineHeight: `${p(28)}px`,
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+                color: '#A5B0BA',
+              }}
+            >
+              {section.title}
             </Typography>
-            <Box sx={{ borderRadius: '20px', bgcolor: 'white', overflow: 'hidden', boxShadow: '0 1px 3px rgba(60,64,67,0.12)' }}>
+            <Box
+              sx={{
+                borderRadius: `${p(24)}px`,
+                bgcolor: '#FFFFFF',
+                overflow: 'hidden',
+                border: '1px solid #E0E0DF',
+                boxShadow: '0px 4px 20px rgba(213,213,213,0.35)',
+              }}
+            >
               {section.items.map((item, index) => {
-                const Icon = item.icon;
+                const Icon = item.icon
+                const hasPath = 'path' in item && Boolean(item.path)
                 return (
                   <ButtonBase
                     key={item.id}
-                    onClick={() => item.path && navigate(item.path, { state: { from: '/android/settings', ...(location.state as object) } })}
+                    onClick={() => {
+                      if (!hasPath || !('path' in item) || !item.path) return
+                      navigate(item.path, {
+                        state: { from: '/android/settings', ...(location.state as object) },
+                      })
+                    }}
+                    disabled={!hasPath}
                     sx={{
                       width: '100%',
+                      minHeight: p(96),
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 1.5,
-                      px: is960 ? 1.5 : 2,
-                      py: is960 ? 1.25 : 1.5,
-                      borderBottom: index < section.items.length - 1 ? '1px solid #E8EAED' : 'none',
+                      gap: `${p(24)}px`,
+                      px: `${p(28)}px`,
+                      py: `${p(18)}px`,
+                      borderBottom: index < section.items.length - 1 ? '1px solid #E8ECEF' : 'none',
                       justifyContent: 'flex-start',
                       textAlign: 'left',
-                      '&:active': { bgcolor: '#F8F9FA' },
+                      '&.Mui-disabled': { opacity: 1 },
+                      '&:active': hasPath ? { bgcolor: 'rgba(0, 180, 160, 0.06)' } : undefined,
                     }}
                   >
-                    <Box sx={{ width: 40, height: 40, borderRadius: '50%', bgcolor: '#E8F0FE', color: '#1A73E8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Icon sx={{ fontSize: 22 }} />
+                    <Box
+                      sx={{
+                        width: p(68),
+                        height: p(68),
+                        borderRadius: '50%',
+                        bgcolor: 'rgba(0, 180, 160, 0.1)',
+                        color: '#00B4A0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Icon sx={{ fontSize: p(32) }} />
                     </Box>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography sx={{ fontWeight: 500, fontSize: is960 ? '0.92rem' : '1rem', color: '#202124' }}>{item.label}</Typography>
-                    </Box>
-                    <Typography sx={{ fontSize: is960 ? '0.78rem' : '0.88rem', color: '#5F6368', flexShrink: 0 }}>{item.value}</Typography>
+                    <Typography
+                      sx={{
+                        flex: 1,
+                        minWidth: 0,
+                        fontFamily: FIGMA_FONT,
+                        fontWeight: 600,
+                        fontSize: p(28),
+                        lineHeight: `${p(34)}px`,
+                        color: '#2D3436',
+                      }}
+                    >
+                      {item.label}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        flexShrink: 0,
+                        fontFamily: FIGMA_FONT,
+                        fontWeight: 400,
+                        fontSize: p(24),
+                        lineHeight: `${p(30)}px`,
+                        color: '#636E72',
+                      }}
+                    >
+                      {item.value}
+                    </Typography>
                   </ButtonBase>
-                );
+                )
               })}
             </Box>
           </Box>
         ))}
       </Box>
     </Box>
-  );
+  )
 }

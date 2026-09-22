@@ -1,0 +1,1290 @@
+{
+  "units": [
+    {
+      "id": "L20001",
+      "order": 1,
+      "title": {
+        "zh": "第一单元 我和朋友",
+        "en": "Unit 1: Me and My Friends",
+        "ja": "第1ユニット 私と友達",
+        "ko": "제1단원: 나와 친구",
+        "es": "Unidad 1: Yo y mis amigos",
+        "fr": "Unité 1 : Moi et mes amis",
+        "vi": "Unit 1: Tôi và bạn bè",
+        "id": "Unit 1: Saya dan Teman-teman",
+        "th": "หน่วยที่ 1: ฉันและเพื่อน"
+      },
+      "lessons": [
+        {
+          "id": "L20004",
+          "order": 1,
+          "title": {
+            "zh": "1 他是谁",
+            "en": "1. Who is he?",
+            "ja": "1. 彼は誰ですか",
+            "ko": "1. 그는 누구인가?",
+            "es": "1. ¿Quién es él?",
+            "fr": "1. Qui est-il ?",
+            "vi": "1. Anh ấy là ai?",
+            "id": "1. Siapa dia?",
+            "th": "1. เขาคือใคร"
+          },
+          "goals": [
+            {
+              "id": "L21798",
+              "text": {
+                "zh": "询问某人的名字。",
+                "en": "Ask about someone’s name.",
+                "ja": "誰かの名前を尋ねる。",
+                "ko": "누군가의 이름을 물어보다.",
+                "es": "Preguntar el nombre de alguien.",
+                "fr": "Demander le nom de quelqu'un.",
+                "vi": "Hỏi tên của ai đó.",
+                "id": "Menanyakan nama seseorang.",
+                "th": "ถามชื่อของใครบางคน"
+              }
+            },
+            {
+              "id": "L23100",
+              "text": {
+                "zh": "谈论某人的家乡",
+                "en": "Talk about someone’s hometown",
+                "ja": "誰かの故郷について話す",
+                "ko": "누군가의 고향에 대해 이야기하다",
+                "es": "Hablar sobre la ciudad natal de alguien",
+                "fr": "Parler du pays natal de quelqu'un",
+                "vi": "Nói về quê hương của ai đó",
+                "id": "Bicara tentang kampung halaman seseorang",
+                "th": "พูดถึงบ้านเกิดของใครบางคน"
+              }
+            }
+          ]
+        },
+        {
+          "id": "L20063",
+          "order": 2,
+          "title": {
+            "zh": "2 她比我高",
+            "en": "2 She is taller than me",
+            "ja": "2 彼女は私より背が高い",
+            "ko": "2 그녀는 나보다 키가 크다",
+            "es": "2 Ella es más alta que yo",
+            "fr": "2 Elle est plus grande que moi",
+            "vi": "2 Cô ấy cao hơn tôi",
+            "id": "2 Dia lebih tinggi dariku",
+            "th": "2 เธอสูงกว่าฉัน"
+          },
+          "goals": [
+            {
+              "id": "L21799",
+              "text": {
+                "zh": "比较年龄和身高。",
+                "en": "Compare ages and heights.",
+                "ja": "年齢と身長を比較する。",
+                "ko": "나이와 키를 비교하다.",
+                "es": "Comparar edades y estaturas.",
+                "fr": "Comparer les âges et les tailles.",
+                "vi": "So sánh tuổi tác và chiều cao.",
+                "id": "Membandingkan usia dan tinggi badan.",
+                "th": "เปรียบเทียบอายุและส่วนสูง"
+              }
+            },
+            {
+              "id": "L23101",
+              "text": {
+                "zh": "谈论（语言）能力",
+                "en": "Talk about (language) ability.",
+                "ja": "（言語）能力について話す",
+                "ko": "(언어) 능력에 대해 이야기하다",
+                "es": "Hablar sobre la habilidad (de idioma)",
+                "fr": "Parler de la capacité (linguistique)",
+                "vi": "Nói về khả năng (ngôn ngữ)",
+                "id": "Bicara tentang kemampuan (bahasa)",
+                "th": "พูดถึงความสามารถทางภาษา"
+              }
+            }
+          ]
+        },
+        {
+          "id": "L20110",
+          "order": 3,
+          "title": {
+            "zh": "3 我的一天",
+            "en": "3 My Day",
+            "ja": "3 私の一日",
+            "ko": "3 나의 하루",
+            "es": "3 Mi día",
+            "fr": "3 Ma journée",
+            "vi": "3 Một ngày của tôi",
+            "id": "3 Hariku",
+            "th": "3 วันของฉัน"
+          },
+          "goals": [
+            {
+              "id": "L21800",
+              "text": {
+                "zh": "谈论个人的日常作息。",
+                "en": "Talk about one’s daily routine.",
+                "ja": "日常のスケジュールについて話す。",
+                "ko": "일상 생활에 대해 이야기하다.",
+                "es": "Hablar sobre la rutina diaria de uno.",
+                "fr": "Parler de son emploi du temps quotidien.",
+                "vi": "Nói về thói quen hàng ngày của ai đó.",
+                "id": "Berbicara tentang rutinitas harian seseorang.",
+                "th": "พูดถึงกิจวัตรประจำวันของใครบางคน"
+              }
+            },
+            {
+              "id": "L23102",
+              "text": {
+                "zh": "邀请某人参加活动",
+                "en": "Invite someone to join an activity.",
+                "ja": "誰かを活動に招待する",
+                "ko": "누군가를 활동에 초대하다",
+                "es": "Invitar a alguien a unirse a una actividad",
+                "fr": "Inviter quelqu'un à rejoindre une activité",
+                "vi": "Mời ai đó tham gia hoạt động",
+                "id": "Mengundang seseorang untuk bergabung dalam aktivitas",
+                "th": "เชิญใครบางคนเข้าร่วมกิจกรรม"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "L20156",
+      "order": 2,
+      "title": {
+        "zh": "第二单元 家庭生活",
+        "en": "Unit 2 Family Life",
+        "ja": "第二单元 家庭生活",
+        "ko": "제2과 가정생활",
+        "es": "Unidad 2 Vida familiar",
+        "fr": "Unité 2 La vie familiale",
+        "vi": "Bài 2 Cuộc sống gia đình",
+        "id": "Unit 2 Kehidupan Keluarga",
+        "th": "หน่วยที่ 2 ชีวิตครอบครัว"
+      },
+      "lessons": [
+        {
+          "id": "L20159",
+          "order": 4,
+          "title": {
+            "zh": "4 我的房间",
+            "en": "4 My Room",
+            "ja": "4 私の部屋",
+            "ko": "4 나의 방",
+            "es": "4 Mi habitación",
+            "fr": "4 Ma chambre",
+            "vi": "4 Phòng của tôi",
+            "id": "4 Kamarku",
+            "th": "4 ห้องของฉัน"
+          },
+          "goals": [
+            {
+              "id": "L21801",
+              "text": {
+                "zh": "谈论房间的布局。",
+                "en": "Talk about a room’s layout.",
+                "ja": "部屋の配置について話す。",
+                "ko": "방의 배치에 대해 이야기하다.",
+                "es": "Hablar sobre la distribución de una habitación.",
+                "fr": "Parler de l'aménagement d'une pièce.",
+                "vi": "Nói về bố trí của một căn phòng.",
+                "id": "Berbicara tentang tata letak sebuah ruangan.",
+                "th": "พูดถึงการจัดวางห้อง"
+              }
+            },
+            {
+              "id": "L23103",
+              "text": {
+                "zh": "谈论房间的家具",
+                "en": "Talk about a room’s furnishings.",
+                "ja": "部屋の家具について話す",
+                "ko": "방의 가구에 대해 이야기하다",
+                "es": "Hablar sobre los muebles de una habitación",
+                "fr": "Parler de l'ameublement d'une pièce",
+                "vi": "Nói về đồ đạc trong phòng",
+                "id": "Bicara tentang perabotan kamar",
+                "th": "พูดถึงเฟอร์นิเจอร์ในห้อง"
+              }
+            }
+          ]
+        },
+        {
+          "id": "L20211",
+          "order": 5,
+          "title": {
+            "zh": "5 客厅在南边",
+            "en": "5 The Living Room is on the South Side",
+            "ja": "5 居間は南側です",
+            "ko": "5 거실은 남쪽에 있어",
+            "es": "5 La sala de estar está al sur",
+            "fr": "5 Le salon est au sud",
+            "vi": "5 Phòng khách ở phía nam",
+            "id": "5 Ruang Tamu Ada di Sebelah Selatan",
+            "th": "5 ห้องนั่งเล่นอยู่ทางด้านใต้"
+          },
+          "goals": [
+            {
+              "id": "L21802",
+              "text": {
+                "zh": "询问房间的位置。",
+                "en": "Ask about a room’s location.",
+                "ja": "部屋の場所を尋ねる。",
+                "ko": "방의 위치를 물어보다.",
+                "es": "Preguntar sobre la ubicación de una habitación.",
+                "fr": "Demander l'emplacement d'une pièce.",
+                "vi": "Hỏi vị trí của một căn phòng.",
+                "id": "Menanyakan lokasi sebuah ruangan.",
+                "th": "ถามตำแหน่งของห้อง"
+              }
+            },
+            {
+              "id": "L23104",
+              "text": {
+                "zh": "描述房间的位置",
+                "en": "Describe a room’s location.",
+                "ja": "部屋の位置を説明する",
+                "ko": "방의 위치를 설명하다",
+                "es": "Describir la ubicación de una habitación",
+                "fr": "Décrire l'emplacement d'une pièce",
+                "vi": "Mô tả vị trí của căn phòng",
+                "id": "Menggambarkan lokasi kamar",
+                "th": "อธิบายตำแหน่งของห้อง"
+              }
+            }
+          ]
+        },
+        {
+          "id": "L20253",
+          "order": 6,
+          "title": {
+            "zh": "6 你家的花园真漂亮",
+            "en": "6 Your Garden is So Beautiful",
+            "ja": "6 あなたのお庭はとてもきれいです",
+            "ko": "6 너희 집 정원이 정말 예쁘다",
+            "es": "6 El jardín de tu casa es muy bonito",
+            "fr": "6 Ton jardin est vraiment beau",
+            "vi": "6 Vườn nhà bạn đẹp quá",
+            "id": "6 Taman Rumahmu Sangat Indah",
+            "th": "6 สวนบ้านคุณสวยจัง"
+          },
+          "goals": [
+            {
+              "id": "L21803",
+              "text": {
+                "zh": "描述居住环境。",
+                "en": "Describe the housing environment.",
+                "ja": "住居環境を説明する。",
+                "ko": "주거 환경을 설명하다.",
+                "es": "Describir el entorno de la vivienda.",
+                "fr": "Décrire l'environnement du logement.",
+                "vi": "Mô tả môi trường nhà ở.",
+                "id": "Menggambarkan lingkungan perumahan.",
+                "th": "อธิบายสภาพแวดล้อมที่อยู่อาศัย"
+              }
+            },
+            {
+              "id": "L23105",
+              "text": {
+                "zh": "谈论院子",
+                "en": "Talk about the yard.",
+                "ja": "庭について話す",
+                "ko": "마당에 대해 이야기하다",
+                "es": "Hablar sobre el patio",
+                "fr": "Parler de la cour",
+                "vi": "Nói về sân vườn",
+                "id": "Bicara tentang halaman",
+                "th": "พูดถึงลานบ้าน"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "L20295",
+      "order": 3,
+      "title": {
+        "zh": "第三单元 价格与购物",
+        "en": "Unit 3 Price and Shopping",
+        "ja": "第三单元 価格と買い物",
+        "ko": "제3과 가격과 쇼핑",
+        "es": "Unidad 3 Precio y compras",
+        "fr": "Unité 3 Prix et achats",
+        "vi": "Bài 3 Giá cả và mua sắm",
+        "id": "Unit 3 Harga dan Belanja",
+        "th": "หน่วยที่ 3 ราคาและการช้อปปิ้ง"
+      },
+      "lessons": [
+        {
+          "id": "L20299",
+          "order": 7,
+          "title": {
+            "zh": "7 你买什么",
+            "en": "7 What are you buying",
+            "ja": "7 何を買いますか",
+            "ko": "7 뭘 사",
+            "es": "7 ¿Qué compras?",
+            "fr": "7 Qu'est-ce que tu achètes",
+            "vi": "7 Bạn mua gì",
+            "id": "7 Kamu Membeli Apa",
+            "th": "7 คุณซื้ออะไร"
+          },
+          "goals": [
+            {
+              "id": "L21804",
+              "text": {
+                "zh": "询问某人需要买什么。",
+                "en": "Ask someone what they need to buy.",
+                "ja": "誰かに何を買う必要があるか尋ねる。",
+                "ko": "누군가에게 무엇을 사야 하는지 물어보다.",
+                "es": "Preguntarle a alguien qué necesita comprar.",
+                "fr": "Demander à quelqu'un ce qu'il a besoin d'acheter.",
+                "vi": "Hỏi ai đó cần mua gì.",
+                "id": "Menanyakan kepada seseorang apa yang perlu dibeli.",
+                "th": "ถามใครบางคนว่าต้องซื้ออะไร"
+              }
+            },
+            {
+              "id": "L23106",
+              "text": {
+                "zh": "谈论需要买的东西",
+                "en": "Talk about what you need to buy.",
+                "ja": "買う必要があるものについて話す",
+                "ko": "살 필요가 있는 것에 대해 이야기하다",
+                "es": "Hablar sobre lo que necesitas comprar",
+                "fr": "Parler de ce qu'il faut acheter",
+                "vi": "Nói về những thứ cần mua",
+                "id": "Bicara tentang apa yang perlu dibeli",
+                "th": "พูดถึงสิ่งที่ต้องซื้อ"
+              }
+            },
+            {
+              "id": "L23107",
+              "text": {
+                "zh": "理解并练习使用不同的重量和度量单位词。",
+                "en": "Understand and practice using different units of weight and measure words.",
+                "ja": "異なる重量・測定単位の言葉を理解し、練習する。",
+                "ko": "다양한 무게와 측정 단위어를 이해하고 연습하다.",
+                "es": "Entiende y practica el uso de diferentes unidades de peso y medida.",
+                "fr": "Comprendre et pratiquer l’utilisation de différentes unités de poids et de mesure.",
+                "vi": "Hiểu và thực hành sử dụng các đơn vị trọng lượng và đo lường khác nhau.",
+                "id": "Memahami dan berlatih menggunakan satuan berat dan ukuran yang berbeda.",
+                "th": "เข้าใจและฝึกใช้หน่วยน้ำหนักและการวัดต่างๆ"
+              }
+            }
+          ]
+        },
+        {
+          "id": "L20343",
+          "order": 8,
+          "title": {
+            "zh": "8 苹果多少钱一斤",
+            "en": "8 How much is one jin of apples?",
+            "ja": "8　りんごは1斤いくらですか",
+            "ko": "8 사과 한 근에 얼마예요?",
+            "es": "8 ¿Cuánto cuesta un jin de manzanas?",
+            "fr": "8 Combien coûte un jin de pommes ?",
+            "vi": "8 Táo bao nhiêu tiền một cân?",
+            "id": "8 Berapa harga satu jin apel?",
+            "th": "8 แอปเปิ้ลจิ่นละเท่าไหร่"
+          },
+          "goals": [
+            {
+              "id": "L21805",
+              "text": {
+                "zh": "询问某物多少钱。",
+                "en": "Ask how much something is.",
+                "ja": "何かがいくらか尋ねる。",
+                "ko": "무언가가 얼마인지 물어보다.",
+                "es": "Preguntar cuánto cuesta algo.",
+                "fr": "Demander combien coûte quelque chose.",
+                "vi": "Hỏi giá của một thứ gì đó.",
+                "id": "Menanyakan berapa harga sesuatu.",
+                "th": "ถามราคาของบางสิ่ง"
+              }
+            },
+            {
+              "id": "L23108",
+              "text": {
+                "zh": "谈论价格",
+                "en": "Talk about prices.",
+                "ja": "価格について話す",
+                "ko": "가격에 대해 이야기하다",
+                "es": "Hablar sobre precios",
+                "fr": "Parler des prix",
+                "vi": "Nói về giá cả",
+                "id": "Bicara tentang harga",
+                "th": "พูดถึงราคา"
+              }
+            },
+            {
+              "id": "L23109",
+              "text": {
+                "zh": "了解中国货币",
+                "en": "Learn about Chinese currency.",
+                "ja": "中国の通貨について知る",
+                "ko": "중국 화폐에 대해 알아보다",
+                "es": "Aprender sobre la moneda china",
+                "fr": "Apprendre la monnaie chinoise",
+                "vi": "Tìm hiểu về tiền tệ Trung Quốc",
+                "id": "Mempelajari mata uang Tiongkok",
+                "th": "เรียนรู้เกี่ยวกับเงินตราจีน"
+              }
+            }
+          ]
+        },
+        {
+          "id": "L20383",
+          "order": 9,
+          "title": {
+            "zh": "9 这件衣服比那件贵一点儿",
+            "en": "9 This piece of clothing is a bit more expensive than that one.",
+            "ja": "9　この服はあの服より少し高いです",
+            "ko": "9 이 옷은 저 옷보다 조금 비싸요",
+            "es": "9 Esta prenda es un poco más cara que aquella.",
+            "fr": "9 Ce vêtement est un peu plus cher que celui-là.",
+            "vi": "9 Cái áo này đắt hơn cái áo kia một chút.",
+            "id": "9 Pakaian ini sedikit lebih mahal daripada yang itu.",
+            "th": "9 เสื้อผ้าชิ้นนี้แพงกว่าชิ้นนั้นเล็กน้อย"
+          },
+          "goals": [
+            {
+              "id": "L21806",
+              "text": {
+                "zh": "比较两件事物。",
+                "en": "Compare two things.",
+                "ja": "二つのものを比較する。",
+                "ko": "두 가지를 비교하다.",
+                "es": "Comparar dos cosas.",
+                "fr": "Comparer deux choses.",
+                "vi": "So sánh hai thứ.",
+                "id": "Membandingkan dua hal.",
+                "th": "เปรียบเทียบสองสิ่ง"
+              }
+            },
+            {
+              "id": "L23110",
+              "text": {
+                "zh": "指出两件事物是相同还是不同。",
+                "en": "Indicate whether two things are the same or different.",
+                "ja": "二つのものが同じか違うかを示す。",
+                "ko": "두 가지가 같은지 다른지 나타내다.",
+                "es": "Indica si dos cosas son iguales o diferentes.",
+                "fr": "Indique si deux choses sont les mêmes ou différentes.",
+                "vi": "Chỉ ra hai thứ có giống nhau hay khác nhau không.",
+                "id": "Tunjukkan apakah dua hal sama atau berbeda.",
+                "th": "บอกว่าสองสิ่งนั้นเหมือนกันหรือแตกต่างกัน"
+              }
+            },
+            {
+              "id": "L23111",
+              "text": {
+                "zh": "对不同事物发表评论",
+                "en": "Give comments on different things.",
+                "ja": "異なるものにコメントをする",
+                "ko": "다른 것들에 대해 의견을 말하다",
+                "es": "Dar comentarios sobre diferentes cosas",
+                "fr": "Faire des commentaires sur différentes choses",
+                "vi": "Đưa ra nhận xét về các thứ khác nhau",
+                "id": "Memberikan komentar tentang hal-hal yang berbeda",
+                "th": "แสดงความคิดเห็นเกี่ยวกับสิ่งต่างๆ"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "L20426",
+      "order": 4,
+      "title": {
+        "zh": "第四单元 学习安排",
+        "en": "Unit 4 Study Plan",
+        "ja": "第四单元　学習の計画",
+        "ko": "제4과 학습 안내",
+        "es": "Unidad 4 Plan de estudio",
+        "fr": "Unité 4 Plan d'étude",
+        "vi": "Bài 4 Kế hoạch học tập",
+        "id": "Unit 4 Rencana Belajar",
+        "th": "บทที่ 4 แผนการเรียน"
+      },
+      "lessons": [
+        {
+          "id": "L20429",
+          "order": 10,
+          "title": {
+            "zh": "10 你今天上了什么课",
+            "en": "10 What classes did you have today?",
+            "ja": "10　今日は何の授業を受けましたか",
+            "ko": "10 오늘 뭘 배웠어요?",
+            "es": "10 ¿Qué clases tuviste hoy?",
+            "fr": "10 Quels cours as-tu eus aujourd'hui ?",
+            "vi": "10 Hôm nay bạn học môn gì?",
+            "id": "10 Hari ini kamu belajar apa?",
+            "th": "10 วันนี้คุณเรียนวิชาอะไร?"
+          },
+          "goals": [
+            {
+              "id": "L21807",
+              "text": {
+                "zh": "谈论今天上哪些课。",
+                "en": "Talk about which classes you have today.",
+                "ja": "今日の授業について話す。",
+                "ko": "오늘 어떤 수업이 있는지 이야기해.",
+                "es": "Habla sobre qué clases tienes hoy.",
+                "fr": "Parle des cours que tu as aujourd’hui.",
+                "vi": "Nói về những lớp học bạn có hôm nay.",
+                "id": "Bicara tentang kelas apa yang kamu punya hari ini.",
+                "th": "พูดถึงชั้นเรียนที่คุณมีวันนี้"
+              }
+            },
+            {
+              "id": "L23112",
+              "text": {
+                "zh": "谈论你的学校科目",
+                "en": "Talk about your school subjects.",
+                "ja": "学校の科目について話す",
+                "ko": "학교 과목에 대해 이야기하다",
+                "es": "Hablar sobre tus asignaturas escolares",
+                "fr": "Parler de tes matières scolaires",
+                "vi": "Nói về các môn học của bạn",
+                "id": "Bicara tentang mata pelajaranmu",
+                "th": "พูดถึงวิชาในโรงเรียนของคุณ"
+              }
+            }
+          ]
+        },
+        {
+          "id": "L20467",
+          "order": 11,
+          "title": {
+            "zh": "11 汉语难不难",
+            "en": "11 Is Chinese difficult?",
+            "ja": "11　中国語は難しいですか",
+            "ko": "11 중국어는 어려워요?",
+            "es": "11 ¿El chino es difícil?",
+            "fr": "11 Le chinois est-il difficile ?",
+            "vi": "11 Tiếng Trung có khó không?",
+            "id": "11 Apakah bahasa Mandarin sulit?",
+            "th": "11 ภาษาจีนยากไหม?"
+          },
+          "goals": [
+            {
+              "id": "L21808",
+              "text": {
+                "zh": "讨论你对课程的感受。",
+                "en": "Discuss your feelings about your courses.",
+                "ja": "自分の履修科目に対する気持ちを話し合う。",
+                "ko": "수업에 대한 자신의 감정을 논의하다.",
+                "es": "Discute tus sentimientos sobre tus cursos.",
+                "fr": "Discute tes sentiments à propos de tes cours.",
+                "vi": "Thảo luận về cảm xúc của bạn đối với các khóa học.",
+                "id": "Diskusikan perasaanmu tentang mata kuliahmu.",
+                "th": "พูดคุยเกี่ยวกับความรู้สึกของคุณที่มีต่อวิชาที่เรียน"
+              }
+            },
+            {
+              "id": "L23113",
+              "text": {
+                "zh": "谈论作业和考试",
+                "en": "Talk about homework and exams.",
+                "ja": "宿題と試験について話す",
+                "ko": "숙제와 시험에 대해 이야기하다",
+                "es": "Hablar sobre tareas y exámenes",
+                "fr": "Parler des devoirs et des examens",
+                "vi": "Nói về bài tập và kỳ thi",
+                "id": "Bicara tentang pekerjaan rumah dan ujian",
+                "th": "พูดถึงการบ้านและการสอบ"
+              }
+            }
+          ]
+        },
+        {
+          "id": "L20503",
+          "order": 12,
+          "title": {
+            "zh": "12 来打乒乓球吧",
+            "en": "12 Come play table tennis!",
+            "ja": "12　卓球をしましょう",
+            "ko": "12 탁구 치러 와요",
+            "es": "12 ¡Ven a jugar al ping-pong!",
+            "fr": "12 Viens jouer au ping-pong !",
+            "vi": "12 Đến đánh bóng bàn đi!",
+            "id": "12 Ayo main tenis meja!",
+            "th": "12 มาเล่นปิงปองกันเถอะ!"
+          },
+          "goals": [
+            {
+              "id": "L21809",
+              "text": {
+                "zh": "邀请某人参加活动。",
+                "en": "Invite someone to participate in an activity.",
+                "ja": "誰かを活動に誘う。",
+                "ko": "누군가를 활동에 초대하다.",
+                "es": "Invita a alguien a participar en una actividad.",
+                "fr": "Invite quelqu’un à participer à une activité.",
+                "vi": "Mời ai đó tham gia một hoạt động.",
+                "id": "Mengajak seseorang untuk ikut serta dalam suatu kegiatan.",
+                "th": "เชิญใครสักคนเข้าร่วมกิจกรรม"
+              }
+            },
+            {
+              "id": "L23114",
+              "text": {
+                "zh": "谈论各种运动",
+                "en": "Talk about various sports.",
+                "ja": "いろいろなスポーツについて話す",
+                "ko": "여러 가지 울동에 대해 이야기하다",
+                "es": "Hablar sobre varios deportes",
+                "fr": "Parler de divers sports",
+                "vi": "Nói về các môn thể thao khác nhau",
+                "id": "Bicara tentang berbagai olahraga",
+                "th": "พูดถึงกีฬาต่างๆ"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "L20537",
+      "order": 5,
+      "title": {
+        "zh": "第五单元 健康与运动",
+        "en": "Unit 5 Health and Sports",
+        "ja": "第五单元　健康とスポーツ",
+        "ko": "제5과 건강과 운동",
+        "es": "Unidad 5 Salud y deporte",
+        "fr": "Unité 5 Santé et sport",
+        "vi": "Bài 5 Sức khỏe và thể thao",
+        "id": "Unit 5 Kesehatan dan Olahraga",
+        "th": "บทที่ 5 สุขภาพและกีฬา"
+      },
+      "lessons": [
+        {
+          "id": "L20540",
+          "order": 13,
+          "title": {
+            "zh": "13 明天有雨",
+            "en": "13 It will rain tomorrow",
+            "ja": "13　明日は雨です",
+            "ko": "13 내일 비가 와요",
+            "es": "13 Mañana lloverá",
+            "fr": "13 Demain, il pleuvra",
+            "vi": "13 Ngày mai có mưa",
+            "id": "13 Besok hujan",
+            "th": "13 พรุ่งนี้ฝนตก"
+          },
+          "goals": [
+            {
+              "id": "L21810",
+              "text": {
+                "zh": "谈论天气。",
+                "en": "Talk about the weather.",
+                "ja": "天気について話す。",
+                "ko": "날씨에 대해 이야기하다.",
+                "es": "Hablar sobre el clima.",
+                "fr": "Parler de la météo.",
+                "vi": "Nói về thờii tiết.",
+                "id": "Berbicara tentang cuaca.",
+                "th": "พูดถึงสภาพอากาศ"
+              }
+            },
+            {
+              "id": "L23115",
+              "text": {
+                "zh": "谈论季节",
+                "en": "Talk about the seasons.",
+                "ja": "季節について話す",
+                "ko": "계절에 대해 이야기하다",
+                "es": "Hablar sobre las estaciones",
+                "fr": "Parler des saisons",
+                "vi": "Nói về các mùa",
+                "id": "Bicara tentang musim",
+                "th": "พูดถึงฤดูกาล"
+              }
+            }
+          ]
+        },
+        {
+          "id": "L20591",
+          "order": 14,
+          "title": {
+            "zh": "14 在公园里",
+            "en": "14 In the park",
+            "ja": "14　公園にいます",
+            "ko": "14 공원에서",
+            "es": "14 En el parque",
+            "fr": "14 Dans le parc",
+            "vi": "14 Trong công viên",
+            "id": "14 Di taman",
+            "th": "14 ในสวนสาธารณะ"
+          },
+          "goals": [
+            {
+              "id": "L21811",
+              "text": {
+                "zh": "谈论为了健康而锻炼。",
+                "en": "Talk about exercising for health.",
+                "ja": "健康のために運動することについて話す。",
+                "ko": "건강을 위해 운i동하는 것에 대해 이야기하다.",
+                "es": "Hablar sobre hacer ejercicio para la salud.",
+                "fr": "Parler de faire de l'exercice pour la santé.",
+                "vi": "Nói về việc tập thể dục vì sức khỏe.",
+                "id": "Berbicara tentang berolahraga untuk kesehatan.",
+                "th": "พูดถึงการออกกำลังกายเพื่อสุขภาพ"
+              }
+            },
+            {
+              "id": "L23116",
+              "text": {
+                "zh": "谈论不同活动在哪里进行。",
+                "en": "Talk about where different activities are done.",
+                "ja": "さまざまな活動が行われる場所について話す。",
+                "ko": "다양한 활동이 어디에서 이루어지는지 이야기하다.",
+                "es": "Habla sobre dónde se realizan diferentes actividades.",
+                "fr": "Parle des endroits où se déroulent différentes activités.",
+                "vi": "Nói về nơi diễn ra các hoạt động khác nhau.",
+                "id": "Bicara tentang di mana berbagai kegiatan dilakukan.",
+                "th": "พูดถึงสถานที่ที่กิจกรรมต่างๆ เกิดขึ้น"
+              }
+            }
+          ]
+        },
+        {
+          "id": "L20634",
+          "order": 15,
+          "title": {
+            "zh": "15 他感冒了",
+            "en": "15 He Has a Cold",
+            "ja": "15 彼は風邪を引いた",
+            "ko": "15 그는 감기에 걸렸다",
+            "es": "15 Él tiene un resfriado",
+            "fr": "15 Il a attrapé un rhume",
+            "vi": "15 Anh ấy bị cảm",
+            "id": "15 Dia terkena flu",
+            "th": "15 เขาเป็นหวัด"
+          },
+          "goals": [
+            {
+              "id": "L21812",
+              "text": {
+                "zh": "谈论疾病（生病）。",
+                "en": "Talk about illnesses.",
+                "ja": "病気について話す。",
+                "ko": "질병에 대해 이야기하다.",
+                "es": "Hablar sobre enfermedades.",
+                "fr": "Parler des maladies.",
+                "vi": "Nói về các bệnh tật.",
+                "id": "Berbicara tentang penyakit.",
+                "th": "พูดถึงโรคภัยไข้เจ็บ"
+              }
+            },
+            {
+              "id": "L23117",
+              "text": {
+                "zh": "表达某人病了",
+                "en": "Express that someone is ill.",
+                "ja": "誰かが病気だと伝える",
+                "ko": "누군가 아프다고 표현하다",
+                "es": "Expresar que alguien está enfermo",
+                "fr": "Exprimer que quelqu'un est malade",
+                "vi": "Diễn đạt ai đó bị ốm",
+                "id": "Mengungkapkan bahwa seseorang sakit",
+                "th": "บอกว่าใครบางคนป่วย"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "L20682",
+      "order": 6,
+      "title": {
+        "zh": "第六单元 时尚与娱乐",
+        "en": "Unit 6 Fashion and Entertainment",
+        "ja": "第六单元 ファッションと娯楽",
+        "ko": "제6과 패션과 오락",
+        "es": "Unidad 6 Moda y Entretenimiento",
+        "fr": "Unité 6 Mode et Divertissement",
+        "vi": "Bài 6 Thờ<tool_call> trang và Giải trí",
+        "id": "Unit 6 Mode dan Hiburan",
+        "th": "หน่วยที่ 6 แฟชั่นและความบันเทิง"
+      },
+      "lessons": [
+        {
+          "id": "L20685",
+          "order": 16,
+          "title": {
+            "zh": "16 我喜欢你衣服的颜色",
+            "en": "16 I Like the Color of Your Clothes",
+            "ja": "16 あなたの服の色が好きです",
+            "ko": "16 나는 네 옷 색깔이 좋아",
+            "es": "16 Me gusta el color de tu ropa",
+            "fr": "16 J'aime la couleur de tes vêtements",
+            "vi": "16 Tôi thích màu quần áo của bạn",
+            "id": "16 Saya suka warna pakaianmu",
+            "th": "16 ฉันชอบสีเสื้อผ้าของคุณ"
+          },
+          "goals": [
+            {
+              "id": "L21813",
+              "text": {
+                "zh": "询问颜色喜好。",
+                "en": "Ask about colour preferences.",
+                "ja": "色の好みを尋ねる。",
+                "ko": "색상 선호도를 물어보다.",
+                "es": "Preguntar sobre preferencias de color.",
+                "fr": "Demander les préférences de couleur.",
+                "vi": "Hỏi về sở thích màu sắc.",
+                "id": "Menanyakan preferensi warna.",
+                "th": "ถามเกี่ยวกับความชอบสี"
+              }
+            },
+            {
+              "id": "L23118",
+              "text": {
+                "zh": "谈论你最喜欢的颜色",
+                "en": "Talk about your favourite colour.",
+                "ja": "一番好きな色について話す",
+                "ko": "가장 좋아하는 색에 대해 이야기하다",
+                "es": "Hablar sobre tu color favorito",
+                "fr": "Parler de ta couleur préférée",
+                "vi": "Nói về màu sắc yêu thích của bạn",
+                "id": "Bicara tentang warna favoritmu",
+                "th": "พูดถึงสีที่คุณชอบที่สุด"
+              }
+            }
+          ]
+        },
+        {
+          "id": "L20741",
+          "order": 17,
+          "title": {
+            "zh": "17 我跟爸爸一样喜欢京剧",
+            "en": "17 I Like Peking Opera Just Like Dad",
+            "ja": "17 私はパパと同じくらい京劇が好きです",
+            "ko": "17 나는 아빠와 마찬가지로 경극을 좋아한다",
+            "es": "17 Me gusta la ópera de Pekín igual que a papá",
+            "fr": "17 J'aime l'opéra de Pékin tout comme papa",
+            "vi": "17 Tôi thích kinh kịch giống như bố",
+            "id": "17 Saya suka Opera Peking seperti ayah",
+            "th": "17 ฉันชอบงิ้วเหมือนพ่อ"
+          },
+          "goals": [
+            {
+              "id": "L21814",
+              "text": {
+                "zh": "谈论京剧。",
+                "en": "Talk about Peking Opera.",
+                "ja": "京劇について話す。",
+                "ko": "경극에 대해 이야기하다.",
+                "es": "Hablar sobre la Ópera de Pekín.",
+                "fr": "Parler de l'opéra de Pékin.",
+                "vi": "Nói về Kinh kịch.",
+                "id": "Berbicara tentang Opera Beijing.",
+                "th": "พูดถึงงิ้วปักกิ่ง"
+              }
+            },
+            {
+              "id": "L23119",
+              "text": {
+                "zh": "谈论购买歌剧演出的门票。",
+                "en": "Talk about buying tickets for an opera show.",
+                "ja": "オペラ公演のチケット購入について話す。",
+                "ko": "오페라 공연 티ケット 구매에 대해 이야기하다.",
+                "es": "Habla sobre la compra de entradas para una ópera.",
+                "fr": "Parle de l’achat de billets pour un spectacle d’opéra.",
+                "vi": "Nói về việc mua vé cho buổi biểu diễn opera.",
+                "id": "Bicara tentang membeli tiket untuk pertunjukan opera.",
+                "th": "พูดถึงการซื้อตั๋วสำหรับการแสดงโอเปร่า"
+              }
+            },
+            {
+              "id": "L23120",
+              "text": {
+                "zh": "学习量词'张'",
+                "en": "Learn the measure word “zhang (张)”.",
+                "ja": "量詞「張」を学ぶ",
+                "ko": "의량사 '张'를 배우다",
+                "es": "Aprender el clasificador 'zhang'",
+                "fr": "Apprendre le classificateur 'zhang'",
+                "vi": "Học lượng từ 'trương'",
+                "id": "Belajar kata bilangan 'zhang'",
+                "th": "เรียนลักษณนาม 张"
+              }
+            }
+          ]
+        },
+        {
+          "id": "L20791",
+          "order": 18,
+          "title": {
+            "zh": "18 音乐会快要开始了",
+            "en": "18 The Concert Is About to Start",
+            "ja": "18 コンサートがもうすぐ始まります",
+            "ko": "18 음악회가 곧 시작된다",
+            "es": "18 El concierto está a punto de comenzar",
+            "fr": "18 Le concert va bientôt commencer",
+            "vi": "18 Buổi hòa nhạc sắp bắt đầu",
+            "id": "18 Konser akan segera dimulai",
+            "th": "18 คอนเสิร์ตใกล้จะเริ่มแล้ว"
+          },
+          "goals": [
+            {
+              "id": "L21815",
+              "text": {
+                "zh": "谈论音乐喜好。",
+                "en": "Talk about musical preference.",
+                "ja": "音楽の好みについて話す。",
+                "ko": "음악 취향에 대해 이야기하다.",
+                "es": "Hablar sobre preferencias musicales.",
+                "fr": "Parler des préférences musicales.",
+                "vi": "Nói về sở thích âm nhạc.",
+                "id": "Berbicara tentang selera musik.",
+                "th": "พูดถึงความชอบทางดนตรี"
+              }
+            },
+            {
+              "id": "L23121",
+              "text": {
+                "zh": "谈论音乐爱好",
+                "en": "Talk about musical hobbies.",
+                "ja": "音楽の趣味について話す",
+                "ko": "음악 취미에 대해 이야기하다",
+                "es": "Hablar sobre aficiones musicales",
+                "fr": "Parler des hobbies musicaux",
+                "vi": "Nói về sở thích âm nhạc",
+                "id": "Bicara tentang hobi musik",
+                "th": "พูดถึงงานอดิเรกทางดนตรี"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "L20834",
+      "order": 7,
+      "title": {
+        "zh": "第七单元 媒体与信息",
+        "en": "Unit 7 Media and Information",
+        "ja": "第七单元 メディアと情報",
+        "ko": "제7과 미디어와 정보",
+        "es": "Unidad 7 Medios e Información",
+        "fr": "Unité 7 Médias et Information",
+        "vi": "Bài 7 Truyền thông và Thông tin",
+        "id": "Unit 7 Media dan Informasi",
+        "th": "หน่วยที่ 7 สื่อและสารสนเทศ"
+      },
+      "lessons": [
+        {
+          "id": "L20837",
+          "order": 19,
+          "title": {
+            "zh": "19 你跟我一起看，好吗",
+            "en": "19 Will You Watch with Me?",
+            "ja": "19 一緒に見てくれませんか",
+            "ko": "19 나와 함께 볼래?",
+            "es": "19 ¿Verás conmigo?",
+            "fr": "19 Tu regardes avec moi ?",
+            "vi": "19 Bạn xem cùng tôi nhé?",
+            "id": "19 Maukah Anda menonton bersama saya?",
+            "th": "19 ดูด้วยกันกับฉันได้ไหม"
+          },
+          "goals": [
+            {
+              "id": "L21816",
+              "text": {
+                "zh": "谈论电视节目。",
+                "en": "Talk about TV programmes.",
+                "ja": "テレビ番組について話す。",
+                "ko": "TV 프로그램에 대해 이야기하다.",
+                "es": "Hablar sobre programas de televisión.",
+                "fr": "Parler des programmes télévisés.",
+                "vi": "Nói về các chương trình truyền hình.",
+                "id": "Berbicara tentang acara TV.",
+                "th": "พูดถึงรายการโทรทัศน์"
+              }
+            },
+            {
+              "id": "L23122",
+              "text": {
+                "zh": "谈论某人最喜欢的活动。",
+                "en": "Talk about someone’s favourite activities.",
+                "ja": "誰かの好きな活動について話す。",
+                "ko": "누군가의 좋아하는 활동에 대해 이야기하다.",
+                "es": "Habla sobre las actividades favoritas de alguien.",
+                "fr": "Parle des activités préférées de quelqu’un.",
+                "vi": "Nói về hoạt động yêu thích của ai đó.",
+                "id": "Bicara tentang aktivitas favorit seseorang.",
+                "th": "พูดถึงกิจกรรมที่ใครบางคนชอบที่สุด"
+              }
+            }
+          ]
+        },
+        {
+          "id": "L20885",
+          "order": 20,
+          "title": {
+            "zh": "20 他的表演好极了",
+            "en": "20 His Performance Was Excellent",
+            "ja": "20 彼の演技は素晴らしかった",
+            "ko": "20 그의 공연이 아주 훌륭했다",
+            "es": "20 Su actuación fue excelente",
+            "fr": "20 Sa performance était excellente",
+            "vi": "20 Buổi biểu diễn của anh ấy tuyệt vờ<tool_call> lắm",
+            "id": "20 Pertunjukannya sangat bagus",
+            "th": "20 การแสดงของเขาดีมาก"
+          },
+          "goals": [
+            {
+              "id": "L21817",
+              "text": {
+                "zh": "谈论电影。",
+                "en": "Talk about movies.",
+                "ja": "映画について話す。",
+                "ko": "영화에 대해 이야기하다.",
+                "es": "Hablar sobre películas.",
+                "fr": "Parler des films.",
+                "vi": "Nói về phim ảnh.",
+                "id": "Berbicara tentang film.",
+                "th": "พูดถึงภาพยนตร์"
+              }
+            },
+            {
+              "id": "L23123",
+              "text": {
+                "zh": "谈论演员",
+                "en": "Talk about actors or actresses.",
+                "ja": "俳優について話す",
+                "ko": "배우에 대해 이야기하다",
+                "es": "Hablar sobre actores o actrices",
+                "fr": "Parler d'acteurs ou d'actrices",
+                "vi": "Nói về diễn viên",
+                "id": "Bicara tentang aktor atau aktris",
+                "th": "พูดถึงนักแสดง"
+              }
+            },
+            {
+              "id": "L23124",
+              "text": {
+                "zh": "解释原因和结果",
+                "en": "Explain reasons and outcomes.",
+                "ja": "原因と結果を説明する",
+                "ko": "원인과 결과를 설명하다",
+                "es": "Explicar razones y resultados",
+                "fr": "Expliquer les causes et les conséquences",
+                "vi": "Giải thích nguyên nhân và kết quả",
+                "id": "Menjelaskan alasan dan hasil",
+                "th": "อธิบายเหตุและผล"
+              }
+            }
+          ]
+        },
+        {
+          "id": "L20938",
+          "order": 21,
+          "title": {
+            "zh": "21 你看广告没有",
+            "en": "21 Have you seen the advertisement?",
+            "ja": "21 広告を見ましたか",
+            "ko": "21 광고 봤어요",
+            "es": "21 ¿Has visto el anuncio?",
+            "fr": "21 Tu as vu la publicité ?",
+            "vi": "21 Bạn xem quảng cáo chưa?",
+            "id": "21 Apakah kamu sudah melihat iklan?",
+            "th": "21 คุณดูโฆษณารึยัง?"
+          },
+          "goals": [
+            {
+              "id": "L21818",
+              "text": {
+                "zh": "谈论广告。",
+                "en": "Talk about advertisements.",
+                "ja": "広告について話す。",
+                "ko": "광고에 대해 이야기하다.",
+                "es": "Hablar sobre anuncios.",
+                "fr": "Parler de la publicité.",
+                "vi": "Nói về quảng cáo.",
+                "id": "Berbicara tentang iklan.",
+                "th": "พูดถึงโฆษณา"
+              }
+            },
+            {
+              "id": "L23125",
+              "text": {
+                "zh": "谈论某人已经做过或还没做过的事。",
+                "en": "Talk about what someone has or hasn’t done.",
+                "ja": "誰かがしたこと・していないことについて話す。",
+                "ko": "누군가가 한 일 또는 하지 않은 일에 대해 이야기하다.",
+                "es": "Habla sobre lo que alguien ha hecho o no ha hecho.",
+                "fr": "Parle de ce que quelqu’un a fait ou n’a pas fait.",
+                "vi": "Nói về những gì ai đó đã làm hoặc chưa làm.",
+                "id": "Bicara tentang apa yang telah atau belum dilakukan seseorang.",
+                "th": "พูดถึงสิ่งที่ใครบางคนได้ทำหรือยังไม่ได้ทำ"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "L20988",
+      "order": 8,
+      "title": {
+        "zh": "第八单元 旅游与节日",
+        "en": "Unit 8 Travel and Festivals",
+        "ja": "第八単元 旅行と祭り",
+        "ko": "제8과 여행과 명절",
+        "es": "Unidad 8 Viajes y Festivales",
+        "fr": "Unité 8 Voyage et Fêtes",
+        "vi": "Bài 8 Du lịch và Lễ hội",
+        "id": "Unit 8 Perjalanan dan Festival",
+        "th": "หน่วยที่ 8 การเดินทางและเทศกาล"
+      },
+      "lessons": [
+        {
+          "id": "L20991",
+          "order": 22,
+          "title": {
+            "zh": "22 我去过故宫",
+            "en": "22 I have been to the Forbidden City",
+            "ja": "22 故宮に行ったことがある",
+            "ko": "22 고궁에 가 본 적이 있어요",
+            "es": "22 He estado en la Ciudad Prohibida",
+            "fr": "22 J'ai été à la Cité Interdite",
+            "vi": "22 Tôi đã đến Cố Cung",
+            "id": "22 Saya pernah ke Kota Terlarang",
+            "th": "22 ฉันเคยไปพระราชวังต้องห้าม"
+          },
+          "goals": [
+            {
+              "id": "L21819",
+              "text": {
+                "zh": "谈论你的旅行经历。",
+                "en": "Talk about your travel experiences.",
+                "ja": "旅行の経験について話す。",
+                "ko": "여행 경험에 대해 이야기하다.",
+                "es": "Hablar sobre tus experiencias de viaje.",
+                "fr": "Parler de vos expériences de voyage.",
+                "vi": "Nói về những trải nghiệm du lịch của bạn.",
+                "id": "Berbicara tentang pengalaman perjalanan Anda.",
+                "th": "พูดถึงประสบการณ์การเดินทางของคุณ"
+              }
+            },
+            {
+              "id": "L23126",
+              "text": {
+                "zh": "描述你去过的地方",
+                "en": "Describe somewhere you have been.",
+                "ja": "行ったことがある場所を説明する",
+                "ko": "가본 적이 있는 곳을 설명하다",
+                "es": "Describir algún lugar donde has estado",
+                "fr": "Décrire un endroit où tu es allé",
+                "vi": "Miêu tả nơi bạn đã từng đến",
+                "id": "Menggambarkan tempat yang pernah kamu kunjungi",
+                "th": "อธิบายสถานที่ที่คุณเคยไป"
+              }
+            }
+          ]
+        },
+        {
+          "id": "L21045",
+          "order": 23,
+          "title": {
+            "zh": "23 广州比北京热得多",
+            "en": "23 Guangzhou is much hotter than Beijing",
+            "ja": "23 広州は北京よりずっと暑い",
+            "ko": "23 광저우는 베이징보다 훨씬 더워요",
+            "es": "23 Cantón es mucho más caluroso que Pekín",
+            "fr": "23 Canton est beaucoup plus chaud que Pékin",
+            "vi": "23 Quảng Châu nóng hơn Bắc Kinh nhiều",
+            "id": "23 Guangzhou jauh lebih panas dari Beijing",
+            "th": "23 กวางโจวร้อนกว่าปักกิ่งมาก"
+          },
+          "goals": [
+            {
+              "id": "L21820",
+              "text": {
+                "zh": "比较两地的天气。",
+                "en": "Compare the weather in two places.",
+                "ja": "二つの場所の天気を比較する。",
+                "ko": "두 곳의 날씨를 비교하다.",
+                "es": "Comparar el clima en dos lugares.",
+                "fr": "Comparer la météo dans deux endroits.",
+                "vi": "So sánh thờii tiết ở hai nơi.",
+                "id": "Membandingkan cuaca di dua tempat.",
+                "th": "เปรียบเทียบสภาพอากาศในสองที่"
+              }
+            },
+            {
+              "id": "L23127",
+              "text": {
+                "zh": "谈论你的暑假计划",
+                "en": "Talk about your plans for summer vacation.",
+                "ja": "夏休みの計画について話す",
+                "ko": "여름방학 계획에 대해 이야기하다",
+                "es": "Hablar sobre tus planes de verano",
+                "fr": "Parler de tes projets pour l'été",
+                "vi": "Nói về kế hoạch nghỉ hè của bạn",
+                "id": "Bicara tentang rencana liburan musim panasmu",
+                "th": "พูดถึงแผนวันหยุดฤดูร้อนของคุณ"
+              }
+            }
+          ]
+        },
+        {
+          "id": "L21094",
+          "order": 24,
+          "title": {
+            "zh": "24 吃月饼，看月亮",
+            "en": "24 Eat mooncakes, watch the moon",
+            "ja": "24 月餅を食べて、月を見る",
+            "ko": "24 월병을 먹고 달을 보다",
+            "es": "24 Comer pasteles de luna, mirar la luna",
+            "fr": "24 Manger des gâteaux de lune, regarder la lune",
+            "vi": "24 Ăn bánh trung thu, ngắm trăng",
+            "id": "24 Makan kue bulan, melihat bulan",
+            "th": "24 กินขนมไหว้พระจันทร์ ดูพระจันทร์"
+          },
+          "goals": [
+            {
+              "id": "L21821",
+              "text": {
+                "zh": "谈论传统节日。",
+                "en": "Talk about traditional festivals.",
+                "ja": "伝統的な祭りについて話す。",
+                "ko": "전통 명절에 대해 이야기하다.",
+                "es": "Hablar sobre festividades tradicionales.",
+                "fr": "Parler des fêtes traditionnelles.",
+                "vi": "Nói về các lễ hội truyền thống.",
+                "id": "Berbicara tentang festival tradisional.",
+                "th": "พูดถึงเทศกาลดั้งเดิม"
+              }
+            },
+            {
+              "id": "L23128",
+              "text": {
+                "zh": "谈论中秋节的传统习俗。",
+                "en": "Talk about Mid-Autumn Festival traditions.",
+                "ja": "中秋節の伝統について話す。",
+                "ko": "추석 전통에 대해 이야기하다.",
+                "es": "Habla sobre las tradiciones del Festival del Medio Otoño.",
+                "fr": "Parle des traditions de la Fête de la Mi-Automne.",
+                "vi": "Nói về truyền thống của Tết Trung Thu.",
+                "id": "Bicara tentang tradisi Festival Pertengahan Musim Gugur.",
+                "th": "พูดถึงประเพณีของเทศกาลไหว้พระจันทร์"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

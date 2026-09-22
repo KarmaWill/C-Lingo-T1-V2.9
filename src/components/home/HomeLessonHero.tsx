@@ -2,10 +2,6 @@ import { Box, Typography, ButtonBase } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { figmaPx, FIGMA_FONT } from '../../utils/figmaScale'
 
-/** 主界面7 主课卡：稿上 Source Han Sans CN。Flex 会截走拉丁，标题对不上板。 */
-const HERO_HAN_FONT =
-  '"Source Han Sans CN", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif'
-
 function ClockIcon({ size }: { size: number }) {
   return (
     <Box
@@ -136,7 +132,8 @@ export default function HomeLessonHero({
             px: `${p(50)}px`,
             pt: `${p(40)}px`,
             pb: `${p(32)}px`,
-            fontFamily: HERO_HAN_FONT,
+            fontFamily: FIGMA_FONT,
+            fontOpticalSizing: 'auto',
           }}
         >
           <Box
@@ -152,11 +149,11 @@ export default function HomeLessonHero({
               <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '0.2em' }}>
                 <Typography
                   component="span"
-                  sx={{ fontSize: p(28), fontWeight: 700, lineHeight: 1, fontFamily: 'inherit', fontVariantNumeric: 'tabular-nums' }}
+                  sx={{ fontSize: p(28), fontWeight: 700, lineHeight: 1, fontFamily: FIGMA_FONT, fontVariantNumeric: 'tabular-nums' }}
                 >
                   {wordCount}
                 </Typography>
-                <Typography component="span" sx={{ fontSize: p(20), fontWeight: 700, lineHeight: 1, fontFamily: 'inherit' }}>
+                <Typography component="span" sx={{ fontSize: p(20), fontWeight: 700, lineHeight: 1, fontFamily: FIGMA_FONT }}>
                   {wordLabel}
                 </Typography>
               </Box>
@@ -164,11 +161,11 @@ export default function HomeLessonHero({
               <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '0.2em' }}>
                 <Typography
                   component="span"
-                  sx={{ fontSize: p(28), fontWeight: 700, lineHeight: 1, fontFamily: 'inherit', fontVariantNumeric: 'tabular-nums' }}
+                  sx={{ fontSize: p(28), fontWeight: 700, lineHeight: 1, fontFamily: FIGMA_FONT, fontVariantNumeric: 'tabular-nums' }}
                 >
                   {patternCount}
                 </Typography>
-                <Typography component="span" sx={{ fontSize: p(20), fontWeight: 700, lineHeight: 1, fontFamily: 'inherit' }}>
+                <Typography component="span" sx={{ fontSize: p(20), fontWeight: 700, lineHeight: 1, fontFamily: FIGMA_FONT }}>
                   {patternLabel}
                 </Typography>
               </Box>
@@ -176,7 +173,7 @@ export default function HomeLessonHero({
 
             <Box sx={{ ...pillSx, gap: `${p(8)}px` }}>
               <ClockIcon size={p(28)} />
-              <Typography component="span" sx={{ fontSize: p(22), fontWeight: 700, lineHeight: 1, fontFamily: 'inherit' }}>
+              <Typography component="span" sx={{ fontSize: p(22), fontWeight: 700, lineHeight: 1, fontFamily: FIGMA_FONT }}>
                 {durationLabel}
               </Typography>
             </Box>
@@ -195,7 +192,8 @@ export default function HomeLessonHero({
                 letterSpacing: '0.16em',
                 mb: `${p(6)}px`,
                 width: 'fit-content',
-                fontFamily: 'inherit',
+                fontFamily: FIGMA_FONT,
+                fontOpticalSizing: 'auto',
               }}
             >
               {eyebrow}
@@ -205,12 +203,14 @@ export default function HomeLessonHero({
               sx={{
                 color: '#fff',
                 fontSize: p(48),
-                fontWeight: 700,
+                fontWeight: 500,
                 lineHeight: `${p(62)}px`,
+                letterSpacing: '-0.02em',
                 mb: `${p(16)}px`,
                 maxWidth: p(1130),
                 minWidth: 0,
-                fontFamily: 'inherit',
+                fontFamily: FIGMA_FONT,
+                fontOpticalSizing: 'auto',
                 display: '-webkit-box',
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: 'vertical',
@@ -233,10 +233,6 @@ export default function HomeLessonHero({
                   borderRadius: `${p(24)}px`,
                   bgcolor: '#fff',
                   color: '#000',
-                  fontSize: p(28),
-                  fontWeight: 700,
-                  lineHeight: `${p(42)}px`,
-                  fontFamily: 'inherit',
                   flexShrink: 0,
                   touchAction: 'manipulation',
                   WebkitTapHighlightColor: 'transparent',
@@ -252,7 +248,20 @@ export default function HomeLessonHero({
                   },
                 }}
               >
-                Start Session
+                <Typography
+                  component="span"
+                  sx={{
+                    fontSize: p(28),
+                    fontWeight: 500,
+                    lineHeight: `${p(42)}px`,
+                    letterSpacing: '-0.02em',
+                    fontFamily: FIGMA_FONT,
+                    fontOpticalSizing: 'auto',
+                    color: 'inherit',
+                  }}
+                >
+                  Start Session
+                </Typography>
               </ButtonBase>
 
               <Box sx={{ flex: 1, minWidth: 0, pb: `${p(6)}px` }}>
@@ -264,8 +273,10 @@ export default function HomeLessonHero({
                     fontSize: p(24),
                     lineHeight: `${p(36)}px`,
                     fontWeight: 500,
+                    letterSpacing: '-0.02em',
                     mb: `${p(10)}px`,
-                    fontFamily: 'inherit',
+                    fontFamily: FIGMA_FONT,
+                    fontOpticalSizing: 'auto',
                     fontVariantNumeric: 'tabular-nums',
                   }}
                 >

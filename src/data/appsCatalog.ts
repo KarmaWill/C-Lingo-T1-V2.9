@@ -36,6 +36,55 @@ export const JXW_MALL_APPS: CatalogApp[] = [
 export const INSTALLED_EXTRA_APPS_KEY = 'apps-extra-installed-v1';
 export const MAX_EXTRA_APPS = 6;
 
+/** Explore / 系统外链：点图标在平板屏内打开 */
+export const EXTERNAL_APP_URLS: Record<string, string> = {
+  chrome: 'https://www.clingoaios.com/',
+  youtube: 'https://www.youtube.com/@C-LingoAIOS',
+};
+
+export type InAppBrowserMode = 'iframe' | 'youtube-channel';
+
+export type InAppBrowserTarget = {
+  appId: string;
+  title: string;
+  url: string;
+  mode: InAppBrowserMode;
+};
+
+export function getExternalAppUrl(appId: string): string | null {
+  return EXTERNAL_APP_URLS[appId] ?? null;
+}
+
+export function getInAppBrowserTarget(appId: string): InAppBrowserTarget | null {
+  const url = getExternalAppUrl(appId);
+  if (!url) return null;
+  if (appId === 'youtube') {
+    return { appId, title: 'YouTube', url, mode: 'youtube-channel' };
+  }
+  if (appId === 'chrome') {
+    return { appId, title: 'Chrome', url, mode: 'iframe' };
+  }
+  return { appId, title: appId, url, mode: 'iframe' };
+}
+
+/** @deprecated Prefer in-app browser route; kept for non-tablet callers */
+export function openExternalApp(appId: string): boolean {
+  const url = getExternalAppUrl(appId);
+  if (!url || typeof window === 'undefined') return false;
+  window.open(url, '_blank', 'noopener,noreferrer');
+  return true;
+}
+
+/** 旧版 Maps 槽位改为 Chrome（官网入口） */
+function normalizeInstalledExtraAppIds(ids: string[]): string[] {
+  const mapped = ids.map((id) => (id === 'maps' ? 'chrome' : id));
+  const unique: string[] = [];
+  for (const id of mapped) {
+    if (!unique.includes(id)) unique.push(id);
+  }
+  return unique;
+}
+
 export function loadInstalledExtraAppIds(): string[] {
   if (typeof window === 'undefined') return [];
   try {
@@ -43,7 +92,12 @@ export function loadInstalledExtraAppIds(): string[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter((id): id is string => typeof id === 'string');
+    const ids = parsed.filter((id): id is string => typeof id === 'string');
+    const normalized = normalizeInstalledExtraAppIds(ids);
+    if (normalized.join('\0') !== ids.join('\0')) {
+      saveInstalledExtraAppIds(normalized);
+    }
+    return normalized;
   } catch {
     return [];
   }

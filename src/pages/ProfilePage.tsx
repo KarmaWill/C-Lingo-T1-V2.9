@@ -1,73 +1,198 @@
-import React, { useState, useEffect } from 'react'
-import { Box, Typography, Avatar, ButtonBase, ToggleButton, ToggleButtonGroup } from '@mui/material'
-import PersonIcon from '@mui/icons-material/Person'
-import EditIcon from '@mui/icons-material/Edit'
+import { useState } from 'react'
+import { Avatar, Box, ButtonBase, Typography } from '@mui/material'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
-import AccessTimeIcon from '@mui/icons-material/AccessTime'
-import MenuBookIcon from '@mui/icons-material/MenuBook'
-import TabletMacIcon from '@mui/icons-material/TabletMac'
-import ScheduleIcon from '@mui/icons-material/Schedule'
-import AutoStoriesIcon from '@mui/icons-material/AutoStories'
-import { useNavigate, useLocation } from 'react-router-dom'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { APP_FONT_FAMILY } from '../theme/appFont'
+import { APP_SCREEN_SIZE, FIGMA_FONT, figmaPx } from '../utils/figmaScale'
 
 type TabType = 'report' | 'device'
 
-const TEAL = '#0D9488'
-const TEAL_DEEP = '#0F766E'
-const TEAL_LIGHT = '#14B8A6'
-const CARD_RADIUS = '20px'
-const hardRadius = '14px'
+const TEAL = '#00B4A0'
+const INK = '#2D3436'
+const BLUE = '#2188FE'
+const ORANGE = '#FF6B35'
+const PAGE_BG = '#F8F9F8'
 
-function LevelRing({ progress, size, is960 }: { progress: number; size: number; is960: boolean }) {
-  const stroke = is960 ? 6 : 7
-  const r = (size - stroke) / 2
-  const c = 2 * Math.PI * r
-  const offset = c * (1 - Math.min(100, Math.max(0, progress)) / 100)
+const WEEK_DAYS = ['Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue'] as const
+const BAR_HEIGHTS = [113, 167, 211, 0, 220, 266, 311]
 
+function MaleIcon({ size }: { size: number }) {
   return (
-    <Box sx={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
-      <Box
-        component="svg"
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        sx={{ display: 'block', transform: 'rotate(-90deg)' }}
-        aria-hidden
-      >
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="rgba(255,255,255,0.18)"
-          strokeWidth={stroke}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="#5EEAD4"
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={offset}
-          style={{ transition: 'stroke-dashoffset 0.7s ease' }}
-        />
-      </Box>
+    <Box
+      component="svg"
+      width={size}
+      height={size}
+      viewBox="0 0 28 28"
+      aria-hidden
+      sx={{ display: 'block' }}
+    >
+      <circle cx="11" cy="17" r="5.2" fill="none" stroke={BLUE} strokeWidth="2.4" />
+      <path
+        d="M15.2 12.6 L21.2 6.6"
+        fill="none"
+        stroke={BLUE}
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M16.4 6.6 H21.2 V11.4"
+        fill="none"
+        stroke={BLUE}
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Box>
+  )
+}
+
+function ReportIcon({ active }: { active: boolean }) {
+  const p = (value: number) => figmaPx(value, APP_SCREEN_SIZE)
+  return (
+    <Box
+      sx={{
+        width: p(54),
+        height: p(54),
+        borderRadius: `${p(16)}px`,
+        background: active
+          ? 'linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0.7) 100%)'
+          : '#FFFFFF',
+        display: 'grid',
+        placeItems: 'center',
+        flexShrink: 0,
+      }}
+    >
       <Box
         sx={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          width: p(22),
+          height: p(26),
+          borderRadius: `${p(8)}px ${p(8)}px ${p(4)}px ${p(4)}px`,
+          background: active
+            ? 'linear-gradient(152.45deg, #1BE0CA 15.65%, #00B4A0 104.32%)'
+            : 'linear-gradient(137.92deg, #FF936C 15.82%, #FF6B35 94.99%)',
+          position: 'relative',
         }}
       >
-        <Typography sx={{ fontSize: is960 ? '0.85rem' : '0.95rem', fontWeight: 900, color: 'white', letterSpacing: '-0.02em' }}>
-          {progress}%
-        </Typography>
+        <Box
+          sx={{
+            position: 'absolute',
+            width: p(10),
+            height: p(10),
+            borderRadius: '50%',
+            bgcolor: '#FFFFFF',
+            left: '50%',
+            top: p(4),
+            transform: 'translateX(-50%)',
+          }}
+        />
       </Box>
+    </Box>
+  )
+}
+
+function DeviceIcon() {
+  const p = (value: number) => figmaPx(value, APP_SCREEN_SIZE)
+  return (
+    <Box
+      sx={{
+        width: p(54),
+        height: p(54),
+        borderRadius: `${p(16)}px`,
+        bgcolor: '#FFFFFF',
+        display: 'grid',
+        placeItems: 'center',
+        flexShrink: 0,
+      }}
+    >
+      <Box sx={{ position: 'relative', width: p(34), height: p(30) }}>
+        <Box
+          sx={{
+            position: 'absolute',
+            left: p(3),
+            bottom: 0,
+            width: p(28),
+            height: p(13),
+            bgcolor: 'rgba(255,110,58,0.4)',
+            borderRadius: `${p(1.5)}px`,
+          }}
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            left: 0,
+            top: p(4),
+            width: p(34),
+            height: p(24),
+            borderRadius: `${p(5)}px`,
+            background: 'linear-gradient(137.92deg, #FF936C 15.82%, #FF6B35 94.99%)',
+          }}
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            left: '50%',
+            top: p(2),
+            width: p(8),
+            height: p(2),
+            borderRadius: `${p(4)}px`,
+            bgcolor: '#FFFFFF',
+            transform: 'translateX(-50%)',
+          }}
+        />
+      </Box>
+    </Box>
+  )
+}
+
+function StatCard({
+  value,
+  label,
+  color,
+}: {
+  value: string
+  label: string
+  color: string
+}) {
+  const p = (n: number) => figmaPx(n, APP_SCREEN_SIZE)
+  return (
+    <Box
+      sx={{
+        flex: 1,
+        minWidth: 0,
+        height: p(250),
+        borderRadius: `${p(40)}px`,
+        bgcolor: color,
+        border: color === BLUE ? '1.5px solid #E0E0DF' : 'none',
+        px: `${p(60)}px`,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      <Typography
+        sx={{
+          fontFamily: FIGMA_FONT,
+          fontWeight: 700,
+          fontSize: p(56),
+          lineHeight: 1.6,
+          color: '#FFFFFF',
+        }}
+      >
+        {value}
+      </Typography>
+      <Typography
+        sx={{
+          fontFamily: FIGMA_FONT,
+          fontSize: p(28),
+          lineHeight: 1.6,
+          color: '#FFFFFF',
+        }}
+      >
+        {label}
+      </Typography>
     </Box>
   )
 }
@@ -75,64 +200,15 @@ function LevelRing({ progress, size, is960 }: { progress: number; size: number; 
 export default function ProfilePage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [activeTab, setActiveTab] = useState<TabType>('report')
-
-  useEffect(() => {
-    const tab = (location.state as { profileTab?: TabType } | null)?.profileTab
-    if (tab === 'report' || tab === 'device') {
-      setActiveTab(tab)
-    }
-  }, [location.state])
-  const [username] = useState('Lumi')
-  const [gender] = useState<'female'>('female')
-  const [age] = useState(16)
+  const p = (value: number) => figmaPx(value, APP_SCREEN_SIZE)
+  const initialTab = (location.state as { profileTab?: TabType } | null)?.profileTab
+  const [activeTab, setActiveTab] = useState<TabType>(
+    initialTab === 'device' ? 'device' : 'report',
+  )
   const [chartMetric, setChartMetric] = useState<'time' | 'vocab'>('time')
-
-  const screenSize = import.meta.env.VITE_SCREEN_SIZE || '1024x768'
-  const is960 = screenSize === '960x540'
-
-  const levelProgress = 42
-  const weekDays = ['Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue']
-  const barHeightsPx = [32, 26, 38, 22, 18, 48, 92]
-  const highlightIndex = 6
-
-  const navBtnSx = (active: boolean) => ({
-    width: '100%',
-    minHeight: 48,
-    py: is960 ? 1 : 1.15,
-    px: 1.25,
-    borderRadius: hardRadius,
-    bgcolor: active ? 'rgba(255,255,255,0.16)' : 'transparent',
-    border: active ? '1px solid rgba(255,255,255,0.22)' : '1px solid transparent',
-    backdropFilter: active ? 'blur(10px)' : 'none',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 1.25,
-    justifyContent: 'flex-start',
-    transition: 'background 0.2s, border-color 0.2s, transform 0.15s',
-    '&:active': { transform: 'scale(0.98)' },
-  })
-
-  const iconBoxSx = (active: boolean) => ({
-    width: 40,
-    height: 40,
-    borderRadius: '12px',
-    bgcolor: active ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.18)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    transition: 'transform 0.2s, background 0.2s',
-    transform: active ? 'scale(1.04)' : 'scale(1)',
-    boxShadow: active ? '0 4px 12px rgba(15,23,42,0.12)' : 'none',
-  })
-
-  const surfaceCardSx = {
-    bgcolor: 'white',
-    borderRadius: CARD_RADIUS,
-    border: '1px solid rgba(15,23,42,0.06)',
-    boxShadow: '0 8px 28px rgba(15, 23, 42, 0.06)',
-  }
+  const username = 'Nora'
+  const age = 16
+  const levelProgress = 83 / 400
 
   return (
     <Box
@@ -141,415 +217,461 @@ export default function ProfilePage() {
         height: '100%',
         minHeight: 0,
         overflow: 'hidden',
-        background: 'linear-gradient(165deg, #F0F7F6 0%, #EEF2F3 48%, #F5F7F8 100%)',
+        bgcolor: PAGE_BG,
         display: 'flex',
-        flexDirection: 'column',
+        fontFamily: APP_FONT_FAMILY,
       }}
     >
       <Box
         id="profile-container"
         sx={{
           flex: 1,
-          minHeight: 0,
+          minWidth: 0,
           display: 'flex',
           overflow: 'hidden',
         }}
       >
-        {/* Left — brand sidebar */}
         <Box
           sx={{
-            width: is960 ? 200 : 240,
+            width: p(680),
             flexShrink: 0,
-            background: `
-              radial-gradient(120% 80% at 100% 0%, rgba(255,255,255,0.22) 0%, transparent 55%),
-              linear-gradient(180deg, ${TEAL_DEEP} 0%, ${TEAL} 52%, ${TEAL_LIGHT} 100%)
-            `,
+            height: '100%',
+            bgcolor: TEAL,
+            borderRadius: `0 ${p(80)}px ${p(80)}px 0`,
+            position: 'relative',
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'stretch',
-            py: is960 ? 1.75 : 2.25,
-            px: is960 ? 1.5 : 2,
-            borderRadius: { md: '0 22px 22px 0' },
-            boxShadow: '6px 0 28px rgba(15,118,110,0.22)',
+            alignItems: 'center',
             boxSizing: 'border-box',
-            position: 'relative',
-            overflow: 'hidden',
+            pt: `${p(40)}px`,
+            pb: `${p(80)}px`,
+            px: `${p(100)}px`,
           }}
         >
           <ButtonBase
             onClick={() => navigate('/')}
             aria-label="Back"
             sx={{
-              alignSelf: 'flex-start',
-              width: 44,
-              height: 44,
-              borderRadius: '50%',
-              bgcolor: 'rgba(255,255,255,0.95)',
-              color: '#64748B',
-              mb: 2,
-              boxShadow: '0 4px 14px rgba(15,23,42,0.12)',
-              zIndex: 1,
-              '&:active': { transform: 'scale(0.95)' },
+              position: 'absolute',
+              left: p(60),
+              top: p(40),
+              width: p(80),
+              height: p(80),
+              minWidth: p(80),
+              borderRadius: '100px',
+              bgcolor: '#FFFFFF',
+              border: '1px solid #E0E0DF',
+              color: INK,
+              zIndex: 2,
+              '&:active': { transform: 'scale(0.96)' },
             }}
           >
-            <ChevronLeftIcon sx={{ fontSize: is960 ? 20 : 22 }} />
+            <ChevronLeftIcon sx={{ fontSize: p(40) }} />
           </ButtonBase>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2.25, zIndex: 1 }}>
+          <Box
+            sx={{
+              mt: `${p(80)}px`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+          >
+            <Avatar
+              src="/images/nora-avatar.png"
+              alt={username}
+              sx={{
+                width: p(300),
+                height: p(300),
+                bgcolor: '#FFF6E7',
+                border: `${p(4)}px solid #FFFFFF`,
+                boxSizing: 'border-box',
+                '& img': { objectFit: 'cover', bgcolor: '#FFF6E7' },
+              }}
+            />
+
             <Box
               sx={{
-                p: '3px',
-                borderRadius: '50%',
-                background: 'linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.35) 100%)',
-                mb: 1.5,
-                boxShadow: '0 10px 28px rgba(15,23,42,0.18)',
+                mt: `${p(10)}px`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: `${p(10)}px`,
+                height: p(64),
               }}
             >
-              <Avatar
-                src="/images/nora-avatar.png"
-                alt="Lumi"
+              <Typography
                 sx={{
-                  width: is960 ? 88 : 104,
-                  height: is960 ? 88 : 104,
-                  bgcolor: '#EAF9F2',
-                  border: '3px solid rgba(255,255,255,0.55)',
-                  '& img': { objectFit: 'contain', bgcolor: '#EAF9F2' },
+                  fontFamily: FIGMA_FONT,
+                  fontWeight: 700,
+                  fontSize: p(40),
+                  lineHeight: 1.6,
+                  color: '#FFFFFF',
                 }}
-              />
-            </Box>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, justifyContent: 'center', mb: 1 }}>
-              <Typography sx={{ fontSize: is960 ? '1rem' : '1.15rem', fontWeight: 800, color: 'white' }}>
+              >
                 {username}
               </Typography>
               <ButtonBase
                 onClick={() => navigate('/profile/edit')}
+                aria-label="Edit profile"
                 sx={{
-                  width: 44,
-                  height: 44,
+                  width: p(40),
+                  height: p(40),
+                  minWidth: p(40),
                   borderRadius: '50%',
-                  color: 'rgba(255,255,255,0.95)',
+                  color: '#FFFFFF',
                   '&:active': { transform: 'scale(0.94)' },
                 }}
-                aria-label="Edit profile"
               >
-                <EditIcon sx={{ fontSize: is960 ? 16 : 18 }} />
+                <EditOutlinedIcon sx={{ fontSize: p(26) }} />
               </ButtonBase>
             </Box>
 
-            {gender === 'female' && (
-              <Box
+            <Box
+              sx={{
+                mt: `${p(20)}px`,
+                width: p(100),
+                height: p(50),
+                borderRadius: `${p(10)}px`,
+                bgcolor: '#E3F0FE',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: `${p(9)}px`,
+              }}
+            >
+              <MaleIcon size={p(28)} />
+              <Typography
                 sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                  px: 1.25,
-                  py: 0.4,
-                  minHeight: 28,
-                  borderRadius: '999px',
-                  bgcolor: 'rgba(244,114,182,0.92)',
-                  color: 'white',
-                  fontWeight: 800,
-                  fontSize: is960 ? '0.7rem' : '0.78rem',
-                  boxShadow: '0 4px 12px rgba(190,24,93,0.25)',
+                  fontFamily: FIGMA_FONT,
+                  fontWeight: 700,
+                  fontSize: p(28),
+                  lineHeight: 1.6,
+                  color: BLUE,
                 }}
               >
-                <span aria-hidden>♀</span>
-                <span>{age}</span>
-              </Box>
-            )}
+                {age}
+              </Typography>
+            </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, width: '100%', mb: 2, zIndex: 1 }}>
-            <ButtonBase onClick={() => setActiveTab('report')} sx={navBtnSx(activeTab === 'report')}>
-              <Box sx={iconBoxSx(activeTab === 'report')}>
-                <PersonIcon sx={{ fontSize: 20, color: activeTab === 'report' ? TEAL : 'white' }} />
-              </Box>
-              <Typography sx={{ fontSize: is960 ? '0.8rem' : '0.9rem', fontWeight: 700, color: 'white' }}>
+          <Box
+            sx={{
+              mt: `${p(60)}px`,
+              width: p(480),
+              display: 'flex',
+              flexDirection: 'column',
+              gap: `${p(30)}px`,
+            }}
+          >
+            <ButtonBase
+              onClick={() => setActiveTab('report')}
+              aria-pressed={activeTab === 'report'}
+              sx={{
+                width: p(480),
+                height: p(100),
+                borderRadius: `${p(20)}px`,
+                bgcolor: activeTab === 'report' ? 'rgba(255,255,255,0.2)' : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                gap: `${p(28)}px`,
+                px: `${p(24)}px`,
+                '&:active': { transform: 'scale(0.99)' },
+              }}
+            >
+              <ReportIcon active={activeTab === 'report'} />
+              <Typography
+                sx={{
+                  fontFamily: FIGMA_FONT,
+                  fontSize: p(32),
+                  lineHeight: 1.6,
+                  color: '#FFFFFF',
+                }}
+              >
                 Study Report
               </Typography>
             </ButtonBase>
 
-            <ButtonBase onClick={() => setActiveTab('device')} sx={navBtnSx(activeTab === 'device')}>
-              <Box sx={iconBoxSx(activeTab === 'device')}>
-                <TabletMacIcon sx={{ fontSize: 20, color: activeTab === 'device' ? TEAL : 'white' }} />
-              </Box>
-              <Typography sx={{ fontSize: is960 ? '0.8rem' : '0.9rem', fontWeight: 700, color: 'white' }}>
+            <ButtonBase
+              onClick={() => setActiveTab('device')}
+              aria-pressed={activeTab === 'device'}
+              sx={{
+                width: p(480),
+                height: p(100),
+                borderRadius: `${p(20)}px`,
+                bgcolor: activeTab === 'device' ? 'rgba(255,255,255,0.2)' : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                gap: `${p(28)}px`,
+                px: `${p(24)}px`,
+                '&:active': { transform: 'scale(0.99)' },
+              }}
+            >
+              <DeviceIcon />
+              <Typography
+                sx={{
+                  fontFamily: FIGMA_FONT,
+                  fontSize: p(32),
+                  lineHeight: 1.6,
+                  color: '#FFFFFF',
+                }}
+              >
                 About Device
               </Typography>
             </ButtonBase>
           </Box>
 
-          <Box sx={{ flex: 1, minHeight: 8 }} />
+          <Box sx={{ flex: 1, minHeight: p(24) }} />
 
-          {/* Level badge */}
           <Box
             sx={{
-              width: '100%',
-              borderRadius: '18px',
-              bgcolor: 'rgba(255,255,255,0.12)',
-              border: '1px solid rgba(255,255,255,0.24)',
-              p: is960 ? 1.25 : 1.5,
-              backdropFilter: 'blur(12px)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)',
-              zIndex: 1,
+              width: p(480),
+              height: p(186),
+              borderRadius: `${p(24)}px`,
+              bgcolor: '#33C3B3',
+              px: `${p(40)}px`,
+              py: `${p(30)}px`,
+              boxSizing: 'border-box',
               display: 'flex',
-              alignItems: 'center',
-              gap: is960 ? 1.25 : 1.5,
+              flexDirection: 'column',
+              justifyContent: 'space-between',
             }}
           >
-            <LevelRing progress={levelProgress} size={is960 ? 56 : 64} is960={is960} />
-            <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Box>
               <Typography
                 sx={{
-                  fontSize: is960 ? '0.55rem' : '0.6rem',
-                  fontWeight: 800,
-                  color: 'rgba(255,255,255,0.72)',
-                  letterSpacing: '0.12em',
-                  mb: 0.35,
+                  fontFamily: FIGMA_FONT,
+                  fontSize: p(24),
+                  lineHeight: 1.6,
+                  color: '#ADE4DC',
                 }}
               >
                 CURRENT LEVEL
               </Typography>
-              <Typography sx={{ fontSize: is960 ? '1.15rem' : '1.35rem', fontWeight: 900, color: 'white', lineHeight: 1.1 }}>
+              <Typography
+                sx={{
+                  fontFamily: FIGMA_FONT,
+                  fontWeight: 700,
+                  fontSize: p(32),
+                  lineHeight: 1.6,
+                  color: '#FFFFFF',
+                }}
+              >
                 HSK 2
               </Typography>
-              <Typography sx={{ mt: 0.35, fontSize: is960 ? '0.65rem' : '0.72rem', fontWeight: 650, color: 'rgba(255,255,255,0.78)' }}>
-                to HSK 3
-              </Typography>
+            </Box>
+            <Box
+              sx={{
+                width: p(400),
+                height: p(8),
+                borderRadius: `${p(5)}px`,
+                bgcolor: '#84E5D8',
+                overflow: 'hidden',
+              }}
+            >
+              <Box
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: `${p(5)}px`,
+                  bgcolor: '#FFFFFF',
+                  transform: `scaleX(${levelProgress})`,
+                  transformOrigin: 'left center',
+                }}
+              />
             </Box>
           </Box>
         </Box>
 
-        {/* Right — main */}
         <Box
           sx={{
             flex: 1,
             minWidth: 0,
-            overflowY: 'auto',
-            p: is960 ? 2.5 : 3.5,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            pt: `${p(100)}px`,
+            px: `${p(80)}px`,
+            pb: `${p(60)}px`,
             boxSizing: 'border-box',
           }}
         >
           {activeTab === 'report' ? (
-            <Box sx={{ maxWidth: 900, mx: 'auto' }}>
-              <Box sx={{ display: 'flex', alignItems: 'stretch', gap: 1.5, mb: is960 ? 2.25 : 3 }}>
+            <>
+              <Typography
+                sx={{
+                  fontFamily: FIGMA_FONT,
+                  fontWeight: 700,
+                  fontSize: p(48),
+                  lineHeight: `${p(70)}px`,
+                  color: INK,
+                  mb: `${p(40)}px`,
+                }}
+              >
+                Study Report
+              </Typography>
+
+              <Box sx={{ display: 'flex', gap: `${p(40)}px`, flexShrink: 0 }}>
+                <StatCard value="120h" label="total time" color={BLUE} />
+                <StatCard value="328" label="words learned" color={ORANGE} />
+              </Box>
+
+              <Box
+                sx={{
+                  mt: `${p(40)}px`,
+                  flex: 1,
+                  minHeight: 0,
+                  bgcolor: '#FFFFFF',
+                  border: '1.5px solid #E0E0DF',
+                  borderRadius: `${p(40)}px`,
+                  px: `${p(50)}px`,
+                  pt: `${p(30)}px`,
+                  pb: `${p(40)}px`,
+                  boxSizing: 'border-box',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
                 <Box
                   sx={{
-                    width: 4,
-                    borderRadius: 999,
-                    background: `linear-gradient(180deg, ${TEAL_LIGHT} 0%, ${TEAL_DEEP} 100%)`,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: `${p(24)}px`,
                     flexShrink: 0,
                   }}
-                />
-                <Box>
-                  <Typography
-                    sx={{
-                      fontSize: is960 ? '0.62rem' : '0.68rem',
-                      fontWeight: 800,
-                      color: TEAL,
-                      letterSpacing: '0.14em',
-                      mb: 0.35,
-                    }}
-                  >
-                    OVERVIEW
-                  </Typography>
-                  <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.35rem' : '1.75rem', color: '#0F172A', letterSpacing: '-0.02em' }}>
-                    Study Report
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
-                  gap: 2,
-                  mb: 3,
-                }}
-              >
-                <Box
-                  sx={{
-                    ...surfaceCardSx,
-                    p: is960 ? 1.75 : 2.1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    background: 'linear-gradient(135deg, #FFFFFF 0%, #F8F5FF 100%)',
-                  }}
                 >
-                  <Box
-                    sx={{
-                      width: 52,
-                      height: 52,
-                      borderRadius: '16px',
-                      background: 'linear-gradient(145deg, #EDE9FE 0%, #DDD6FE 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <AccessTimeIcon sx={{ color: '#7C3AED', fontSize: 28 }} />
-                  </Box>
-                  <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.15rem' : '1.3rem', color: '#0F172A', lineHeight: 1.15 }}>
-                      12h 30m
-                    </Typography>
-                    <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.8rem', color: '#64748B', fontWeight: 600, mt: 0.25 }}>
-                      total time
-                    </Typography>
-                    <Typography sx={{ mt: 0.65, fontSize: is960 ? '0.68rem' : '0.74rem', fontWeight: 750, color: TEAL }}>
-                      +1.2h this week
-                    </Typography>
-                  </Box>
-                </Box>
-
-                <Box
-                  sx={{
-                    ...surfaceCardSx,
-                    p: is960 ? 1.75 : 2.1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    background: 'linear-gradient(135deg, #FFFFFF 0%, #FFF7ED 100%)',
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: 52,
-                      height: 52,
-                      borderRadius: '16px',
-                      background: 'linear-gradient(145deg, #FFEDD5 0%, #FED7AA 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <MenuBookIcon sx={{ color: '#EA580C', fontSize: 28 }} />
-                  </Box>
-                  <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.15rem' : '1.3rem', color: '#0F172A', lineHeight: 1.15 }}>
-                      328
-                    </Typography>
-                    <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.8rem', color: '#64748B', fontWeight: 600, mt: 0.25 }}>
-                      words learned
-                    </Typography>
-                    <Typography sx={{ mt: 0.65, fontSize: is960 ? '0.68rem' : '0.74rem', fontWeight: 750, color: '#EA580C' }}>
-                      +24 words
-                    </Typography>
-                  </Box>
-                </Box>
-              </Box>
-
-              <Box
-                sx={{
-                  ...surfaceCardSx,
-                  p: is960 ? 2 : 2.5,
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 2.25 }}>
                   <Box>
-                    <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1rem' : '1.15rem', color: '#0F172A' }}>
+                    <Typography
+                      sx={{
+                        fontFamily: FIGMA_FONT,
+                        fontWeight: 700,
+                        fontSize: p(32),
+                        lineHeight: `${p(48)}px`,
+                        color: '#000000',
+                      }}
+                    >
                       Weekly Progress
                     </Typography>
-                    <Typography sx={{ fontSize: is960 ? '0.72rem' : '0.8rem', color: '#64748B', mt: 0.5 }}>
+                    <Typography
+                      sx={{
+                        fontFamily: FIGMA_FONT,
+                        fontSize: p(24),
+                        lineHeight: `${p(35)}px`,
+                        color: '#A7B3B8',
+                      }}
+                    >
                       Your learning activity over the last 7 days
                     </Typography>
                   </Box>
-                  <ToggleButtonGroup
-                    value={chartMetric}
-                    exclusive
-                    onChange={(_, v) => v && setChartMetric(v)}
+
+                  <Box
                     sx={{
-                      bgcolor: '#E8F5F2',
-                      p: 0.5,
-                      borderRadius: '999px',
-                      '& .MuiToggleButton-root': {
-                        border: 'none',
-                        borderRadius: '999px !important',
-                        px: 1.5,
-                        py: 0.65,
-                        minHeight: 40,
-                        fontSize: is960 ? '0.7rem' : '0.78rem',
-                        fontWeight: 800,
-                        textTransform: 'none',
-                        color: '#64748B',
-                        gap: 0.5,
-                      },
-                      '& .Mui-selected': {
-                        bgcolor: 'white !important',
-                        color: `${TEAL} !important`,
-                        boxShadow: '0 2px 8px rgba(13,148,136,0.14)',
-                      },
+                      width: p(440),
+                      height: p(80),
+                      borderRadius: `${p(16)}px`,
+                      bgcolor: '#F3F4F6',
+                      display: 'flex',
+                      alignItems: 'center',
+                      p: `${p(8)}px`,
+                      boxSizing: 'border-box',
+                      flexShrink: 0,
                     }}
                   >
-                    <ToggleButton value="time">
-                      <ScheduleIcon sx={{ fontSize: 18 }} />
-                      Learning Time
-                    </ToggleButton>
-                    <ToggleButton value="vocab">
-                      <AutoStoriesIcon sx={{ fontSize: 18 }} />
-                      Vocabularies
-                    </ToggleButton>
-                  </ToggleButtonGroup>
+                    {([
+                      ['time', 'Learning Time'],
+                      ['vocab', 'Vocabularies'],
+                    ] as const).map(([key, label]) => {
+                      const selected = chartMetric === key
+                      return (
+                        <ButtonBase
+                          key={key}
+                          onClick={() => setChartMetric(key)}
+                          sx={{
+                            flex: 1,
+                            height: p(64),
+                            borderRadius: `${p(12)}px`,
+                            bgcolor: selected ? '#FFFFFF' : 'transparent',
+                            border: selected ? '1px solid #E2E3E3' : '1px solid transparent',
+                            color: selected ? TEAL : '#636E72',
+                            fontFamily: FIGMA_FONT,
+                            fontWeight: 500,
+                            fontSize: p(20),
+                            lineHeight: `${p(29)}px`,
+                          }}
+                        >
+                          {label}
+                        </ButtonBase>
+                      )
+                    })}
+                  </Box>
                 </Box>
 
                 <Box
                   sx={{
+                    flex: 1,
+                    minHeight: 0,
+                    mt: `${p(24)}px`,
                     display: 'flex',
                     alignItems: 'flex-end',
                     justifyContent: 'space-between',
-                    gap: 0.75,
-                    height: 148,
-                    pt: 1,
-                    borderTop: '1px solid rgba(15,23,42,0.05)',
-                    '@keyframes barGrow': {
-                      from: { transform: 'scaleY(0)', opacity: 0.35 },
-                      to: { transform: 'scaleY(1)', opacity: 1 },
-                    },
+                    gap: `${p(46)}px`,
+                    px: `${p(10)}px`,
+                    borderBottom: '1px solid #E0E0DF',
+                    pb: `${p(8)}px`,
                   }}
                 >
-                  {weekDays.map((day, i) => {
-                    const isHi = i === highlightIndex
-                    const h = barHeightsPx[i]
+                  {WEEK_DAYS.map((day, index) => {
+                    const highlighted = index === 6
+                    const barH = BAR_HEIGHTS[index]
                     return (
-                      <Box key={day} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.75, minWidth: 0 }}>
-                        <Box sx={{ minHeight: 26, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                          {isHi && (
-                            <Box
-                              sx={{
-                                px: 0.85,
-                                py: 0.3,
-                                borderRadius: '999px',
-                                bgcolor: 'rgba(13,148,136,0.12)',
-                                border: '1px solid rgba(13,148,136,0.22)',
-                              }}
-                            >
-                              <Typography sx={{ fontSize: is960 ? '0.65rem' : '0.72rem', fontWeight: 800, color: TEAL, lineHeight: 1.2 }}>
-                                {chartMetric === 'time' ? '2h 40m' : '48'}
-                              </Typography>
-                            </Box>
-                          )}
-                        </Box>
+                      <Box
+                        key={day}
+                        sx={{
+                          width: p(100),
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'flex-end',
+                          alignItems: 'center',
+                          gap: `${p(16)}px`,
+                        }}
+                      >
+                        {highlighted && (
+                          <Typography
+                            sx={{
+                              fontFamily: FIGMA_FONT,
+                              fontSize: p(32),
+                              lineHeight: `${p(46)}px`,
+                              color: TEAL,
+                            }}
+                          >
+                            {chartMetric === 'time' ? '2h' : '48'}
+                          </Typography>
+                        )}
                         <Box
                           sx={{
-                            width: '100%',
-                            maxWidth: 40,
-                            height: h,
-                            mx: 'auto',
-                            borderRadius: '10px 10px 5px 5px',
+                            width: p(36),
+                            height: barH ? p(barH) : 0,
+                            borderRadius: `${p(6)}px ${p(6)}px 0 0`,
+                            background: highlighted
+                              ? 'linear-gradient(180deg, #57DACC 0%, #00B4A0 100%)'
+                              : '#D9D9D9',
                             transformOrigin: 'bottom',
-                            animation: 'barGrow 0.55s ease forwards',
-                            animationDelay: `${i * 55}ms`,
-                            background: isHi
-                              ? `linear-gradient(180deg, ${TEAL_LIGHT} 0%, ${TEAL_DEEP} 100%)`
-                              : 'linear-gradient(180deg, #D5E8E4 0%, #C5D9D5 100%)',
-                            boxShadow: isHi ? '0 8px 18px rgba(13,148,136,0.28)' : 'none',
                           }}
                         />
-                        <Typography sx={{ fontSize: is960 ? '0.6rem' : '0.68rem', color: isHi ? TEAL : '#94A3B8', fontWeight: isHi ? 800 : 600 }}>
+                        <Typography
+                          sx={{
+                            width: p(100),
+                            fontFamily: FIGMA_FONT,
+                            fontSize: p(28),
+                            lineHeight: `${p(42)}px`,
+                            textAlign: 'center',
+                            color: '#636E72',
+                          }}
+                        >
                           {day}
                         </Typography>
                       </Box>
@@ -557,61 +679,59 @@ export default function ProfilePage() {
                   })}
                 </Box>
               </Box>
-            </Box>
+            </>
           ) : (
-            <Box sx={{ maxWidth: 640 }}>
-              <Box sx={{ display: 'flex', alignItems: 'stretch', gap: 1.5, mb: is960 ? 2.25 : 3 }}>
-                <Box
-                  sx={{
-                    width: 4,
-                    borderRadius: 999,
-                    background: `linear-gradient(180deg, ${TEAL_LIGHT} 0%, ${TEAL_DEEP} 100%)`,
-                    flexShrink: 0,
-                  }}
-                />
-                <Box>
-                  <Typography
-                    sx={{
-                      fontSize: is960 ? '0.62rem' : '0.68rem',
-                      fontWeight: 800,
-                      color: TEAL,
-                      letterSpacing: '0.14em',
-                      mb: 0.35,
-                    }}
-                  >
-                    DEVICE
-                  </Typography>
-                  <Typography sx={{ fontWeight: 900, fontSize: is960 ? '1.35rem' : '1.75rem', color: '#0F172A', letterSpacing: '-0.02em' }}>
-                    About Device
-                  </Typography>
-                </Box>
-              </Box>
-              <Box sx={{ ...surfaceCardSx, overflow: 'hidden' }}>
-                {[
-                  ['Model', 'G60'],
-                  ['Version', 'G60_ZX_V1.42_2023.03.08'],
-                  ['Build', '20240308.14(zngbzdv6)'],
-                  ['Registration', 'c933341673'],
-                ].map(([label, value], idx, arr) => (
+            <>
+              <Typography
+                sx={{
+                  fontFamily: FIGMA_FONT,
+                  fontWeight: 700,
+                  fontSize: p(48),
+                  lineHeight: `${p(70)}px`,
+                  color: INK,
+                  mb: `${p(40)}px`,
+                }}
+              >
+                About Device
+              </Typography>
+              <Box
+                sx={{
+                  bgcolor: '#FFFFFF',
+                  border: '1.5px solid #E0E0DF',
+                  borderRadius: `${p(40)}px`,
+                  overflow: 'hidden',
+                }}
+              >
+                {(
+                  [
+                    ['Model', 'G60'],
+                    ['Version', 'G60_ZX_V1.42_2023.03.08'],
+                    ['Build', '20240308.14(zngbzdv6)'],
+                    ['Registration', 'c933341673'],
+                  ] as const
+                ).map(([label, value], index, rows) => (
                   <Box
                     key={label}
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      gap: 2,
-                      py: 2.1,
-                      px: 2.25,
-                      minHeight: 56,
-                      borderBottom: idx === arr.length - 1 ? 'none' : '1px solid rgba(15,23,42,0.05)',
+                      gap: `${p(24)}px`,
+                      minHeight: p(88),
+                      px: `${p(40)}px`,
+                      borderBottom: index === rows.length - 1 ? 'none' : '1px solid #E0E0DF',
                     }}
                   >
-                    <Typography sx={{ fontSize: is960 ? '0.85rem' : '0.95rem', fontWeight: 700, color: '#334155' }}>{label}</Typography>
-                    <Typography sx={{ fontSize: is960 ? '0.8rem' : '0.9rem', fontWeight: 500, color: '#64748B', textAlign: 'right' }}>{value}</Typography>
+                    <Typography sx={{ fontFamily: FIGMA_FONT, fontSize: p(28), color: INK }}>
+                      {label}
+                    </Typography>
+                    <Typography sx={{ fontFamily: FIGMA_FONT, fontSize: p(24), color: '#636E72' }}>
+                      {value}
+                    </Typography>
                   </Box>
                 ))}
               </Box>
-            </Box>
+            </>
           )}
         </Box>
       </Box>

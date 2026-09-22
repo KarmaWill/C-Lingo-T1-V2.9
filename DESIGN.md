@@ -128,12 +128,15 @@
 | `/Home` 首次 onboarding（5 步 + Skip to Home） | Locked 流程；第 2 步 WiFi，第 3 步 Figma「开机向导3输入邮箱」，第 5 步 Figma「Choose Your Learning Path」（三卡 + CTA；HSK3–6 锁定）。壳外浅蓝 `#d5ebf5` + 灯按钮：非 embed 全路由同套 |
 | `/Home` 教材主页（完成后） | 部分；封面跟当前书走。HSK：橙条 **HSK Chinese · Games**。快乐中文：双卡 **Fun Chinese + Culture**。默认 HSK1 |
 | Camera | 待稿 |
-| Profile / 设置 | 待稿 |
-| 快乐中文（一期不展示） | 不改 |
+| Profile `/profile` | 部分；「个人中心1」左青栏 + 报告/设备。`/profile/edit` 对齐「个人中心3」双卡表单 |
+| 快乐中文（一期不展示） | 不改业务。`/library/hub/fun-chinese` 壳外可有 `All done` / `Locked` 预览钮（`studio-toggle` 胶囊，不写真实 completedIds） |
 | HSK 成绩页 / 技能练 / 口语复盘 | 待稿 |
 | Explore `/apps` | 部分；新稿再对齐 |
 | `/pinyin-chart` | 部分；Locked 铬（Back、去蓝、青绿/橙）。字阶走课程稿 24/32/40。表结构待稿 |
 | `/lesson/:id` 单元 Hub | 部分；「课程学习1」字阶与 160 顶栏已对齐。Bonus / AI Tutor 卡仍按现有双栏，不整页绝对定位 |
+| `/lesson/:id` 学习卡 | Locked 铬；「课程学习4学习卡1/2/4」双栏 Memory Aids + Character/Vocabulary Card。1 字 Character Card、2+ 字 Vocabulary Card；短语不展示词性。中间区 flex，不要整页 1920 绝对定位 |
+| `/lesson/:id` 巩固练习 | Locked 铬；「课程学习4」听音选图 / 图片填空 / 词意选择 / 听力选择 / 语义选择共用 160 顶栏、确定 90、对错底栏、退出确认。中间区按题型换，不要整页 1920 绝对定位 |
+| `/study-report` | Locked 铬；「学习报告」160 顶栏 + 80 Back。三统计卡 Characters / Vocabulary / Sentences。点 Characters 或汉字卡进入「书写练习1」田字格，按列表把每个字走完描写 / 去提示 / 默写三遍。字表 80 钮在三步进度条左侧，展开后点卡跳字。书写铬（进度、笔画 pill、Next、字表当前）跟 Characters 卡 `#2188FE` / `#EEF6FF`。字词 223 方卡、句全宽卡。中间滚动，不要 `is960` 小芯片 |
 
 Target 共性（有稿时一起用，不要另起炉灶）：
 
